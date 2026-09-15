@@ -151,6 +151,10 @@ earlier exist for development and for anyone who does have a console.
 
 ## Documentation
 
+- [docs/STATUS.md](docs/STATUS.md) — where the work stands right now and what to do next
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — layering, save-data rules, how we hook the
   game, reliability conventions
 - [docs/ROADMAP.md](docs/ROADMAP.md) — phases, acceptance criteria, cross-pillar dependencies
+- [docs/design/](docs/design/) — the specs for each pillar, with formulas and the decisions taken
+- [CLAUDE.md](CLAUDE.md) — conventions and hard-won environment facts, for anyone (or any
+  agent) picking the project up
