@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Module>
+  <Name value="Diplomacy &amp; Intrigue"/>
+  <Id value="DiplomacyIntrigue"/>
+  <Version value="v0.1.0"/>
+  <DefaultModule value="false"/>
+  <ModuleCategory value="Singleplayer"/>
+  <ModuleType value="Community"/>
+
+  <DependedModules>
+    <DependedModule Id="Native"                     DependentVersion="v1.4.8"  Optional="false"/>
+    <DependedModule Id="SandBoxCore"                DependentVersion="v1.4.8"  Optional="false"/>
+    <!-- NOTE: the SandBox folder declares its Id as "Sandbox" (lowercase b). -->
+    <DependedModule Id="Sandbox"                    DependentVersion="v1.4.8"  Optional="false"/>
+    <DependedModule Id="StoryMode"                  DependentVersion="v1.4.8"  Optional="false"/>
+    <DependedModule Id="Bannerlord.Harmony"         DependentVersion="v2.4.2"  Optional="false"/>
+    <DependedModule Id="Bannerlord.ButterLib"       DependentVersion="v2.10.4" Optional="false"/>
+    <DependedModule Id="Bannerlord.UIExtenderEx"    DependentVersion="v2.13.2" Optional="false"/>
+    <DependedModule Id="Bannerlord.MBOptionScreen"  DependentVersion="v5.11.4" Optional="false"/>
+  </DependedModules>
+
+  <SubModules>
+    <SubModule>
+      <Name value="DiplomacyIntrigue"/>
+      <DLLName value="DiplomacyIntrigue.dll"/>
+      <SubModuleClassType value="DiplomacyIntrigue.SubModule"/>
+      <Tags>
+        <Tag key="DedicatedServerType" value="none"/>
+        <Tag key="IsNoRenderModeElement" value="false"/>
+      </Tags>
+    </SubModule>
+  </SubModules>
+
+  <Xmls/>
+</Module>

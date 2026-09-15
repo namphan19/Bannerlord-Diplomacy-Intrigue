@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<base xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" type="string">
+  <tags>
+    <tag language="English"/>
+  </tags>
+  <strings>
+    <string id="DiplomacyIntrigue.name" text="Diplomacy &amp; Intrigue"/>
+    <string id="DiplomacyIntrigue.loaded" text="Diplomacy &amp; Intrigue v{VERSION} loaded."/>
+  </strings>
+</base>

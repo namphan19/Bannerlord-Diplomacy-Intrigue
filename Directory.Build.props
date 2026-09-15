@@ -1,0 +1,52 @@
+<Project>
+
+  <!-- ============================================================
+       Shared build configuration for all Diplomacy & Intrigue projects.
+       Game build target: Mount & Blade II: Bannerlord v1.4.8 (.NET 6)
+       ============================================================ -->
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <LangVersion>11</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Platforms>x64</Platforms>
+    <PlatformTarget>x64</PlatformTarget>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+    <DebugType>portable</DebugType>
+    <EnableDynamicLoading>false</EnableDynamicLoading>
+    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+    <GenerateDependencyFile>false</GenerateDependencyFile>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <ModuleName>DiplomacyIntrigue</ModuleName>
+    <ModuleVersion>0.1.0</ModuleVersion>
+    <Version>$(ModuleVersion)</Version>
+    <Authors>namphan19</Authors>
+  </PropertyGroup>
+
+  <!-- ============================================================
+       Game location. Resolution order:
+         1. -p:GameFolder=...              (explicit MSBuild property)
+         2. %BANNERLORD_GAME_DIR%          (environment variable)
+         3. known install paths            (auto-detect)
+       ============================================================ -->
+  <PropertyGroup>
+    <GameFolder Condition="'$(GameFolder)' == '' and '$(BANNERLORD_GAME_DIR)' != ''">$(BANNERLORD_GAME_DIR)</GameFolder>
+    <GameFolder Condition="'$(GameFolder)' == '' and Exists('E:\SteamLibrary\steamapps\common\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client')">E:\SteamLibrary\steamapps\common\Mount &amp; Blade II Bannerlord</GameFolder>
+    <GameFolder Condition="'$(GameFolder)' == '' and Exists('C:\Program Files (x86)\Steam\steamapps\common\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client')">C:\Program Files (x86)\Steam\steamapps\common\Mount &amp; Blade II Bannerlord</GameFolder>
+    <GameFolder Condition="'$(GameFolder)' == '' and Exists('D:\SteamLibrary\steamapps\common\Mount &amp; Blade II Bannerlord\bin\Win64_Shipping_Client')">D:\SteamLibrary\steamapps\common\Mount &amp; Blade II Bannerlord</GameFolder>
+
+    <GameBinFolder>$(GameFolder)\bin\Win64_Shipping_Client</GameBinFolder>
+    <GameModulesFolder>$(GameFolder)\Modules</GameModulesFolder>
+  </PropertyGroup>
+
+  <Target Name="DiplomacyIntrigueValidateGameFolder" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(GameBinFolder)')"
+           Text="Bannerlord install not found. Set the BANNERLORD_GAME_DIR environment variable, or pass -p:GameFolder=&quot;...\Mount and Blade II Bannerlord&quot;. Tried: '$(GameFolder)'" />
+  </Target>
+
+</Project>
