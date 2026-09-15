@@ -108,6 +108,47 @@ Both drive the same functions the campaign tick calls. Neither can advance
 inside them - see [docs/ROADMAP.md](docs/ROADMAP.md) before drawing conclusions from a
 long run.
 
+## Running a balance pass
+
+The acceptance test for the diplomacy pillar is a statement about a decade of campaign -
+average war length, whether alliances form and hold, whether anyone sits at permanent war.
+The mod measures that on its own, so a balance run needs no console and no supervision.
+
+1. Start or load a campaign with the mod enabled.
+2. Set the campaign speed high and **leave the game window focused** - Bannerlord throttles
+   itself heavily in the background, to roughly two in-game hours per real minute, which
+   makes an unfocused run useless.
+3. Let it run. A few hours of real time is a few in-game years.
+4. Collect two things:
+
+**The log** — one file, this is the dataset:
+
+```
+Documents\Mount and Blade II Bannerlord\DiplomacyIntrigue\Logs\
+```
+
+Take the newest `diplomacy-intrigue-*.log`. It carries two machine-readable line types:
+
+```
+[SNAPSHOT]   date=... kingdoms=8 atWar=6 wars=3 avgExhaustion=34.2 alliance=1 ...
+[WAR-ENDED]  aggressor=Vlandia defender=Sturgia days=624 casusBelli=ReclaimAncestralLand ...
+```
+
+One snapshot per in-game week, one war-ended line per war. `days=` on the war-ended lines is
+what answers "do wars average under three years" - 3 years is 252 days, since a Bannerlord
+year is four 21-day seasons.
+
+**A report** — optional, a readable snapshot of the whole world: press **Ctrl+D** on the map
+and choose *Write a report to file*. It lands in:
+
+```
+Documents\Mount and Blade II Bannerlord\DiplomacyIntrigue\Reports\
+```
+
+The in-game developer console is **not** available in a retail install unless a separate
+console mod is installed, so nothing above depends on it. The `diplomacy.*` commands listed
+earlier exist for development and for anyone who does have a console.
+
 ## Documentation
 
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — layering, save-data rules, how we hook the

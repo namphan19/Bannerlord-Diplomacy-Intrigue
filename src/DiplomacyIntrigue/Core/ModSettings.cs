@@ -59,6 +59,12 @@ namespace DiplomacyIntrigue.Core
             HintText = "Prints AI treaty and war decisions to the in-game message log.")]
         [SettingPropertyGroup(DebugGroup)]
         public bool AnnounceAiDecisions { get; set; } = false;
+
+        [SettingPropertyBool("Write telemetry to the log", Order = 2, RequireRestart = false,
+            HintText = "One line per week plus one per war that ends, so a long campaign can be "
+                       + "measured afterwards. Costs almost nothing and is what balance reports are built from.")]
+        [SettingPropertyGroup(DebugGroup)]
+        public bool EnableTelemetry { get; set; } = true;
     }
 
     /// <summary>

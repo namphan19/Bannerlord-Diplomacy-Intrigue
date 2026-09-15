@@ -19,6 +19,7 @@ namespace DiplomacyIntrigue.Behaviors
         public override void RegisterEvents()
         {
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
+            CampaignEvents.WeeklyTickEvent.AddNonSerializedListener(this, OnWeeklyTick);
             CampaignEvents.WarDeclared.AddNonSerializedListener(this, OnWarDeclared);
             CampaignEvents.MakePeace.AddNonSerializedListener(this, OnPeaceMade);
         }
@@ -40,6 +41,26 @@ namespace DiplomacyIntrigue.Behaviors
             catch (Exception ex)
             {
                 Log.Error("Treaty", "Daily treaty upkeep failed.", ex);
+            }
+        }
+
+        /// <summary>
+        /// One telemetry line per week. Left on by default: it costs a single log line and
+        /// it is the only way a multi-hour balance run produces a dataset without somebody
+        /// sitting in front of the screen.
+        /// </summary>
+        private void OnWeeklyTick()
+        {
+            var state = CoreBehavior.State;
+            if (state == null || !Settings.Current.EnableTelemetry) return;
+
+            try
+            {
+                Telemetry.WriteSnapshot(state);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Telemetry", "Weekly snapshot failed.", ex);
             }
         }
 
@@ -68,8 +89,11 @@ namespace DiplomacyIntrigue.Behaviors
                     TreatyRegistry.Break(state, blocking, aggressor);
                 }
 
-                // An unjustified war is noted by every court that is not in it.
-                var legitimacy = ClaimRegistry.BestLegitimacy(state, aggressor, target);
+                // An unjustified war is noted by every court that is not in it - but it
+                // has to be the legitimacy of the war actually being fought. Reading only
+                // our claims here once branded a kingdom that honoured its vassalage as an
+                // unjust aggressor, because answering a call to arms is not a claim.
+                var legitimacy = CasusBelli.ResolvedLegitimacy(state, aggressor, target, detail);
                 TrustRegistry.OnWarDeclared(state, aggressor, target, legitimacy);
             }
             catch (Exception ex)

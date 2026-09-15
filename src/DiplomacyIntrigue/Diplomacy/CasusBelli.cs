@@ -1,4 +1,5 @@
 using DiplomacyIntrigue.Models;
+using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 
 namespace DiplomacyIntrigue.Diplomacy
@@ -45,6 +46,34 @@ namespace DiplomacyIntrigue.Diplomacy
                     return CasusBelliType.None;
             }
         }
+
+        /// <summary>
+        /// The justification a war is actually fought on: the best claim the aggressor
+        /// holds, or the engine's own reason when it holds none.
+        ///
+        /// This is the single source of truth, and it exists because it was not. The war
+        /// ledger and the trust ledger each resolved legitimacy their own way, so a kingdom
+        /// that answered an ally's call - recorded as DefendAlly at 1.00 - was
+        /// simultaneously punished by every other court as an unjust aggressor at 0.00.
+        /// Anything that needs a war's legitimacy must come through here.
+        /// </summary>
+        public static CasusBelliType Resolve(Core.ModState state, Kingdom aggressor, Kingdom defender,
+            DeclareWarAction.DeclareWarDetail detail)
+        {
+            var fromDetail = FromDeclareWarDetail(detail);
+
+            // An engine reason that is already more defensible than any claim we hold wins:
+            // honouring a pact is not made less honourable by also wanting their land.
+            var claim = state == null ? null : ClaimRegistry.Best(state, aggressor, defender);
+            if (claim == null) return fromDetail;
+
+            return Legitimacy(claim.Type) >= Legitimacy(fromDetail) ? claim.Type : fromDetail;
+        }
+
+        /// <summary>Legitimacy of the war a kingdom would actually be fighting.</summary>
+        public static float ResolvedLegitimacy(Core.ModState state, Kingdom aggressor, Kingdom defender,
+            DeclareWarAction.DeclareWarDetail detail)
+            => Legitimacy(Resolve(state, aggressor, defender, detail));
 
         /// <summary>
         /// Range 0..1. Zero means the war reads as naked aggression; one means it is

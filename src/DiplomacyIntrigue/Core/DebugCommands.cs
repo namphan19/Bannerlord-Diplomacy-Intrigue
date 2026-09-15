@@ -662,6 +662,22 @@ namespace DiplomacyIntrigue.Core
             return sb.ToString();
         }
 
+        /// <summary>
+        /// Writes a telemetry snapshot to the log and a full report to file, on demand.
+        /// The weekly snapshot happens on its own; this is for grabbing one at a moment of
+        /// interest, and for checking both writers work.
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("report", "diplomacy")]
+        public static string Report(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            Telemetry.WriteSnapshot(state);
+            var path = Telemetry.WriteReport(state);
+            return "Snapshot written to the log, full report written to:" + Environment.NewLine + path;
+        }
+
         /// <summary>Kingdom names contain spaces, so arguments are separated by a pipe.</summary>
         private static List<string> SplitOnPipe(List<string> args)
         {

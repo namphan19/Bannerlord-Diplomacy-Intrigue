@@ -55,6 +55,9 @@ namespace DiplomacyIntrigue.UI
                     "Standing justifications for war, and what they allow."),
                 Element("kingdoms", "Other kingdoms",
                     "Relations, trust, and what we can propose."),
+                Element("report", "Write a report to file",
+                    "Saves the whole world state to Documents/Mount and Blade II Bannerlord/"
+                    + "DiplomacyIntrigue/Reports, for sharing or for balance work."),
             };
 
             var header = kingdom.Name + (isRuler
@@ -69,8 +72,25 @@ namespace DiplomacyIntrigue.UI
                     case "treaties": ShowTreaties(state, kingdom); break;
                     case "claims": ShowClaims(state, kingdom); break;
                     case "kingdoms": ShowKingdomList(state, kingdom, isRuler); break;
+                    case "report": WriteReport(state); break;
                 }
             });
+        }
+
+        private static void WriteReport(ModState state)
+        {
+            try
+            {
+                var path = Core.Telemetry.WriteReport(state);
+                ShowText("Report written", "Saved to:" + Environment.NewLine + path
+                                           + Environment.NewLine + Environment.NewLine
+                                           + "The weekly telemetry lines are in the log beside it.");
+            }
+            catch (Exception ex)
+            {
+                Log.Error("UI", "Writing the report failed.", ex);
+                Notify("Could not write the report - see the log.");
+            }
         }
 
         // ----- Read-only views -------------------------------------------------

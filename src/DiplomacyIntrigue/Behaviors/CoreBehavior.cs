@@ -107,18 +107,12 @@ namespace DiplomacyIntrigue.Behaviors
                 if (a == null || d == null) return;   // minor factions are out of scope for now
                 if (_state.OngoingWarBetween(a, d) != null) return;
 
-                // A kingdom fights for the best justification it actually holds. Only fall
-                // back to the engine's reason when it holds none - otherwise a war waged
-                // over a broken treaty would be filed as naked aggression.
-                var claim = Diplomacy.ClaimRegistry.Best(_state, a, d);
-                var cb = claim != null
-                    ? claim.Type
-                    : CasusBelli.FromDeclareWarDetail(detail);
+                // One resolver for everyone - see CasusBelli.Resolve for why.
+                var cb = CasusBelli.Resolve(_state, a, d, detail);
 
                 _state.Wars.Add(new WarRecord(a, d, cb));
                 Log.Info("Core", "War opened: " + a.Name + " -> " + d.Name + " (" + detail + " => " + cb
-                                 + ", legitimacy " + CasusBelli.Legitimacy(cb).ToString("0.00")
-                                 + (claim == null ? ", from the engine reason" : ", from a held claim") + ").");
+                                 + ", legitimacy " + CasusBelli.Legitimacy(cb).ToString("0.00") + ").");
             }
             catch (Exception ex)
             {
@@ -142,6 +136,9 @@ namespace DiplomacyIntrigue.Behaviors
                 // The peace has to leave a mark, or a kingdom can walk straight into the
                 // next war with nothing to show for the last one.
                 Diplomacy.WarExhaustion.CarryOverToWeariness(_state, war);
+
+                // Machine-readable first, so a long run can be parsed out of the log.
+                if (Settings.Current.EnableTelemetry) Telemetry.WriteWarEnded(war);
 
                 Log.Info("Core", "War closed after " + war.DaysElapsed.ToString("0") + " days: " + war
                                  + " | weariness now " + a.Name + "=" + _state.WearinessOf(a).ToString("0.0")
