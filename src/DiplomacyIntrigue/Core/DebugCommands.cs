@@ -484,6 +484,184 @@ namespace DiplomacyIntrigue.Core
         private static readonly char[] CommaSeparator = { ',' };
         private static readonly char[] EqualsSeparator = { '=' };
 
+        /// <summary>
+        /// Runs one week of AI diplomacy for every kingdom at once, and reports what each
+        /// one did. Drives the same AiDiplomacy.Evaluate the weekly tick calls.
+        ///
+        /// This is the balance-pass tool: the daily tick spreads kingdoms across seven
+        /// slots, which is right for play and useless for measuring. Repeat it to watch a
+        /// decade of diplomacy in a minute.
+        /// Usage: diplomacy.ai_week [number of weeks]
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("ai_week", "diplomacy")]
+        public static string AiWeek(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var weeks = 1;
+            if (args != null && args.Count > 0 && int.TryParse(args[0], out var parsed))
+                weeks = parsed < 1 ? 1 : (parsed > 200 ? 200 : parsed);
+
+            var counts = new Dictionary<AiDiplomacy.Move, int>();
+            var sb = new StringBuilder();
+
+            for (var week = 0; week < weeks; week++)
+            {
+                // A week is seven days. Without this the upkeep never runs, so weariness
+                // never decays and claims never expire, and every kingdom stays
+                // permanently discouraged by wars it finished years ago.
+                for (var day = 0; day < 7; day++)
+                {
+                    WarExhaustion.DailyTick(state);
+                    ClaimRegistry.ExpireStale(state);
+                    ClaimRegistry.ResolveFabrications(state);
+                    TreatyRegistry.PayDueTribute(state);
+                }
+
+                foreach (var kingdom in Kingdom.All)
+                {
+                    if (kingdom.IsEliminated) continue;
+                    if (Hero.MainHero != null && kingdom.Leader == Hero.MainHero) continue;
+
+                    var move = AiDiplomacy.Evaluate(state, kingdom);
+                    counts.TryGetValue(move, out var n);
+                    counts[move] = n + 1;
+
+                    if (weeks == 1 && move != AiDiplomacy.Move.None)
+                        sb.AppendLine("  " + kingdom.Name + ": " + move);
+                }
+            }
+
+            var header = new StringBuilder();
+            header.AppendLine("Ran " + weeks + " week(s) of AI diplomacy, with "
+                              + (weeks * 7) + " days of upkeep. Campaign time unchanged.");
+            if (weeks > 4)
+            {
+                // Say what this cannot show, or a long quiet run reads as a finding.
+                header.AppendLine("NOTE: the campaign clock does not move here, so treaties never");
+                header.AppendLine("expire and clan influence never regenerates. A long run will");
+                header.AppendLine("therefore under-report wars. Use it for single decisions and for");
+                header.AppendLine("exhaustion rates, not for the long-run war/peace rhythm.");
+            }
+            foreach (var pair in counts)
+                header.AppendLine("  " + pair.Key + ": " + pair.Value);
+            header.Append(sb);
+            return header.ToString();
+        }
+
+        /// <summary>
+        /// Shows how much each side values an agreement with the other - the same numbers
+        /// the AI and the diplomacy menu read.
+        /// Usage: diplomacy.pact_value Vlandia | Battania
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("pact_value", "diplomacy")]
+        public static string PactValue(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var parts = SplitOnPipe(args);
+            if (parts.Count < 2) return "Usage: diplomacy.pact_value <kingdom> | <kingdom>";
+
+            var a = FindKingdom(parts[0]);
+            var b = FindKingdom(parts[1]);
+            if (a == null || b == null) return "Kingdom not found.";
+
+            var sb = new StringBuilder();
+            sb.AppendLine(a.Name + " values an agreement with " + b.Name + " at "
+                          + AiDiplomacy.PactValue(state, a, b).ToString("0.0"));
+            sb.AppendLine(b.Name + " values an agreement with " + a.Name + " at "
+                          + AiDiplomacy.PactValue(state, b, a).ToString("0.0"));
+            sb.AppendLine("Thresholds: non-aggression " + DiplomacyConstants.AiNonAggressionThreshold.ToString("0")
+                          + ", defensive pact " + DiplomacyConstants.AiDefensivePactThreshold.ToString("0")
+                          + ", alliance " + DiplomacyConstants.AiAllianceThreshold.ToString("0"));
+            sb.AppendLine("The lower of the two decides: both sides have to want it.");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Opens the diplomacy menu - the same entry point as Ctrl+D on the map. Useful
+        /// when a key is bound to something else, and the only way to reach the menu from
+        /// a script.
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("menu", "diplomacy")]
+        public static string Menu(List<string> args)
+        {
+            if (CoreBehavior.State == null) return NoCampaign;
+            UI.DiplomacyMenu.Open();
+            return "Diplomacy menu opened.";
+        }
+
+        /// <summary>
+        /// Why a kingdom is or is not going to war with another, term by term.
+        /// Usage: diplomacy.war_value Aserai | Khuzait
+        /// With one kingdom named, reports it against every other.
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("war_value", "diplomacy")]
+        public static string WarValue(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var parts = SplitOnPipe(args);
+            if (parts.Count < 1) return "Usage: diplomacy.war_value <kingdom> [| <kingdom>]";
+
+            var a = FindKingdom(parts[0]);
+            if (a == null) return "No kingdom matching \"" + parts[0] + "\".";
+
+            if (parts.Count >= 2)
+            {
+                var b = FindKingdom(parts[1]);
+                if (b == null) return "No kingdom matching \"" + parts[1] + "\".";
+                return AiDiplomacy.ExplainWarValue(state, a, b);
+            }
+
+            var sb = new StringBuilder();
+            foreach (var other in Kingdom.All)
+            {
+                if (other == a || other.IsEliminated) continue;
+                sb.AppendLine(AiDiplomacy.ExplainWarValue(state, a, other));
+            }
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Prints the exhaustion bands with their edges and what each one means.
+        ///
+        /// This is how a rival's war exhaustion is shown to the player - a band, never a
+        /// figure, with the exact value reserved for Phase 3 espionage. The edges are read
+        /// from the same constants the AI uses, so this also verifies they have not drifted.
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("bands", "diplomacy")]
+        public static string Bands(List<string> args)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("How a rival's war exhaustion appears to us:");
+            sb.AppendLine();
+
+            var probes = new[] { 0f, 19f, 20f, 39f, 40f, 59f, 60f, 79f, 80f, 100f };
+            var lastBand = (ExhaustionBand)(-1);
+
+            for (var i = 0; i < probes.Length; i++)
+            {
+                var band = ExhaustionBands.Of(probes[i]);
+                if (band == lastBand) continue;
+                lastBand = band;
+
+                sb.AppendLine(ExhaustionBands.Bar(band) + " " + ExhaustionBands.Name(band)
+                              + "  from " + probes[i].ToString("0"));
+                sb.AppendLine("      " + ExhaustionBands.Meaning(band));
+            }
+
+            sb.AppendLine();
+            sb.AppendLine("Edges come from the behavioural thresholds, not arbitrary fifths:");
+            sb.AppendLine("  court pressure   " + DiplomacyConstants.ExhaustionCourtPressure.ToString("0"));
+            sb.AppendLine("  seeks peace      " + DiplomacyConstants.ExhaustionSeekPeace.ToString("0"));
+            sb.AppendLine("  accepts bad terms " + DiplomacyConstants.ExhaustionAcceptBadTerms.ToString("0"));
+            return sb.ToString();
+        }
+
         /// <summary>Kingdom names contain spaces, so arguments are separated by a pipe.</summary>
         private static List<string> SplitOnPipe(List<string> args)
         {

@@ -6,7 +6,10 @@ using DiplomacyIntrigue.Core;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
+using TaleWorlds.CampaignSystem.GameState;
+using TaleWorlds.InputSystem;
 using TaleWorlds.MountAndBlade;
+using DiplomacyIntrigue.UI;
 
 namespace DiplomacyIntrigue
 {
@@ -61,7 +64,7 @@ namespace DiplomacyIntrigue
             _shownStartupNotice = true;
 
             if (Healthy)
-                Log.Notify("Diplomacy & Intrigue v" + ModuleVersion + " loaded.", Colors.Cyan);
+                Log.Notify("Diplomacy & Intrigue v" + ModuleVersion + " loaded. Press Ctrl+D on the map.", Colors.Cyan);
             else
                 Log.Notify("Diplomacy & Intrigue failed to load - see Documents/Mount and Blade II Bannerlord/DiplomacyIntrigue/Logs.", Colors.Red);
         }
@@ -95,6 +98,39 @@ namespace DiplomacyIntrigue
                 starter.AddBehavior(new ClaimsBehavior());
                 starter.AddBehavior(new TreatyBehavior());
                 starter.AddBehavior(new CallToArmsBehavior());
+                starter.AddBehavior(new AiDiplomacyBehavior());
+            }
+        }
+
+        /// <summary>
+        /// Opens the diplomacy menu on Ctrl+D while on the campaign map.
+        ///
+        /// Polling input here rather than registering a game hotkey is a deliberate
+        /// trade-off: the hotkey system needs a category registered before the game builds
+        /// its input maps, and getting that wrong breaks the player's existing bindings.
+        /// A guarded poll cannot. Ctrl+D was chosen because D alone is movement and every
+        /// unmodified letter worth having is already a screen.
+        /// </summary>
+        protected override void OnApplicationTick(float dt)
+        {
+            base.OnApplicationTick(dt);
+            if (!Healthy) return;
+
+            try
+            {
+                if (!Input.IsKeyDown(InputKey.LeftControl) && !Input.IsKeyDown(InputKey.RightControl)) return;
+                if (!Input.IsKeyPressed(InputKey.D)) return;
+
+                // Only on the map, and never on top of another dialog or a menu.
+                if (!(Game.Current?.GameStateManager?.ActiveState is MapState mapState)) return;
+                if (mapState.AtMenu || mapState.MapConversationActive) return;
+                if (InformationManager.IsAnyInquiryActive()) return;
+
+                DiplomacyMenu.Open();
+            }
+            catch (Exception ex)
+            {
+                Log.Error("SubModule", "Opening the diplomacy menu failed.", ex);
             }
         }
 

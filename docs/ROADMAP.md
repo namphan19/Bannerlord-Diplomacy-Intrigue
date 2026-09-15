@@ -197,11 +197,77 @@ Two bugs were found by reading the live log rather than the code, both now fixed
    event. Nothing depends on the order, but `CoreBehavior` claimed it did; the comment was
    wrong and is now corrected with a warning not to rely on it.
 
-**1.7 AI diplomacy** — weekly per-kingdom evaluation: seek peace, offer pact, demand tribute, pick a war target. Must feel deliberate, not twitchy.
+**1.7 AI diplomacy** ✅ **implemented** — one evaluation per kingdom per week, at most one
+action, usually none. Priority order matters: a realm that needs out of a war does not go
+shopping for allies. Seek peace → offer a pact → demand tribute → declare war → nothing.
+Work is spread across seven daily slots rather than done in a weekly burst, so moves arrive
+through the month instead of all at once. The player's own kingdom is never evaluated.
+Code: `Diplomacy/AiDiplomacy.cs`, `Behaviors/AiDiplomacyBehavior.cs`.
 
-**1.8 Diplomacy UI** — kingdom screen tab: relations matrix, active treaties, ongoing wars with exhaustion and war score, proposal flow.
+Peace-seeking is a real negotiation: a white peace first, then a concession ladder -
+prisoners, indemnity, tributary pact, a castle, a town - stopping at the cheapest package
+the other side will take, and never conceding past what their victory entitles them to.
 
-**Acceptance:** in a 10-year AI-only campaign, wars average under ~3 years, at least one alliance forms and holds, and no kingdom sits at permanent total war. Save/load stable across the phase.
+**1.8 Diplomacy UI** ✅ **implemented** — reachable with **Ctrl+D** on the map, or
+`diplomacy.menu`. Our wars with exhaustion and war score, our agreements and what each
+obliges, our claims and what they allow, and per-kingdom actions: propose a pact, negotiate
+peace with a demand budget, renounce a treaty, fabricate a claim. A player who is a vassal
+rather than a ruler gets a view only.
+Code: `UI/DiplomacyMenu.cs`, `Diplomacy/ExhaustionBands.cs`.
+
+Built on the game's own selection dialogs rather than a custom Gauntlet screen. That is a
+deliberate trade: a hand-built screen looks better and is the eventual goal, but it is also
+the most fragile thing a Bannerlord mod can own - it breaks on game updates and takes the
+whole screen stack with it. Native dialogs cannot, need no prefab XML, and deliver the full
+feature set now.
+
+**Enemy exhaustion is shown as a band, never a figure** - the decision from design review.
+The band edges are the behavioural thresholds themselves, verified in game:
+
+```
+[#....] Fresh      from 0    nothing is pressing them
+[##...] Strained   from 20   feeling the cost, but not yet politically
+[###..] Weary      from 40   their court is starting to press for peace
+[####.] Exhausted  from 60   will accept a white peace
+[#####] Breaking   from 80   will accept unfavourable terms
+```
+
+**Verified in a live campaign:**
+
+| Check | Result |
+|---|---|
+| One week of AI diplomacy | 3 kingdoms sought peace, 4 signed pacts, 1 did nothing |
+| Peace at the threshold | all three were at exhaustion 66.8, just past the 60 gate; all three ended in white peace |
+| Pact valuation | non-aggression pacts signed at mutual values 28–43 against a threshold of 20; nobody reached the alliance threshold of 70 |
+| Both sides must want it | `pact_value` shows each direction; the lower number decides |
+| War gates | `war_value` prints every term and names the gate that blocks: Aserai at 1.26 strength and value 28.7 was blocked purely by its own exhaustion of 66.8 |
+| Menu renders | screenshot confirms title, sections and the vassal-only notice |
+| Band mapping | `diplomacy.bands` reproduces the table above from the same constants the AI reads |
+
+## Acceptance: NOT yet met
+
+**In a 10-year AI-only campaign, wars average under ~3 years, at least one alliance forms
+and holds, and no kingdom sits at permanent total war.**
+
+This has **not** been validated, and cannot be with the tooling that exists:
+
+- `diplomacy.tick_days` and `diplomacy.ai_week` drive the real upkeep and the real
+  evaluation, but **they cannot move `CampaignTime.Now`**. So inside them treaties never
+  expire, claims never age out, and clan influence never regenerates.
+- A 52-week run produced no wars at all. That reads as a finding and is mostly an artifact:
+  the non-aggression pacts signed in week one never expired, and nobody could ever afford
+  the 180–240 influence a war costs because influence income needs the game's own tick.
+- `ai_week` now prints this caveat when asked for more than four weeks, so the trap is
+  labelled rather than left for the next person to fall into.
+
+What this means concretely: **`AiWarThreshold`, `WarValueLandHunger` and the pact
+thresholds are un-tuned first-cut numbers.** They are marked as such in
+`DiplomacyConstants`. Tuning them needs a real campaign left to run - the Phase 4 balance
+task - and that is the one remaining item before Phase 1 can be called done.
+
+An honest correction: an earlier pass justified two of these constants as "measured". They
+were not; the run behind that claim was confounded by the limits above. The comments have
+been corrected rather than left to mislead.
 
 ---
 

@@ -244,6 +244,81 @@ namespace DiplomacyIntrigue.Diplomacy
             }
         }
 
+        // ---- AI diplomacy ---------------------------------------------------
+        // One evaluation per kingdom per week, at most one action, usually none.
+
+        /// <summary>
+        /// Weights for how much a kingdom wants an agreement. Two of the design doc terms
+        /// had no cheap data behind them: trade exposure is proxied by proximity, and
+        /// border security is folded into aggression - a weak neighbour on a long border is
+        /// a temptation rather than a partner, which is the same statement inverted.
+        /// </summary>
+        public const float PactWeightSharedThreat = 60f;
+        public const float PactWeightProximity = 40f;
+        public const float PactWeightTrust = 30f;
+        public const float PactWeightAggression = 50f;
+        public const float PactWeightRelation = 25f;
+
+        /// <summary>Mutual value needed before each treaty type is worth signing.</summary>
+        public const float AiNonAggressionThreshold = 20f;
+        public const float AiDefensivePactThreshold = 45f;
+        public const float AiAllianceThreshold = 70f;
+
+        /// <summary>A standing territorial claim is most of what makes a neighbour a target.</summary>
+        public const float AggressionFromClaim = 0.6f;
+
+        /// <summary>Added aggression per unit of strength advantage over a neighbour.</summary>
+        public const float AggressionPerStrengthRatio = 0.4f;
+
+        /// <summary>
+        /// Rough width of the campaign map, used to turn a distance into a 0-1 proximity.
+        /// Approximate on purpose: it only has to rank neighbours against distant realms.
+        /// </summary>
+        public const float MapDistanceNormaliser = 900f;
+
+        /// <summary>A realm this worn out does not start anything new.</summary>
+        public const float AiMaxExhaustionToExpand = 40f;
+
+        /// <summary>Nor does one still carrying the last war.</summary>
+        public const float AiMaxWearinessToExpand = 30f;
+
+        /// <summary>Minimum strength advantage before war is even considered.</summary>
+        public const float AiWarStrengthRatio = 1.2f;
+
+        /// <summary>Strength advantage at which submission can be demanded instead of war.</summary>
+        public const float AiTributeDemandStrengthRatio = 2.0f;
+
+        public const float WarValuePerStrengthRatio = 40f;
+        public const float WarValueLegitimacy = 30f;
+        public const float WarValueProximity = 20f;
+        public const float WarValueWearinessPenalty = 0.5f;
+
+        /// <summary>
+        /// Weight on land hunger - strength share against fief share. This is what keeps
+        /// the map moving once the opening wars have been settled; without it, evenly
+        /// matched kingdoms have no reachable reason to fight and Calradia freezes.
+        /// </summary>
+        public const float WarValueLandHunger = 35f;
+
+        /// <summary>
+        /// War value needed before a kingdom acts on it, before the aggressiveness setting.
+        ///
+        /// UNVALIDATED. Set to 25 so that a clearly attractive war can clear it - a realm
+        /// 26% stronger than an adjacent neighbour scores 28.7 - but this number has not
+        /// been confirmed against play. It cannot be: see the note on tooling limits in
+        /// ROADMAP 1.7. Validating it needs a real ten-year campaign, which is the Phase 4
+        /// balance task.
+        /// </summary>
+        public const float AiWarThreshold = 25f;
+
+        /// <summary>
+        /// Influence to declare war, before the legitimacy multiplier. A war with no case
+        /// costs double, and weariness adds to the bill on top.
+        /// </summary>
+        public const int WarDeclarationBaseInfluence = 100;
+
+        public const int AiDefaultTributePerPeriod = 500;
+
         // ---- Claim fabrication ----------------------------------------------
 
         public const int FabricateClaimInfluenceCost = 150;

@@ -71,13 +71,42 @@ pre-flight check instead, which names the actual cause:
 dotnet run --project tools/LoadProbe
 ```
 
+In game, press **Ctrl+D** on the campaign map to open the diplomacy menu.
+
 Developer console (Alt+`~`):
 
 ```
-diplomacy.status
-diplomacy.wars
-diplomacy.treaties
+diplomacy.status          module health, schema version, record counts
+diplomacy.wars            ongoing wars with exhaustion and war score
+diplomacy.treaties        active agreements, subordination and tribute
+diplomacy.claims          live casus belli and what each allows
+diplomacy.trust           the reputation ledger, both directions
+diplomacy.weariness       what past wars have left behind
+diplomacy.bands           how a rival's exhaustion is shown to the player
+diplomacy.menu            open the diplomacy menu
+
+diplomacy.can_war A | B           whether a war is allowed, and why not
+diplomacy.war_value A | B         the AI war valuation, term by term
+diplomacy.pact_value A | B        what each side thinks an agreement is worth
+diplomacy.peace_allowance A | B   what a war has earned
+diplomacy.sign_treaty A | B | Alliance
+diplomacy.break_treaty A | B | Alliance
+diplomacy.offer_peace A | B | fief=Pravend, prisoners
+diplomacy.fief_history Pravend
+diplomacy.fabricate_claim Pravend
 ```
+
+Balance and diagnosis tools:
+
+```
+diplomacy.tick_days 30    run N days of upkeep without moving the clock
+diplomacy.ai_week 4       run N weeks of AI diplomacy
+```
+
+Both drive the same functions the campaign tick calls. Neither can advance
+`CampaignTime.Now`, so treaty expiry, claim ageing and influence income do not happen
+inside them - see [docs/ROADMAP.md](docs/ROADMAP.md) before drawing conclusions from a
+long run.
 
 ## Documentation
 
