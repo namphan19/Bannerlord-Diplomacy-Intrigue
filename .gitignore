@@ -19,3 +19,6 @@ artifacts/
 
 # Diagnostic tool output
 artifacts/
+
+# Archived balance runs are data, not build noise
+!docs/balance/*.log

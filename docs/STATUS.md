@@ -3,7 +3,8 @@
 Point-in-time state. [CLAUDE.md](../CLAUDE.md) holds the things that are always true; this
 file holds what changes. Update it when you finish a chunk of work.
 
-Head: `d3f7926`. Module version 0.1.0. Save schema **v4**, definer base id **2749100**.
+Module version 0.1.0. Save schema **v4**, definer base id **2749100**.
+Last measured: balance run 01, 28 in-game years — see below.
 
 ---
 
@@ -12,10 +13,10 @@ Head: `d3f7926`. Module version 0.1.0. Save schema **v4**, definer base id **274
 | Phase | State |
 |---|---|
 | **0 — Foundation** | ✅ done, verified in a live campaign |
-| **1 — Diplomacy core (1.1–1.8)** | ✅ **all code written**, each piece verified in game. **Acceptance criterion not met** — see below |
+| **1 — Diplomacy core (1.1–1.8)** | ✅ code complete, **acceptance met** over a measured 28-year run. Two constants tuned from it and awaiting a confirming run |
 | **2 — Court intrigue** | ⬜ spec written and reviewed, no code |
 | **3 — Espionage** | ⬜ spec written and reviewed, no code |
-| **4 — Integration, balance, release** | ⬜ the balance task has effectively started |
+| **4 — Integration, balance, release** | 🔄 balance run 01 done, run 02 wanted |
 
 ### Phase 1, feature by feature
 
@@ -35,45 +36,38 @@ the per-feature evidence tables.
 
 ---
 
-## The one thing blocking Phase 1
+## Phase 1 acceptance: met, measured over 28 in-game years
 
-**Acceptance:** *in a 10-year AI-only campaign, wars average under ~3 years, at least one
-alliance forms and holds, and no kingdom sits at permanent total war.*
+Balance run 01 is in: **340 weekly snapshots, 247 wars, 0 errors**, Summer 1084 to Autumn
+1112. Full analysis in [docs/balance/run-01.md](balance/run-01.md).
 
-Not met, and **not measurable from a tool call**. `diplomacy.tick_days` and
-`diplomacy.ai_week` cannot advance `CampaignTime.Now`, so treaties never expire and clan
-influence never regenerates inside them; a 52-week run produced no wars, which is an
-artifact and not a finding. The game also throttles to roughly two in-game hours per real
-minute when its window is unfocused, so a real run needs a focused window and hours of
-wall-clock time.
+| Criterion | Result |
+|---|---|
+| Wars average under ~3 years | 18.4 days mean — passes hugely |
+| An alliance forms and holds | up to 8 at once, present 85% of weeks |
+| No permanent total war | every kingdom at war in 0.9% of weeks |
+| Stability | 28 years, zero errors, zero tribute defaults |
 
-**The lead is running that campaign now and will send back a log.** When it arrives:
+**The criteria are met and the run still found a real problem: wars are ~10× shorter than
+the design intends.** A chosen war reaches exhaustion 51.6 in 23.6 days, i.e. 2.19 per day
+of which elapsed time is 0.08 — casualties were doing ~96% of the work, about 30× what the
+design assumed.
 
-1. Parse `[WAR-ENDED]` lines — `days=` is the war duration. 3 years = **252 days** (a
-   Bannerlord year is four 21-day seasons). Compute the mean and the distribution.
-2. Parse `[SNAPSHOT]` lines — one per in-game week. Watch `atWar` against `kingdoms` for a
-   kingdom stuck at permanent war, and `alliance=` for whether any alliance ever forms.
-3. Tune from the data. These constants are marked **UNVALIDATED** in
-   `Diplomacy/DiplomacyConstants.cs` and are the ones to move:
-   - `AiWarThreshold` (25) — war value a kingdom needs before acting
-   - `WarValueLandHunger` (35) — contributes ~0 on a fresh, balanced map by design
-   - `AiNonAggressionThreshold` / `AiDefensivePactThreshold` / `AiAllianceThreshold`
-     (20 / 45 / 70) — nothing reached the alliance threshold in testing, which is the most
-     likely thing to be wrong
-   - `WearinessDecayPerDay` (0.15) and `AiMaxWearinessToExpand` (30) — together these were
-     the dominant brake on new wars in every trace
+Two constants were tuned from that data and **both need a second run to confirm**:
 
-**Likely finding to expect:** no alliance formed in any test. Either the threshold of 70 is
-too high, or `PactValue` cannot reach it — `SharedThreat` is the biggest term at weight 60
-and it is zero whenever a kingdom has no enemies, which is exactly the peacetime state in
-which you would want alliances to form. Look there first.
+- `ExhaustionCasualtyStrengthDivisor` 100 → **20** (casualty exhaustion 5× weaker)
+- `AncestralClaimMemoryYears` 20 → **12** (live claims had settled at 83–93, so everyone
+  held a claim on everyone and `Conquest` was never needed)
 
----
+**Next balance run should check:** do chosen wars now last 100–200 days; does the peace
+table's concession ladder ever fire (it fired **zero** times in 28 years, so the whole
+demand-budget half of 1.5 is currently dead code); do live claims settle nearer 30–40.
 
 ## Choose what to do next
 
-**A. Wait for the log and tune.** The highest-value work, and it closes Phase 1. Needs the
-lead's file.
+**A. A second balance run.** Confirms the two tuned constants and shows whether longer wars
+bring the peace table's concession ladder to life. Cheapest high-value step: the lead just
+plays, the mod reports.
 
 **B. Start Phase 2 — court intrigue.** Fully specced in `docs/design/02-intrigue.md` and
 independent of the tuning. Implementation order is 2.1 grievances → 2.2 loyalty → 2.3 blocs
@@ -139,3 +133,4 @@ and what happens when the overlord is destroyed.
 | `diplomacy.tick_days N` | N days of upkeep, real functions, clock unmoved |
 | `diplomacy.ai_week N` | N weeks of AI evaluation plus matching upkeep. Prints its own limitations past 4 weeks |
 | `diplomacy.report` | Telemetry snapshot to the log plus a full world report to file |
+| `tools/analyse-log.py` | Parses a run log into the acceptance numbers: war durations, alliance formation, permanent-war check, casus belli mix. `python tools/analyse-log.py <log>` |

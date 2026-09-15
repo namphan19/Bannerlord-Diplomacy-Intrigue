@@ -21,8 +21,18 @@ namespace DiplomacyIntrigue.Diplomacy
         /// exhaustion relative to size: the same 500 losses wreck a small realm and barely
         /// trouble an empire. Without this, big kingdoms sue for peace as readily as small
         /// ones, which is the vanilla behaviour we are replacing.
+        ///
+        /// Tuned from balance run 01 (28 in-game years, 247 wars): at 100 a chosen war
+        /// reached exhaustion 51.6 in 23.6 days - 2.19 per day, of which elapsed time
+        /// contributed 0.08. Casualties were ~96% of the accrual and wars lasted three
+        /// weeks instead of years. Lowering this to 20 makes casualty exhaustion 5x weaker,
+        /// aiming chosen wars at roughly 1.5 years.
+        ///
+        /// Note the direction: a SMALLER value here means a LARGER divisor and therefore
+        /// LESS exhaustion per casualty. Still an estimate - casualties do not scale
+        /// linearly with war length - so it wants a second run to confirm.
         /// </summary>
-        public const float ExhaustionCasualtyStrengthDivisor = 100f;
+        public const float ExhaustionCasualtyStrengthDivisor = 20f;
 
         /// <summary>Floor on the divisor so a collapsing kingdom does not divide by ~0.</summary>
         public const float ExhaustionCasualtyMinDivisor = 1f;
@@ -98,8 +108,18 @@ namespace DiplomacyIntrigue.Diplomacy
 
         // ---- Casus belli ----------------------------------------------------
 
-        /// <summary>A fief we held more recently than this supports an ancestral claim.</summary>
-        public const int AncestralClaimMemoryYears = 20;
+        /// <summary>
+        /// A fief we held more recently than this supports an ancestral claim.
+        ///
+        /// Tuned from balance run 01: at 20 years, live claims settled at 83-93 across
+        /// eight kingdoms - effectively everyone holding a claim on everyone. That made
+        /// ReclaimAncestralLand (legitimacy 0.70) the reason behind 39.7% of wars and left
+        /// Conquest (0.20), the expensive fallback that is supposed to price naked
+        /// aggression, behind only 18.6%. Cheap justification everywhere makes war cheap
+        /// everywhere, so the window is shorter now: a claim should outlive a grudge, not a
+        /// generation of diplomacy.
+        /// </summary>
+        public const int AncestralClaimMemoryYears = 12;
 
         /// <summary>A claim goes stale this long after it was acquired.</summary>
         public const int ClaimLifetimeYears = 2;
