@@ -250,7 +250,17 @@ namespace DiplomacyIntrigue.Diplomacy
                     var follower = toRelease[i];
                     if (!follower.IsAtWarWith(enemy)) continue;
 
-                    MakePeaceAction.Apply(follower, enemy);
+                    Telemetry.NotePeaceCause(Telemetry.PeaceCause.FollowerRelease,
+                        "released_by_" + caller.Name.ToString().Replace(' ', '_'));
+                    try
+                    {
+                        MakePeaceAction.Apply(follower, enemy);
+                    }
+                    finally
+                    {
+                        Telemetry.ClearPeaceCause();
+                    }
+
                     Log.Info("CallToArms", follower.Name + " leaves the war against " + enemy.Name
                                            + " now that " + caller.Name + " has made peace.");
                     Announce(follower.Name + " follows " + caller.Name + " out of the war with "

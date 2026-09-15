@@ -160,7 +160,15 @@ namespace DiplomacyIntrigue.Diplomacy
             // Peace first: it closes the war record, carries exhaustion into weariness, and
             // records the truce. The terms are then executed between kingdoms at peace,
             // which is what a ceded fief actually is.
-            MakePeaceAction.Apply(winner, loser);
+            Telemetry.NotePeaceCause(Telemetry.PeaceCause.PeaceTable, summary);
+            try
+            {
+                MakePeaceAction.Apply(winner, loser);
+            }
+            finally
+            {
+                Telemetry.ClearPeaceCause();
+            }
 
             CedeFiefs(state, terms);
             PayIndemnity(terms);

@@ -25,6 +25,43 @@ namespace DiplomacyIntrigue.Core
         private const string SnapshotPrefix = "[SNAPSHOT]";
         private const string WarEndedPrefix = "[WAR-ENDED]";
 
+        /// <summary>How a war ended, from the point of view of whose code ended it.</summary>
+        public enum PeaceCause
+        {
+            /// <summary>Nothing of ours did it, so the vanilla peace AI or the player did.</summary>
+            External = 0,
+            /// <summary>Our peace table: exhaustion crossed the threshold and terms were agreed.</summary>
+            PeaceTable = 1,
+            /// <summary>An ally was let out of a war it had only been called into.</summary>
+            FollowerRelease = 2,
+        }
+
+        /// <summary>
+        /// Set immediately before our code calls MakePeaceAction, read by the war ledger
+        /// when the resulting event fires, then cleared.
+        ///
+        /// A static is not elegant. The alternative is threading a cause through the engine
+        /// event, which is not possible, or storing it on the war record, which would put a
+        /// transient reporting detail into the save format. The scope is one synchronous
+        /// call, and run 01 showed that not knowing this costs an hour of cross-referencing.
+        /// </summary>
+        public static PeaceCause PendingPeaceCause { get; private set; } = PeaceCause.External;
+
+        /// <summary>Describes what was conceded, or null for a peace we did not broker.</summary>
+        public static string PendingPeaceTerms { get; private set; }
+
+        public static void NotePeaceCause(PeaceCause cause, string terms = null)
+        {
+            PendingPeaceCause = cause;
+            PendingPeaceTerms = terms;
+        }
+
+        public static void ClearPeaceCause()
+        {
+            PendingPeaceCause = PeaceCause.External;
+            PendingPeaceTerms = null;
+        }
+
         /// <summary>
         /// One line per week: the state of the world in numbers. Cheap enough to leave on.
         /// </summary>
@@ -33,9 +70,12 @@ namespace DiplomacyIntrigue.Core
             try
             {
                 var ongoing = 0;
+                var chosen = 0;
+                var obligation = 0;
                 var exhaustionTotal = 0f;
                 var exhaustionSamples = 0;
                 var longestWarDays = 0f;
+                var dayTotal = 0f;
 
                 for (var i = 0; i < state.Wars.Count; i++)
                 {
@@ -43,8 +83,15 @@ namespace DiplomacyIntrigue.Core
                     if (!war.IsOngoing) continue;
 
                     ongoing++;
+
+                    // Counted apart on purpose. A war a kingdom chose and a war it was
+                    // dragged into by an ally are different things, and averaging them is
+                    // what made run 01 look healthier than it was.
+                    if (war.IsObligationWar) obligation++; else chosen++;
+
                     exhaustionTotal += war.AggressorExhaustion + war.DefenderExhaustion;
                     exhaustionSamples += 2;
+                    dayTotal += war.DaysElapsed;
                     if (war.DaysElapsed > longestWarDays) longestWarDays = war.DaysElapsed;
                 }
 
@@ -74,6 +121,10 @@ namespace DiplomacyIntrigue.Core
                 line.Append(" kingdoms=").Append(kingdoms);
                 line.Append(" atWar=").Append(atWar);
                 line.Append(" wars=").Append(ongoing);
+                line.Append(" warsChosen=").Append(chosen);
+                line.Append(" warsObligation=").Append(obligation);
+                line.Append(" avgWarDays=").Append(
+                    ongoing == 0 ? "0" : (dayTotal / ongoing).ToString("0"));
                 line.Append(" longestWarDays=").Append(longestWarDays.ToString("0"));
                 line.Append(" avgExhaustion=").Append(
                     exhaustionSamples == 0 ? "0.0" : (exhaustionTotal / exhaustionSamples).ToString("0.0"));
@@ -105,6 +156,10 @@ namespace DiplomacyIntrigue.Core
             try
             {
                 Log.Info("Telemetry", WarEndedPrefix
+                                      + " endedBy=" + PendingPeaceCause
+                                      + " terms=" + (PendingPeaceTerms == null
+                                          ? "unknown"
+                                          : PendingPeaceTerms.Replace(' ', '_').Replace(';', ','))
                                       + " aggressor=" + Sanitise(war.Aggressor)
                                       + " defender=" + Sanitise(war.Defender)
                                       + " days=" + war.DaysElapsed.ToString("0")

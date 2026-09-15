@@ -36,6 +36,33 @@ print()
 print("=" * 66)
 print("WAR DURATION  (acceptance: mean under 252 days = 3 years)")
 print("=" * 66)
+
+# Report the two populations first. A war a kingdom chose and a war it was
+# dragged into by an ally are different things; averaging them hid the number
+# that mattered in run 01.
+chosen = [w for w in wars if w.get("calledBy", "none") == "none"]
+oblig  = [w for w in wars if w.get("calledBy", "none") != "none"]
+for label, group in [("CHOSEN wars      ", chosen), ("OBLIGATION wars  ", oblig)]:
+    if not group: continue
+    ds = [int(w["days"]) for w in group]
+    print(f"  {label} n={len(group):4d}  mean={statistics.mean(ds):6.1f}d"
+          f"  median={statistics.median(ds):5.1f}d  max={max(ds):4d}d"
+          f"  ({statistics.mean(ds)/DAYS_PER_YEAR:.2f} years)")
+print()
+
+if any("endedBy" in w for w in wars):
+    print("  who ended them:")
+    for k, n in collections.Counter(w.get("endedBy", "unrecorded") for w in wars).most_common():
+        print(f"    {k:<20} {n:4d}   {100*n/len(wars):5.1f}%")
+    print()
+    print("  terms conceded:")
+    for k, n in collections.Counter(w.get("terms", "unrecorded") for w in wars).most_common(8):
+        print(f"    {k:<28} {n:4d}")
+    print()
+else:
+    print("  (endedBy/terms absent - log predates the v2 telemetry)")
+    print()
+
 durations = [int(w["days"]) for w in wars if "days" in w]
 if durations:
     durations_sorted = sorted(durations)
