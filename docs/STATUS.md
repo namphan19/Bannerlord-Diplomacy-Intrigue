@@ -4,20 +4,24 @@ Point-in-time state. [CLAUDE.md](../CLAUDE.md) holds the things that are always 
 file holds what changes. Update it when you finish a chunk of work.
 
 Module version 0.1.0. Save schema **v4**, definer base id **2749100**.
-Last measured: balance run 01, 28 in-game years — see below.
+Last measured: **balance run 03**, 6.2 in-game years, zero errors —
+[docs/balance/run-03.md](balance/run-03.md).
 
 ---
 
-## OPEN: the game crashes when started from the official launcher
+## Intermittent: the game sometimes dies on startup from the official launcher
 
 Reported by the lead as "game không thể chạy được crash ngay khi mở", with the engine's
 "we need to collect necessary files" dialog. **Not root-caused yet.** What is established:
 
 | Launch path | Result on 2026-09-15 |
 |---|---|
-| Official launcher → Play | **5 of 5 died** before the main menu, 14-21s in |
+| Official launcher → Play | **5 died** before the main menu, 14-21s in — **and 2 later launches worked**, one of them balance run 03: 25 minutes, 6.2 in-game years, zero errors |
 | `Bannerlord.exe` directly, launcher's own mod list | reached the main menu |
 | `Bannerlord.BLSE.Standalone.exe` (GABS, `scripts/play.ps1`) | reached the menu, loaded `di_phase1_full`, 0 errors |
+
+So it is **intermittent on that path, not deterministic**, which also means an earlier note
+here claiming the launcher path was simply broken was too strong.
 
 Evidence for the fault itself, from the Windows `CLR20r3` record (P4/P7/P8 resolved with
 Cecil): an unhandled managed exception in `TaleWorlds.MountAndBlade`, method
