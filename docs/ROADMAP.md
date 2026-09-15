@@ -130,7 +130,7 @@ Code: `Diplomacy/TrustRegistry.cs`, `Models/TrustRecord.cs`.
 | Trust is directional | only `X → Sturgia` records were created; Sturgia's own view of others untouched |
 | War allowed afterwards | yes - defiance has a price, not a lock |
 | Trust floor | a new alliance was refused: "Vlandia does not trust Sturgia enough to sign anything but a truce" |
-| Vassalage | subordinate recorded explicitly, tribute scheduled; the vassal cannot declare war on anyone, nor on its patron |
+| Vassalage | subordinate recorded explicitly, tribute scheduled; the vassal cannot declare war on anyone, nor on its patron — **all of it set up by `diplomacy.treaty`, the debug command** |
 | Double subordination | refused - "Battania is already subordinate to another kingdom" |
 | Save round-trip | 2 treaties, 7 trust records, 1 claim, 120 fief records after a process restart; the patron/client link still resolved |
 
@@ -158,6 +158,23 @@ alliance costs trust and nothing else, because an alliance that cannot be declin
 suicide pact the AI would never sign. Refusing as a **vassal** breaks the vassalage, because
 service is the substance of that bargain.
 Code: `Diplomacy/CallToArms.cs`, `Behaviors/CallToArmsBehavior.cs`.
+
+> **Gap, and it is a real one: vassalage cannot be reached in play.** Every route that
+> creates a treaty was traced — `TreatyBehavior.SignTruceOnPeace` (truce),
+> `AiDiplomacy` (non-aggression / defensive / alliance, and tributary from a tribute
+> demand), `PeaceTable` (tributary as a peace term), `DiplomacyMenu` (non-aggression /
+> defensive / alliance for the player) and `DebugCommands`. **Only the debug command can
+> create a `Vassalage` treaty.** The AI never proposes subordination, `PeaceTerms` has no
+> vassalage field, and the player's menu does not offer it.
+>
+> Balance run 02 confirms it from the other side: `vassalage=0` in all 157 weekly
+> snapshots of a 13.1-year campaign, while tributary pacts reached 9.
+>
+> So the *mechanics* of vassalage are implemented and were verified in the live game, but
+> the *event* of one kingdom subordinating another has never happened outside a console
+> command. Calling 1.6 implemented is fair; calling vassalage playable was not. A feature
+> with no way to occur is not finished, and this one is the foundation the hegemony spec
+> ([design/04](design/04-hegemony.md) §2) sits on.
 
 Two things worth recording:
 
