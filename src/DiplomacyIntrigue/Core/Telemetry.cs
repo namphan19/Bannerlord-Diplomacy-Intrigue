@@ -132,6 +132,11 @@ namespace DiplomacyIntrigue.Core
                 line.Append(" trustRecords=").Append(state.Trust.Count);
                 line.Append(" fabrications=").Append(state.Fabrications.Count);
 
+                // Cumulative for the session: how often vanilla tried to start a war and
+                // was told no. The headline measure of whether taking initiation over
+                // actually took effect.
+                line.Append(" vanillaWarsRefused=").Append(TreatyEnforcement.VanillaWarProposalsRefused);
+
                 foreach (TreatyType type in Enum.GetValues(typeof(TreatyType)))
                 {
                     byType.TryGetValue(type, out var n);

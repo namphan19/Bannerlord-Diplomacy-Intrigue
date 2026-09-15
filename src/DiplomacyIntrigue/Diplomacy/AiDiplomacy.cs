@@ -42,10 +42,18 @@ namespace DiplomacyIntrigue.Diplomacy
         {
             if (kingdom == null || kingdom.IsEliminated || kingdom.RulingClan == null) return Move.None;
 
+            // Getting out of a losing war still comes first - nothing else matters while a
+            // realm is being ground down.
             if (TrySeekPeace(state, kingdom)) return Move.SoughtPeace;
-            if (TryOfferPact(state, kingdom)) return Move.OfferedPact;
-            if (TryDemandTribute(state, kingdom)) return Move.DemandedTribute;
+
+            // War before pacts, reversed from the original order. Vanilla no longer starts
+            // wars, so if this evaluation prefers a cheap non-aggression pact whenever one
+            // is available, the map signs itself into permanent peace - which is exactly
+            // what run 01 produced, with a standing web of truces, pacts and alliances and
+            // almost nothing happening. A kingdom with a good war available takes it.
             if (TryDeclareWar(state, kingdom)) return Move.DeclaredWar;
+            if (TryDemandTribute(state, kingdom)) return Move.DemandedTribute;
+            if (TryOfferPact(state, kingdom)) return Move.OfferedPact;
 
             return Move.None;
         }
@@ -374,7 +382,16 @@ namespace DiplomacyIntrigue.Diplomacy
             if (!CanAffordInfluence(kingdom, cost)) return false;
 
             ChangeClanInfluenceAction.Apply(kingdom.RulingClan, -cost);
-            DeclareWarAction.ApplyByKingdomDecision(kingdom, best);
+
+            TreatyEnforcement.BeginSanctionedWar();
+            try
+            {
+                DeclareWarAction.ApplyByKingdomDecision(kingdom, best);
+            }
+            finally
+            {
+                TreatyEnforcement.EndSanctionedWar();
+            }
 
             Log.Info("AI", kingdom.Name + " declared war on " + best.Name
                            + " (" + bestCasus + ", legitimacy " + legit.ToString("0.00")

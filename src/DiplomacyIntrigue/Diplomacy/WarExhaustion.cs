@@ -186,17 +186,43 @@ namespace DiplomacyIntrigue.Diplomacy
         /// </summary>
         public static void CarryOverToWeariness(ModState state, WarRecord war)
         {
+            // A war nobody chose leaves no political hangover. Obligation wars begin and
+            // end with the principal's, often within days, and in run 01 there were 92 of
+            // them - each quietly adding weariness for a war its participant never wanted.
+            if (war.IsObligationWar) return;
+
             var fraction = DiplomacyConstants.WearinessCarryOverFraction;
-            state.AddWeariness(war.Aggressor, war.AggressorExhaustion * fraction);
-            state.AddWeariness(war.Defender, war.DefenderExhaustion * fraction);
+            Carry(state, war.Aggressor, war.AggressorExhaustion * fraction);
+            Carry(state, war.Defender, war.DefenderExhaustion * fraction);
         }
 
+        /// <summary>
+        /// Adds weariness only if the war left a real mark. Below the minimum it is noise,
+        /// and noise that accumulates is what turned a temporary brake into a permanent one.
+        /// </summary>
+        private static void Carry(ModState state, Kingdom kingdom, float amount)
+        {
+            if (amount < DiplomacyConstants.WearinessCarryOverMinimum) return;
+            state.AddWeariness(kingdom, amount);
+        }
+
+        /// <summary>
+        /// Sheds a fraction of each pool rather than a fixed amount. See
+        /// <see cref="DiplomacyConstants.WearinessDecayFractionPerDay"/> for why: a flat
+        /// drain cannot bound a pool that keeps being topped up, and in a measured 28-year
+        /// run every kingdom ended pinned above 80.
+        /// </summary>
         private static void DecayWeariness(ModState state)
         {
             for (var i = state.Weariness.Count - 1; i >= 0; i--)
             {
                 var entry = state.Weariness[i];
-                entry.Decay(DiplomacyConstants.WearinessDecayPerDay);
+
+                var shed = entry.Value * DiplomacyConstants.WearinessDecayFractionPerDay;
+                if (shed < DiplomacyConstants.WearinessDecayMinimumPerDay)
+                    shed = DiplomacyConstants.WearinessDecayMinimumPerDay;
+
+                entry.Decay(shed);
                 if (entry.Value <= 0f) state.Weariness.RemoveAt(i);
             }
         }

@@ -65,6 +65,13 @@ namespace DiplomacyIntrigue.Diplomacy
         /// <summary>Daily fief loyalty penalty once past <see cref="ExhaustionAcceptBadTerms"/>.</summary>
         public const float LoyaltyPenaltyWhenBroken = -1.0f;
 
+        /// <summary>
+        /// Weariness below this is not worth carrying at all. A war that ended with barely
+        /// any exhaustion leaves no mark, which stops a flurry of short wars from adding up
+        /// to a permanent brake.
+        /// </summary>
+        public const float WearinessCarryOverMinimum = 10f;
+
         // ---- Weariness: what a war leaves behind ----------------------------
 
         /// <summary>
@@ -74,8 +81,23 @@ namespace DiplomacyIntrigue.Diplomacy
         /// </summary>
         public const float WearinessCarryOverFraction = 0.5f;
 
-        /// <summary>Per day, in peace. Roughly a year to shed a hard-fought war.</summary>
-        public const float WearinessDecayPerDay = 0.15f;
+        /// <summary>
+        /// Fraction of the remaining pool shed per day, in peace.
+        ///
+        /// Proportional, not flat, and that is the whole point. A flat drain cannot bound a
+        /// pool that keeps receiving injections: measured at the end of run 01, every
+        /// kingdom sat above 80 weariness because 247 wars had each added up to 30 while a
+        /// flat 0.15/day removed far less. Proportional decay is self-limiting - at 80 this
+        /// sheds 1.6 a day, at 20 only 0.4 - so a realm that fights constantly stays weary
+        /// without ever pinning at the ceiling.
+        /// </summary>
+        public const float WearinessDecayFractionPerDay = 0.02f;
+
+        /// <summary>
+        /// Floor on the daily shed, so a nearly-clear pool still finishes clearing rather
+        /// than trailing an asymptote forever.
+        /// </summary>
+        public const float WearinessDecayMinimumPerDay = 0.05f;
 
         public const float WearinessMax = 100f;
 
@@ -279,9 +301,17 @@ namespace DiplomacyIntrigue.Diplomacy
         public const float PactWeightAggression = 50f;
         public const float PactWeightRelation = 25f;
 
-        /// <summary>Mutual value needed before each treaty type is worth signing.</summary>
-        public const float AiNonAggressionThreshold = 20f;
-        public const float AiDefensivePactThreshold = 45f;
+        /// <summary>
+        /// Mutual value needed before each treaty type is worth signing.
+        ///
+        /// Raised after run 01. At 20, a non-aggression pact was worth signing with anyone a
+        /// kingdom merely did not dislike, and eight kingdoms pacted themselves into a
+        /// locked map: a standing web of 10 truces, 11 defensive pacts and 5 alliances, with
+        /// almost no wars left possible. A pact should mean the two realms actively want one,
+        /// not that they have no particular quarrel.
+        /// </summary>
+        public const float AiNonAggressionThreshold = 35f;
+        public const float AiDefensivePactThreshold = 55f;
         public const float AiAllianceThreshold = 70f;
 
         /// <summary>A standing territorial claim is most of what makes a neighbour a target.</summary>
@@ -299,11 +329,29 @@ namespace DiplomacyIntrigue.Diplomacy
         /// <summary>A realm this worn out does not start anything new.</summary>
         public const float AiMaxExhaustionToExpand = 40f;
 
-        /// <summary>Nor does one still carrying the last war.</summary>
-        public const float AiMaxWearinessToExpand = 30f;
+        /// <summary>
+        /// Nor does one still carrying the last war.
+        ///
+        /// Raised from 30 after run 01. A war ending at exhaustion 60 carries 30 weariness,
+        /// so the old cap blocked a kingdom immediately after *every* war it fought and only
+        /// released it eight months later. 45 keeps the brake for realms that were genuinely
+        /// hammered while letting an ordinary war be followed by another.
+        /// </summary>
+        public const float AiMaxWearinessToExpand = 45f;
 
-        /// <summary>Minimum strength advantage before war is even considered.</summary>
-        public const float AiWarStrengthRatio = 1.2f;
+        /// <summary>
+        /// Minimum strength advantage before war is even considered.
+        ///
+        /// Lowered from 1.2 after run 01: eight kingdoms sat within 6,000-7,100 strength of
+        /// one another, so a 20% advantage almost never existed and the gate alone ruled out
+        /// most of the map. Measuring the mature world afterwards showed even 1.05 was rarely
+        /// met - the best ratio Aserai could find against any neighbour was 1.08.
+        ///
+        /// At 1.0 a kingdom may attack an equal, and the valuation still discourages
+        /// attacking upward: the strength term goes negative below parity, so a weaker
+        /// aggressor needs a strong claim and a close border to make the case.
+        /// </summary>
+        public const float AiWarStrengthRatio = 1.0f;
 
         /// <summary>Strength advantage at which submission can be demanded instead of war.</summary>
         public const float AiTributeDemandStrengthRatio = 2.0f;
@@ -311,7 +359,13 @@ namespace DiplomacyIntrigue.Diplomacy
         public const float WarValuePerStrengthRatio = 40f;
         public const float WarValueLegitimacy = 30f;
         public const float WarValueProximity = 20f;
-        public const float WarValueWearinessPenalty = 0.5f;
+        /// <summary>
+        /// Weariness already gates expansion outright at AiMaxWearinessToExpand, so the
+        /// value penalty only needs to make a tired realm pickier, not paralysed. At 0.5 a
+        /// kingdom at the cap lost 22.5 points before anything else was weighed, and one
+        /// above the cap - which every kingdom was, by the end of run 01 - lost 40.
+        /// </summary>
+        public const float WarValueWearinessPenalty = 0.15f;
 
         /// <summary>
         /// Weight on land hunger - strength share against fief share. This is what keeps
@@ -323,19 +377,24 @@ namespace DiplomacyIntrigue.Diplomacy
         /// <summary>
         /// War value needed before a kingdom acts on it, before the aggressiveness setting.
         ///
-        /// UNVALIDATED. Set to 25 so that a clearly attractive war can clear it - a realm
-        /// 26% stronger than an adjacent neighbour scores 28.7 - but this number has not
-        /// been confirmed against play. It cannot be: see the note on tooling limits in
-        /// ROADMAP 1.7. Validating it needs a real ten-year campaign, which is the Phase 4
-        /// balance task.
+        /// Lowered to 18 now that this evaluation is the *only* source of wars between
+        /// kingdoms. At 25 it declared 0.9 wars a year across eight kingdoms while vanilla
+        /// produced 7.9; carrying that load alone needs a far lower bar. Players who want a
+        /// quieter or bloodier world have the AiAggressiveness multiplier in the settings.
         /// </summary>
-        public const float AiWarThreshold = 25f;
+        public const float AiWarThreshold = 18f;
 
         /// <summary>
         /// Influence to declare war, before the legitimacy multiplier. A war with no case
         /// costs double, and weariness adds to the bill on top.
+        ///
+        /// Lowered from 100 after run 01, where this was the binding constraint: a war cost
+        /// 180-240 influence while AI ruling clans held 170-230, so a kingdom could afford
+        /// roughly one war ever. Vanilla's wars were free by comparison, which is why it won
+        /// the initiative 9 to 1. At 40 the cost still bites - 72 for naked aggression
+        /// against 52 for a reclaimed holding - without being the whole treasury.
         /// </summary>
-        public const int WarDeclarationBaseInfluence = 100;
+        public const int WarDeclarationBaseInfluence = 40;
 
         public const int AiDefaultTributePerPeriod = 500;
 

@@ -9,9 +9,11 @@ using TaleWorlds.CampaignSystem.Actions;
 namespace DiplomacyIntrigue.Patches
 {
     /// <summary>
-    /// WHAT: a backstop that refuses a war a treaty forbids, for the two entry points the
-    /// ordinary AI uses. <see cref="DeclareWarDecision_IsAllowed_Patch"/> is the primary
-    /// gate; this catches anything that reaches the action without going through a vote.
+    /// WHAT: a backstop on the two war entry points the ordinary AI uses. Refuses a war a
+    /// treaty forbids, and - since war initiation now belongs to this mod - refuses an
+    /// unsanctioned kingdom-decision war outright.
+    /// <see cref="DeclareWarDecision_IsAllowed_Patch"/> is the primary gate; this catches
+    /// anything that reaches the action without going through a vote.
     ///
     /// WHY ONLY TWO OF THE EIGHT: the other ApplyBy* overloads represent engine situations
     /// where refusing would leave the campaign inconsistent - a rebellion that cannot
@@ -30,10 +32,39 @@ namespace DiplomacyIntrigue.Patches
     [HarmonyPatch(typeof(DeclareWarAction))]
     public static class DeclareWarAction_Veto_Patch
     {
+        /// <summary>
+        /// The path our own evaluation uses, and the one vanilla used. Since war initiation
+        /// is now ours, anything arriving here unsanctioned is either a vanilla route the
+        /// decision patch did not catch or a third-party mod - either way it is refused and
+        /// logged loudly rather than silently allowed.
+        /// </summary>
         [HarmonyPrefix]
         [HarmonyPatch(nameof(DeclareWarAction.ApplyByKingdomDecision))]
         public static bool ApplyByKingdomDecisionPrefix(IFaction faction1, IFaction faction2)
-            => Allow(faction1, faction2, "kingdom decision");
+        {
+            if (!Allow(faction1, faction2, "kingdom decision")) return false;
+
+            try
+            {
+                if (!SubModule.Healthy || !Settings.Current.EnableDiplomacy) return true;
+                if (TreatyEnforcement.DeclaringSanctionedWar) return true;
+                if (CoreBehavior.State == null) return true;
+
+                // A player-proposed decision reached a vote and passed; that is the player's
+                // war and it goes through.
+                if (faction1 is Kingdom proposer && proposer.Leader == Hero.MainHero) return true;
+
+                Log.Info("Enforce", "Refused an unsanctioned kingdom-decision war: "
+                                    + faction1?.Name + " -> " + faction2?.Name
+                                    + ". War initiation belongs to the mod's evaluation.");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Enforce", "Sanction check failed; allowing the war.", ex);
+                return true;
+            }
+        }
 
         [HarmonyPrefix]
         [HarmonyPatch(nameof(DeclareWarAction.ApplyByDefault))]

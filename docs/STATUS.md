@@ -59,9 +59,78 @@ Two constants were tuned from that data and **both need a second run to confirm*
 - `AncestralClaimMemoryYears` 20 → **12** (live claims had settled at 83–93, so everyone
   held a claim on everyone and `Conquest` was never needed)
 
-**Next balance run should check:** do chosen wars now last 100–200 days; does the peace
-table's concession ladder ever fire (it fired **zero** times in 28 years, so the whole
-demand-budget half of 1.5 is currently dead code); do live claims settle nearer 30–40.
+## War initiation taken over from vanilla
+
+Decided by the lead after run 01 showed our evaluation declaring 25 wars against vanilla's
+~220: everything the mod knows about a war — exhaustion, weariness, claims, trust, the
+influence a casus belli costs — had no say in whether wars happened. Casus belli was a label
+applied afterwards rather than a gate.
+
+**What changed**
+
+- `DeclareWarDecision.IsAllowed` now refuses **AI-proposed** wars between kingdoms outright.
+  A decision proposed by the **player's own clan** still goes through, so the Kingdom
+  screen's declare-war option is untouched. A treaty forbidding the war still stops
+  everyone, player included.
+- `DeclareWarAction.ApplyByKingdomDecision` refuses anything unsanctioned as a backstop.
+  Our evaluation wraps its own call in `TreatyEnforcement.BeginSanctionedWar()`.
+- Engine paths are deliberately untouched: rebellion, claim on throne, player hostility,
+  crime rating, kingdom creation, call to arms.
+
+**And a design fault it exposed: weariness saturated.**
+
+Measured in the mature world at the end of run 01, every kingdom sat at **69–96 weariness**
+against a cap of 45, which alone inflicted up to −40 on every war valuation. The arithmetic
+was never going to work: each war end injected up to +30 while decay removed a flat
+0.15/day, so across 247 wars the pool pinned itself near the ceiling. Weariness was meant to
+say "you just fought a long war, wait" and instead said "you have ever fought a war".
+
+Three fixes:
+
+| Fault | Fix |
+|---|---|
+| A flat drain cannot bound an accumulating pool | Decay is now **proportional**, 2% of the remaining pool per day. Self-limiting: 1.6/day at 80, 0.4/day at 20 |
+| Obligation wars injected weariness for wars nobody chose | They carry none at all |
+| Weariness both gated **and** penalised at −0.5/point | Gate kept; the value penalty drops to 0.15 |
+
+Verified immediately: weariness drained **91 → 8.1 over 120 days**, and the next four weeks
+of evaluation produced **3 war declarations** across eight kingdoms with values of 34–48
+against a threshold of 18, at 55–75 influence each. Under the old numbers the same world
+produced 64 consecutive "do nothing" decisions.
+
+**Aggression retuned to carry the whole load** — our evaluation is now the only source of
+wars between kingdoms, so it has to do what vanilla was doing:
+
+| Constant | Was | Now | Why |
+|---|---|---|---|
+| `WarDeclarationBaseInfluence` | 100 | **40** | A war cost 180–240 while ruling clans held 170–230 — about one war ever, against vanilla's free ones |
+| `AiWarThreshold` | 25 | **18** | Carrying 8× the load needs a far lower bar |
+| `AiWarStrengthRatio` | 1.2 | **1.0** | Eight kingdoms sit within 6,000–7,100 strength; the best ratio anyone could find was 1.08. Attacking an equal is now allowed, and the valuation still punishes attacking upward |
+| `AiMaxWearinessToExpand` | 30 | **45** | A war ending at exhaustion 60 carries 30, so the old cap blocked a kingdom after *every* war |
+| `AiNonAggressionThreshold` | 20 | **35** | At 20 a pact was worth signing with anyone not actively disliked, and eight kingdoms pacted themselves into a locked map |
+| `AiDefensivePactThreshold` | 45 | **55** | Same reason; alliance stays at 70 |
+
+Priority order also changed: **peace → war → tribute → pact**, where it used to put pacts
+before war. With vanilla no longer starting wars, an evaluation that prefers a cheap pact
+whenever one is available signs the map into permanent peace — which is exactly what run 01
+produced.
+
+## What balance run 02 has to answer
+
+1. **Did the takeover take effect?** `[SNAPSHOT]` now carries `vanillaWarsRefused=`,
+   cumulative for the session. It should climb steadily; if it stays at zero, the
+   decision-level patch is not being reached and the whole change is inert.
+2. **Is the war rate sane?** Four simulated weeks gave 3 declarations, which extrapolates
+   absurdly — the clock was frozen, so treaties never expired and the burst followed
+   weariness clearing all at once. The real rate is unknown. Run 01's ~8.8 wars/year is the
+   reference point.
+3. **Do chosen wars now last 100–200 days?** `ExhaustionCasualtyStrengthDivisor` 100 → 20.
+4. **Does the concession ladder ever fire?** `terms=` on `[WAR-ENDED]` answers it directly
+   now. It fired zero times in 28 years.
+5. **Do live claims settle nearer 30–40?** `AncestralClaimMemoryYears` 20 → 12.
+6. **Does anyone get eliminated?** Run 01 kept all 8 kingdoms. With more war and land
+   actually changing hands, that may no longer hold — and a kingdom being destroyed is fine,
+   the map collapsing to two is not.
 
 ## Choose what to do next
 

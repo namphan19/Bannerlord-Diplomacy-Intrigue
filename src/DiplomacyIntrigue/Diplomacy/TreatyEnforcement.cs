@@ -38,6 +38,31 @@ namespace DiplomacyIntrigue.Diplomacy
             TargetIsOurPatron = 3,
         }
 
+        /// <summary>
+        /// True while our own evaluation is deliberately declaring a war.
+        ///
+        /// War initiation belongs to this mod now: vanilla's proposals are refused, and the
+        /// action-level patch refuses anything that reaches it unsanctioned. Our AI calls
+        /// the same vanilla action, so it has to be able to say "this one is mine". Scope is
+        /// one synchronous call, wrapped in a finally.
+        /// </summary>
+        public static bool DeclaringSanctionedWar { get; private set; }
+
+        /// <summary>
+        /// How many vanilla war proposals have been refused this session, reported weekly.
+        ///
+        /// Session-scoped rather than saved: it answers a question about the mod's
+        /// behaviour, not about the campaign, and putting a diagnostic counter into the save
+        /// format would be the wrong trade.
+        /// </summary>
+        public static int VanillaWarProposalsRefused { get; private set; }
+
+        public static void NoteVanillaProposalRefused() => VanillaWarProposalsRefused++;
+
+        public static void BeginSanctionedWar() => DeclaringSanctionedWar = true;
+
+        public static void EndSanctionedWar() => DeclaringSanctionedWar = false;
+
         public static Block WhyWarBlocked(ModState state, Kingdom aggressor, Kingdom defender)
         {
             if (state == null || aggressor == null || defender == null || aggressor == defender)

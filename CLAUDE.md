@@ -32,6 +32,15 @@ tell the user to press Alt+~ and type something; give them the Ctrl+D menu or a 
 `CallToArmsBehavior` handling `WarDeclared` before `CoreBehavior` did, for the same event.
 Nothing currently depends on order. Do not add anything that does.
 
+**A changed module DLL blocks startup with a "Mod change detected" prompt.** It appears
+before anything loads — no mod log, no GABP bridge — so an automated deploy-and-test loop
+stalls with no error anywhere. It has to be dismissed by sending Enter to that window;
+there is a ready watcher pattern in the session scratchpad, and the symptom to recognise is
+`games_connect` timing out while the process is alive with that window title.
+
+**Launch through `games_start`, not by hand.** A manually launched game writes no bridge
+record GABS recognises, so the bridge never connects even though the game is running fine.
+
 **The game throttles hard when its window is unfocused** — roughly two in-game hours per real
 minute. A campaign day takes about an hour of real time in the background. This is why
 long-run verification cannot be done from a tool call.
