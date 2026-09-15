@@ -67,8 +67,31 @@ attribution; a fief transfer closes the old ledger row and opens a new one; a fi
 grants no claim (only `BySiege` does), which is the intended distinction between a grievance
 and a transaction; schema migrated v1 → v3 on a pre-existing save without data loss.
 
-Not yet verified live, and honestly so: daily exhaustion accrual and casualty attribution
-need campaign days and a real battle to pass through — see the balance-run task in Phase 4.
+**Verified in a live campaign** (1084 sandbox save, reloaded across restarts):
+
+| Check | Result |
+|---|---|
+| War declaration opens a record | `Vlandia vs Battania` with correct aggressor/defender |
+| Daily exhaustion accrual | 30 days → **2.40** on every war, exactly `30 × 0.08` |
+| Continued accrual | +5 days → **2.80**, matching `2.40 + 5 × 0.08` |
+| Peace closes the war | dropped from the ongoing list; record kept |
+| Weariness carry-over | `2.40 × 0.5` → **1.20** each side, logged on the peace |
+| Weariness decay | 5 days → **0.45**, matching `1.20 − 5 × 0.15` |
+| Fief ledger | transfer closed the old row and opened a new one |
+| Gift ≠ grievance | a fief given by kingdom decision granted **no** claim; only `BySiege` does |
+| Fabrication guards | refused cleanly when the player holds no kingdom |
+| Save round-trip, new schema | 4 war records, 2 weariness entries, 120 fief records, all values identical after a process restart |
+| Migration | a schema v1 save migrated to v3 with its war records intact |
+
+Accrual was driven through `diplomacy.tick_days`, which calls the same
+`WarExhaustion.DailyTick` the campaign's daily tick calls — a campaign day takes minutes of
+real time to pass, which makes rate verification and the Phase 4 balance pass impractical
+otherwise.
+
+Still unverified, and honestly so: **battle casualties** and **siege capture** feed
+exhaustion and war score through `MapEventEnded` and `OnSettlementOwnerChangedEvent`, and
+neither can be triggered from the console — they need a real battle and a real siege. Both
+are covered by the Phase 4 long-run task.
 
 **1.3 Treaty engine** — the six types in `Models/TreatyType` become live: non-aggression, truce, defensive pact, alliance, tributary pact, vassalage. Signing, expiry, renewal, breach. Breach carries a lasting trust penalty.
 

@@ -177,6 +177,46 @@ namespace DiplomacyIntrigue.Core
                   + (DiplomacyConstants.FabricateClaimExposureChance * 100f).ToString("0") + "%.";
         }
 
+        /// <summary>
+        /// Runs the daily upkeep N times, driving the same functions the daily tick calls -
+        /// not a simulation of them. Campaign time is untouched, so day counts and dates do
+        /// not move; only the per-day accrual does.
+        ///
+        /// This exists because a campaign day takes real minutes to pass, which makes
+        /// verifying accrual rates and running a balance pass impractical otherwise.
+        /// Usage: diplomacy.tick_days 30
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("tick_days", "diplomacy")]
+        public static string TickDays(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            if (args == null || args.Count == 0 || !int.TryParse(args[0], out var days))
+                return "Usage: diplomacy.tick_days <number of days>";
+            if (days < 1 || days > 400)
+                return "Pick between 1 and 400 days.";
+
+            for (var day = 0; day < days; day++)
+            {
+                WarExhaustion.DailyTick(state);
+                ClaimRegistry.ExpireStale(state);
+                ClaimRegistry.ResolveFabrications(state);
+            }
+
+            var sb = new StringBuilder();
+            sb.AppendLine("Ran " + days + " day(s) of upkeep. Campaign time unchanged.");
+            sb.AppendLine("Expected baseline exhaustion from elapsed time alone: "
+                          + (days * DiplomacyConstants.ExhaustionPerDayAtWar
+                             * Settings.Current.WarExhaustionRate).ToString("0.00"));
+            for (var i = 0; i < state.Wars.Count; i++)
+            {
+                var war = state.Wars[i];
+                if (war.IsOngoing) sb.AppendLine("  " + war);
+            }
+            return sb.ToString();
+        }
+
         private static int CountOngoing(ModState state)
         {
             var n = 0;
