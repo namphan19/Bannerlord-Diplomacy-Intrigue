@@ -181,6 +181,7 @@ This project has a standing expectation, set by the lead and by several correcti
 | [docs/design/01-diplomacy.md](docs/design/01-diplomacy.md) | Phase 1 spec, formulas, and the lead's decisions |
 | [docs/design/02-intrigue.md](docs/design/02-intrigue.md) | Phase 2 spec — grievances, loyalty, blocs, legitimacy, civil war |
 | [docs/design/03-espionage.md](docs/design/03-espionage.md) | Phase 3 spec — networks, missions, exposure as diplomacy |
+| [docs/design/04-hegemony.md](docs/design/04-hegemony.md) | Phase 2.8 spec — Emperor/Khagan, submission, defiance, collapse |
 | Game install | `E:\SteamLibrary\steamapps\common\Mount & Blade II Bannerlord` (auto-detected; override with `BANNERLORD_GAME_DIR`) |
 | Mod logs | `Documents\Mount and Blade II Bannerlord\DiplomacyIntrigue\Logs\` |
 | Mod reports | `Documents\Mount and Blade II Bannerlord\DiplomacyIntrigue\Reports\` |
