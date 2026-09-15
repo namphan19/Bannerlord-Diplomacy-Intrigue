@@ -160,7 +160,21 @@ broken.
 | DefensivePact | 3 years | 100 | Call to arms when the partner is **attacked** |
 | Alliance | 3 years | 180 | Call to arms in all wars; shared war goals; cannot ally a third party at war with your ally |
 | TributaryPact | 2 years | negotiated | Payer sends tribute each **7 days**; war blocked |
-| Vassalage | 5 years | negotiated | Tribute + the client cannot declare war or sign pacts without the patron |
+| Vassalage | 5 years | negotiated | Tribute + call to arms in **all** the patron's wars + the client cannot declare war or sign treaties with outsiders on its own account |
+
+### 3.0 Tributary versus vassal
+
+These two are the easiest pair to conflate, so the line between them is worth stating:
+
+- A **tributary** buys peace. It pays, and that is the whole of it: its army, its wars and
+  its treaties remain its own.
+- A **vassal** buys protection. It pays, **owes troops in every one of its patron's wars**,
+  and gives up the right to declare war or sign treaties with outsiders on its own account.
+
+Everything else stays with the vassal, and this matters for how the mod feels: its ruler,
+its succession, its fiefs, its policies, its clans' loyalties and its internal politics are
+untouched. A vassal kingdom is a subordinate state, not an annexed province - which is also
+why it can still resent, scheme and eventually defect.
 
 ### 3.1 Signing
 

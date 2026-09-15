@@ -63,8 +63,34 @@ namespace DiplomacyIntrigue.Models
         /// <summary>True once the clock has run out. The registry sweeps these daily.</summary>
         public bool HasRunOut => ExpiresOn != CampaignTime.Never && ExpiresOn <= CampaignTime.Now;
 
-        /// <summary>Alliances and defensive pacts drag signatories into partner wars.</summary>
-        public bool CarriesCallToArms => Type == TreatyType.Alliance || Type == TreatyType.DefensivePact;
+        /// <summary>
+        /// Treaties that drag a signatory into their partner's wars.
+        ///
+        /// Vassalage belongs here: military service is the substance of being a vassal, not
+        /// an extra. A client that owes tribute and cannot run its own diplomacy but owes no
+        /// troops is a tributary, which is what TributaryPact already is - so leaving
+        /// Vassalage out made the two types nearly identical.
+        ///
+        /// The obligation is not the same in each case, and callers must check
+        /// <see cref="CallToArmsIsDefensiveOnly"/>.
+        /// </summary>
+        public bool CarriesCallToArms =>
+            Type == TreatyType.Alliance ||
+            Type == TreatyType.DefensivePact ||
+            Type == TreatyType.Vassalage;
+
+        /// <summary>
+        /// True when the obligation only applies if the partner was attacked. A defensive
+        /// pact never drags you into someone else's war of conquest; an alliance and
+        /// vassalage both do.
+        /// </summary>
+        public bool CallToArmsIsDefensiveOnly => Type == TreatyType.DefensivePact;
+
+        /// <summary>
+        /// Treaty types where one party subordinates its foreign policy: it cannot declare
+        /// war or sign treaties with outsiders on its own account.
+        /// </summary>
+        public bool SubordinatesForeignPolicy => Type == TreatyType.Vassalage;
 
         /// <summary>Treaty types that make war between the parties illegal while active.</summary>
         public bool ForbidsWar =>
