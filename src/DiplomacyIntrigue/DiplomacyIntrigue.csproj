@@ -45,6 +45,12 @@
       <HintPath>$(GameBinFolder)\TaleWorlds.ObjectSystem.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <!-- Referenced for one diagnostic line only: the active module list at startup. A crash
+         report that does not say which mods were loaded is most of the way to useless. -->
+    <Reference Include="TaleWorlds.ModuleManager">
+      <HintPath>$(GameBinFolder)\TaleWorlds.ModuleManager.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="TaleWorlds.SaveSystem">
       <HintPath>$(GameBinFolder)\TaleWorlds.SaveSystem.dll</HintPath>
       <Private>false</Private>

@@ -31,6 +31,8 @@ namespace DiplomacyIntrigue
         /// <summary>False when startup failed; every system checks this before doing work.</summary>
         public static bool Healthy { get; private set; }
 
+        private static bool _crashLoggingInstalled;
+
         private Harmony _harmony;
         private bool _shownStartupNotice;
 
@@ -42,7 +44,8 @@ namespace DiplomacyIntrigue
             try
             {
                 Log.Initialize();
-                Log.Info("SubModule", "OnSubModuleLoad begin.");
+                InstallCrashLogging();
+                Log.Info("SubModule", "OnSubModuleLoad begin. " + DescribeHost());
 
                 _harmony = new Harmony(HarmonyId);
                 _harmony.PatchAll(Assembly.GetExecutingAssembly());
@@ -54,6 +57,71 @@ namespace DiplomacyIntrigue
             {
                 Healthy = false;
                 Log.Error("SubModule", "Startup failed - Diplomacy & Intrigue is disabled for this session.", ex);
+            }
+        }
+
+        /// <summary>
+        /// Writes any unhandled exception into our own log before the process dies.
+        ///
+        /// Added after a startup crash that left nothing readable behind: the game wrote an
+        /// 86 MB minidump and a Windows error record naming only a metadata token, while our
+        /// log simply stopped at "OnSubModuleLoad complete". Resolving that token by hand took
+        /// an hour to learn one method name and no stack. A crash that leaves no message is
+        /// the expensive kind, and this is the cheapest possible insurance against it.
+        ///
+        /// Deliberately logs *every* unhandled exception rather than filtering to our own
+        /// assembly: a stack trace that points somewhere else is still the fastest way to
+        /// establish that the fault is not ours.
+        /// </summary>
+        private static void InstallCrashLogging()
+        {
+            if (_crashLoggingInstalled) return;
+            _crashLoggingInstalled = true;
+
+            try
+            {
+                AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
+                {
+                    try
+                    {
+                        Log.Error("Crash",
+                            "Unhandled exception" + (e.IsTerminating ? " - the process is going down." : "."),
+                            e.ExceptionObject as Exception);
+                    }
+                    catch { /* already on the way out; nothing useful left to do */ }
+                };
+            }
+            catch (Exception ex)
+            {
+                Log.Error("SubModule", "Could not install the crash logger.", ex);
+            }
+        }
+
+        /// <summary>
+        /// Names the process hosting the game and the modules loaded with it.
+        ///
+        /// The official launcher does not spawn the game as a child - it calls the starter's
+        /// entry point in its own process - so a launcher-hosted session and a direct one are
+        /// indistinguishable in a log while behaving differently. Establishing which of the
+        /// two produced a crash cost several hours once; one line prevents it.
+        /// </summary>
+        private static string DescribeHost()
+        {
+            try
+            {
+                var host = System.Diagnostics.Process.GetCurrentProcess().ProcessName;
+                var modules = TaleWorlds.ModuleManager.ModuleHelper.GetActiveModules();
+                var names = new System.Text.StringBuilder();
+                foreach (var m in modules)
+                {
+                    if (names.Length > 0) names.Append(',');
+                    names.Append(m.Id);
+                }
+                return "host=" + host + " modules=[" + names + "]";
+            }
+            catch (Exception ex)
+            {
+                return "host=unknown (" + ex.GetType().Name + ")";
             }
         }
 

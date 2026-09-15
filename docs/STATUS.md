@@ -8,6 +8,40 @@ Last measured: balance run 01, 28 in-game years — see below.
 
 ---
 
+## OPEN: the game crashes when started from the official launcher
+
+Reported by the lead as "game không thể chạy được crash ngay khi mở", with the engine's
+"we need to collect necessary files" dialog. **Not root-caused yet.** What is established:
+
+| Launch path | Result on 2026-09-15 |
+|---|---|
+| Official launcher → Play | **5 of 5 died** before the main menu, 14-21s in |
+| `Bannerlord.exe` directly, launcher's own mod list | reached the main menu |
+| `Bannerlord.BLSE.Standalone.exe` (GABS, `scripts/play.ps1`) | reached the menu, loaded `di_phase1_full`, 0 errors |
+
+Evidence for the fault itself, from the Windows `CLR20r3` record (P4/P7/P8 resolved with
+Cecil): an unhandled managed exception in `TaleWorlds.MountAndBlade`, method
+`ActionIndexCache..ctor` → `MBAnimation.GetActionCodeWithName`, IL offset 8 — the instruction
+that reads the static `MBAPI.IMBAnimation`. The only caller of that method in the whole game
+is `ActionIndexCache..ctor`, so something constructed an action-index cache while the native
+animation API was still null. Nothing in this mod touches animations, and it ships no XML and
+no assets.
+
+Every failing run's mod log stops at `OnSubModuleLoad complete` with no `Notify` line, so the
+module loaded and the game died before the main-menu screen.
+
+**Not yet answered: is this mod implicated at all?** The decisive test needs one launcher run
+with the mod unticked, which needs a human to press Play. Until then the honest statement is
+that the launcher-hosted path is broken on this machine and the two direct paths are not.
+
+Two things were added because of this, independent of the cause:
+
+- `SubModule.InstallCrashLogging` — an `AppDomain.UnhandledException` handler that writes the
+  exception and its stack into the mod log. This crash produced an 86 MB minidump and a
+  method token and nothing else; the next one will produce a stack trace.
+- `OnSubModuleLoad` logs `host=<process> modules=[…]`, because the official launcher runs the
+  game inside its own process and the logs could not tell the two paths apart.
+
 ## Where the work stands
 
 | Phase | State |
