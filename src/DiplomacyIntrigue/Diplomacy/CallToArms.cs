@@ -250,7 +250,10 @@ namespace DiplomacyIntrigue.Diplomacy
                     var follower = toRelease[i];
                     if (!follower.IsAtWarWith(enemy)) continue;
 
-                    Telemetry.NotePeaceCause(Telemetry.PeaceCause.FollowerRelease,
+                    // This peace happens *inside* the principal's, because we are handling
+                    // the engine's MakePeace event for it. Restoring rather than clearing is
+                    // what keeps the outer war from being reported as ended by nobody.
+                    var previousCause = Telemetry.NotePeaceCause(Telemetry.PeaceCause.FollowerRelease,
                         "released_by_" + caller.Name.ToString().Replace(' ', '_'));
                     try
                     {
@@ -258,7 +261,7 @@ namespace DiplomacyIntrigue.Diplomacy
                     }
                     finally
                     {
-                        Telemetry.ClearPeaceCause();
+                        Telemetry.RestorePeaceCause(previousCause);
                     }
 
                     Log.Info("CallToArms", follower.Name + " leaves the war against " + enemy.Name

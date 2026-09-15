@@ -1,0 +1,84 @@
+==================================================================
+RUN SIZE
+==================================================================
+  weekly snapshots : 74   (~6.2 in-game years)
+  wars ended       : 10
+  first snapshot   : Autumn 16, 1125
+  last snapshot    : Winter 2, 1131
+
+==================================================================
+WAR DURATION  (acceptance: mean under 252 days = 3 years)
+==================================================================
+  CHOSEN wars       n=   7  mean=  60.3d  median= 60.0d  max=  77d  (0.72 years)
+  OBLIGATION wars   n=   3  mean=  60.0d  median= 60.0d  max=  75d  (0.71 years)
+
+  who ended them:
+    Dormant                 4    40.0%
+    PeaceTable              2    20.0%
+    FollowerRelease         2    20.0%
+    External                2    20.0%
+
+  terms conceded:
+    white_peace                     5
+    unknown                         2
+    cede_Mecalovea_Castle,_release_prisoners    1
+    released_by_Battania            1
+    released_by_Khuzait             1
+
+  count   : 10
+  mean    : 60.2 days  (0.72 years)
+  median  : 60.0 days
+  min/max : 42 / 77 days
+  VERDICT : PASS
+
+  distribution:
+       1-3mo    10  ##################################################
+
+==================================================================
+CASUS BELLI of ended wars
+==================================================================
+  Conquest                    3    30.0%
+  ReclaimAncestralLand        3    30.0%
+  DefendAlly                  3    30.0%
+  BrokenTreaty                1    10.0%
+
+  called in by an ally (vs chose the war):
+    none                        7
+    Battania                    1
+    Aserai                      1
+    Khuzait                     1
+
+==================================================================
+OUTCOMES
+==================================================================
+  wars with any fief change : 5 / 10  (50.0%)
+  total fiefs changing hands: 17
+  final war score |mean|    : 30.1
+  white-ish (|score| < 5)   : 5 / 10
+
+==================================================================
+WORLD STATE  (sampled every ~26 weeks)
+==================================================================
+  date                   kingdoms      atWar       wars  avgExhaus     claims  nonAggres      truce  defensive   alliance  tributary  vassalage
+  Autumn 16, 1125               8          4          2        0.5        101          0         10          5         10          8          0
+  Winter 9, 1127                8          6          4       15.3         88          1          5          5          3         11          0
+  Spring 2, 1130                8          8          5       29.8         75          4          0          1          1          2          0
+  FINAL                         8          8          5       43.6         59          3          0          1          1          2          0
+
+==================================================================
+DID ALLIANCES EVER FORM?
+==================================================================
+  alliance             max= 10  weeks with any=  74 / 74
+  defensivePact        max=  7  weeks with any=  74 / 74
+  nonAggressionPact    max=  4  weeks with any=  52 / 74
+  tributaryPact        max= 11  weeks with any=  74 / 74
+  vassalage            max=  0  weeks with any=   0 / 74
+
+==================================================================
+PERMANENT TOTAL WAR CHECK
+==================================================================
+  kingdoms alive: first 8, last 8, min 8
+  share of kingdoms at war: mean 94.6%  min 50.0%  max 100.0%
+  weeks with EVERY kingdom at war : 54 / 74  (73.0%)
+  weeks with NOBODY at war        : 0 / 74  (0.0%)
+  average exhaustion across run   : 22.4  (max 43.6)

@@ -42,10 +42,24 @@ namespace DiplomacyIntrigue.Diplomacy
         /// constants, and the dependency rule is that Models may not reach up into the
         /// systems layer.
         /// </summary>
+        /// <remarks>
+        /// Two readings of "not being fought", because run 03 showed one was not enough. An
+        /// absolute cap catches the war that never started; a rate catches the war that has
+        /// been technically ongoing for sixteen months at a casualty a day. The second is the
+        /// one that matters more: those wars cannot end, and a kingdom in one cannot sign
+        /// anything, so they quietly turn the map into permanent war.
+        /// </remarks>
         public static bool IsDormant(WarRecord war)
-            => war != null
-               && war.DaysElapsed >= DiplomacyConstants.DormantWarDays
-               && war.TotalCasualties <= DiplomacyConstants.DormantWarCasualties;
+        {
+            if (war == null) return false;
+
+            var days = war.DaysElapsed;
+            if (days < DiplomacyConstants.DormantWarDays) return false;
+
+            if (war.TotalCasualties <= DiplomacyConstants.DormantWarCasualties) return true;
+
+            return war.TotalCasualties / days < DiplomacyConstants.DormantWarCasualtiesPerDay;
+        }
 
         /// <summary>What a given package costs against the winner's war-score budget.</summary>
         public static float CostOf(PeaceTerms terms)
@@ -238,14 +252,14 @@ namespace DiplomacyIntrigue.Diplomacy
             // Peace first: it closes the war record, carries exhaustion into weariness, and
             // records the truce. The terms are then executed between kingdoms at peace,
             // which is what a ceded fief actually is.
-            Telemetry.NotePeaceCause(cause, summary);
+            var previousCause = Telemetry.NotePeaceCause(cause, summary);
             try
             {
                 MakePeaceAction.Apply(winner, loser);
             }
             finally
             {
-                Telemetry.ClearPeaceCause();
+                Telemetry.RestorePeaceCause(previousCause);
             }
 
             CedeFiefs(state, terms);

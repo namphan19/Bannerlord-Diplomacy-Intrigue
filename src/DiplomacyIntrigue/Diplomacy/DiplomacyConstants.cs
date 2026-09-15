@@ -218,6 +218,25 @@ namespace DiplomacyIntrigue.Diplomacy
         public const int DormantWarCasualties = 300;
 
         /// <summary>
+        /// Casualties per day, both sides, below which a war is not being fought however long
+        /// it has been going and however much has added up.
+        ///
+        /// Measured in run 03, and the reason this exists. Judging dormancy on a *total*
+        /// casualty count has a blind spot: the wars that ended came in at 42-77 days, but the
+        /// five still running at the end averaged **407 days, the longest 485**, with average
+        /// exhaustion 43.6. At 485 days, 38.8 of that 43.6 is the 0.08/day that elapsed time
+        /// alone contributes - so roughly five points in sixteen months came from fighting.
+        /// Those wars were dead on their feet, but they had crept past 300 casualties long
+        /// before, so nothing could close them and nobody in them could sign a treaty.
+        ///
+        /// The four wars the absolute rule did catch ran at 1.9, 5.8, 3.0 and 1.9 casualties
+        /// per day, and the long-running ones at roughly 1. **Provisional**: 3/day sits inside
+        /// that spread rather than cleanly between the two groups, so run 04 should be read
+        /// with this number in mind.
+        /// </summary>
+        public const float DormantWarCasualtiesPerDay = 3f;
+
+        /// <summary>
         /// The least a winning side will settle for, as a fraction of what the war earned.
         ///
         /// Exists because the concession ladder was unreachable: the tired side offered a

@@ -179,25 +179,28 @@ vanillaCallToWarRefused=74` — every override reached and refusing. Details and
 per-check results: [ROADMAP 1.11](ROADMAP.md) and
 [design/05 §3.1](design/05-vanilla-override.md).
 
-**2. Run 03 — the next thing that needs the lead.** Nothing further can be tuned honestly
-without it, because every war-length number we have was measured in a world where vanilla
-undid our wars in six days.
+**2. Run 03 — done, analysed, archived.** [docs/balance/run-03.md](balance/run-03.md).
+6.2 in-game years, zero errors. The headline: **wars ending outside our systems went from
+86.8% to 0%**, vanilla was refused 3,141 peaces / 823 alliances / 804 trade agreements, the
+median ended war went from 6 days to 60, and the concession ladder finally fired - a castle
+ceded and two tributary pacts imposed, where run 02 produced 13 white peaces out of 13.
 
-What to read first, in order:
+Two problems it exposed, both fixed and deployed the same evening:
 
-| Question | Where | Run 02 reference |
-|---|---|---|
-| Did the overrides hold all campaign? | `vanilla*Refused=` climbing steadily | new counters |
-| Did wars stop ending outside our table? | `endedBy=External` share | **86.8 %** → should be near zero |
-| Do wars last? | median war length | **6 days** → 90–110 expected |
-| Does the ladder fire? | `terms=` on `[WAR-ENDED]` | **white_peace 13/13** → should show castles, tribute, towns |
-| Is the war rate sane now? | chosen wars per year | **11.3/year** → the cap should cut it hard |
-| Did anything internal break? | policy votes, clan defections, king selection | should be unchanged |
+- **Nested peaces lost their cause**, so two wars our own peace table settled with real terms
+  were filed as `endedBy=External`. The instrument was lying about the one number the whole
+  takeover was being measured against. `NotePeaceCause` now returns the previous value and
+  `RestorePeaceCause` puts it back.
+- **Low-intensity wars could not end.** The five wars still running at the end averaged **407
+  days, the longest 485**, at roughly one casualty a day - past the absolute dormancy cap
+  years earlier, so nothing could close them, and no kingdom in a war can sign a treaty. That
+  is what drove the map to 73% of weeks with every kingdom at war and the alliance web from 10
+  to 1. Dormancy now also reads casualties **per day** (under 3/day after 42 days);
+  **provisional**, see run-03.md.
 
-Two constants are proposed but **not applied**, deliberately, because run 03 is the
-measurement that should decide them: `ExhaustionSeekPeace` 60 → 70 (would put a balanced war
-at ~107 days rather than ~92), and the pact thresholds `AiAllianceThreshold` 70 → 82 /
-`AiDefensivePactThreshold` 55 → 65.
+**2b. Run 04** answers whether those two fixes land: do the 400-day wars disappear, does the
+world come off total war, do treaties return, and is `Dormant` now too eager? Full list in
+run-03.md.
 
 **3. Submission and hegemony (1.9, 1.10).** Spec and the selection from the lead's source
 document: [design/04](design/04-hegemony.md). A hegemon is **derived** — any kingdom holding

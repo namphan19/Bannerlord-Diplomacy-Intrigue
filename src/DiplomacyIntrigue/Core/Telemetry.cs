@@ -56,16 +56,46 @@ namespace DiplomacyIntrigue.Core
         /// <summary>Describes what was conceded, or null for a peace we did not broker.</summary>
         public static string PendingPeaceTerms { get; private set; }
 
-        public static void NotePeaceCause(PeaceCause cause, string terms = null)
+        /// <summary>
+        /// What the pending cause was before this one, to be handed back to
+        /// <see cref="RestorePeaceCause"/>.
+        /// </summary>
+        public struct PeaceCauseToken
         {
-            PendingPeaceCause = cause;
-            PendingPeaceTerms = terms;
+            internal PeaceCause Cause;
+            internal string Terms;
         }
 
-        public static void ClearPeaceCause()
+        /// <summary>
+        /// Declares why the peace about to be made is happening, and returns the previous
+        /// value so the caller can put it back.
+        ///
+        /// **Why save and restore rather than clear.** Peaces nest. Our war ledger handles the
+        /// engine's MakePeace event, and one of the things it does there is release allies
+        /// who were only in the war because they were called into it - which makes a second,
+        /// inner MakePeaceAction call while the outer one is still on the stack. When the
+        /// inner call finished by *clearing* the cause, the outer war was then reported as
+        /// `endedBy=External`.
+        ///
+        /// Run 03 shows exactly what that cost: two wars settled by our own peace table with
+        /// real terms - `Battania / Northern Empire, tributary pact at 500` and
+        /// `Khuzait / Sturgia, tributary pact at 500` - were both filed as ended by nobody,
+        /// which is the one conclusion the whole takeover was being measured against. The
+        /// mechanism worked and the instrument lied about it.
+        /// </summary>
+        public static PeaceCauseToken NotePeaceCause(PeaceCause cause, string terms = null)
         {
-            PendingPeaceCause = PeaceCause.External;
-            PendingPeaceTerms = null;
+            var previous = new PeaceCauseToken { Cause = PendingPeaceCause, Terms = PendingPeaceTerms };
+            PendingPeaceCause = cause;
+            PendingPeaceTerms = terms;
+            return previous;
+        }
+
+        /// <summary>Puts back whatever was pending before, including nothing.</summary>
+        public static void RestorePeaceCause(PeaceCauseToken previous)
+        {
+            PendingPeaceCause = previous.Cause;
+            PendingPeaceTerms = previous.Terms;
         }
 
         /// <summary>
