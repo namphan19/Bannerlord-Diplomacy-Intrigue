@@ -166,26 +166,40 @@ produced.
    actually changing hands, that may no longer hold — and a kingdom being destroyed is fine,
    the map collapsing to two is not.
 
-## Choose what to do next
+## What to do next — decided by the lead, in this order
 
-**A. A second balance run.** Confirms the two tuned constants and shows whether longer wars
-bring the peace table's concession ladder to life. Cheapest high-value step: the lead just
-plays, the mod reports.
+Run 02 (13.1 in-game years, analysed) and the lead's directives of 2026-09-15 settled the
+order. It is a chain, not a menu: each step is what makes the next one measurable.
 
-**B. Start Phase 2 — court intrigue.** Fully specced in `docs/design/02-intrigue.md` and
-independent of the tuning. Implementation order is 2.1 grievances → 2.2 loyalty → 2.3 blocs
-and voting → 2.4 legitimacy → 2.5 succession → 2.6 civil war → 2.7 UI. Phase 1 already
-leaves hooks: `ExhaustionCourtPressure` (40) is where doves are meant to gain support, and
-`CallToArms.WouldAnswer` has an explicit note where vassal defiance should read grievances.
+**1. Take the rest of vanilla diplomacy (1.11).** Inventory and levers in
+[design/05](design/05-vanilla-override.md). Three pieces of work:
 
-**C. Hegemony (emperor / khagan).** The lead proposed a supra-kingdom tier — one title over
-several vassalage treaties, with election and defection cascades. Assessed as feasible and
-cheap, because `TreatyType.Vassalage` already does the hard part. **Agreed to sit at 2.8,
-after grievances and legitimacy exist**, because without those counter-pressures a hegemony
-is a one-way ratchet that decides the map. Not yet specced; `docs/design/04-hegemony.md`
-would be the place, and four questions are still open — how the title is founded, whether
-membership gives anything or is pure coercion, how to cap call-to-arms cascades across it,
-and what happens when the overlord is destroyed.
+- `GameModel` overrides for peace, alliances, trade agreements and vanilla call-to-war —
+  `KingdomDecisionPermissionModel`, `DiplomacyModel`, `AllianceModel`, `TradeAgreementModel`.
+  No new Harmony patch; the existing two stay because the permission model has no proposer
+  argument.
+- **The winner may refuse a white peace.** `AiDiplomacy.TrySeekPeace` offers white peace
+  first and `PeaceTable.WouldAccept` only ever asks `terms.Loser` — so the losing side grants
+  itself a free white peace and the concession ladder is unreachable. `terms=white_peace`
+  13/13 in run 02.
+- **One chosen war per kingdom at a time.** 148 chosen wars in 13.1 years is 1.4 per kingdom
+  per year; at the 92-day length the exhaustion model predicts, that is 154 % of the calendar.
+
+**2. Run 03.** Acceptance in [design/05 §4](design/05-vanilla-override.md): `endedBy=External`
+from 86.8 % to near zero, median war length from 6 days toward 90–110, and `terms=` finally
+showing something other than white peace.
+
+**3. Submission and hegemony (1.9, 1.10).** Spec and the selection from the lead's source
+document: [design/04](design/04-hegemony.md). A hegemon is **derived** — any kingdom holding
+one active vassalage — so several coexist and no title machinery is needed. Gated on step 1
+for a concrete reason: submission costs a war score of 90, and no war currently lives long
+enough to earn one.
+
+**4. Phase 2 — court intrigue.** Specced in `docs/design/02-intrigue.md`; 2.1 grievances →
+2.2 loyalty → 2.3 blocs → 2.4 legitimacy → 2.5 succession → 2.6 civil war → 2.7 UI. Phase 1
+leaves hooks: `ExhaustionCourtPressure` (40) for doves, and a note in
+`CallToArms.WouldAnswer` where vassal defiance should read grievances. Titles (Emperor,
+Khagan) sit after 2.4 as flavour over a measured mechanism.
 
 ---
 

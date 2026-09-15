@@ -1,231 +1,334 @@
-# Design 04 — Hegemony: the Emperor and the Khagan
+# Design 04 — Hegemon and vassal
 
-Phase 2.8. Specced, no code. This document records the shape and the decisions still open;
-nothing here is built.
+**Phase 1.9 and 1.10.** Moved into Phase 1 by the project lead (2026-09-15): the mechanism by
+which one kingdom rises over others must work by the time Phase 1 closes.
+
+Three directives from the lead shape everything below:
+
+1. **No titles for now.** No Emperor, no Khagan, no proclamation ceremony. Those are flavour
+   and they wait.
+2. **A hegemon is any kingdom with at least one other kingdom submitting to it.** Nothing
+   more is required.
+3. **Several kingdoms may be hegemons at the same time.**
+
+Directive 2 is the one that simplifies the design most, so it is worth stating what it means:
+**hegemony is not a status a kingdom claims, it is a fact derived from its treaties.** There
+is no title record, no founding requirement, no legitimacy gate, no proclamation. A kingdom
+with one vassal is a small hegemon; a kingdom with four is a large one; the moment its last
+vassal secedes it stops being one, without any event having to fire.
+
+Source material: the lead's `Hegemon–Vassal System.md`, a conceptual framework of 19 sections.
+§1 below records what was taken from it and what was not.
 
 ---
 
-## 0. What this is for
+## 1. Selection from the source document
 
-The project lead's idea: one faction declares itself greater than all the others — an
-**Emperor** over kingdoms that have submitted, or a **Khagan** over khans who have bent the
-knee in a nomadic empire.
+### 1.1 Taken, because Phase 1 machinery already carries it
 
-Phase 1 already built the bottom of that ladder. A tributary buys peace with money; a vassal
-buys protection with money, troops and its foreign policy. Hegemony is the top rung: the
-same subordination, but declared as a **title** rather than a private arrangement, held
-against the whole map, and carrying the political weight that comes with being called Emperor.
-
-What it is *not*: an annexation. Members keep their ruler, their succession, their fiefs,
-their policies and their court. That is what leaves them able to resent, scheme, and revolt.
-
-## 1. What the engine allows, and what hegemony therefore has to be
-
-Verified against v1.4.8, not inferred:
-
-- The faction model has exactly two tiers, `Clan` → `Kingdom`. `IFaction` exposes `IsClan`,
-  `IsKingdomFaction`, `IsMinorFaction` and `MapFaction`. **There is no parent-of-kingdom
-  slot**, and war/peace is a flat `StanceLink` between factions.
-- So a hegemony cannot be an engine faction, and no amount of Harmony will make it one
-  without rewriting the faction graph — which would break sieges, armies, diplomacy screens
-  and every save.
-
-Hegemony is therefore **mod state**: a title record held by one kingdom, plus a set of
-subordination treaties that all point at the same overlord. The campaign map keeps showing
-eight kingdoms. The hegemony is a political fact layered over them.
-
-This is a constraint worth being happy about. It means members remain real polities with
-their own internal politics, which is the whole reason the system can be interesting.
-
-## 2. Prerequisite: vassalage has never actually happened
-
-Measured in balance run 02 (13.1 in-game years, 157 weekly snapshots): **`vassalage=0` in
-every single week.** Tributary pacts reached 9, alliances 10, and vassalage never once formed.
-
-Reading the code explains it: nothing but `DebugCommands` can create a `Vassalage` treaty.
-`PeaceTerms` tops out at `ImposeTributaryPact` and has no vassalage field; `AiDiplomacy`
-offers non-aggression pacts, defensive pacts, alliances and tribute demands, and never
-proposes subordination.
-
-So the machinery hegemony is built on — `Treaty.SubordinateParty`, `CarriesCallToArms`,
-`SubordinatesForeignPolicy`, the call-to-arms path — has never run in a real campaign. It
-compiles and it is unit-shaped, but it is unexercised.
-
-**Consequence for ordering:** vassalage needs a route into the game and one measured run
-showing it forms, is honoured, and is occasionally broken, *before* hegemony is built on top
-of it. The cheapest route is the one already designed: a rung above tributary on the peace
-concession ladder. At `PeaceCostTributaryPact = 60` a tributary pact already needs a war
-score of 60; vassalage belongs around **90**, i.e. only after a war that was won decisively.
-
-## 3. The title
-
-Two flavours, one machinery:
-
-| | Emperor | Khagan |
-|---|---|---|
-| Who may claim it | imperial cultures | steppe cultures |
-| Members called | subject kingdoms | submitted khans |
-| Flavour | a restored empire, legitimacy by descent | a confederation held by the strongest horse |
-
-The difference is founding requirements and text, not two code paths. If a steppe kingdom
-conquers its way into imperial lands it claims a Khaganate over them anyway, and the map
-reads the way it should.
-
-### 3.1 Founding
-
-Proposed requirements, all of them checkable from existing state:
-
-| Requirement | Value | Why |
-|---|---|---|
-| Existing vassals | **≥ 2** | a title with no subjects is a boast, not a hegemony |
-| Strength share of Calradia | **≥ 25 %** | in run 02 eight kingdoms sat within 6,000–7,100 strength; 25 % means someone actually pulled ahead |
-| Crown legitimacy (Phase 2.4) | **≥ 70** | a shaky throne cannot claim to outrank other thrones |
-| Influence | **one-time, large** — proposed 300 | the ruling clan spends real political capital |
-| Cooldown after losing a title | **3 years** | stops a collapsing hegemon re-proclaiming every spring |
-
-Proclaiming is public and costly by design: every kingdom that is **not** a member takes
-**−15 trust** toward the new hegemon, and any kingdom of the same culture family gains a
-standing grievance. Declaring yourself Emperor is supposed to make enemies.
-
-## 4. How a kingdom becomes a member
-
-Two routes, one treaty:
-
-- **Coerced.** Lose a war to the hegemon badly enough and submission is the peace term
-  (§2: score ≈ 90). The member starts with low trust and an immediate grievance.
-- **Voluntary.** A weak kingdom under threat submits for protection. AI valuation, in the
-  same shape as the existing treaty valuation so the number the player sees is the number
-  the AI used:
-
-```
-value =  70 * (threatFromOthers / ownStrength)     // who is about to eat me
-       + 40 * hegemonProtectionReach(me)           // can they actually help
-       + 30 * weariness(me) / 100                  // I cannot fight another war
-       - 60 * (1 - trust(hegemon) / 100)           // I do not trust them
-       - 50 * ownLegitimacy / 100                  // a proud throne does not kneel
-```
-
-Voluntary members start with neutral trust and no grievance, and that difference should
-matter for how long they stay.
-
-## 5. What membership costs and what it buys
-
-Obligations — all of them already have Phase 1 machinery:
-
-| Obligation | Mechanism |
+| Source | What we use it for |
 |---|---|
-| Troops in the hegemon's wars, offensive included | `CarriesCallToArms`, as vassalage already does |
-| No treaties with outsiders | `SubordinatesForeignPolicy` |
-| Tribute | existing tribute fields |
-| The hegemon's **ruler** may summon parties | the lead's earlier proposal; see §8 |
+| §2.3 **Suzerainty** — control of foreign policy with internal autonomy retained | This is exactly our `Vassalage` treaty: `SubordinatesForeignPolicy` plus `CarriesCallToArms`, with the vassal keeping its ruler, fiefs, laws and court. The source's central concept is already built |
+| §2.4 **Indirect rule** | Why hegemony is deliberately *not* annexation. Vanilla conquest already annexes; this system is the alternative to it |
+| §5 **Mutual but unequal exchange** | The hegemon owes protection, the vassal owes service and tribute. Both directions are enforced (§4.3) |
+| §6 **Degrees of dependence** | Collapsed from seven types to the two rungs we have — tributary (pays, keeps everything else) and vassal (pays, fights, gives up foreign policy) — plus the hegemon sphere on top |
+| §7 **Multiple hegemons**, §7.4 **hegemonic competition** | Directive 3. Rivals poach each other's vassals (§5.3) rather than only fighting each other |
+| §8 **Why vassals obey** — fear, self-interest, dependency, lack of alternatives | The four terms of the Hold formula (§4.1). Legitimacy and personal loyalty are Phase 2 inputs and enter later |
+| §9 **Why vassals rebel**, §9.2 the *types* of rebellion | Three of the seven types selected: passive resistance, diplomatic defiance, secession (§6) |
+| §10 **Can a vassal become a hegemon** | The centre of what the lead asked for. §7 is the whole loop |
+| §10.4 **The strong vassal problem** | Falls out of the Hold formula for free: a vassal stronger than its patron has low Hold and there is nothing the patron can do about it except win wars |
+| §15 Scenarios A, B, C, D, G | Used as the acceptance tests (§10). A design that cannot produce the source document's own scenarios is not finished |
+| §16 **Stability model** | Simplified into one number per link, `Hold` (§4.1). The source's own equation, restricted to quantities the mod already tracks |
 
-What it buys is **open question 2**. Three candidates:
+### 1.2 Not taken, and why
 
-- **(a) Nothing. Pure coercion.** Simplest. Also means every member always wants out, and the
-  system collapses to a permanent rebellion timer.
-- **(b) Protection and a share.** The hegemon is obliged to answer when a member is attacked
-  (a call to arms that runs *upward*), and members receive a share of tribute collected from
-  outside the hegemony.
-- **(c) A seat.** Members vote on hegemony-wide war, which couples straight into the Phase 2
-  bloc and voting machinery.
+| Source | Why not |
+|---|---|
+| §3 **Multi-layered hierarchy** — a hegemon subordinate to a higher sovereign, vassals of vassals | The engine has two faction tiers and no parent-of-kingdom slot, and `TreatyRegistry` already refuses double subordination. A chain would need a hierarchy the game cannot draw, and would make call-to-arms cascades unbounded. Hegemony stays **flat**: one patron per vassal |
+| §4.3 **Political legitimacy** as a foundation of authority | Real, and it is Phase 2.4. Hegemony must work before it, so Hold uses trust and strength now and gains a legitimacy term later |
+| §4.5 **Strategic geography** | No terrain model to read. Approximated by the border-adjacency measure the war valuation already uses |
+| §13 **Succession**, dynastic marriage, hostages | Phase 2.5. Marriage and hostages are not modelled at all |
+| §12.2 **Divide and rule** | Needs court factions inside the vassal to play against each other; Phase 2.3 |
+| §4.2 economic subsidies, trade privileges, market access | Our economic channel is tribute, and vanilla's trade agreements are being switched off ([design 05](05-vanilla-override.md)). A subsidy system with no economy behind it would be a number with no meaning |
+| §17 **Evolution into empire** (annexation, replacing local rulers) | Vanilla conquest is the annexation path and it works. Hegemony is the branch where you *don't* |
+| Religious and cultural authority (§4.3, §9) | Bannerlord has no religion. Culture survives as a small modifier in Hold |
+| §11 the control/autonomy dial as a player-set policy | Tempting, but it needs a UI and a per-vassal policy record. Phase 1 gives the hegemon two concrete levers instead — how often it calls, how much tribute it demands — and lets Hold do the rest |
 
-**Recommendation: (b).** It gives a member a reason to stay that is not merely fear, which is
-what makes the decision to revolt interesting rather than automatic. (c) is attractive but it
-should wait until 2.3 blocs and voting exist and are measured.
+---
 
-## 6. Call-to-arms cascades
+## 2. What exists today, and the one thing that does not
 
-This is the mechanical danger, and run 02 gives a number for it: with only alliances and
-defensive pacts on the map, **`DefendAlly` was 27 % of all wars** (45 of 167). A hegemony of
-five members owing offensive service turns one hegemon war into six.
+Everything the vassal side of this needs is built and was verified in the live game:
+`Treaty.SubordinateParty`, `CarriesCallToArms`, `SubordinatesForeignPolicy`, tribute
+scheduling, the refusal-breaks-vassalage rule, and the refusal to let a kingdom serve two
+patrons.
 
-Proposed caps — **open question 3**:
+**But vassalage has no route into play.** Every treaty-creating call site was traced: only
+`DebugCommands` can create a `Vassalage` treaty. `PeaceTerms` has no vassalage field, the AI
+never proposes subordination, and the player's menu does not offer it. Balance run 02 confirms
+it from the other end — `vassalage=0` in all 157 weekly snapshots of a 13.1-year campaign.
+
+So 1.9 is mostly about **routes in** and **one new number**, not about new machinery.
+
+---
+
+## 3. Becoming a vassal
+
+Three routes. All three produce the same `Vassalage` treaty, and they differ in the state the
+relationship starts in.
+
+### 3.1 Imposed at the peace table
+
+A new rung at the top of the existing concession ladder:
+
+| Demand | War-score cost |
+|---|---|
+| Release prisoners | 5 |
+| Castle | 25 |
+| Town | 45 |
+| Tributary pact | 60 |
+| **Vassalage** | **90** |
+
+Run 02 measured what a war score actually reaches: wars lasting 61+ days averaged `|score|`
+47.4 with a maximum of 96.3. So 90 is deliberately near the top of the observed range —
+submission is what happens after a war someone has comprehensively lost, not after a good
+season. Starting state: **Hold 35**, one grievance, trust unchanged (losing a war is not a
+betrayal).
+
+### 3.2 Offered voluntarily
+
+A cornered kingdom asks for protection. Evaluated weekly alongside the other AI moves, using
+the same shape as the existing treaty valuation so the number shown to a player is the number
+the AI used:
+
+```
+submissionValue =  70 * (threatFromOthers / ownStrength)     // who is about to eat me
+                 + 40 * protectionReach(patron)              // can they actually reach my border
+                 + 30 * weariness(me) / 100                  // I cannot fight another war
+                 + 20 * trust(me -> patron) / 100
+                 - 50 * ownStrength / strongestNeighbour      // a strong realm does not kneel
+                 - 20 * cultureMismatch
+```
+
+Submits at **≥ 55**. Starting state: **Hold 60**, no grievance. A volunteer is a much steadier
+vassal than a defeated one, and that difference should be visible in play.
+
+### 3.3 Player routes
+
+Both directions, same numbers, no exceptions: the player may demand vassalage at their own
+peace table when the score allows it, may accept or refuse a voluntary submission, may submit
+to an AI hegemon, and may refuse service or secede as a vassal.
+
+---
+
+## 4. Hold — the one new number
+
+`Hold` is a 0–100 value **per vassalage link**, and it is the whole system's load-bearing
+number. It answers: how firmly does this patron hold this vassal?
+
+### 4.1 The formula
+
+The source document's §16 stability model, restricted to quantities we already track:
+
+```
+target =  40
+        + 25 * clamp(strength(patron) / strength(vassal) - 1, -1, +1)   // fear
+        + 20 * protectionScore                                         // did they defend me
+        + 15 * trust(vassal -> patron) / 100                           // and can I trust them
+        - 20 * tributeBurden                                           // tribute vs my income
+        - 15 * warBurden                                               // obligation wars in the last year, capped at 3
+        - 25 * bestRivalOffer                                          // someone else offers protection
+        - 10 * cultureMismatch
+```
+
+`Hold` moves toward `target` by **1 per day**. That lag is the point: a hegemon that loses a
+war does not lose its vassals that afternoon, and a vassal that has been neglected for a
+season does not forgive it overnight. Everything in the formula is a slow pressure.
+
+### 4.2 Thresholds
+
+| Hold | Behaviour |
+|---|---|
+| ≥ 70 | Renews the vassalage willingly when it expires |
+| 40–69 | Serves, but lets the treaty lapse at expiry rather than renewing |
+| 30–39 | **Passive resistance** — tribute paid late, calls to arms refused (§6) |
+| 15–29 | **Diplomatic defiance** — signs treaties with outsiders despite `SubordinatesForeignPolicy`, and will listen to a rival patron |
+| < 15 for 30 days | **Secession** — declares an independence war (§6.3) |
+
+`VassalageYears = 5` already exists, so a link that drifts into the 40s quietly dies at its
+term instead of exploding. Not every hegemony should end in a war.
+
+### 4.3 The hegemon's duty, enforced
+
+From the source's §5.1 and Scenario B. A patron that does not protect its vassal loses it:
+
+- A vassal is attacked and the patron **joins the war within 10 days** → `protectionScore` up,
+  worth up to +20 Hold.
+- The patron **does not join at all** → **−25 Hold immediately**, and a grievance.
+- The vassal **loses a fief** while fighting one of the patron's wars → **−10 Hold**.
+
+This is what stops hegemony from being a free income stream. Holding vassals costs wars.
+
+---
+
+## 5. Being a hegemon
+
+### 5.1 Derived, never declared
+
+```
+IsHegemon(k)  = any active Vassalage treaty where k is the dominant party
+Sphere(k)     = { k } + its vassals
+```
+
+No title state, no save field, nothing to keep in sync — which also means it cannot desync.
+Several hegemons coexist by construction, satisfying directive 3 at zero cost.
+
+### 5.2 What the hegemon gets
+
+- **Troops.** Vassals answer calls to arms in offensive wars too, subject to §5.4.
+- **Tribute**, on the existing schedule.
+- **Foreign policy.** A vassal cannot sign with outsiders or declare its own wars.
+- **Summons** (the lead's earlier proposal, ruler only): the patron's ruler may order a
+  vassal's parties to escort it — `MobilePartyAi.SetDoNotMakeNewDecisions` plus
+  `MobileParty.SetMoveEscortParty`, both public in v1.4.8, no Army surgery. Influence cost per
+  summon, at most half the vassal's parties, fixed duration then a cooldown. Refusable at a
+  Hold cost.
+
+### 5.3 Rival hegemons compete for vassals
+
+The source's §7.4, and the cheapest interesting thing in this whole design. A hegemon
+evaluating its weekly moves may **offer protection to another hegemon's vassal** whose Hold is
+below 40. The offer is the `bestRivalOffer` term in §4.1, so it pushes Hold down before it
+ever succeeds — courting someone else's vassal destabilises them even when it fails.
+
+If the vassal accepts, its vassalage transfers: the old patron takes **−30 trust** with the
+poacher, a `BrokenTreaty`-grade grievance, and a standing casus belli against them. Poaching
+is meant to start wars.
+
+### 5.4 The cascade cap
+
+Run 02 measured `DefendAlly` at **27 % of 167 wars** with nothing but alliances on the map. A
+hegemon with four vassals owing offensive service would turn each of its wars into five.
 
 | Cap | Value |
 |---|---|
-| Members called per war | ⌈N/2⌉, chosen by proximity to the target |
-| Obligation wars per member | **1** at a time |
-| Excused when | own exhaustion > 50, or already in an obligation war |
+| Vassals called per war | ⌈N/2⌉, nearest to the target first |
+| Obligation wars per vassal | 1 at a time |
+| Excused | exhaustion > 50, or already in an obligation war, or Hold < 30 |
 
-The proximity rule is what makes it read correctly: a Khagan marching west calls the khans
-whose grazing lands face west, not the ones three kingdoms away.
+Nearest-first is also the rule that reads correctly: a patron marching west calls the vassals
+whose borders face west.
 
-## 7. Defiance, resentment, and independence
+---
 
-A member is not a puppet, and defiance is the whole point of the system being worth building:
+## 6. Defiance, in three escalating forms
 
-- **Refusing a call to arms** — not a treaty breach. **−15 trust** with the hegemon and a
-  defiance mark; two marks and the subordination lapses at its next expiry. This mirrors the
-  Phase 1 alliance rule, deliberately: refusal has to be a real option or hegemony becomes a
-  suicide pact.
-- **Resentment accrues** through Phase 2.1 grievances: tribute paid, wars fought for someone
-  else, parties summoned, fiefs lost while fighting a hegemon's war.
-- **Independence war.** A member may renounce its subordination. That is a war with its own
-  casus belli, and it is watched: a successful revolt costs the hegemon **−20 legitimacy**
-  and raises a contagion counter that lowers the submission value for every other member.
-  Empires fall the way they historically fall — one successful defection at a time.
+Selected from the source's §9.2. The other four types there — limited revolt, civil war,
+dynastic rebellion, proxy rebellion — need Phase 2 court politics and wait for it.
 
-## 8. Summoning vassal parties (the lead's proposal, recorded)
+### 6.1 Passive resistance (Hold 30–39)
 
-Ruler only. Assessed feasible without touching the Army system: `MobilePartyAi
-.SetDoNotMakeNewDecisions(bool)` plus `MobileParty.SetMoveEscortParty(...)` is enough to make
-a member's party follow the hegemon's ruler, and both are public in v1.4.8.
+Refuses a call to arms; pays tribute late. Refusal costs the vassal **−10 trust** with the
+patron and earns a **defiance mark**. Two marks inside a year and the vassalage lapses at its
+next expiry. Consistent with the Phase 1 alliance rule: refusal has to be a real option, or
+submission is a suicide pact no AI would ever accept.
 
-Proposed shape: influence cost per summon; a cap of about half the member's parties; a fixed
-duration and then a cooldown; the member may refuse at a trust cost, and repeated refusal
-breaks the subordination. Sits naturally here as a hegemony obligation rather than a
-free-standing feature, and it should land **after** 2.1 grievances, so that refusing has
-political weight instead of being a dice roll.
+### 6.2 Diplomatic defiance (Hold 15–29)
 
-## 9. When the hegemon falls
+Signs a pact with an outsider in defiance of `SubordinatesForeignPolicy`. The patron may
+respond: overlook it (nothing happens, Hold unchanged), or punish it — which means declaring
+war on its own vassal, with everything that implies for the other vassals watching.
 
-**Open question 4.** The overlord can be destroyed, lose its capital, or simply be beaten
-into a rump. Candidates:
+### 6.3 Secession (Hold < 15 for 30 days)
 
-- title goes **vacant**, all subordination treaties dissolve;
-- title **passes** to the strongest member, who inherits the subordinations;
-- everything **shatters**: treaties break, everyone is at war with everyone.
+An independence war, declared by the vassal against its patron. It is a real war using the
+existing machinery, with two differences:
 
-**Recommendation: vacant, with a grace period.** Treaties end as `Dissolved` rather than
-`Broken` — nobody chose this, so nobody should eat a trust penalty — and every ex-member
-gets a two-year non-aggression grace. Inheritance is the more dramatic option and is worth
-having later as a *claim* on the vacant title rather than an automatic transfer: the
-strongest member gets the right to proclaim at reduced cost, and has to actually do it.
+- Other vassals of the same patron take **−10 Hold** — the source's contagion effect. One
+  successful defection makes the next one likelier, which is how these systems historically
+  come apart.
+- If the seceding vassal **wins** (peace at a positive war score), the vassalage ends as
+  `Broken` against the patron and the ex-vassal gains a lasting grievance and a claim.
+- If it **loses**, the vassalage is re-imposed at **Hold 20** with no term reset. Crushing a
+  revolt buys time, not loyalty.
 
-## 10. The player
+---
 
-Same rules, same numbers, no exceptions — the standing project decision. A player kingdom may
-found a title, be coerced into one, submit voluntarily, refuse a summons, and revolt. The
-valuation in §4 is shown to the player as the number the AI used.
+## 7. The rise: how a kingdom becomes a hegemon
 
-## 11. Where this couples to the rest
+This is what the lead asked for, and it needs no new mechanism — it is what the parts above do
+when they run. Five routes, each already present:
 
-- **Phase 1** — the `Vassalage` treaty type, the peace concession ladder, trust, call to arms.
-  All of it exists; see §2 for the part that is unexercised.
-- **Phase 2** — legitimacy gates founding and is what a revolt destroys; grievances are how
-  resentment accrues; a hegemon fighting its own civil war is an invitation to revolt.
-- **Phase 3** — espionage gives a rival a way to *fund* defiance instead of fighting the
-  hegemon directly.
+1. **Win a decisive war.** Score ≥ 90 at the peace table imposes vassalage (§3.1). One war,
+   one vassal, and the winner is a hegemon.
+2. **Be the obvious protector.** A cornered neighbour submits voluntarily (§3.2). Frequently
+   the *first* vassal a rising kingdom gets, since it costs no war at all.
+3. **Poach.** Court a rival's neglected vassal (§5.3).
+4. **Secede and inherit.** A vassal that wins its independence war keeps whatever vassals it
+   had acquired, and is now a hegemon in its own right — the source's §10.1 rise, reached
+   without any special case.
+5. **Outlive a collapse.** When a hegemon falls (§8), its ex-vassals are loose and courtable,
+   and the strongest of them is usually the one who courts them.
 
-## 12. Implementation order
+Because hegemony is derived from treaties (§5.1), all five routes converge on the same fact:
+hold one vassalage and you are a hegemon. There is no gate to pass, which is exactly why a
+kingdom can *rise*.
 
-0. **Vassalage gets a route into the game** and one measured run (§2). Not optional.
-1. Title state, founding requirements, proclamation and its trust cost.
-2. Submission as a peace term; voluntary submission with the §4 valuation.
-3. Obligations: call to arms with the §6 caps, tribute, foreign-policy lock.
-4. Defiance marks, grievance accrual, independence wars, contagion.
-5. Collapse rules (§9), then UI: a hegemony panel in the Ctrl+D menu showing members,
-   tribute, defiance marks and who owes what.
+## 8. When a hegemon falls
 
-## 13. Open questions for the project lead
+No inheritance, no automatic transfer:
 
-1. **One title per flavour, or rival claimants?** One Emperor at a time is cleaner and makes
-   the title feel like a prize; allowing two rival Emperors of the same culture creates a
-   legitimacy war, which is more interesting and more work.
-2. **Does membership buy anything, or is it pure coercion?** §5, three candidates,
-   recommendation (b).
-3. **Cascade cap shape.** §6 proposes ⌈N/2⌉ by proximity, one obligation war at a time,
-   excused above exhaustion 50.
-4. **What happens when the hegemon falls?** §9, recommendation: vacant + dissolved treaties +
-   two-year grace, with inheritance later as a discounted claim rather than an automatic
-   transfer.
+- Patron **eliminated** → every vassalage ends as `Dissolved`, not `Broken`. Nobody chose
+  this, so nobody eats a trust penalty.
+- Ex-vassals get a **two-year non-aggression grace** with each other, so a collapse does not
+  instantly become a free-for-all of eight simultaneous wars.
+- The strongest ex-vassal has no special right to the sphere. It has §7's five routes like
+  everyone else, and courting frightened neighbours is the fast one.
+
+## 9. Save data
+
+New, and the plan matters because save format is frozen once shipped:
+
+| Data | Shape |
+|---|---|
+| `Hold` per link | a field on `Treaty` — a new `[SaveableProperty]` id, defaulting to 40 for links loaded from an older save |
+| defiance marks | a small record: patron, vassal, when |
+| `protectionScore`, `warBurden` | derived daily from existing `WarRecord` data; **not saved** |
+| hegemon status | derived; **not saved** |
+
+Adding a field that defaults sensibly does not require a schema bump; the defiance-mark list
+needs both a class definition **and** a container definition in `ModSaveDefiner`.
+
+## 10. Acceptance — the source document's own scenarios
+
+A measured run must produce these, or the design is not done. Named after the lead's §15:
+
+| Scenario | What the log must show |
+|---|---|
+| **A — loyal vassal** | a link held above Hold 70 for a year, answering calls and paying tribute |
+| **B — neglected vassal** | a patron that failed to defend, losing the vassal to the −25 and its lapse |
+| **C — ambitious vassal** | a vassal stronger than its patron, Hold decaying with nothing the patron can do |
+| **D — rival intervention** | a poaching offer turning into a war between hegemons |
+| **G — vassal becomes hegemon** | a secession war won, and the ex-vassal holding a vassal of its own |
+
+Plus the volume checks: at least one vassalage forms **without a debug command** (run 02:
+zero), spheres stay bounded — no single hegemon holding more than half the map — and
+`DefendAlly` plus obligation wars stay under ~35 % of all wars with the §5.4 caps on.
+
+## 11. Implementation order
+
+Gated on the run-02 fixes: submission needs war scores near 90, and no war currently survives
+long enough to earn one. See [STATUS.md](../STATUS.md).
+
+| Step | Work |
+|---|---|
+| **1.9a** | `PeaceTerms.ImposeVassalage` + `PeaceCostVassalage = 90` + the ladder rung; player menu option |
+| **1.9b** | Voluntary submission (§3.2) as an AI weekly move, and as a player option both ways |
+| **1.9c** | `Hold`: the field, the daily drift, the §4.3 duty effects, telemetry per link |
+| **1.9d** | Defiance: marks, the three tiers, secession wars, contagion |
+| **1.10a** | Rival poaching (§5.3) and the cascade cap (§5.4) |
+| **1.10b** | Collapse rules (§8); hegemony section in the Ctrl+D menu — sphere, Hold, marks, who owes what |
+| **1.10c** | Summons (§5.2), last because it is the most intrusive and the least load-bearing |
+
+Titles (Emperor, Khagan) sit after Phase 2.4 legitimacy, as flavour over a mechanism that by
+then will have been measured.

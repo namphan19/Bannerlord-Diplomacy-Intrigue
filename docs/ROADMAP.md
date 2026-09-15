@@ -286,6 +286,29 @@ An honest correction: an earlier pass justified two of these constants as "measu
 were not; the run behind that claim was confounded by the limits above. The comments have
 been corrected rather than left to mislead.
 
+**1.9 Submission and hegemony** — spec only, no code. Added to Phase 1 by the project lead
+(2026-09-15): the mechanism by which one kingdom rises over others must work before Phase 1
+closes. A hegemon is **derived**, not declared — any kingdom holding at least one active
+vassalage is one, several may coexist, and there are no titles yet.
+Three routes in (imposed at the peace table at war score 90, offered voluntarily, or poached
+from a rival), one new number (`Hold` per link), three escalating forms of defiance ending in
+a secession war. Spec and the selection from the lead's source document:
+[design/04](design/04-hegemony.md). **Gated on 1.11** — submission needs war scores near 90
+and no war currently survives long enough to earn one.
+
+**1.10 Hegemony competition and UI** — rival poaching, the call-to-arms cascade cap, collapse
+rules, a hegemony section in the Ctrl+D menu, and vassal-party summons last.
+
+**1.11 Take inter-kingdom diplomacy from vanilla** — the lead's directive that our diplomacy
+overrides *all* vanilla diplomacy, plus the two bugs run 02 exposed. Run 02 measured **86.8 %
+of wars ending without our peace table**, median length **6 days**, because we had taken war
+declaration and left vanilla holding peace, alliances, trade agreements and call-to-war.
+Inventory of every vanilla surface and the lever for each:
+[design/05](design/05-vanilla-override.md). Mostly `GameModel` overrides rather than Harmony —
+four of the five levers are `MBGameModel` subclasses, so the patch count stays at two.
+Also in scope: the winner must be allowed to refuse a white peace, or the concession ladder
+can never fire (`terms=white_peace` 13/13 in run 02).
+
 ---
 
 ## Phase 2 — Court intrigue
