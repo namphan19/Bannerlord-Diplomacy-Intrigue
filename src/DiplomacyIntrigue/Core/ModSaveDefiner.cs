@@ -26,6 +26,7 @@ namespace DiplomacyIntrigue.Core
             AddClassDefinition(typeof(FiefOwnershipRecord), 5);
             AddClassDefinition(typeof(Claim), 6);
             AddClassDefinition(typeof(FabricationAttempt), 7);
+            AddClassDefinition(typeof(TrustRecord), 8);
         }
 
         protected override void DefineEnumTypes()
@@ -46,6 +47,7 @@ namespace DiplomacyIntrigue.Core
             ConstructContainerDefinition(typeof(List<FiefOwnershipRecord>));
             ConstructContainerDefinition(typeof(List<Claim>));
             ConstructContainerDefinition(typeof(List<FabricationAttempt>));
+            ConstructContainerDefinition(typeof(List<TrustRecord>));
         }
     }
 }

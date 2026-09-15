@@ -93,9 +93,52 @@ exhaustion and war score through `MapEventEnded` and `OnSettlementOwnerChangedEv
 neither can be triggered from the console — they need a real battle and a real siege. Both
 are covered by the Phase 4 long-run task.
 
-**1.3 Treaty engine** — the six types in `Models/TreatyType` become live: non-aggression, truce, defensive pact, alliance, tributary pact, vassalage. Signing, expiry, renewal, breach. Breach carries a lasting trust penalty.
+**1.3 Treaty engine** ✅ **implemented** — all six types live: signing with per-type
+duration and cost, expiry paying a trust dividend, breach, mutual dissolution, tribute
+transfers every 7 days with default handling, and an automatic truce recorded whenever a
+peace is made. Enforcement is the interesting half: a treaty that forbids war actually
+prevents it.
+Code: `Diplomacy/TreatyRegistry.cs`, `Diplomacy/TreatyEnforcement.cs`,
+`Behaviors/TreatyBehavior.cs`, `Patches/`.
 
-**1.4 Diplomatic trust** — per kingdom-pair memory of honoured and broken agreements. Low trust makes a kingdom unable to find allies, which is the real punishment for treachery.
+Two decisions worth recording:
+
+- **Vassalage carries military service.** It did not at first, which left it nearly
+  identical to a tributary pact - pay and be left alone. A tributary buys peace; a vassal
+  buys protection and owes troops in every one of its patron's wars.
+- **Blocked on the routine path, defiance on the deliberate one.** A kingdom never wanders
+  into a forbidden war because the vanilla decision AI rolled it - `DeclareWarDecision.IsAllowed`
+  is narrowed so the proposal never reaches a vote. But breaking a treaty on purpose is
+  always available and never blocked; it just costs reputation. Accidents are noise,
+  defiance is a story beat.
+
+**1.4 Diplomatic trust** ✅ **implemented** — one value per **ordered** kingdom pair, because
+"Vlandia trusts Battania" and the reverse are different facts and diverge sharply after a
+betrayal. Trust does not decay: relation already covers feeling that fades, so trust is
+reputation that follows a kingdom for the rest of the campaign. Below −20 nobody will sign
+anything but a truce, and a truce is never refused - stopping a war has to stay possible
+however badly the parties behaved.
+Code: `Diplomacy/TrustRegistry.cs`, `Models/TrustRecord.cs`.
+
+**Verified in a live campaign:**
+
+| Check | Result |
+|---|---|
+| Sign a non-aggression pact | active, expiry two years out |
+| War refused while it stands | `campaign.declare_war` printed its own success, but `ApplyByDefault` was refused and logged; no war stance, treaty still active |
+| Break it deliberately | allowed; victim trust **−35**, all six other courts **−12**, and the victim gained a `BrokenTreaty` claim at legitimacy 0.95 |
+| Trust is directional | only `X → Sturgia` records were created; Sturgia's own view of others untouched |
+| War allowed afterwards | yes - defiance has a price, not a lock |
+| Trust floor | a new alliance was refused: "Vlandia does not trust Sturgia enough to sign anything but a truce" |
+| Vassalage | subordinate recorded explicitly, tribute scheduled; the vassal cannot declare war on anyone, nor on its patron |
+| Double subordination | refused - "Battania is already subordinate to another kingdom" |
+| Save round-trip | 2 treaties, 7 trust records, 1 claim, 120 fief records after a process restart; the patron/client link still resolved |
+
+Not verified, and honestly so: anything gated on the campaign **clock** - treaty expiry and
+its trust dividend, tribute actually changing hands on day 7, the two-year peace dividend.
+`diplomacy.tick_days` drives the daily upkeep but cannot move `CampaignTime.Now`, so these
+need real campaign days, like the battle and siege paths. All of it is covered by the
+Phase 4 long-run task.
 
 **1.5 Peace table** — peace stops being a binary. War score plus exhaustion sets what the winner may demand: fief transfer, tribute, prisoner release, white peace. Both AI and player negotiate against the same valuation.
 

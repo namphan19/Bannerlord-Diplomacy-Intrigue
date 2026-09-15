@@ -110,6 +110,90 @@ namespace DiplomacyIntrigue.Diplomacy
         /// <summary>Window in which a broken treaty still justifies a war.</summary>
         public const int BrokenTreatyWindowYears = 2;
 
+        // ---- Treaties -------------------------------------------------------
+
+        public const int NonAggressionPactYears = 2;
+        public const int TruceYears = 1;
+        public const int DefensivePactYears = 3;
+        public const int AllianceYears = 3;
+        public const int TributaryPactYears = 2;
+        public const int VassalageYears = 5;
+
+        public const int NonAggressionPactInfluence = 60;
+        public const int DefensivePactInfluence = 100;
+        public const int AllianceInfluence = 180;
+
+        /// <summary>A truce is part of a peace settlement, so it is not bought separately.</summary>
+        public const int TruceInfluence = 0;
+
+        /// <summary>Tribute and vassalage terms are negotiated, so the pact itself is free.</summary>
+        public const int NegotiatedTreatyInfluence = 0;
+
+        /// <summary>Days between tribute payments under a tributary pact or vassalage.</summary>
+        public const int TributePeriodDays = 7;
+
+        /// <summary>
+        /// Re-declaring war on a partner whose truce we just broke costs this multiple of
+        /// the normal influence, on top of the trust damage.
+        /// </summary>
+        public const float TruceBreachWarCostMultiplier = 3f;
+
+        // ---- Diplomatic trust ------------------------------------------------
+        // One value per ORDERED pair: what A thinks of B is not what B thinks of A.
+
+        public const float TrustMin = -100f;
+        public const float TrustMax = 100f;
+
+        public const float TrustTreatyHonoured = 12f;
+        public const float TrustCallToArmsAnswered = 20f;
+        public const float TrustCallToArmsRefused = -15f;
+        public const float TrustTreatyBrokenVictim = -35f;
+        public const float TrustTreatyBrokenObserver = -12f;
+        public const float TrustUnjustWarObserver = -10f;
+        public const float TrustPeaceHeld = 8f;
+        public const float TrustSpyNetworkExposed = -25f;
+
+        /// <summary>A war declared below this legitimacy offends every uninvolved court.</summary>
+        public const float UnjustWarLegitimacyThreshold = 0.3f;
+
+        /// <summary>Years of unbroken peace after a war before the trust dividend is paid.</summary>
+        public const int PeaceDividendYears = 2;
+
+        /// <summary>
+        /// Below this, a kingdom will sign nothing but a truce with us. This is the lasting
+        /// punishment for treachery: not a relation penalty that fades in a season, but a
+        /// reputation that follows you for the rest of the campaign.
+        /// </summary>
+        public const float TrustFloorForPacts = -20f;
+
+        // ---- Per-type lookups -----------------------------------------------
+
+        public static int TreatyDurationYears(Models.TreatyType type)
+        {
+            switch (type)
+            {
+                case Models.TreatyType.NonAggressionPact: return NonAggressionPactYears;
+                case Models.TreatyType.Truce: return TruceYears;
+                case Models.TreatyType.DefensivePact: return DefensivePactYears;
+                case Models.TreatyType.Alliance: return AllianceYears;
+                case Models.TreatyType.TributaryPact: return TributaryPactYears;
+                case Models.TreatyType.Vassalage: return VassalageYears;
+                default: return NonAggressionPactYears;
+            }
+        }
+
+        public static int TreatyInfluenceCost(Models.TreatyType type)
+        {
+            switch (type)
+            {
+                case Models.TreatyType.NonAggressionPact: return NonAggressionPactInfluence;
+                case Models.TreatyType.Truce: return TruceInfluence;
+                case Models.TreatyType.DefensivePact: return DefensivePactInfluence;
+                case Models.TreatyType.Alliance: return AllianceInfluence;
+                default: return NegotiatedTreatyInfluence;
+            }
+        }
+
         // ---- Claim fabrication ----------------------------------------------
 
         public const int FabricateClaimInfluenceCost = 150;

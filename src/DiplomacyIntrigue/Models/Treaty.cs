@@ -31,6 +31,16 @@ namespace DiplomacyIntrigue.Models
         /// <summary>The party that broke it, when Status is Broken.</summary>
         [SaveableProperty(12)] public Kingdom BreachedBy { get; private set; }
 
+        /// <summary>
+        /// The party that gives something up, for the asymmetric types: the tribute payer
+        /// under a tributary pact, the client under vassalage. Null for the symmetric types.
+        ///
+        /// Recorded explicitly rather than inferred from <see cref="TributePayer"/>, because
+        /// vassalage can be agreed without payment and the patron/client direction must
+        /// still be unambiguous.
+        /// </summary>
+        [SaveableProperty(13)] public Kingdom SubordinateParty { get; private set; }
+
         // The save system rehydrates instances without running a constructor.
         internal Treaty() { }
 
@@ -109,6 +119,11 @@ namespace DiplomacyIntrigue.Models
         }
 
         internal void AdvanceTributeDate(CampaignTime next) => NextTributeDue = next;
+
+        internal void SetSubordinate(Kingdom subordinate) => SubordinateParty = subordinate;
+
+        /// <summary>The party on the receiving end of an asymmetric treaty, or null.</summary>
+        public Kingdom DominantParty => SubordinateParty == null ? null : Other(SubordinateParty);
 
         internal void Close(TreatyStatus status, Kingdom breachedBy = null)
         {

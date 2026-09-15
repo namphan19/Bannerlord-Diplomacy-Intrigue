@@ -35,7 +35,6 @@ namespace DiplomacyIntrigue.Behaviors
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
             CampaignEvents.WarDeclared.AddNonSerializedListener(this, OnWarDeclared);
             CampaignEvents.MakePeace.AddNonSerializedListener(this, OnPeaceMade);
-            CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
         }
 
         public override void SyncData(IDataStore dataStore)
@@ -140,28 +139,5 @@ namespace DiplomacyIntrigue.Behaviors
             }
         }
 
-        private void OnDailyTick()
-        {
-            try
-            {
-                ExpireTreaties();
-            }
-            catch (Exception ex)
-            {
-                Log.Error("Core", "Daily tick failed.", ex);
-            }
-        }
-
-        private void ExpireTreaties()
-        {
-            for (var i = 0; i < _state.Treaties.Count; i++)
-            {
-                var treaty = _state.Treaties[i];
-                if (!treaty.IsActive || !treaty.HasRunOut) continue;
-
-                treaty.Close(TreatyStatus.Expired);
-                Log.Info("Core", "Treaty expired: " + treaty + ".");
-            }
-        }
     }
 }

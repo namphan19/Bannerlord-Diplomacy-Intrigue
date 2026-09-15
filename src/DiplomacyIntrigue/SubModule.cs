@@ -93,6 +93,7 @@ namespace DiplomacyIntrigue
             {
                 starter.AddBehavior(new WarExhaustionBehavior());
                 starter.AddBehavior(new ClaimsBehavior());
+                starter.AddBehavior(new TreatyBehavior());
             }
         }
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using DiplomacyIntrigue.Behaviors;
 using DiplomacyIntrigue.Diplomacy;
+using DiplomacyIntrigue.Models;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Library;
@@ -40,6 +41,7 @@ namespace DiplomacyIntrigue.Core
             sb.AppendLine("Fief ledger: " + state.FiefHistory.Count + " records");
             sb.AppendLine("Weariness entries: " + state.Weariness.Count);
             sb.AppendLine("Fabrications running: " + state.Fabrications.Count);
+            sb.AppendLine("Trust records: " + state.Trust.Count);
             sb.AppendLine("Exhaustion rate: x" + Settings.Current.WarExhaustionRate.ToString("0.00"));
             sb.AppendLine("Log directory: " + (Log.LogDirectory ?? "unavailable"));
             return sb.ToString();
@@ -77,7 +79,15 @@ namespace DiplomacyIntrigue.Core
             {
                 var treaty = state.Treaties[i];
                 if (!treaty.IsActive) continue;
-                sb.AppendLine(treaty + " expires=" + treaty.ExpiresOn);
+                sb.Append(treaty).Append(" expires=").Append(treaty.ExpiresOn);
+                if (treaty.SubordinateParty != null)
+                    sb.Append(" | ").Append(treaty.SubordinateParty.Name).Append(" answers to ")
+                      .Append(treaty.DominantParty == null ? "?" : treaty.DominantParty.Name.ToString());
+                if (treaty.TributeAmount > 0)
+                    sb.Append(" | tribute ").Append(treaty.TributeAmount).Append(" from ")
+                      .Append(treaty.TributePayer == null ? "?" : treaty.TributePayer.Name.ToString())
+                      .Append(" due ").Append(treaty.NextTributeDue);
+                sb.AppendLine();
                 count++;
             }
             return count == 0 ? "No active treaties on record." : sb.ToString();
@@ -215,6 +225,168 @@ namespace DiplomacyIntrigue.Core
                 if (war.IsOngoing) sb.AppendLine("  " + war);
             }
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// Trust is directional, so this prints both directions for every pair on record.
+        /// Usage: diplomacy.trust   or   diplomacy.trust Vlandia
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("trust", "diplomacy")]
+        public static string Trust(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+            if (state.Trust.Count == 0)
+                return "No trust records yet. Trust moves when treaties are honoured or broken, "
+                       + "and when a war is declared without justification.";
+
+            Kingdom filter = null;
+            if (args != null && args.Count > 0)
+            {
+                var wanted = string.Join(" ", args);
+                filter = FindKingdom(wanted);
+                if (filter == null) return "No kingdom matching \"" + wanted + "\".";
+            }
+
+            var sb = new StringBuilder();
+            for (var i = 0; i < state.Trust.Count; i++)
+            {
+                var record = state.Trust[i];
+                if (filter != null && record.From != filter && record.To != filter) continue;
+                sb.AppendLine(record.ToString());
+            }
+            var text = sb.ToString();
+            return text.Length == 0 ? "No trust records involving that kingdom." : text;
+        }
+
+        /// <summary>
+        /// Signs a treaty, going through the same CanSign checks the AI and the 1.8 UI use,
+        /// so a refusal here is a real refusal rather than a console limitation.
+        /// Usage: diplomacy.sign_treaty Vlandia | Battania | Alliance
+        ///        diplomacy.sign_treaty Vlandia | Battania | TributaryPact | 500
+        /// For the asymmetric types the second kingdom named is the subordinate.
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("sign_treaty", "diplomacy")]
+        public static string SignTreaty(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var parts = SplitOnPipe(args);
+            if (parts.Count < 3)
+                return "Usage: diplomacy.sign_treaty <kingdom> | <kingdom> | <type> [| tribute]"
+                       + Environment.NewLine + "Types: "
+                       + string.Join(", ", Enum.GetNames(typeof(TreatyType)));
+
+            var a = FindKingdom(parts[0]);
+            var b = FindKingdom(parts[1]);
+            if (a == null) return "No kingdom matching \"" + parts[0] + "\".";
+            if (b == null) return "No kingdom matching \"" + parts[1] + "\".";
+
+            TreatyType type;
+            if (!Enum.TryParse(parts[2], true, out type))
+                return "Unknown treaty type \"" + parts[2] + "\". Types: "
+                       + string.Join(", ", Enum.GetNames(typeof(TreatyType)));
+
+            var tribute = 0;
+            if (parts.Count > 3) int.TryParse(parts[3], out tribute);
+
+            var asymmetric = type == TreatyType.Vassalage || type == TreatyType.TributaryPact;
+            var subordinate = (asymmetric || tribute > 0) ? b : null;
+
+            var treaty = TreatyRegistry.Sign(state, a, b, type, out var reason, subordinate, tribute);
+            return treaty == null ? "Refused: " + reason : "Signed: " + treaty;
+        }
+
+        /// <summary>
+        /// Breaks a live treaty with its full reputational consequence. This is the
+        /// deliberate-defiance path: never blocked, only expensive.
+        /// Usage: diplomacy.break_treaty Vlandia | Battania | Alliance
+        /// The first kingdom named is the one breaking it.
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("break_treaty", "diplomacy")]
+        public static string BreakTreaty(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var parts = SplitOnPipe(args);
+            if (parts.Count < 3)
+                return "Usage: diplomacy.break_treaty <breaker> | <other party> | <type>";
+
+            var breaker = FindKingdom(parts[0]);
+            var other = FindKingdom(parts[1]);
+            if (breaker == null) return "No kingdom matching \"" + parts[0] + "\".";
+            if (other == null) return "No kingdom matching \"" + parts[1] + "\".";
+
+            TreatyType type;
+            if (!Enum.TryParse(parts[2], true, out type))
+                return "Unknown treaty type \"" + parts[2] + "\".";
+
+            var treaty = state.ActiveTreatyBetween(breaker, other, type);
+            if (treaty == null) return "No active " + type + " between those kingdoms.";
+
+            TreatyRegistry.Break(state, treaty, breaker);
+            return breaker.Name + " broke the " + type + " with " + other.Name
+                   + ". Victim trust in them is now "
+                   + TrustRegistry.Get(state, other, breaker).ToString("0.0")
+                   + ", and every other court took note.";
+        }
+
+        /// <summary>
+        /// Reports whether a war would be allowed right now, and why not.
+        /// Usage: diplomacy.can_war Vlandia | Battania
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("can_war", "diplomacy")]
+        public static string CanWar(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var parts = SplitOnPipe(args);
+            if (parts.Count < 2) return "Usage: diplomacy.can_war <aggressor> | <target>";
+
+            var a = FindKingdom(parts[0]);
+            var b = FindKingdom(parts[1]);
+            if (a == null || b == null) return "Kingdom not found.";
+
+            var block = TreatyEnforcement.WhyWarBlocked(state, a, b);
+            return block == TreatyEnforcement.Block.None
+                ? a.Name + " may declare war on " + b.Name + "."
+                : "Blocked: " + TreatyEnforcement.Explain(state, a, b, block) + ".";
+        }
+
+        /// <summary>Kingdom names contain spaces, so arguments are separated by a pipe.</summary>
+        private static List<string> SplitOnPipe(List<string> args)
+        {
+            var joined = args == null ? "" : string.Join(" ", args);
+            var parts = new List<string>();
+            foreach (var piece in joined.Split(PipeSeparator))
+            {
+                var trimmed = piece.Trim();
+                if (trimmed.Length > 0) parts.Add(trimmed);
+            }
+            return parts;
+        }
+
+        private static readonly char[] PipeSeparator = { '|' };
+
+        private static Kingdom FindKingdom(string name)
+        {
+            foreach (var kingdom in Kingdom.All)
+            {
+                if (string.Equals(kingdom.Name == null ? null : kingdom.Name.ToString(), name,
+                        StringComparison.OrdinalIgnoreCase))
+                    return kingdom;
+            }
+            // Prefix match so partial names work in the console.
+            foreach (var kingdom in Kingdom.All)
+            {
+                var kingdomName = kingdom.Name == null ? null : kingdom.Name.ToString();
+                if (kingdomName != null && kingdomName.StartsWith(name, StringComparison.OrdinalIgnoreCase))
+                    return kingdom;
+            }
+            return null;
         }
 
         private static int CountOngoing(ModState state)

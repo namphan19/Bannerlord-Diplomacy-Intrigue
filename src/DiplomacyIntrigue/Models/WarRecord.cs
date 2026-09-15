@@ -30,6 +30,12 @@ namespace DiplomacyIntrigue.Models
         /// <summary>Set when peace is signed. CampaignTime.Never while the war runs.</summary>
         [SaveableProperty(12)] public CampaignTime EndedOn { get; private set; }
 
+        /// <summary>
+        /// Whether the trust reward for keeping this peace has already been paid. Kept on
+        /// the war record so the dividend is paid exactly once, without a separate ledger.
+        /// </summary>
+        [SaveableProperty(13)] public bool PeaceDividendPaid { get; private set; }
+
         internal WarRecord() { }
 
         internal WarRecord(Kingdom aggressor, Kingdom defender, CasusBelliType justification)
@@ -96,6 +102,8 @@ namespace DiplomacyIntrigue.Models
         }
 
         internal void Close() => EndedOn = CampaignTime.Now;
+
+        internal void MarkPeaceDividendPaid() => PeaceDividendPaid = true;
 
         private static float Clamp(float v, float min, float max) => v < min ? min : (v > max ? max : v);
 

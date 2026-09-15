@@ -16,7 +16,7 @@ namespace DiplomacyIntrigue.Core
     /// </summary>
     public sealed class ModState
     {
-        public const int CurrentSchemaVersion = 3;
+        public const int CurrentSchemaVersion = 4;
 
         [SaveableProperty(1)] public int SchemaVersion { get; private set; }
         [SaveableProperty(2)] public List<Treaty> Treaties { get; private set; }
@@ -26,6 +26,7 @@ namespace DiplomacyIntrigue.Core
         [SaveableProperty(6)] public List<FiefOwnershipRecord> FiefHistory { get; private set; }
         [SaveableProperty(7)] public List<Claim> Claims { get; private set; }
         [SaveableProperty(8)] public List<FabricationAttempt> Fabrications { get; private set; }
+        [SaveableProperty(9)] public List<TrustRecord> Trust { get; private set; }
 
         public ModState()
         {
@@ -36,6 +37,7 @@ namespace DiplomacyIntrigue.Core
             FiefHistory = new List<FiefOwnershipRecord>();
             Claims = new List<Claim>();
             Fabrications = new List<FabricationAttempt>();
+            Trust = new List<TrustRecord>();
             NextTreatyId = 1;
         }
 
@@ -51,6 +53,7 @@ namespace DiplomacyIntrigue.Core
             if (FiefHistory == null) FiefHistory = new List<FiefOwnershipRecord>();
             if (Claims == null) Claims = new List<Claim>();
             if (Fabrications == null) Fabrications = new List<FabricationAttempt>();
+            if (Trust == null) Trust = new List<TrustRecord>();
             if (NextTreatyId < 1) NextTreatyId = 1;
 
             Migrate();
@@ -63,11 +66,12 @@ namespace DiplomacyIntrigue.Core
             FiefHistory.RemoveAll(f => f == null || f.Settlement == null || f.Kingdom == null);
             Claims.RemoveAll(c => c == null || c.Claimant == null || c.Target == null);
             Fabrications.RemoveAll(f => f == null || f.Claimant == null || f.Target == null);
+            Trust.RemoveAll(t => t == null || t.From == null || t.To == null);
 
             Log.Info("State", "Loaded: " + Treaties.Count + " treaties, " + Wars.Count
                               + " war records, " + Weariness.Count + " weariness entries, "
-                              + Claims.Count + " claims, " + FiefHistory.Count + " fief records,"
-                              + " schema v" + SchemaVersion + ".");
+                              + Claims.Count + " claims, " + FiefHistory.Count + " fief records, "
+                              + Trust.Count + " trust records, schema v" + SchemaVersion + ".");
         }
 
         private void Migrate()
@@ -75,9 +79,10 @@ namespace DiplomacyIntrigue.Core
             if (SchemaVersion == CurrentSchemaVersion) return;
             var from = SchemaVersion;
 
-            // v1 -> v2 added the weariness pool; v2 -> v3 added the fief ledger, claims
-            // and fabrications. AfterLoad() creates each list when it comes back null,
-            // so there is nothing to convert - only to record that we moved.
+            // v1 -> v2 added the weariness pool; v2 -> v3 the fief ledger, claims and
+            // fabrications; v3 -> v4 the trust ledger. AfterLoad() creates each list
+            // when it comes back null, so there is nothing to convert - only to record
+            // that we moved.
 
             SchemaVersion = CurrentSchemaVersion;
             Log.Info("State", "Migrated save data from schema v" + from + " to v" + CurrentSchemaVersion + ".");
