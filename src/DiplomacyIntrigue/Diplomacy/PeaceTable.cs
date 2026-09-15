@@ -26,6 +26,27 @@ namespace DiplomacyIntrigue.Diplomacy
     /// </summary>
     public static class PeaceTable
     {
+        /// <summary>
+        /// A war nobody is actually fighting: old enough to have gone somewhere, and almost no
+        /// blood spilled.
+        ///
+        /// This exists because taking peace from vanilla exposed a gap vanilla had been
+        /// quietly covering. Exhaustion accrues 0.08/day from elapsed time alone, so a war
+        /// between kingdoms that never meet needs **750 days** to reach the threshold at which
+        /// either side will negotiate - every real war in run 02 got there in about 90 days,
+        /// but only because casualties did the work. With no vanilla peace left, distant wars
+        /// would simply stay open, and run 03 would have measured a map filling up with wars
+        /// nobody was fighting.
+        ///
+        /// It lives here rather than on <see cref="WarRecord"/> because it reads two
+        /// constants, and the dependency rule is that Models may not reach up into the
+        /// systems layer.
+        /// </summary>
+        public static bool IsDormant(WarRecord war)
+            => war != null
+               && war.DaysElapsed >= DiplomacyConstants.DormantWarDays
+               && war.TotalCasualties <= DiplomacyConstants.DormantWarCasualties;
+
         /// <summary>What a given package costs against the winner's war-score budget.</summary>
         public static float CostOf(PeaceTerms terms)
         {
@@ -118,6 +139,12 @@ namespace DiplomacyIntrigue.Diplomacy
             var scoreAgainstThem = -war.ScoreFor(loser);
             var exhaustion = war.ExhaustionOf(loser);
 
+            // Nobody defends a war they are not fighting. A dormant war (see
+            // IsDormant) ends by mutual indifference, and only ever on white terms
+            // - indifference concedes nothing, so there is nothing here for a winner to
+            // extract by simply waiting.
+            if (terms.IsWhitePeace && IsDormant(war)) { reason = null; return true; }
+
             var threshold = DiplomacyConstants.ExhaustionSeekPeace - scoreAgainstThem / 2f;
             if (exhaustion < threshold)
             {
@@ -199,7 +226,8 @@ namespace DiplomacyIntrigue.Diplomacy
         /// Signs the peace and executes the terms. Reads war score and exhaustion first,
         /// because making peace closes the war record.
         /// </summary>
-        public static bool Apply(ModState state, WarRecord war, PeaceTerms terms, out string reason)
+        public static bool Apply(ModState state, WarRecord war, PeaceTerms terms, out string reason,
+            Telemetry.PeaceCause cause = Telemetry.PeaceCause.PeaceTable)
         {
             if (!IsDemandable(state, war, terms, out reason)) return false;
 
@@ -210,7 +238,7 @@ namespace DiplomacyIntrigue.Diplomacy
             // Peace first: it closes the war record, carries exhaustion into weariness, and
             // records the truce. The terms are then executed between kingdoms at peace,
             // which is what a ceded fief actually is.
-            Telemetry.NotePeaceCause(Telemetry.PeaceCause.PeaceTable, summary);
+            Telemetry.NotePeaceCause(cause, summary);
             try
             {
                 MakePeaceAction.Apply(winner, loser);

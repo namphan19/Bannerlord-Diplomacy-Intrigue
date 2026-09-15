@@ -82,7 +82,8 @@ namespace DiplomacyIntrigue.Diplomacy
             }
 
             if (worst == null) return false;
-            if (worstExhaustion < DiplomacyConstants.ExhaustionSeekPeace) return false;
+            if (worstExhaustion < DiplomacyConstants.ExhaustionSeekPeace)
+                return TryEndDormantWar(state, kingdom);
 
             var enemy = worst.Other(kingdom);
             if (enemy == null || enemy.IsEliminated) return false;
@@ -90,6 +91,41 @@ namespace DiplomacyIntrigue.Diplomacy
             return worst.ScoreFor(kingdom) > DiplomacyConstants.PeaceWhitePeaceOnlyBelow
                 ? TryCollectPeace(state, worst, kingdom, enemy, worstExhaustion)
                 : TryBuyPeace(state, worst, kingdom, enemy, worstExhaustion);
+        }
+
+        /// <summary>
+        /// Closes a war nobody is fighting.
+        ///
+        /// Needed because taking peace from vanilla removed something vanilla was quietly
+        /// doing for us. Exhaustion from elapsed time alone is 0.08/day, so a war between
+        /// kingdoms that never meet would need 750 days to reach the negotiating threshold -
+        /// and with no vanilla peace left, it would simply stay open. Run 03 would have
+        /// measured a map slowly filling with wars nobody was fighting.
+        ///
+        /// Only ever a white peace: indifference concedes nothing, so there is nothing here
+        /// for a patient winner to extract by waiting.
+        /// </summary>
+        private static bool TryEndDormantWar(ModState state, Kingdom kingdom)
+        {
+            foreach (var war in state.OngoingWarsOf(kingdom))
+            {
+                if (!PeaceTable.IsDormant(war)) continue;
+
+                var enemy = war.Other(kingdom);
+                if (enemy == null || enemy.IsEliminated) continue;
+
+                var white = new PeaceTerms(enemy, kingdom);
+                if (!PeaceTable.BothWouldSign(state, war, white, out _)) continue;
+                if (!PeaceTable.Apply(state, war, white, out _, Telemetry.PeaceCause.Dormant)) continue;
+
+                Log.Info("AI", kingdom.Name + " and " + enemy.Name + " let a dormant war lapse after "
+                               + war.DaysElapsed.ToString("0") + " days and "
+                               + war.TotalCasualties
+                               + " casualties between them.");
+                return true;
+            }
+
+            return false;
         }
 
         /// <summary>

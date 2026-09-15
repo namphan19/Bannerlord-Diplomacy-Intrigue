@@ -299,15 +299,33 @@ and no war currently survives long enough to earn one.
 **1.10 Hegemony competition and UI** — rival poaching, the call-to-arms cascade cap, collapse
 rules, a hegemony section in the Ctrl+D menu, and vassal-party summons last.
 
-**1.11 Take inter-kingdom diplomacy from vanilla** — the lead's directive that our diplomacy
-overrides *all* vanilla diplomacy, plus the two bugs run 02 exposed. Run 02 measured **86.8 %
-of wars ending without our peace table**, median length **6 days**, because we had taken war
-declaration and left vanilla holding peace, alliances, trade agreements and call-to-war.
-Inventory of every vanilla surface and the lever for each:
-[design/05](design/05-vanilla-override.md). Mostly `GameModel` overrides rather than Harmony —
-four of the five levers are `MBGameModel` subclasses, so the patch count stays at two.
-Also in scope: the winner must be allowed to refuse a white peace, or the concession ladder
-can never fire (`terms=white_peace` 13/13 in run 02).
+**1.11 Take inter-kingdom diplomacy from vanilla** ✅ **implemented**, partly verified — the
+lead's directive that our diplomacy overrides *all* vanilla diplomacy, plus the two bugs run
+02 exposed. Run 02 measured **86.8 % of wars ending without our peace table**, median length
+**6 days**, because we had taken war declaration and left vanilla holding peace, alliances,
+trade agreements and call-to-war. Inventory and levers:
+[design/05](design/05-vanilla-override.md).
+
+Four `GameModel` overrides and no new Harmony patch — `KingdomDecisionPermissionModel`,
+`DiplomacyModel`, `AllianceModel`, `TradeAgreementModel`. The permission model also feeds
+`KingdomDiplomacyVM`, so a war our treaties forbid greys out the vanilla button **and says
+why**. The two existing patches stay: the model has no proposer argument and so cannot
+express "the AI may not, the player may".
+
+Plus `PeaceTable.WinnerWouldAccept` — the missing half that made the concession ladder
+unreachable (`terms=white_peace` 13/13 in run 02: the side suing offered a white peace and
+the only willingness check asked that same side) — a sue-for-peace path in the menu, without
+which blocking vanilla peace would strand a losing player, and a one-chosen-war-at-a-time cap
+on the AI.
+
+| Check | Result |
+|---|---|
+| Models install and are reached | live, 2 in-game days: `vanillaPeaceRefused=5 vanillaAlliancesRefused=6 vanillaTradeRefused=1 vanillaCallToWarRefused=74` |
+| Our own peace still works | `Western Empire sued for peace with Aserai at exhaustion 64.6: white peace` — correct, war score 0.00 leaves nothing to collect |
+| War declaration still works | `Northern Empire declared war on Southern Empire (ReclaimAncestralLand, legitimacy 0.70, value 46, cost 52 influence)` |
+| One-war cap | three further simulated weeks produced 24 × `None` and no second war. **Weak evidence**: the clock was frozen, so influence never regenerated either, and the two cannot be told apart from outside. `diplomacy.war_value` now prints the cap as a gate so run 03 can attribute it |
+| Wars now last; the ladder fires | **not verified.** Needs run 03 — a two-day sample says nothing about median war length |
+| Dormant wars lapse | **not verified in game.** No console command can age a war: `CampaignTime.Now` cannot be moved, and a war's age is read from it. Verified by construction only |
 
 ---
 

@@ -34,6 +34,12 @@ namespace DiplomacyIntrigue.Core
             PeaceTable = 1,
             /// <summary>An ally was let out of a war it had only been called into.</summary>
             FollowerRelease = 2,
+            /// <summary>
+            /// A war nobody was fighting, lapsed by mutual indifference. Separate from
+            /// PeaceTable on purpose: a balance run needs to tell a settled war from a war
+            /// that was never really a war, and both end on white terms.
+            /// </summary>
+            Dormant = 3,
         }
 
         /// <summary>

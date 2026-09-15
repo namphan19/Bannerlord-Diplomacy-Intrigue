@@ -49,6 +49,9 @@ namespace DiplomacyIntrigue.Models
         /// <summary>True when this participant joined only because an ally called.</summary>
         public bool IsObligationWar => CalledBy != null;
 
+        /// <summary>Total dead on both sides. Whether a war was ever really fought.</summary>
+        public int TotalCasualties => AggressorCasualties + DefenderCasualties;
+
         internal WarRecord() { }
 
         internal WarRecord(Kingdom aggressor, Kingdom defender, CasusBelliType justification)

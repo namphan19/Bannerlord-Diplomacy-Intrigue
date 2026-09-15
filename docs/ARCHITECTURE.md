@@ -92,6 +92,7 @@ Dependency rule: a layer may reference anything **below** it, never above. `Mode
 | `src/DiplomacyIntrigue/Core/` | `ModState` (save root), `Log`, `ModSettings`, `ModSaveDefiner`, `DebugCommands` |
 | `src/DiplomacyIntrigue/Models/` | Savable data types and enums |
 | `src/DiplomacyIntrigue/Diplomacy/` | Treaty engine, casus belli, war exhaustion, peace-table valuation, AI diplomacy |
+| `src/DiplomacyIntrigue/GameModels/` | `GameModel` overrides that take vanilla's inter-kingdom diplomacy - peace, alliances, trade agreements, decision permissions |
 | `src/DiplomacyIntrigue/Intrigue/` | Grievances, court blocs, loyalty, succession, civil war |
 | `src/DiplomacyIntrigue/Espionage/` | Networks, missions, counter-intelligence |
 | `src/DiplomacyIntrigue/Behaviors/` | `CampaignBehaviorBase` implementations — the engine boundary |

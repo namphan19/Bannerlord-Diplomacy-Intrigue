@@ -171,23 +171,33 @@ produced.
 Run 02 (13.1 in-game years, analysed) and the lead's directives of 2026-09-15 settled the
 order. It is a chain, not a menu: each step is what makes the next one measurable.
 
-**1. Take the rest of vanilla diplomacy (1.11).** Inventory and levers in
-[design/05](design/05-vanilla-override.md). Three pieces of work:
+**1. Take the rest of vanilla diplomacy (1.11).** ✅ **Done and deployed.** Four game models,
+no new Harmony patch; `PeaceTable.WinnerWouldAccept`; a sue-for-peace path in the menu;
+one-chosen-war-at-a-time for the AI. Live smoke test after two in-game days:
+`vanillaPeaceRefused=5 vanillaAlliancesRefused=6 vanillaTradeRefused=1
+vanillaCallToWarRefused=74` — every override reached and refusing. Details and the
+per-check results: [ROADMAP 1.11](ROADMAP.md) and
+[design/05 §3.1](design/05-vanilla-override.md).
 
-- `GameModel` overrides for peace, alliances, trade agreements and vanilla call-to-war —
-  `KingdomDecisionPermissionModel`, `DiplomacyModel`, `AllianceModel`, `TradeAgreementModel`.
-  No new Harmony patch; the existing two stay because the permission model has no proposer
-  argument.
-- **The winner may refuse a white peace.** `AiDiplomacy.TrySeekPeace` offers white peace
-  first and `PeaceTable.WouldAccept` only ever asks `terms.Loser` — so the losing side grants
-  itself a free white peace and the concession ladder is unreachable. `terms=white_peace`
-  13/13 in run 02.
-- **One chosen war per kingdom at a time.** 148 chosen wars in 13.1 years is 1.4 per kingdom
-  per year; at the 92-day length the exhaustion model predicts, that is 154 % of the calendar.
+**2. Run 03 — the next thing that needs the lead.** Nothing further can be tuned honestly
+without it, because every war-length number we have was measured in a world where vanilla
+undid our wars in six days.
 
-**2. Run 03.** Acceptance in [design/05 §4](design/05-vanilla-override.md): `endedBy=External`
-from 86.8 % to near zero, median war length from 6 days toward 90–110, and `terms=` finally
-showing something other than white peace.
+What to read first, in order:
+
+| Question | Where | Run 02 reference |
+|---|---|---|
+| Did the overrides hold all campaign? | `vanilla*Refused=` climbing steadily | new counters |
+| Did wars stop ending outside our table? | `endedBy=External` share | **86.8 %** → should be near zero |
+| Do wars last? | median war length | **6 days** → 90–110 expected |
+| Does the ladder fire? | `terms=` on `[WAR-ENDED]` | **white_peace 13/13** → should show castles, tribute, towns |
+| Is the war rate sane now? | chosen wars per year | **11.3/year** → the cap should cut it hard |
+| Did anything internal break? | policy votes, clan defections, king selection | should be unchanged |
+
+Two constants are proposed but **not applied**, deliberately, because run 03 is the
+measurement that should decide them: `ExhaustionSeekPeace` 60 → 70 (would put a balanced war
+at ~107 days rather than ~92), and the pact thresholds `AiAllianceThreshold` 70 → 82 /
+`AiDefensivePactThreshold` 55 → 65.
 
 **3. Submission and hegemony (1.9, 1.10).** Spec and the selection from the lead's source
 document: [design/04](design/04-hegemony.md). A hegemon is **derived** — any kingdom holding

@@ -96,6 +96,54 @@ is deliberately gone:
 | Tribute at peace | our tribute fields on the treaty, paid on a real schedule |
 | Non-aggression barter | our `NonAggressionPact` |
 
+## 3.1 What the live smoke test established (2026-09-15)
+
+Built, deployed, and driven through `di_phase1_full`. **Two in-game days** after loading:
+
+```
+date=Autumn 16, 1125 kingdoms=8 atWar=2 wars=1
+vanillaWarsRefused=0 vanillaPeaceRefused=5 vanillaAlliancesRefused=6
+vanillaTradeRefused=1 vanillaCallToWarRefused=74
+```
+
+What that does and does not prove:
+
+- **Proved:** all four overrides are installed, reached, and refusing. Vanilla wanted to make
+  peace, form alliances, sign a trade agreement and call kingdoms to war within two days of
+  play, and was refused every time.
+- **Also learned, and it corrects an earlier claim of mine:** 74 call-to-war refusals in two
+  days means vanilla's own call-to-war agreements were a live source of wars in run 02. I had
+  attributed all 45 `DefendAlly` wars there to our treaties; some were vanilla's, and only 28
+  had a matching `CallToArms` line of ours.
+- **Not proved:** that wars now last. Median war length and the concession ladder need a real
+  campaign - §4. A two-day sample says nothing about either.
+
+`vanillaWarsRefused=0` is expected here and not a failure: that counter belongs to the
+war-decision patch, and vanilla only proposed ~1.1 wars a year in run 02.
+
+## 3.2 What vanilla was quietly doing for us: dormant wars
+
+Found while thinking through what the override removes rather than what it adds, and fixed
+before run 03 could be wasted on it.
+
+Exhaustion accrues **0.08/day from elapsed time alone**; the rest comes from casualties. So a
+war between two kingdoms whose armies never actually meet needs about **750 days** to reach
+the threshold at which either side will negotiate. Every real war in run 02 got there in
+roughly 90 days, but only because blood was being spilled. With vanilla's peace gone, nothing
+would have closed the quiet ones, and the map would have filled up with wars nobody was
+fighting - which would have looked exactly like the takeover working and the war rate
+exploding.
+
+The rule: a war past **42 days** with **under 300 casualties** between both sides is dormant,
+and either side may end it on white terms alone. Only white terms — indifference concedes
+nothing, so a patient winner cannot extract anything by waiting. `[WAR-ENDED]` reports these
+as `endedBy=Dormant`, kept separate from `PeaceTable` precisely so a balance run can tell a
+settled war from a war that was never really a war.
+
+**Unverified in game.** `diplomacy.tick_days` cannot move `CampaignTime.Now`, and a war's age
+is measured from it, so no console command can age a war to 42 days. The rule is verified by
+construction and by its unit arithmetic only, and run 03 is where it gets tested.
+
 ## 4. Acceptance
 
 Run 03 answers this, and these are the numbers that decide whether the takeover is real:

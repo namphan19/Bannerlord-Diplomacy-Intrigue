@@ -206,6 +206,18 @@ namespace DiplomacyIntrigue.Diplomacy
         public const float PeaceAcceptanceGrace = 0.25f;
 
         /// <summary>
+        /// How long a war must have run before indifference alone can end it. Two seasons:
+        /// long enough that a slow campaign is not mistaken for no campaign.
+        /// </summary>
+        public const float DormantWarDays = 42f;
+
+        /// <summary>
+        /// Total casualties, both sides, under which a war counts as never really fought.
+        /// A few hundred is a handful of skirmishes between parties that happened to meet.
+        /// </summary>
+        public const int DormantWarCasualties = 300;
+
+        /// <summary>
         /// The least a winning side will settle for, as a fraction of what the war earned.
         ///
         /// Exists because the concession ladder was unreachable: the tired side offered a
