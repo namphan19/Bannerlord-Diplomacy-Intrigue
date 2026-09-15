@@ -20,7 +20,10 @@ $ErrorActionPreference = "Stop"
 $repo = Split-Path -Parent $PSScriptRoot
 
 if (Get-Process -Name "Bannerlord*" -ErrorAction SilentlyContinue) {
-    throw "Bannerlord is running. Close the game before deploying."
+    # Deliberately a refusal and not a kill. Someone may be several hours into a
+    # balance run, and force-killing the game looks exactly like a crash to them:
+    # the window vanishes and Windows writes a dump. Close it deliberately instead.
+    throw "Bannerlord is running. Close the game first - do not force-kill it, someone may be playing."
 }
 
 # 1. Build only - nothing touches the game folder yet.

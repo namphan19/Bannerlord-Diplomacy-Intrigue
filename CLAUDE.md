@@ -38,6 +38,17 @@ stalls with no error anywhere. It has to be dismissed by sending Enter to that w
 there is a ready watcher pattern in the session scratchpad, and the symptom to recognise is
 `games_connect` timing out while the process is alive with that window title.
 
+**Never force-kill Bannerlord.** `deploy.ps1` refuses to run while the game is open, and
+that guard is the point - the lead may be playing, and a balance run can be hours long.
+Routing around it with `Get-Process Bannerlord* | Stop-Process -Force` has already killed two
+of the lead's launches 14 seconds into startup, which is indistinguishable from a crash: the
+window disappears and Windows writes a dump for `TaleWorlds.MountAndBlade.Launcher.exe`.
+
+Use `mcp__gabs__games_stop`, and only for a session you started. If the game is running and
+you did not start it, **ask** before stopping it. When a "crash" is reported, check whether a
+dump sits ~10-20 seconds after a mod-log line that stops at `OnSubModuleLoad complete` -
+that pattern is an external termination, not a fault in the module.
+
 **Launch through `games_start`, not by hand.** A manually launched game writes no bridge
 record GABS recognises, so the bridge never connects even though the game is running fine.
 
