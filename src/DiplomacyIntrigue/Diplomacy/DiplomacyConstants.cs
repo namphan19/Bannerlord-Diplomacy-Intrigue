@@ -205,6 +205,30 @@ namespace DiplomacyIntrigue.Diplomacy
         /// </summary>
         public const float PeaceAcceptanceGrace = 0.25f;
 
+        /// <summary>
+        /// The least a winning side will settle for, as a fraction of what the war earned.
+        ///
+        /// Exists because the concession ladder was unreachable: the tired side offered a
+        /// white peace, and the only willingness check asked that same side whether it would
+        /// sign - so it granted itself a free peace and the winner was never consulted. Run
+        /// 02: `terms=white_peace` 13 times out of 13, across 13 in-game years.
+        ///
+        /// With the loser's tolerance at score x 1.25 and this at half the score, the window
+        /// a package must land in is [0.5, 1.25] x score. Wide enough that the ladder's
+        /// discrete rungs - prisoners 5, castle 25, town 45, tribute 60 - usually fit.
+        /// </summary>
+        public const float PeaceWinnerMinimumShare = 0.5f;
+
+        /// <summary>
+        /// A winning side abandons its demands and takes a white peace once its own
+        /// exhaustion reaches this. The escape valve that stops a war deadlocking when the
+        /// loser cannot afford anything the winner would accept.
+        ///
+        /// At the 0.65/day accrual measured in run 02 this arrives around day 108, which is
+        /// inside the 100-200 day band wars are meant to occupy.
+        /// </summary>
+        public const float ExhaustionAcceptWhitePeaceWhenWinning = 70f;
+
         // ---- Call to arms ----------------------------------------------------
 
         /// <summary>
@@ -338,6 +362,21 @@ namespace DiplomacyIntrigue.Diplomacy
         /// hammered while letting an ordinary war be followed by another.
         /// </summary>
         public const float AiMaxWearinessToExpand = 45f;
+
+        /// <summary>
+        /// How many wars of its own choosing a kingdom will run at once. Wars it was dragged
+        /// into by a treaty do not count - those were not its decision.
+        ///
+        /// Run 02 measured 148 chosen wars in 13.1 years across eight kingdoms: 1.4 per
+        /// kingdom per year. That was survivable only because vanilla ended every war in six
+        /// days. At the ~92 days the exhaustion model actually produces, 1.4 per year is 154%
+        /// of the calendar - a kingdom permanently at war with everyone.
+        ///
+        /// This is restraint in the AI's own evaluation, not a rule of the world: the player
+        /// may start as many wars as they like and pay for it in exhaustion. No hidden
+        /// modifier sits in the shared machinery.
+        /// </summary>
+        public const int AiMaxConcurrentChosenWars = 1;
 
         /// <summary>
         /// Minimum strength advantage before war is even considered.

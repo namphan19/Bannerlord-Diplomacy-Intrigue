@@ -362,6 +362,15 @@ namespace DiplomacyIntrigue.UI
                     "The demand budget, the price of each term, and how close they are to signing."),
             };
 
+            // Suing for peace. Necessary, not optional: vanilla's peace paths are ours now
+            // ([design 05](../../docs/design/05-vanilla-override.md)), so without this a
+            // losing player would have no way at all to end a war they cannot win.
+            var theirBudget = PeaceTable.BudgetFor(war, them);
+            if (theirBudget > 0f)
+                elements.Add(Element("offer", "Offer terms to end this war",
+                    them.Name + " has earned " + theirBudget.ToString("0")
+                    + " at our expense and will not simply walk away."));
+
             var budget = PeaceTable.BudgetFor(war, us);
             if (budget > 0f)
             {
@@ -392,6 +401,9 @@ namespace DiplomacyIntrigue.UI
                         return;
                     case "white":
                         break;
+                    case "offer":
+                        ShowSueForPeace(state, war, us, them);
+                        return;
                     case "prisoners":
                         terms.ReleasePrisoners = true;
                         break;
@@ -404,7 +416,107 @@ namespace DiplomacyIntrigue.UI
                         return;
                 }
 
-                TryPeace(state, war, terms);
+                TryPeace(state, war, terms, us);
+            });
+        }
+
+        /// <summary>
+        /// What we can put on the table to end a war we are losing. The same ladder the AI
+        /// walks, priced against what their victory has earned: below
+        /// <see cref="DiplomacyConstants.PeaceWinnerMinimumShare"/> of it they will not
+        /// bother, above their full score they are being offered more than the war justifies
+        /// and <c>IsDemandable</c> refuses it.
+        /// </summary>
+        private static void ShowSueForPeace(ModState state, WarRecord war, Kingdom us, Kingdom them)
+        {
+            var budget = PeaceTable.BudgetFor(war, them);
+            var wanted = budget * DiplomacyConstants.PeaceWinnerMinimumShare;
+
+            var elements = new List<InquiryElement>
+            {
+                Element("prisoners", "Release their captives",
+                    "Worth " + DiplomacyConstants.PeaceCostPrisoners.ToString("0")
+                    + ". They want at least " + wanted.ToString("0") + ".")
+            };
+
+            var gold = us.Leader?.Gold ?? 0;
+            var affordable = gold / 2 / 1000 * 1000;
+            if (affordable >= 1000)
+                elements.Add(Element("gold", "Pay an indemnity of " + affordable + " denars",
+                    "Worth " + (affordable / 1000f * DiplomacyConstants.PeaceCostPerThousandIndemnity)
+                        .ToString("0") + " to them, plus their captives."));
+
+            elements.Add(Element("tribute", "Agree to pay tribute",
+                "Worth " + DiplomacyConstants.PeaceCostTributaryPact.ToString("0")
+                + ". A tributary pays for peace and keeps everything else."));
+
+            if (ClaimRegistry.HasTerritorialClaim(state, them, us))
+                elements.Add(Element("land", "Cede a holding", "Choose what to give up."));
+            else
+                elements.Add(new InquiryElement("land", "Cede a holding", null, false,
+                    them.Name + " holds no territorial claim against us, so land cannot change"
+                    + " hands however badly this war goes."));
+
+            Show("Sue for peace with " + them.Name,
+                "Their war score is " + budget.ToString("0") + ". They will not settle for less than "
+                + wanted.ToString("0") + " while they are winning, and cannot take more than "
+                + budget.ToString("0") + " - that is what the war has earned them.",
+                elements, selected =>
+                {
+                    var terms = new PeaceTerms(them, us) { ReleasePrisoners = true };
+                    switch ((string)selected)
+                    {
+                        case "prisoners":
+                            break;
+                        case "gold":
+                            terms.IndemnityGold = affordable;
+                            break;
+                        case "tribute":
+                            terms.ImposeTributaryPact = true;
+                            terms.TributePerPeriod = DiplomacyConstants.AiDefaultTributePerPeriod;
+                            break;
+                        case "land":
+                            ShowCedeTargets(state, war, us, them);
+                            return;
+                    }
+
+                    TryPeace(state, war, terms, us);
+                });
+        }
+
+        /// <summary>Our own fiefs, as things we could give up to end a war.</summary>
+        private static void ShowCedeTargets(ModState state, WarRecord war, Kingdom us, Kingdom them)
+        {
+            var budget = PeaceTable.BudgetFor(war, them);
+            var elements = new List<InquiryElement>();
+
+            var settlements = us.Settlements;
+            for (var i = 0; i < settlements.Count; i++)
+            {
+                var settlement = settlements[i];
+                if (!settlement.IsFortification) continue;
+
+                var price = settlement.IsTown
+                    ? DiplomacyConstants.PeaceCostTown
+                    : DiplomacyConstants.PeaceCostCastle;
+                var withinWhatTheyEarned = price <= budget;
+
+                elements.Add(new InquiryElement(settlement,
+                    settlement.Name + (settlement.IsTown ? " (town)" : " (castle)"), null,
+                    withinWhatTheyEarned,
+                    withinWhatTheyEarned
+                        ? "Worth " + price.ToString("0") + " of their score of " + budget.ToString("0") + "."
+                        : "Worth " + price.ToString("0") + ", more than the " + budget.ToString("0")
+                          + " this war has earned them - they cannot take it at a peace table."));
+            }
+
+            if (elements.Count == 0) { Notify("We hold nothing that could be ceded."); return; }
+
+            Show("Cede a holding", "Their war score: " + budget.ToString("0") + ".", elements, selected =>
+            {
+                var terms = new PeaceTerms(them, us) { ReleasePrisoners = true };
+                terms.FiefsCeded.Add((Settlement)selected);
+                TryPeace(state, war, terms, us);
             });
         }
 
@@ -438,18 +550,36 @@ namespace DiplomacyIntrigue.UI
             {
                 var terms = new PeaceTerms(us, them);
                 terms.FiefsCeded.Add((Settlement)selected);
-                TryPeace(state, war, terms);
+                TryPeace(state, war, terms, us);
             });
         }
 
-        private static void TryPeace(ModState state, WarRecord war, PeaceTerms terms)
+        /// <summary>
+        /// Puts a package to the other side.
+        ///
+        /// Only *their* willingness is consulted, and which check that is depends on which
+        /// side of the table we are on: demanding, the question is whether they will sign
+        /// away what we asked; offering, whether they will settle for what we put up. Our own
+        /// willingness is not a calculation - the player just chose it.
+        ///
+        /// This is also why <see cref="PeaceTable"/> has no idea who the player is. It
+        /// exposes both checks symmetrically and the caller asks about whichever side is not
+        /// making the choice, so the AI answers exactly the question the player answered by
+        /// clicking.
+        /// </summary>
+        private static void TryPeace(ModState state, WarRecord war, PeaceTerms terms, Kingdom us)
         {
             if (!PeaceTable.IsDemandable(state, war, terms, out var notAllowed))
             {
-                Notify("Cannot demand that: " + notAllowed);
+                Notify((terms.Winner == us ? "Cannot demand that: " : "Cannot offer that: ") + notAllowed);
                 return;
             }
-            if (!PeaceTable.WouldAccept(state, war, terms, out var refused))
+
+            var weAreDemanding = terms.Winner == us;
+            var accepted = weAreDemanding
+                ? PeaceTable.WouldAccept(state, war, terms, out var refused)
+                : PeaceTable.WinnerWouldAccept(state, war, terms, out refused);
+            if (!accepted)
             {
                 Notify(refused);
                 return;

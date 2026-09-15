@@ -3,6 +3,7 @@ using System.Reflection;
 using HarmonyLib;
 using DiplomacyIntrigue.Behaviors;
 using DiplomacyIntrigue.Core;
+using DiplomacyIntrigue.GameModels;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
@@ -146,6 +147,7 @@ namespace DiplomacyIntrigue
             try
             {
                 var starter = (CampaignGameStarter)gameStarterObject;
+                RegisterModels(starter);
                 RegisterBehaviors(starter);
                 Log.Info("SubModule", "Campaign behaviors registered.");
             }
@@ -153,6 +155,28 @@ namespace DiplomacyIntrigue
             {
                 Log.Error("SubModule", "OnGameStart failed.", ex);
             }
+        }
+
+        /// <summary>
+        /// Takes the rest of inter-kingdom diplomacy from vanilla. Inventory and reasoning:
+        /// docs/design/05-vanilla-override.md.
+        ///
+        /// Registered unconditionally, even when the diplomacy pillar is switched off in the
+        /// settings: each model checks <c>VanillaDiplomacy.Active</c> per call and falls
+        /// through to vanilla, so the pillar can be toggled mid-campaign. Deciding here
+        /// instead would freeze the choice at load time.
+        ///
+        /// A later <c>AddModel</c> wins over an earlier one, which is why these replace the
+        /// engine's defaults rather than sitting beside them.
+        /// </summary>
+        private static void RegisterModels(CampaignGameStarter starter)
+        {
+            starter.AddModel(new ModKingdomDecisionPermissionModel());
+            starter.AddModel(new ModDiplomacyModel());
+            starter.AddModel(new ModAllianceModel());
+            starter.AddModel(new ModTradeAgreementModel());
+            Log.Info("SubModule", "Diplomacy game models registered: kingdom decisions, peace, "
+                                  + "alliances, trade agreements.");
         }
 
         private static void RegisterBehaviors(CampaignGameStarter starter)

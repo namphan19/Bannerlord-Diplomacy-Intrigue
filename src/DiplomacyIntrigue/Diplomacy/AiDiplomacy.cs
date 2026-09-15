@@ -61,10 +61,13 @@ namespace DiplomacyIntrigue.Diplomacy
         // ================= 1. Get out of the worst war =========================
 
         /// <summary>
-        /// Negotiates an exit from the war that is costing us most. Tries a white peace
-        /// first, then concedes upward - the cheapest package the other side will take -
-        /// and stops when the price exceeds what their victory entitles them to or what we
-        /// are willing to bear.
+        /// Negotiates an exit from the war that is costing us most.
+        ///
+        /// Which side of the table we sit on is decided first, and that is the part this
+        /// originally got wrong: a kingdom past its exhaustion threshold always *offered*,
+        /// even when it was the one ahead on points, and always offered a white peace first.
+        /// A realm that is winning but worn out should collect what the war earned, not hand
+        /// it back.
         /// </summary>
         private static bool TrySeekPeace(ModState state, Kingdom kingdom)
         {
@@ -84,29 +87,80 @@ namespace DiplomacyIntrigue.Diplomacy
             var enemy = worst.Other(kingdom);
             if (enemy == null || enemy.IsEliminated) return false;
 
-            // A white peace costs nothing, so it is always the first offer.
+            return worst.ScoreFor(kingdom) > DiplomacyConstants.PeaceWhitePeaceOnlyBelow
+                ? TryCollectPeace(state, worst, kingdom, enemy, worstExhaustion)
+                : TryBuyPeace(state, worst, kingdom, enemy, worstExhaustion);
+        }
+
+        /// <summary>
+        /// We are behind or level: offer a white peace, and if the other side is winning
+        /// enough to refuse it, concede upward - the cheapest package they will take, never
+        /// past what their victory entitles them to.
+        /// </summary>
+        private static bool TryBuyPeace(ModState state, WarRecord war, Kingdom kingdom,
+            Kingdom enemy, float exhaustion)
+        {
             var white = new PeaceTerms(enemy, kingdom);
-            if (PeaceTable.WouldAccept(state, worst, white, out _)
-                && PeaceTable.Apply(state, worst, white, out _))
+            if (PeaceTable.BothWouldSign(state, war, white, out _)
+                && PeaceTable.Apply(state, war, white, out _))
             {
                 Log.Info("AI", kingdom.Name + " sued for peace with " + enemy.Name
-                               + " at exhaustion " + worstExhaustion.ToString("0.0") + ": white peace.");
+                               + " at exhaustion " + exhaustion.ToString("0.0") + ": white peace.");
                 return true;
             }
 
-            // They want something. Concede in increasing order of pain, and never past
-            // what their war score entitles them to.
-            foreach (var terms in ConcessionLadder(state, worst, enemy, kingdom))
+            foreach (var terms in ConcessionLadder(state, war, enemy, kingdom))
             {
-                if (!PeaceTable.IsDemandable(state, worst, terms, out _)) continue;
-                if (!PeaceTable.WouldAccept(state, worst, terms, out _)) continue;
+                if (!PeaceTable.IsDemandable(state, war, terms, out _)) continue;
+                if (!PeaceTable.BothWouldSign(state, war, terms, out _)) continue;
 
-                if (PeaceTable.Apply(state, worst, terms, out _))
+                if (PeaceTable.Apply(state, war, terms, out _))
                 {
                     Log.Info("AI", kingdom.Name + " bought peace from " + enemy.Name
-                                   + " at exhaustion " + worstExhaustion.ToString("0.0") + ": " + terms + ".");
+                                   + " at exhaustion " + exhaustion.ToString("0.0") + ": " + terms + ".");
                     return true;
                 }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// We are ahead but worn out: take the most the war has earned that they will
+        /// actually sign, and fall back to a white peace only when nothing is collectable.
+        ///
+        /// The ladder is walked in reverse - largest package first - because the same list
+        /// serves both sides of the table. Offering, you want the cheapest thing they will
+        /// accept; collecting, the dearest thing they will bear.
+        /// </summary>
+        private static bool TryCollectPeace(ModState state, WarRecord war, Kingdom kingdom,
+            Kingdom enemy, float exhaustion)
+        {
+            var packages = new List<PeaceTerms>(ConcessionLadder(state, war, kingdom, enemy));
+            for (var i = packages.Count - 1; i >= 0; i--)
+            {
+                var terms = packages[i];
+                if (!PeaceTable.IsDemandable(state, war, terms, out _)) continue;
+                if (!PeaceTable.BothWouldSign(state, war, terms, out _)) continue;
+
+                if (PeaceTable.Apply(state, war, terms, out _))
+                {
+                    Log.Info("AI", kingdom.Name + " imposed terms on " + enemy.Name
+                                   + " at exhaustion " + exhaustion.ToString("0.0")
+                                   + " (war score " + war.ScoreFor(kingdom).ToString("0")
+                                   + "): " + terms + ".");
+                    return true;
+                }
+            }
+
+            var white = new PeaceTerms(kingdom, enemy);
+            if (PeaceTable.BothWouldSign(state, war, white, out _)
+                && PeaceTable.Apply(state, war, white, out _))
+            {
+                Log.Info("AI", kingdom.Name + " let " + enemy.Name + " go at exhaustion "
+                               + exhaustion.ToString("0.0")
+                               + ": nothing collectable, white peace.");
+                return true;
             }
 
             return false;
@@ -334,6 +388,16 @@ namespace DiplomacyIntrigue.Diplomacy
 
         private static bool TryDeclareWar(ModState state, Kingdom kingdom)
         {
+            // One war of our own at a time. Wars we were dragged into by a treaty do not
+            // count against this - they were not our decision, and a kingdom already
+            // honouring an obligation may still pursue its own quarrel.
+            //
+            // Without this the rate is set purely by the value threshold, and run 02 shows
+            // where that lands: 1.4 chosen wars per kingdom per year, which only worked
+            // because vanilla ended every war in six days. Fixing peace without fixing the
+            // rate would trade one broken world for another.
+            if (ChosenWarCount(state, kingdom) >= DiplomacyConstants.AiMaxConcurrentChosenWars) return false;
+
             if (WorstExhaustion(state, kingdom) > DiplomacyConstants.AiMaxExhaustionToExpand) return false;
 
             var weariness = state.WearinessOf(kingdom);
@@ -463,6 +527,13 @@ namespace DiplomacyIntrigue.Diplomacy
                 ? "allowed"
                 : "BLOCKED - " + TreatyEnforcement.Explain(state, us, them, block)));
 
+            // Listed first among the gates because it is the one that will most often be the
+            // answer, and a diagnostic that omits the binding constraint is worse than none.
+            var chosen = ChosenWarCount(state, us);
+            sb.AppendLine("  chosen wars:    " + chosen
+                          + " (must be < " + DiplomacyConstants.AiMaxConcurrentChosenWars + ")"
+                          + (chosen >= DiplomacyConstants.AiMaxConcurrentChosenWars ? "   BLOCKED" : ""));
+
             var worstExhaustion = WorstExhaustion(state, us);
             sb.AppendLine("  our exhaustion: " + worstExhaustion.ToString("0.0")
                           + " (must be <= " + DiplomacyConstants.AiMaxExhaustionToExpand.ToString("0") + ")"
@@ -531,6 +602,17 @@ namespace DiplomacyIntrigue.Diplomacy
                 if (value > worst) worst = value;
             }
             return worst;
+        }
+
+        /// <summary>
+        /// Wars this kingdom chose, as opposed to ones a treaty dragged it into.
+        /// </summary>
+        private static int ChosenWarCount(ModState state, Kingdom kingdom)
+        {
+            var count = 0;
+            foreach (var war in state.OngoingWarsOf(kingdom))
+                if (!war.IsObligationWar) count++;
+            return count;
         }
 
         private static void Announce(string text)

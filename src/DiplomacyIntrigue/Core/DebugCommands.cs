@@ -422,7 +422,11 @@ namespace DiplomacyIntrigue.Core
             if (!PeaceTable.IsDemandable(state, war, terms, out var notAllowed))
                 return "Cannot demand that: " + notAllowed;
 
-            if (!PeaceTable.WouldAccept(state, war, terms, out var refused))
+            // Both sides, so the command mirrors what the AI actually requires. Checking only
+            // the loser is what let the concession ladder sit unreachable for 13 in-game
+            // years, and a diagnostic that asks a weaker question than the system it tests
+            // will hide the same class of bug again.
+            if (!PeaceTable.BothWouldSign(state, war, terms, out var refused))
                 return "Refused: " + refused;
 
             return PeaceTable.Apply(state, war, terms, out var applyError)

@@ -137,6 +137,15 @@ namespace DiplomacyIntrigue.Core
                 // actually took effect.
                 line.Append(" vanillaWarsRefused=").Append(TreatyEnforcement.VanillaWarProposalsRefused);
 
+                // The takeover's own acceptance measure. Zero counters and a working takeover
+                // look identical from outside - vanilla might simply never have wanted any of
+                // these - so the only honest way to know the overrides are installed and
+                // being reached is to count what they refuse.
+                line.Append(" vanillaPeaceRefused=").Append(VanillaDiplomacy.PeaceRefused);
+                line.Append(" vanillaAlliancesRefused=").Append(VanillaDiplomacy.AllianceRefused);
+                line.Append(" vanillaTradeRefused=").Append(VanillaDiplomacy.TradeAgreementRefused);
+                line.Append(" vanillaCallToWarRefused=").Append(VanillaDiplomacy.CallToWarRefused);
+
                 foreach (TreatyType type in Enum.GetValues(typeof(TreatyType)))
                 {
                     byType.TryGetValue(type, out var n);

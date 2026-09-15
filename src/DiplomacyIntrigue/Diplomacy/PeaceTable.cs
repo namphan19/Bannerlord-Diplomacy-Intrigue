@@ -146,6 +146,56 @@ namespace DiplomacyIntrigue.Diplomacy
         }
 
         /// <summary>
+        /// Whether the **winner** would sign. This half was missing, and its absence made the
+        /// concession ladder unreachable.
+        ///
+        /// The bug, precisely: a kingdom past its exhaustion threshold offered a white peace,
+        /// and the only willingness check - <see cref="WouldAccept"/> - asks whether
+        /// <c>terms.Loser</c> would sign. In a white-peace offer the offering side *is* the
+        /// loser, so it was asking itself, agreeing with itself, and taking a free peace. The
+        /// winner never got a say. Run 02: 13 peace-table settlements, 13 white peaces, zero
+        /// concessions in 13 in-game years.
+        ///
+        /// Three ways a winner signs: it earned nothing (a stalemate has nothing to collect),
+        /// it is worn out itself, or the package is worth at least
+        /// <see cref="DiplomacyConstants.PeaceWinnerMinimumShare"/> of what the war earned.
+        /// </summary>
+        public static bool WinnerWouldAccept(ModState state, WarRecord war, PeaceTerms terms, out string reason)
+        {
+            reason = null;
+            if (terms == null) { reason = "No terms."; return false; }
+
+            var winner = terms.Winner;
+            var budget = BudgetFor(war, winner);
+
+            // A stalemate entitles them to nothing, so a white peace is the whole of what is
+            // on the table and refusing it would just prolong a war neither side is winning.
+            if (budget <= 0f) return true;
+
+            var exhaustion = war.ExhaustionOf(winner);
+            if (exhaustion >= DiplomacyConstants.ExhaustionAcceptWhitePeaceWhenWinning) return true;
+
+            var cost = CostOf(terms);
+            var wanted = budget * DiplomacyConstants.PeaceWinnerMinimumShare;
+            if (cost >= wanted) return true;
+
+            reason = winner.Name + " is winning and will not settle for that: the package is worth "
+                     + cost.ToString("0") + " against a war score of " + budget.ToString("0")
+                     + ", and they are only at exhaustion " + exhaustion.ToString("0.0")
+                     + " of the " + DiplomacyConstants.ExhaustionAcceptWhitePeaceWhenWinning.ToString("0")
+                     + " that would make them stop caring.";
+            return false;
+        }
+
+        /// <summary>
+        /// Both signatures. Every route to peace - the AI's, the player's demand, the player's
+        /// offer - goes through this, so no path can accidentally consult only one side again.
+        /// </summary>
+        public static bool BothWouldSign(ModState state, WarRecord war, PeaceTerms terms, out string reason)
+            => WinnerWouldAccept(state, war, terms, out reason)
+               && WouldAccept(state, war, terms, out reason);
+
+        /// <summary>
         /// Signs the peace and executes the terms. Reads war score and exhaustion first,
         /// because making peace closes the war record.
         /// </summary>
