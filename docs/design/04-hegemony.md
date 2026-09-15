@@ -95,6 +95,33 @@ submission is what happens after a war someone has comprehensively lost, not aft
 season. Starting state: **Hold 35**, one grievance, trust unchanged (losing a war is not a
 betrayal).
 
+**Run 03 confirms 90 is reachable, twice in 6.2 years.** Two wars ended at war score **exactly
+100** — `Battania / Northern Empire` and `Khuzait / Sturgia` — and both settled for a tributary
+pact because that is the highest rung the ladder currently has. Had this rung existed, both
+would have produced a vassal, and therefore a hegemon. So the threshold is measured rather than
+guessed, and at roughly **0.3 submissions per year** a hegemony would form every three years or
+so, which is the right order of magnitude for something meant to feel like a turn in history.
+
+The same run also shows who would have risen. Fifteen tributary pacts were imposed in 6.2
+years, every one of them at a peace table — i.e. won:
+
+| Patron | Clients |
+|---|---|
+| **Khuzait** | Northern Empire ×3, Southern Empire, Aserai, Sturgia |
+| **Vlandia** | Western Empire ×3, Battania, Aserai |
+| Western Empire, Southern Empire, Sturgia, Battania | one each |
+
+Two proto-hegemons, and one chronic client: **Northern Empire paid six pacts to four different
+patrons**. That is possible only because tribute is not exclusive — `TreatyRegistry` already
+refuses a second subordination, so under vassalage Northern Empire would have had to belong to
+*one* of them, and the other three would have had a reason to fight over it. The contested
+vassal in §5.3 is not hypothetical; the world is already producing the candidate.
+
+One mechanical note for 1.9: every tributary pact in run 03 **expired honoured in full** after
+its two years (`TributaryPactYears = 2`) with **zero defaults**, and was then sometimes
+re-imposed on the same pair after another war. Vassalage runs five years and needs renewal to
+be a decision rather than an expiry — which is what `Hold` ≥ 70 in §4.2 is for.
+
 ### 3.2 Offered voluntarily
 
 A cornered kingdom asks for protection. Evaluated weekly alongside the other AI moves, using
