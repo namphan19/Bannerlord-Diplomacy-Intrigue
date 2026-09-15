@@ -1,7 +1,12 @@
 #requires -Version 7
 <#
-    Builds Diplomacy & Intrigue and copies the whole module tree into the game Modules folder.
-    This WRITES INTO THE GAME INSTALL. Close Bannerlord first.
+    Builds Diplomacy & Intrigue, checks that the game could actually load it, and only
+    then copies the module tree into the game Modules folder.
+
+    The pre-flight check runs BEFORE anything is written to the game folder. A module
+    assembly the game cannot load produces no log of its own - the game reports only
+    "could not be loaded correctly due to a dependency conflict" - so catching it here
+    saves a launch cycle and avoids leaving a broken module installed.
 
     Usage:  pwsh ./scripts/deploy.ps1 [-Configuration Release] [-GameFolder "D:\...\Mount and Blade II Bannerlord"]
 #>
@@ -18,10 +23,26 @@ if (Get-Process -Name "Bannerlord*" -ErrorAction SilentlyContinue) {
     throw "Bannerlord is running. Close the game before deploying."
 }
 
-$buildArgs = @("build", (Join-Path $repo "DiplomacyIntrigue.sln"), "-c", $Configuration, "--nologo", "-p:DeployToGame=true")
+# 1. Build only - nothing touches the game folder yet.
+$buildArgs = @("build", (Join-Path $repo "DiplomacyIntrigue.sln"), "-c", $Configuration, "--nologo")
 if ($GameFolder) { $buildArgs += "-p:GameFolder=$GameFolder" }
 
 dotnet @buildArgs
+if ($LASTEXITCODE -ne 0) { throw "Build failed with exit code $LASTEXITCODE." }
+
+# 2. Pre-flight: would the game load this assembly at all?
+Write-Host ""
+Write-Host "Load pre-flight check..." -ForegroundColor Cyan
+$probeArgs = @("run", "--project", (Join-Path $repo "tools/LoadProbe"), "--nologo")
+dotnet @probeArgs
+if ($LASTEXITCODE -ne 0) {
+    throw "Pre-flight check failed - the game would not load this module. Nothing was copied to the game folder."
+}
+
+# 3. Deploy. Incremental, so this is a copy rather than a rebuild.
+$deployArgs = $buildArgs + "-p:DeployToGame=true"
+dotnet @deployArgs
 if ($LASTEXITCODE -ne 0) { throw "Deploy failed with exit code $LASTEXITCODE." }
 
+Write-Host ""
 Write-Host "Deployed. Enable 'Diplomacy & Intrigue' in the launcher." -ForegroundColor Green

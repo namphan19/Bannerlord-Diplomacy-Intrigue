@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- Diagnostic tool, not shipped with the module. It runs on the installed .NET 8
+         runtime and inspects the module purely as metadata, so the runtime it runs on
+         has no bearing on what it reports. -->
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>LoadProbe</AssemblyName>
+    <RootNamespace>LoadProbe</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Mono.Cecil" Version="0.11.5" />
+  </ItemGroup>
+
+</Project>

@@ -9,6 +9,12 @@
     <BaseOutputPath>$(OutputPath)</BaseOutputPath>
   </PropertyGroup>
 
+  <!-- net472 targeting pack as a NuGet package, so the build needs no
+       Visual Studio or .NET Framework Developer Pack installed. -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+
   <!-- ===== Game assemblies (never copied: the game already has them) ===== -->
   <ItemGroup>
     <Reference Include="TaleWorlds.CampaignSystem">

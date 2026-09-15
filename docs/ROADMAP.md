@@ -22,8 +22,21 @@ Buildable, loadable, save-safe skeleton.
 | Console diagnostics | `Core/DebugCommands.cs` |
 | Build / deploy scripts | `scripts/` |
 
-**Acceptance:** builds clean; loads in-game showing the version notice; `diplomacy.status` reports healthy; save → load → `diplomacy.wars` still lists the same wars.
-*Not yet verified in a live campaign — that is the first item of Phase 1.*
+| Load pre-flight diagnostic (catches failures that happen before any module code runs) | `tools/LoadProbe` |
+
+**Acceptance: verified in a live campaign on 2026-09-15.**
+
+| Check | Evidence |
+|---|---|
+| Module loads | `OnSubModuleLoad complete. Harmony patches applied.` |
+| Startup notice shown | `Diplomacy & Intrigue v0.1.0 loaded.` |
+| Behaviors registered | `Campaign behaviors registered.` |
+| Console commands live | `diplomacy.status` → `healthy: True`, schema v1 |
+| War ledger populated | `Backfilled 4 pre-existing war(s)` — the four 1084 starting wars |
+| Save → load round-trip | after reload: `Loaded: 0 treaties, 4 war records, schema v1` **and no backfill line**, proving the records came from the save rather than being re-created |
+
+One real bug was found and fixed during this: the module was targeting `net6.0`, which the
+game cannot load. See ARCHITECTURE §1.1.
 
 ---
 

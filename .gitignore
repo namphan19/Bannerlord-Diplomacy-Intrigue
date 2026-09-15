@@ -16,3 +16,6 @@ tools/**/bin/
 tools/**/obj/
 artifacts/
 *.log
+
+# Diagnostic tool output
+artifacts/

@@ -5,10 +5,55 @@
 | Item | Value | Why it matters |
 |---|---|---|
 | Game | Mount & Blade II: Bannerlord **v1.4.8** | TaleWorlds breaks internal APIs between minor versions. Every patch we write is version-pinned. |
-| Runtime | **.NET 6** (game ships its own CoreCLR in `bin/Win64_Shipping_Client`) | Mod must target `net6.0`. Never ship a newer BCL assembly — the game's runtime wins and you get `TypeLoadException`. |
+| Runtime | **.NET Framework 4.7.2** host; the game's own assemblies target **netstandard2.0** | Modules MUST target `net472`. See §1.1 — getting this wrong costs a day. |
 | Loader | **BLSE** (already installed) | Gives us assembly resolution and crash reports. |
 | Frameworks | Harmony 2.4.2, ButterLib 2.10.4, UIExtenderEx 2.13.2, MCM 5.11.4 | All declared as hard dependencies in `SubModule.xml`. |
 | Scope | Singleplayer campaign only | Multiplayer has no campaign layer; `OnGameStart` bails out unless `game.GameType is Campaign`. |
+
+### 1.1 The runtime, and how to not get it wrong
+
+`bin/Win64_Shipping_Client` contains a `Microsoft.NETCore.App` folder, which makes the game
+look like a .NET 6 application. It is not — that folder belongs to the Gaming.Desktop (GDK)
+build. The Win64 shipping client is a **.NET Framework 4.7.2** host. Two reliable tells:
+
+- `Bannerlord.BLSE.Standalone.exe.config` exists — `.exe.config` is a .NET Framework concept.
+- There is no `coreclr.dll` or `hostfxr.dll` *directly* in `bin/Win64_Shipping_Client`.
+
+The authoritative check is the metadata of the game's own assemblies:
+
+```
+TaleWorlds.MountAndBlade.dll  ->  TargetFramework .NETStandard 2.0, references netstandard 2.0.0.0
+```
+
+and any working community module:
+
+```
+NoMoreRogueClans.dll          ->  TargetFramework .NETFramework 4.7.2, references mscorlib 4.0.0.0
+```
+
+A `net6.0` module **builds fine and even passes a naive load test**, then fails in game with:
+
+> "<module> submodule could not be loaded correctly due to a dependency conflict."
+
+That message is misleading. Tracing it through `TaleWorlds.MountAndBlade.Module`:
+`LoadSubModules` → `AddSubModule` → `CollectModuleAssemblyTypes`, which calls
+`assembly.GetTypes()` inside a `try/catch` and returns `CriticalError` on any exception. A
+`net6.0` assembly loads as metadata but cannot bind `System.Runtime 6.0.0.0` in a .NET
+Framework process, so type loading throws and the game reports a dependency conflict —
+naming neither the assembly nor the reason.
+
+**Because the failure happens before any of our code runs, the module cannot log it.** That
+is what `tools/LoadProbe` is for (§9).
+
+Two further facts learned from that trace, worth knowing before adding a reference:
+
+- Vanilla walks the module's references and loads each one whose name does not start with
+  `System`, `mscorlib` or `netstandard` — **by bare file name, resolved against the game bin
+  folder**. Cross-module references such as `0Harmony` and `MCMv5` are not there; they work
+  only because BLSE has already loaded them. LoadProbe flags every such reference.
+- Nothing about module loading reaches any log file: `LoadSubModules` runs before any
+  `OnSubModuleLoad`, so ButterLib's logging is not up yet and the game's `MBDebug.Print`
+  output is discarded.
 
 Two constraints drive most design decisions below:
 

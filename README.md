@@ -25,12 +25,18 @@ Standalone: no dependency on other diplomacy mods.
 
 ## Building
 
-Needs the .NET 8 SDK (it compiles the `net6.0` target the game runs).
+Needs the .NET SDK (8 or newer). The module itself targets **net472**, because the Win64
+shipping client is a .NET Framework 4.7.2 host — see
+[docs/ARCHITECTURE.md §1.1](docs/ARCHITECTURE.md). No Visual Studio required: the net472
+reference assemblies come from a NuGet package.
 
 ```powershell
 pwsh ./scripts/build.ps1                 # compile only — does not touch the game folder
-pwsh ./scripts/deploy.ps1                # compile + install into the game Modules folder
+pwsh ./scripts/deploy.ps1                # pre-flight check, then install into the game
 ```
+
+`deploy.ps1` runs `tools/LoadProbe` before copying anything, and refuses to install a
+module the game could not load.
 
 The game install is located automatically. To point at a different one:
 
@@ -56,6 +62,14 @@ scripts/               build and deploy
 
 Logs: `Documents/Mount and Blade II Bannerlord/DiplomacyIntrigue/Logs/` — attach the newest file to
 any bug report.
+
+If the game shows *"submodule could not be loaded correctly due to a dependency conflict"*,
+there will be **no log at all** — the failure happens before any module code runs. Run the
+pre-flight check instead, which names the actual cause:
+
+```powershell
+dotnet run --project tools/LoadProbe
+```
 
 Developer console (Alt+`~`):
 

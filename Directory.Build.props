@@ -2,11 +2,15 @@
 
   <!-- ============================================================
        Shared build configuration for all Diplomacy & Intrigue projects.
-       Game build target: Mount & Blade II: Bannerlord v1.4.8 (.NET 6)
+       Game build target: Mount & Blade II: Bannerlord v1.4.8
+       The Win64 shipping client is a .NET Framework 4.7.2 host and the game's own
+       assemblies target netstandard2.0, so modules MUST target net472. A net6.0
+       module loads as metadata but fails type loading, which the game reports as
+       "could not be loaded correctly due to a dependency conflict".
        ============================================================ -->
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net472</TargetFramework>
     <LangVersion>11</LangVersion>
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
