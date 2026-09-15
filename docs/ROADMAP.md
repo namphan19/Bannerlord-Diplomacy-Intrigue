@@ -140,9 +140,62 @@ its trust dividend, tribute actually changing hands on day 7, the two-year peace
 need real campaign days, like the battle and siege paths. All of it is covered by the
 Phase 4 long-run task.
 
-**1.5 Peace table** — peace stops being a binary. War score plus exhaustion sets what the winner may demand: fief transfer, tribute, prisoner release, white peace. Both AI and player negotiate against the same valuation.
+**1.5 Peace table** ✅ **implemented** — peace is a package, not a yes/no. Two numbers decide
+different halves, and keeping them separate is the point: **war score** sets what the winner
+may demand, **exhaustion** sets whether the loser signs. A winner who is ahead but worn out
+takes a white peace; a loser who is fresh refuses to be dismembered and fights on.
+Code: `Diplomacy/PeaceTable.cs`, `Models/PeaceTerms.cs`.
 
-**1.6 Call to arms** — alliances and defensive pacts pull signatories into wars. Refusing is allowed and costs trust.
+Deviation from this spec, deliberately: the design listed demand **tiers**
+("45-70: one castle OR tribute and prisoners"). That became a **point budget** - each demand
+costs war-score points and the package must fit what the war earned. Same intent, no
+exclusive-or branches, and a new demand type is one constant instead of a rewritten table.
+The reference points still hold: 45 buys a castle, 90 buys two towns.
+
+**1.6 Call to arms** ✅ **implemented** — alliances, defensive pacts and vassalage pull
+signatories into wars. A defensive pact never answers a war of conquest. Refusing an
+alliance costs trust and nothing else, because an alliance that cannot be declined is a
+suicide pact the AI would never sign. Refusing as a **vassal** breaks the vassalage, because
+service is the substance of that bargain.
+Code: `Diplomacy/CallToArms.cs`, `Behaviors/CallToArmsBehavior.cs`.
+
+Two things worth recording:
+
+- **The cascade is capped at one step.** When an ally joins, the engine raises the war event
+  again; unguarded, the war would ripple through allies of allies until half of Calradia was
+  involved - which is the exact vanilla failure this mod exists to remove.
+- **The obligation runs both ways.** A kingdom dragged into someone else's war is released
+  from it when that someone makes peace. Found by testing: Battania answered Vlandia's call,
+  Vlandia made peace, and Battania was left fighting alone for a cause it never chose and
+  could not end. `WarRecord.CalledBy` now records who called, and peace releases the
+  followers.
+
+**Verified in a live campaign:**
+
+| Check | Result |
+|---|---|
+| Vassal answers the call | Battania joined Vlandia's war on Sturgia; logged and reflected in the game's own war list |
+| Joined war is legitimate | recorded as `DefendAlly`, legitimacy **1.00** - honouring a pact never makes a kingdom look like an aggressor |
+| A held claim outranks the engine's reason | Vlandia's war filed as `BrokenTreaty` (0.95) rather than the engine's generic `Default` (0.00) |
+| Demand budget | war score 0 → "nothing has been earned, white peace only" |
+| Casus belli gates land | a fief demand was refused: a `BrokenTreaty` claim at 0.95 legitimacy still does **not** entitle anyone to territory |
+| Willingness gate | white peace refused at exhaustion 0.0 against a threshold of 60.0 |
+| Peace at the threshold | at exhaustion 64.0 the same offer was signed |
+| Peace pipeline | truce recorded, war closed, `64.00 × 0.5` → 32.0 weariness each side |
+| Truce blocks re-declaration | "the Truce with Sturgia forbids it" - the vanilla habit of re-declaring the next day is gone |
+| Followers released | "Battania leaves the war against Sturgia now that Vlandia has made peace" |
+| Save round-trip | 4 treaties, 6 war records, 13 trust records, 120 fief records after a process restart |
+
+Two bugs were found by reading the live log rather than the code, both now fixed:
+
+1. `CasusBelli.FromDeclareWarDetail` only mapped two of the eight engine reasons, so a war
+   joined by honouring a pact was filed as naked aggression at legitimacy 0.00 - while the
+   calling code's own comment claimed it mapped to `DefendAlly` at 1.00. Code and comment
+   disagreed, and the log was the only place that showed it.
+2. Campaign event listeners do **not** fire in registration order. A trace showed
+   `CallToArmsBehavior` handling a war declaration before `CoreBehavior` did, for the same
+   event. Nothing depends on the order, but `CoreBehavior` claimed it did; the comment was
+   wrong and is now corrected with a warning not to rely on it.
 
 **1.7 AI diplomacy** — weekly per-kingdom evaluation: seek peace, offer pact, demand tribute, pick a war target. Must feel deliberate, not twitchy.
 

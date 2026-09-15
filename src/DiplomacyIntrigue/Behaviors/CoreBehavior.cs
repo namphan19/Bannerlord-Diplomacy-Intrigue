@@ -9,9 +9,14 @@ using TaleWorlds.SaveSystem;
 namespace DiplomacyIntrigue.Behaviors
 {
     /// <summary>
-    /// Owns the campaign-scoped Diplomacy & Intrigue state and keeps the war ledger in step with
-    /// the base game. Every other Diplomacy & Intrigue system reads its data through here, so this
-    /// behavior must be registered first.
+    /// Owns the campaign-scoped Diplomacy &amp; Intrigue state and keeps the war ledger in
+    /// step with the base game. Every other system reads its data through here.
+    ///
+    /// Note on ordering: campaign event listeners do NOT fire in registration order - a
+    /// live trace showed CallToArmsBehavior handling WarDeclared before this behavior did,
+    /// for the same event. Nothing depends on the order: the state object exists from
+    /// construction, and every reader tolerates a war record that has not been opened yet.
+    /// Do not add anything that assumes otherwise.
     /// </summary>
     public sealed class CoreBehavior : CampaignBehaviorBase
     {
@@ -102,9 +107,18 @@ namespace DiplomacyIntrigue.Behaviors
                 if (a == null || d == null) return;   // minor factions are out of scope for now
                 if (_state.OngoingWarBetween(a, d) != null) return;
 
-                var cb = CasusBelli.FromDeclareWarDetail(detail);
+                // A kingdom fights for the best justification it actually holds. Only fall
+                // back to the engine's reason when it holds none - otherwise a war waged
+                // over a broken treaty would be filed as naked aggression.
+                var claim = Diplomacy.ClaimRegistry.Best(_state, a, d);
+                var cb = claim != null
+                    ? claim.Type
+                    : CasusBelli.FromDeclareWarDetail(detail);
+
                 _state.Wars.Add(new WarRecord(a, d, cb));
-                Log.Info("Core", "War opened: " + a.Name + " -> " + d.Name + " (" + detail + " => " + cb + ").");
+                Log.Info("Core", "War opened: " + a.Name + " -> " + d.Name + " (" + detail + " => " + cb
+                                 + ", legitimacy " + CasusBelli.Legitimacy(cb).ToString("0.00")
+                                 + (claim == null ? ", from the engine reason" : ", from a held claim") + ").");
             }
             catch (Exception ex)
             {

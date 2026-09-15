@@ -138,6 +138,56 @@ namespace DiplomacyIntrigue.Diplomacy
         /// </summary>
         public const float TruceBreachWarCostMultiplier = 3f;
 
+        // ---- Peace table ----------------------------------------------------
+        // What a victory buys, priced in war-score points. The winner's war score is the
+        // budget; the package has to fit inside it.
+        //
+        // The design doc originally described demand tiers. A budget reproduces the same
+        // intent without exclusive-or branches, and adding a demand type is one constant
+        // here rather than a rewritten table. Reference points from the original tiers:
+        //   score 45 buys a castle, or money and prisoners
+        //   score 90 buys two towns, or a tributary pact with change to spare
+
+        public const float PeaceCostTown = 45f;
+        public const float PeaceCostCastle = 25f;
+        public const float PeaceCostTributaryPact = 60f;
+        public const float PeaceCostPrisoners = 5f;
+        public const float PeaceCostPerThousandIndemnity = 8f;
+
+        /// <summary>At or below this war score nothing has been earned: white peace only.</summary>
+        public const float PeaceWhitePeaceOnlyBelow = 20f;
+
+        /// <summary>
+        /// Margin on what a losing side will concede. Nobody signs away exactly the
+        /// arithmetic, and it stops the AI refusing an offer over a rounding error.
+        /// </summary>
+        public const float PeaceAcceptanceGrace = 0.25f;
+
+        // ---- Call to arms ----------------------------------------------------
+
+        /// <summary>
+        /// An ally past this exhaustion will not answer a call to arms. Somebody already
+        /// fighting for their life cannot be dragged into another war.
+        /// </summary>
+        public const float CallToArmsRefuseAboveExhaustion = 70f;
+
+        /// <summary>
+        /// Trust below this and an ally does not answer at all. Alliances of convenience
+        /// stop working exactly when they are needed.
+        /// </summary>
+        public const float CallToArmsTrustFloor = 0f;
+
+        /// <summary>
+        /// Hours the player has to answer a call to arms before it lapses as a refusal.
+        /// </summary>
+        public const float CallToArmsPlayerResponseHours = 24f;
+
+        /// <summary>
+        /// An ally refuses when the enemy outweighs the two of them by more than this.
+        /// Joining a war that cannot be won is not loyalty.
+        /// </summary>
+        public const float CallToArmsHopelessRatio = 1.5f;
+
         // ---- Diplomatic trust ------------------------------------------------
         // One value per ORDERED pair: what A thinks of B is not what B thinks of A.
 

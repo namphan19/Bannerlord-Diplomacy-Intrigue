@@ -36,6 +36,19 @@ namespace DiplomacyIntrigue.Models
         /// </summary>
         [SaveableProperty(13)] public bool PeaceDividendPaid { get; private set; }
 
+        /// <summary>
+        /// The kingdom whose call to arms brought the aggressor into this war, or null if
+        /// it chose the war itself.
+        ///
+        /// This is what makes the obligation symmetric: a kingdom that can be dragged into
+        /// someone else's war is released from it when that someone makes peace. Without
+        /// this the ally is left fighting alone for a cause it never chose and cannot end.
+        /// </summary>
+        [SaveableProperty(14)] public Kingdom CalledBy { get; private set; }
+
+        /// <summary>True when this participant joined only because an ally called.</summary>
+        public bool IsObligationWar => CalledBy != null;
+
         internal WarRecord() { }
 
         internal WarRecord(Kingdom aggressor, Kingdom defender, CasusBelliType justification)
@@ -104,6 +117,8 @@ namespace DiplomacyIntrigue.Models
         internal void Close() => EndedOn = CampaignTime.Now;
 
         internal void MarkPeaceDividendPaid() => PeaceDividendPaid = true;
+
+        internal void MarkCalledBy(Kingdom caller) => CalledBy = caller;
 
         private static float Clamp(float v, float min, float max) => v < min ? min : (v > max ? max : v);
 

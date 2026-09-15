@@ -19,10 +19,28 @@ namespace DiplomacyIntrigue.Diplomacy
         {
             switch (detail)
             {
+                // Honouring a pact is the most defensible reason there is.
+                case DeclareWarAction.DeclareWarDetail.CausedByCallToWarAgreement:
+                    return CasusBelliType.DefendAlly;
+
+                // Someone pressed a dynastic claim, or a clan rose against its liege.
+                case DeclareWarAction.DeclareWarDetail.CausedByClaimOnThrone:
+                case DeclareWarAction.DeclareWarDetail.CausedByRebellion:
+                    return CasusBelliType.SupportClaimant;
+
+                // Retaliation for what the other side did to us.
                 case DeclareWarAction.DeclareWarDetail.CausedByPlayerHostility:
+                case DeclareWarAction.DeclareWarDetail.CausedByCrimeRatingChange:
                     return CasusBelliType.AvengeRaid;
+
+                // A court voted for expansion. Legal, and still an act of conquest.
                 case DeclareWarAction.DeclareWarDetail.CausedByKingdomDecision:
                     return CasusBelliType.Conquest;
+
+                // A new realm declaring itself has no case to make, and neither does
+                // an unexplained war.
+                case DeclareWarAction.DeclareWarDetail.CausedByKingdomCreation:
+                case DeclareWarAction.DeclareWarDetail.Default:
                 default:
                     return CasusBelliType.None;
             }

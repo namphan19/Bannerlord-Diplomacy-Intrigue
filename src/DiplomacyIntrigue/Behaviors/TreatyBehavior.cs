@@ -94,6 +94,10 @@ namespace DiplomacyIntrigue.Behaviors
                 var b = side2 as Kingdom;
                 if (a == null || b == null) return;
 
+                // Anyone dragged in by either side is let out with them.
+                CallToArms.ReleaseFollowers(state, a, b);
+                CallToArms.ReleaseFollowers(state, b, a);
+
                 if (state.ActiveTreatyBetween(a, b, Models.TreatyType.Truce) != null) return;
 
                 // Signed directly rather than through Sign(), which requires an active war:

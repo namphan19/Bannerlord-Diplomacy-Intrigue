@@ -356,6 +356,134 @@ namespace DiplomacyIntrigue.Core
                 : "Blocked: " + TreatyEnforcement.Explain(state, a, b, block) + ".";
         }
 
+        /// <summary>
+        /// Shows what a war has earned: the demand budget, the price of each term, and how
+        /// close the other side is to signing. Same numbers the AI reads.
+        /// Usage: diplomacy.peace_allowance Northern Empire | Khuzait
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("peace_allowance", "diplomacy")]
+        public static string PeaceAllowance(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var parts = SplitOnPipe(args);
+            if (parts.Count < 2) return "Usage: diplomacy.peace_allowance <kingdom> | <kingdom>";
+
+            var a = FindKingdom(parts[0]);
+            var b = FindKingdom(parts[1]);
+            if (a == null || b == null) return "Kingdom not found.";
+
+            var war = state.OngoingWarBetween(a, b);
+            if (war == null) return a.Name + " and " + b.Name + " are not at war.";
+
+            var sb = new StringBuilder();
+            sb.AppendLine("From " + a.Name + "'s side:");
+            sb.AppendLine(PeaceTable.DescribeAllowance(state, war, a));
+            sb.AppendLine();
+            sb.AppendLine("From " + b.Name + "'s side:");
+            sb.AppendLine(PeaceTable.DescribeAllowance(state, war, b));
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Offers a peace package and applies it if the other side would sign. Goes through
+        /// the same IsDemandable and WouldAccept checks the AI uses, so a refusal here is a
+        /// real refusal.
+        ///
+        /// Usage: diplomacy.offer_peace &lt;winner&gt; | &lt;loser&gt; | &lt;terms&gt;
+        ///   terms: white, prisoners, indemnity=5000, tribute=800, fief=Pravend
+        ///   several terms are separated by commas
+        /// Example: diplomacy.offer_peace Vlandia | Sturgia | fief=Varcheg, prisoners
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("offer_peace", "diplomacy")]
+        public static string OfferPeace(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var parts = SplitOnPipe(args);
+            if (parts.Count < 2)
+                return "Usage: diplomacy.offer_peace <winner> | <loser> | <terms>" + Environment.NewLine
+                       + "  terms: white, prisoners, indemnity=5000, tribute=800, fief=<name>";
+
+            var winner = FindKingdom(parts[0]);
+            var loser = FindKingdom(parts[1]);
+            if (winner == null) return "No kingdom matching \"" + parts[0] + "\".";
+            if (loser == null) return "No kingdom matching \"" + parts[1] + "\".";
+
+            var war = state.OngoingWarBetween(winner, loser);
+            if (war == null) return winner.Name + " and " + loser.Name + " are not at war.";
+
+            var terms = new PeaceTerms(winner, loser);
+            if (parts.Count > 2 && !ParseTerms(parts[2], terms, out var parseError))
+                return parseError;
+
+            if (!PeaceTable.IsDemandable(state, war, terms, out var notAllowed))
+                return "Cannot demand that: " + notAllowed;
+
+            if (!PeaceTable.WouldAccept(state, war, terms, out var refused))
+                return "Refused: " + refused;
+
+            return PeaceTable.Apply(state, war, terms, out var applyError)
+                ? "Peace signed: " + terms
+                : "Failed: " + applyError;
+        }
+
+        private static bool ParseTerms(string text, PeaceTerms terms, out string error)
+        {
+            error = null;
+            foreach (var raw in text.Split(CommaSeparator))
+            {
+                var token = raw.Trim();
+                if (token.Length == 0) continue;
+
+                if (string.Equals(token, "white", StringComparison.OrdinalIgnoreCase)) continue;
+                if (string.Equals(token, "prisoners", StringComparison.OrdinalIgnoreCase))
+                {
+                    terms.ReleasePrisoners = true;
+                    continue;
+                }
+
+                var split = token.Split(EqualsSeparator);
+                if (split.Length != 2)
+                {
+                    error = "Do not understand \"" + token + "\".";
+                    return false;
+                }
+
+                var key = split[0].Trim();
+                var value = split[1].Trim();
+
+                if (string.Equals(key, "indemnity", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!int.TryParse(value, out var gold)) { error = "Bad indemnity \"" + value + "\"."; return false; }
+                    terms.IndemnityGold = gold;
+                }
+                else if (string.Equals(key, "tribute", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!int.TryParse(value, out var tribute)) { error = "Bad tribute \"" + value + "\"."; return false; }
+                    terms.ImposeTributaryPact = true;
+                    terms.TributePerPeriod = tribute;
+                }
+                else if (string.Equals(key, "fief", StringComparison.OrdinalIgnoreCase))
+                {
+                    var settlement = FindSettlement(value);
+                    if (settlement == null) { error = "No settlement matching \"" + value + "\"."; return false; }
+                    terms.FiefsCeded.Add(settlement);
+                }
+                else
+                {
+                    error = "Unknown term \"" + key + "\".";
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private static readonly char[] CommaSeparator = { ',' };
+        private static readonly char[] EqualsSeparator = { '=' };
+
         /// <summary>Kingdom names contain spaces, so arguments are separated by a pipe.</summary>
         private static List<string> SplitOnPipe(List<string> args)
         {

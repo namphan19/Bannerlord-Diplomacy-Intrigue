@@ -229,7 +229,15 @@ season, but a reputation that follows the player for the rest of the campaign.
 ### 4.2 Peace terms
 
 Peace is a package, not a yes/no. What the stronger side may demand is bounded by **war
-score** and gated by **casus belli**:
+score** and gated by **casus belli**.
+
+> **Implemented as a point budget, not the tiers below.** Each demand costs war-score
+> points (town 45, castle 25, tributary pact 60, prisoners 5, indemnity 8 per 1000 denars)
+> and the package must fit inside the winner's war score. It reproduces the intent of the
+> table without exclusive-or branches, and adding a demand type is one constant in
+> `DiplomacyConstants` rather than a rewritten table. The tiers are kept here as the
+> calibration reference they became.
+
 
 | War score (winner's view) | May demand |
 |---|---|
