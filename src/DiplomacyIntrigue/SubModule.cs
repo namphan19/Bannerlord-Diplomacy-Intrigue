@@ -88,6 +88,12 @@ namespace DiplomacyIntrigue
         {
             // Order matters: the state behavior must exist before any system reads it.
             starter.AddBehavior(new CoreBehavior());
+
+            if (Settings.Current.EnableDiplomacy)
+            {
+                starter.AddBehavior(new WarExhaustionBehavior());
+                starter.AddBehavior(new ClaimsBehavior());
+            }
         }
 
         public override void OnGameEnd(Game game)

@@ -33,7 +33,7 @@ if ($LASTEXITCODE -ne 0) { throw "Build failed with exit code $LASTEXITCODE." }
 # 2. Pre-flight: would the game load this assembly at all?
 Write-Host ""
 Write-Host "Load pre-flight check..." -ForegroundColor Cyan
-$probeArgs = @("run", "--project", (Join-Path $repo "tools/LoadProbe"), "--nologo")
+$probeArgs = @("run", "--nologo", "--project", (Join-Path $repo "tools/LoadProbe"))
 dotnet @probeArgs
 if ($LASTEXITCODE -ne 0) {
     throw "Pre-flight check failed - the game would not load this module. Nothing was copied to the game folder."

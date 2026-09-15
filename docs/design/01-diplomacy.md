@@ -265,14 +265,45 @@ as intent.
 | 1.7 | AI weekly evaluation | all above |
 | 1.8 | Diplomacy UI | all above |
 
-## 7. Open questions for the project lead
+## 7. Decisions taken by the project lead (2026-09-15)
 
-1. **Minor factions.** Currently out of scope — treaties are kingdom-only. Worth including
-   later, or permanently out?
-2. **Player-only or symmetric?** The spec above is symmetric: AI plays by the same numbers.
-   That is more work and more fun, but it means the player cannot out-cheese the AI. Confirm
-   this is what you want.
-3. **Exhaustion visibility.** Show the enemy's exhaustion exactly, approximately ("war-weary"),
-   or only with an intelligence report from Phase 3? Hiding it makes espionage matter more.
-4. **Vassalage** is the most invasive type — it constrains another kingdom's foreign policy.
-   Keep it in Phase 1, or defer to Phase 2 where it belongs thematically?
+1. **Minor factions are out of scope.** Treaties, claims and exhaustion are kingdom-only.
+   Minor-faction diplomacy is not planned; revisit only if the pillar feels thin.
+2. **The AI plays by the same rules.** Every valuation, cost and threshold in this document
+   is evaluated through the same functions for AI and player - see `ClaimRegistry` and
+   `WarExhaustion`, which take no "is this the player" argument anywhere. No hidden
+   modifiers, no difficulty fudge. The player cannot out-cheese the AI by learning seams,
+   and any exploit the player finds is one the AI benefits from too.
+3. **Enemy exhaustion visibility — still open.** See §8.
+4. **Vassalage stays in Phase 1** as a treaty type, alongside the tributary pact.
+
+## 8. Still open: how much of the enemy does the player see?
+
+Own exhaustion and own war score are always exact. The question is what the player learns
+about the *other* side, and it is a real design fork rather than a UI detail - it decides
+whether the espionage pillar has anything to sell.
+
+Three shapes, all implementable on the data that already exists:
+
+**A. Exact numbers.** "Vlandia: 67/100, war score −23." The player can compute the precise
+day the enemy will accept peace. Transparent and never frustrating; also turns war into a
+spreadsheet, and removes most of the reason to ever run a spy network.
+
+**B. Qualitative bands.** Five labels — *Fresh, Strained, Weary, Exhausted, Breaking* —
+mapped onto the 0-100 scale, shown as a bar with no number. The player can read the
+situation and plan, but cannot time it to the day. Espionage later upgrades a band to the
+exact figure plus its trend.
+
+**C. Intelligence only.** Nothing by default. A spy network or a resident envoy returns a
+figure, stamped with the date it was gathered, and it goes stale. Makes Phase 3 genuinely
+valuable and creates real fog of war; but for the whole of Phase 1 and 2 the player would
+have no information at all, which reads as opacity rather than mystery.
+
+**Recommendation: B now, upgrading to exact-and-dated through espionage in Phase 3.** It
+keeps Phase 1 playable on its own, and it leaves Phase 3 something concrete to sell -
+turning a band into a number is a legible reward for running a network.
+
+Worth noting whichever way this goes: the player always finds out indirectly anyway. From
+§5, an AI kingdom past the seek-peace threshold sends an envoy. That is an in-fiction
+information channel that works under all three options, and it means the player is never
+truly blind to an enemy that is ready to talk.

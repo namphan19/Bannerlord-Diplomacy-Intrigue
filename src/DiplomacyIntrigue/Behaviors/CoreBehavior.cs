@@ -125,7 +125,14 @@ namespace DiplomacyIntrigue.Behaviors
                 if (war == null) return;
 
                 war.Close();
-                Log.Info("Core", "War closed after " + war.DaysElapsed.ToString("0") + " days: " + war + ".");
+
+                // The peace has to leave a mark, or a kingdom can walk straight into the
+                // next war with nothing to show for the last one.
+                Diplomacy.WarExhaustion.CarryOverToWeariness(_state, war);
+
+                Log.Info("Core", "War closed after " + war.DaysElapsed.ToString("0") + " days: " + war
+                                 + " | weariness now " + a.Name + "=" + _state.WearinessOf(a).ToString("0.0")
+                                 + ", " + b.Name + "=" + _state.WearinessOf(b).ToString("0.0") + ".");
             }
             catch (Exception ex)
             {

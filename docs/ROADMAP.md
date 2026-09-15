@@ -44,9 +44,31 @@ game cannot load. See ARCHITECTURE §1.1.
 
 The pillar everything else hangs off. Playable target: *wars end for reasons, and peace can be shaped.*
 
-**1.1 War exhaustion** — accumulates from casualties, lost fiefs, sieges, raided villages, and plain elapsed time; decays in peace. Scaled by `WarExhaustionRate`. Surfaced in UI as a bar per war. This is the engine that stops Calradia's permanent-war problem.
+**1.1 War exhaustion** ✅ **implemented** — accrues from elapsed time, battle casualties
+(divided by kingdom strength, so it is relative to size), lost towns and castles, raided
+villages, sieges endured and enemy-occupied fiefs. War score tracked separately, with a
+daily drift toward zero so stalemates trend to a white peace. On peace, half the exhaustion
+carries into a per-kingdom weariness pool that decays at 0.15/day.
+Code: `Diplomacy/WarExhaustion.cs`, `Diplomacy/DiplomacyConstants.cs`,
+`Behaviors/WarExhaustionBehavior.cs`, `Models/KingdomWeariness.cs`.
 
-**1.2 Casus belli** — a war is declared *for* something. Legitimacy (0–1, already scaffolded in `Diplomacy/CasusBelli.cs`) scales influence cost, third-party relation damage, and internal opposition. Claims expire; fabricating one costs influence and can be exposed.
+**1.2 Casus belli** ✅ **implemented** — every war now carries a justification, and
+legitimacy (0–1) is the single number the rest of the mod reads. Fief ownership history is
+recorded so ancestral claims can exist at all; claims are granted by conquest and by raids,
+renewed rather than stacked, and expire. Claim fabrication is implemented end to end
+(cost, 30-day timer, 20% exposure with relation damage and a counter-claim); until the 1.8
+UI exists its only entry point is `diplomacy.fabricate_claim`.
+Code: `Diplomacy/FiefHistory.cs`, `Diplomacy/ClaimRegistry.cs`, `Diplomacy/CasusBelli.cs`,
+`Behaviors/ClaimsBehavior.cs`, `Models/Claim.cs`, `Models/FiefOwnershipRecord.cs`,
+`Models/FabricationAttempt.cs`.
+
+Verified in a live campaign: war declaration opens a record with correct aggressor/defender
+attribution; a fief transfer closes the old ledger row and opens a new one; a fief *gifted*
+grants no claim (only `BySiege` does), which is the intended distinction between a grievance
+and a transaction; schema migrated v1 → v3 on a pre-existing save without data loss.
+
+Not yet verified live, and honestly so: daily exhaustion accrual and casualty attribution
+need campaign days and a real battle to pass through — see the balance-run task in Phase 4.
 
 **1.3 Treaty engine** — the six types in `Models/TreatyType` become live: non-aggression, truce, defensive pact, alliance, tributary pact, vassalage. Signing, expiry, renewal, breach. Breach carries a lasting trust penalty.
 

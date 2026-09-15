@@ -99,10 +99,12 @@ namespace DiplomacyIntrigue.Models
 
         private static float Clamp(float v, float min, float max) => v < min ? min : (v > max ? max : v);
 
+        // One decimal on exhaustion is not cosmetic: daily accrual is 0.08, so integer
+        // rounding makes a working system look like a dead one for the first fortnight.
         public override string ToString()
             => NameOf(Aggressor) + " vs " + NameOf(Defender)
-               + " [" + Justification + "] score=" + WarScore.ToString("0.0")
-               + " exhaustion=" + AggressorExhaustion.ToString("0") + "/" + DefenderExhaustion.ToString("0");
+               + " [" + Justification + "] score=" + WarScore.ToString("0.00")
+               + " exhaustion=" + AggressorExhaustion.ToString("0.00") + "/" + DefenderExhaustion.ToString("0.00");
 
         private static string NameOf(Kingdom k) => k == null ? "?" : k.Name.ToString();
     }

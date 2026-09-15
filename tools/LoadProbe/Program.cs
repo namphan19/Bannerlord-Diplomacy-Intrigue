@@ -29,12 +29,16 @@ namespace LoadProbe
             var repoRoot = FindRepoRoot();
             var moduleName = "DiplomacyIntrigue";
 
-            var dllPath = args.Length > 0
-                ? args[0]
+            // Drop anything that looks like a flag: a misplaced dotnet switch would
+            // otherwise be read as the assembly path and reported as a missing file.
+            var positional = args.Where(a => !a.StartsWith("-", StringComparison.Ordinal)).ToArray();
+
+            var dllPath = positional.Length > 0
+                ? positional[0]
                 : Path.Combine(repoRoot, "module", moduleName, "bin", "Win64_Shipping_Client", moduleName + ".dll");
 
-            var gameFolder = args.Length > 1
-                ? args[1]
+            var gameFolder = positional.Length > 1
+                ? positional[1]
                 : Environment.GetEnvironmentVariable("BANNERLORD_GAME_DIR")
                   ?? @"E:\SteamLibrary\steamapps\common\Mount & Blade II Bannerlord";
 

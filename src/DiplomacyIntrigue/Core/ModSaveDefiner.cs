@@ -22,6 +22,10 @@ namespace DiplomacyIntrigue.Core
             AddClassDefinition(typeof(ModState), 1);
             AddClassDefinition(typeof(Treaty), 2);
             AddClassDefinition(typeof(WarRecord), 3);
+            AddClassDefinition(typeof(KingdomWeariness), 4);
+            AddClassDefinition(typeof(FiefOwnershipRecord), 5);
+            AddClassDefinition(typeof(Claim), 6);
+            AddClassDefinition(typeof(FabricationAttempt), 7);
         }
 
         protected override void DefineEnumTypes()
@@ -38,6 +42,10 @@ namespace DiplomacyIntrigue.Core
         {
             ConstructContainerDefinition(typeof(List<Treaty>));
             ConstructContainerDefinition(typeof(List<WarRecord>));
+            ConstructContainerDefinition(typeof(List<KingdomWeariness>));
+            ConstructContainerDefinition(typeof(List<FiefOwnershipRecord>));
+            ConstructContainerDefinition(typeof(List<Claim>));
+            ConstructContainerDefinition(typeof(List<FabricationAttempt>));
         }
     }
 }

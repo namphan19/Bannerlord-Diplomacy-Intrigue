@@ -16,18 +16,26 @@ namespace DiplomacyIntrigue.Core
     /// </summary>
     public sealed class ModState
     {
-        public const int CurrentSchemaVersion = 1;
+        public const int CurrentSchemaVersion = 3;
 
         [SaveableProperty(1)] public int SchemaVersion { get; private set; }
         [SaveableProperty(2)] public List<Treaty> Treaties { get; private set; }
         [SaveableProperty(3)] public List<WarRecord> Wars { get; private set; }
         [SaveableProperty(4)] public int NextTreatyId { get; private set; }
+        [SaveableProperty(5)] public List<KingdomWeariness> Weariness { get; private set; }
+        [SaveableProperty(6)] public List<FiefOwnershipRecord> FiefHistory { get; private set; }
+        [SaveableProperty(7)] public List<Claim> Claims { get; private set; }
+        [SaveableProperty(8)] public List<FabricationAttempt> Fabrications { get; private set; }
 
         public ModState()
         {
             SchemaVersion = CurrentSchemaVersion;
             Treaties = new List<Treaty>();
             Wars = new List<WarRecord>();
+            Weariness = new List<KingdomWeariness>();
+            FiefHistory = new List<FiefOwnershipRecord>();
+            Claims = new List<Claim>();
+            Fabrications = new List<FabricationAttempt>();
             NextTreatyId = 1;
         }
 
@@ -39,6 +47,10 @@ namespace DiplomacyIntrigue.Core
         {
             if (Treaties == null) Treaties = new List<Treaty>();
             if (Wars == null) Wars = new List<WarRecord>();
+            if (Weariness == null) Weariness = new List<KingdomWeariness>();
+            if (FiefHistory == null) FiefHistory = new List<FiefOwnershipRecord>();
+            if (Claims == null) Claims = new List<Claim>();
+            if (Fabrications == null) Fabrications = new List<FabricationAttempt>();
             if (NextTreatyId < 1) NextTreatyId = 1;
 
             Migrate();
@@ -47,9 +59,15 @@ namespace DiplomacyIntrigue.Core
             // dangling references. Drop those records rather than crash later.
             Treaties.RemoveAll(t => t == null || t.PartyA == null || t.PartyB == null);
             Wars.RemoveAll(w => w == null || w.Aggressor == null || w.Defender == null);
+            Weariness.RemoveAll(w => w == null || w.Kingdom == null);
+            FiefHistory.RemoveAll(f => f == null || f.Settlement == null || f.Kingdom == null);
+            Claims.RemoveAll(c => c == null || c.Claimant == null || c.Target == null);
+            Fabrications.RemoveAll(f => f == null || f.Claimant == null || f.Target == null);
 
             Log.Info("State", "Loaded: " + Treaties.Count + " treaties, " + Wars.Count
-                              + " war records, schema v" + SchemaVersion + ".");
+                              + " war records, " + Weariness.Count + " weariness entries, "
+                              + Claims.Count + " claims, " + FiefHistory.Count + " fief records,"
+                              + " schema v" + SchemaVersion + ".");
         }
 
         private void Migrate()
@@ -57,7 +75,9 @@ namespace DiplomacyIntrigue.Core
             if (SchemaVersion == CurrentSchemaVersion) return;
             var from = SchemaVersion;
 
-            // Future migrations go here, one if-block per version step.
+            // v1 -> v2 added the weariness pool; v2 -> v3 added the fief ledger, claims
+            // and fabrications. AfterLoad() creates each list when it comes back null,
+            // so there is nothing to convert - only to record that we moved.
 
             SchemaVersion = CurrentSchemaVersion;
             Log.Info("State", "Migrated save data from schema v" + from + " to v" + CurrentSchemaVersion + ".");
@@ -115,6 +135,29 @@ namespace DiplomacyIntrigue.Core
                 var w = Wars[i];
                 if (w.IsOngoing && w.Involves(kingdom)) yield return w;
             }
+        }
+
+        // ----- Weariness ------------------------------------------------------
+
+        /// <summary>Zero for a kingdom with no entry, which is the common case.</summary>
+        public float WearinessOf(Kingdom kingdom)
+        {
+            for (var i = 0; i < Weariness.Count; i++)
+                if (Weariness[i].Kingdom == kingdom) return Weariness[i].Value;
+            return 0f;
+        }
+
+        internal void AddWeariness(Kingdom kingdom, float amount)
+        {
+            if (kingdom == null || amount <= 0f) return;
+
+            for (var i = 0; i < Weariness.Count; i++)
+            {
+                if (Weariness[i].Kingdom != kingdom) continue;
+                Weariness[i].Add(amount);
+                return;
+            }
+            Weariness.Add(new KingdomWeariness(kingdom, amount));
         }
     }
 }
