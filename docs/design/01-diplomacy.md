@@ -274,36 +274,44 @@ as intent.
    `WarExhaustion`, which take no "is this the player" argument anywhere. No hidden
    modifiers, no difficulty fudge. The player cannot out-cheese the AI by learning seams,
    and any exploit the player finds is one the AI benefits from too.
-3. **Enemy exhaustion visibility — still open.** See §8.
+3. **Enemy exhaustion is shown as a qualitative band**, upgradeable to the exact
+   figure through espionage in Phase 3. See §8.
 4. **Vassalage stays in Phase 1** as a treaty type, alongside the tributary pact.
 
-## 8. Still open: how much of the enemy does the player see?
+## 8. How much of the enemy does the player see?
 
-Own exhaustion and own war score are always exact. The question is what the player learns
-about the *other* side, and it is a real design fork rather than a UI detail - it decides
-whether the espionage pillar has anything to sell.
+**Decided: option B — qualitative bands, upgraded to exact figures by espionage in Phase 3.**
 
-Three shapes, all implementable on the data that already exists:
+Own exhaustion and own war score are always exact. Of the enemy, the player sees a bar and a
+label, never a number:
 
-**A. Exact numbers.** "Vlandia: 67/100, war score −23." The player can compute the precise
-day the enemy will accept peace. Transparent and never frustrating; also turns war into a
-spreadsheet, and removes most of the reason to ever run a spy network.
+| Band | Range | What it means mechanically |
+|---|---|---|
+| **Fresh** | 0–19 | Nothing is pressing them |
+| **Strained** | 20–39 | Costs are being felt, no political consequence yet |
+| **Weary** | 40–59 | Past `ExhaustionCourtPressure` — doves gain bloc support (Phase 2) |
+| **Exhausted** | 60–79 | Past `ExhaustionSeekPeace` — they will accept a white peace |
+| **Breaking** | 80–100 | Past `ExhaustionAcceptBadTerms` — they will accept unfavourable terms, and their fiefs are losing loyalty |
 
-**B. Qualitative bands.** Five labels — *Fresh, Strained, Weary, Exhausted, Breaking* —
-mapped onto the 0-100 scale, shown as a bar with no number. The player can read the
-situation and plan, but cannot time it to the day. Espionage later upgrades a band to the
-exact figure plus its trend.
+The band edges are not arbitrary fifths: each one is an existing behavioural threshold from
+§1.3. So a band is a real statement about what the enemy will now do, not a decorative
+label - "Exhausted" literally means "will accept peace".
 
-**C. Intelligence only.** Nothing by default. A spy network or a resident envoy returns a
-figure, stamped with the date it was gathered, and it goes stale. Makes Phase 3 genuinely
-valuable and creates real fog of war; but for the whole of Phase 1 and 2 the player would
-have no information at all, which reads as opacity rather than mystery.
+What this buys each pillar:
 
-**Recommendation: B now, upgrading to exact-and-dated through espionage in Phase 3.** It
-keeps Phase 1 playable on its own, and it leaves Phase 3 something concrete to sell -
-turning a band into a number is a legible reward for running a network.
+- **Phase 1** stays playable on its own. The player can read the situation and plan around
+  it without being able to time a peace offer to the exact day.
+- **Phase 3** gets something concrete to sell. The `ReadCourt` mission (spec 03 §2) turns a
+  band into the exact value plus its trend, stamped with the date it was gathered. Turning
+  a label into a number is a legible reward for having run a network for two years.
+- **Phase 2** reuses the same treatment for court politics: your own court is exact, a
+  rival's is banded.
 
-Worth noting whichever way this goes: the player always finds out indirectly anyway. From
-§5, an AI kingdom past the seek-peace threshold sends an envoy. That is an in-fiction
-information channel that works under all three options, and it means the player is never
-truly blind to an enemy that is ready to talk.
+Two implementation notes for when this is built:
+
+- The band is computed from the same value the AI reads. There is no separate "displayed
+  exhaustion" to drift out of sync, and no rounding that could make the bar disagree with
+  the behaviour.
+- Regardless of the band, an AI kingdom past the seek-peace threshold sends an envoy (§5).
+  That in-fiction channel means the player is never blind to an enemy that is ready to
+  talk, which is what keeps banding from feeling like withheld information.
