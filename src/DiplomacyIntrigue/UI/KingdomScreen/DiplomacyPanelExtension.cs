@@ -1,6 +1,7 @@
+using System.Collections.Generic;
 using System.Xml;
 using Bannerlord.UIExtenderEx.Attributes;
-using Bannerlord.UIExtenderEx.Prefabs;
+using Bannerlord.UIExtenderEx.Prefabs2;
 
 namespace DiplomacyIntrigue.UI.KingdomScreen
 {
@@ -9,203 +10,67 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
     /// a war and what the enemy's condition means, or the agreements standing between the
     /// two and who answers to whom.
     ///
-    /// It uses the brush and size the panel uses for "For 1 day" a few pixels above it, so
-    /// it reads as part of the header rather than as something bolted on.
+    /// Markup lives in <c>module/DiplomacyIntrigue/GUI/Prefabs/KingdomManagement/Diplomacy/
+    /// DiDiplomacyHeadline.xml</c> and uses the brush and size the panel uses for
+    /// "For 1 day" a few pixels above it, so it reads as part of the header rather than
+    /// as something bolted on.
     ///
-    /// Target, as of game v1.4.8: the right pane's vertical stack, inserted after the title
-    /// container that holds the two leaders. If TaleWorlds moves it the XPath misses,
-    /// UIExtenderEx logs that, and the tab renders without the line rather than not at all.
+    /// Target, as of game v1.4.8: the right pane's vertical stack, second in the stack,
+    /// directly under the title container that holds the two leaders. If TaleWorlds moves
+    /// it the XPath misses, UIExtenderEx logs that, and the tab renders without the line
+    /// rather than not at all.
     /// Verified against game v1.4.8, UIExtenderEx v2.13.2.
     /// </summary>
-    // See WarTupleExtension for why the obsolete Prefabs namespace is the one that works
-    // with UIExtenderEx v2.13.2.
-#pragma warning disable CS0618
     [PrefabExtension("DiplomacyPanel",
         "descendant::ListPanel[@IsVisible='@IsAcceptableItemSelected']/Children")]
     internal sealed class DiplomacyHeadlineExtension : PrefabExtensionInsertPatch
-#pragma warning restore CS0618
     {
-        public override string Id => "DiplomacyIntrigue.DiplomacyPanel.Headline";
+        public override InsertType Type => InsertType.Child;
 
         /// <summary>Second in the stack: directly under the title container.</summary>
-        public override int Position => 1;
+        public override int Index => 1;
 
-        public override XmlDocument GetPrefabExtension()
+        private readonly XmlDocument _document = new XmlDocument();
+
+        public DiplomacyHeadlineExtension()
         {
-            var document = new XmlDocument();
-            document.LoadXml(
-                "<TextWidget DataSource=\"{CurrentSelectedDiplomacyItem}\" DoNotAcceptEvents=\"true\" "
-                + "WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" "
-                + "HorizontalAlignment=\"Center\" MarginLeft=\"60\" MarginRight=\"60\" "
-                + "MarginTop=\"6\" MarginBottom=\"4\" "
-                + "Brush=\"ArmyManagement.Army.Tuple.Name\" Brush.FontSize=\"20\" "
-                + "Brush.TextHorizontalAlignment=\"Center\" IsEnabled=\"false\" "
-                + "IsVisible=\"@DiHasHeadline\" Text=\"@DiHeadline\" />");
-            return document;
+            _document.LoadXml("<DiDiplomacyHeadline />");
         }
+
+        [PrefabExtensionXmlDocument]
+        public XmlDocument GetPrefabExtension() => _document;
     }
 
     /// <summary>
-    /// The mod's comparison rows and its action buttons, in the strip between the game's
-    /// own bars and its own proposals.
+    /// The mod's action buttons, after the game's own proposals.
     ///
-    /// **The markup is TaleWorlds', the data is ours.** Every widget below is copied from
-    /// <c>DiplomacyPanel.xml</c>'s own stat template and proposal-button template - the same
-    /// <c>FillBarHorizontalWidget</c> pair with a separator, the same <c>ButtonBrush2</c>
-    /// button with its influence icon - and only the bindings are changed to our lists. That
-    /// is the answer to "use the original design": not a description of it, the thing
-    /// itself. See <see cref="DiplomacyItemMixinBase{T}"/> for why our own lists are needed
-    /// rather than the panel's.
+    /// Markup lives in <c>module/DiplomacyIntrigue/GUI/Prefabs/KingdomManagement/Diplomacy/
+    /// DiDiplomacyActions.xml</c> and copies <c>DiplomacyPanel.xml</c>'s own proposal-button
+    /// template - the same <c>ButtonBrush2</c> button with its influence icon - with only
+    /// the bindings changed to our <c>DiActions</c> list. Our comparison rows need no
+    /// markup of their own: they go into the panel's <c>Stats</c> list as vanilla rows
+    /// (see <see cref="DiplomacyItemMixinBase{T}"/>) and TaleWorlds' own template draws
+    /// them.
     ///
+    /// Target, as of game v1.4.8: the game's proposal list. An Append after it keeps our
+    /// buttons below theirs inside the same bottom strip. If the XPath misses, the tab
+    /// renders without our buttons rather than not at all.
     /// Verified against game v1.4.8, UIExtenderEx v2.13.2.
     /// </summary>
-#pragma warning disable CS0618
-    [PrefabExtension("DiplomacyPanel", "descendant::TextWidget[@Text='@NoItemSelectedText']/..")]
-    internal sealed class DiplomacyBlockExtension : PrefabExtensionInsertPatch
-#pragma warning restore CS0618
+    [PrefabExtension("DiplomacyPanel", "descendant::ListPanel[@DataSource='{Actions}']")]
+    internal sealed class DiplomacyActionsExtension : PrefabExtensionInsertPatch
     {
-        public override string Id => "DiplomacyIntrigue.DiplomacyPanel.Block";
+        public override InsertType Type => InsertType.Append;
 
-        public override int Position => PositionLast;
+        private readonly XmlDocument _document = new XmlDocument();
 
-        public override XmlDocument GetPrefabExtension()
+        public DiplomacyActionsExtension()
         {
-            var document = new XmlDocument();
-            document.LoadXml(
-                "<ListPanel DataSource=\"{CurrentSelectedDiplomacyItem}\" "
-                + "WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" "
-                + "StackLayout.LayoutMethod=\"VerticalTopToBottom\" "
-                // IsAcceptableItemSelected lives on the panel's view model, and this block
-                // binds to the selected item - asking for it here resolves against the wrong
-                // object and hides everything, which is exactly what the first run did.
-                + "VerticalAlignment=\"Bottom\" MarginBottom=\"128\" MarginRight=\"42\" "
-                + "IsVisible=\"@DiHasHeadline\">"
-                + "  <Children>"
-
-                + "    <ListPanel DataSource=\"{DiStats}\" WidthSizePolicy=\"StretchToParent\" "
-                + "       HeightSizePolicy=\"CoverChildren\" HorizontalAlignment=\"Center\" "
-                + "       StackLayout.LayoutMethod=\"VerticalTopToBottom\">"
-                + "      <ItemTemplate>"
-                + "        <ListPanel WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" "
-                + "           StackLayout.LayoutMethod=\"VerticalTopToBottom\" MarginBottom=\"6\">"
-                + "          <Children>"
-                + "            <TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"CoverChildren\" "
-                + "               Brush=\"Kingdom.Wars.Stat.Name.Text\" Text=\"@Name\" />"
-                + "            <ListPanel WidthSizePolicy=\"CoverChildren\" HeightSizePolicy=\"Fixed\" "
-                + "               SuggestedHeight=\"35\" HorizontalAlignment=\"Center\" "
-                + "               MarginLeft=\"10\" MarginRight=\"10\">"
-                + "              <Children>"
-                + "                <FillBarHorizontalWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" "
-                + "                   SuggestedWidth=\"350\" SuggestedHeight=\"35\" HorizontalAlignment=\"Center\" "
-                + "                   Sprite=\"BlankWhiteSquare_9\" Color=\"#00000040\" "
-                + "                   FillWidget=\"OurValueParent\\FillWidget\" InitialAmount=\"@OurPercentage\" "
-                + "                   IsDirectionUpward=\"false\" MaxAmount=\"100\">"
-                + "                  <Children>"
-                + "                    <ListPanel Id=\"OurValueParent\" WidthSizePolicy=\"StretchToParent\" "
-                + "                       HeightSizePolicy=\"StretchToParent\" "
-                + "                       StackLayout.LayoutMethod=\"HorizontalRightToLeft\">"
-                + "                      <Children>"
-                + "                        <Widget Id=\"FillWidget\" WidthSizePolicy=\"Fixed\" "
-                + "                           HeightSizePolicy=\"StretchToParent\" Sprite=\"BlankWhiteSquare_9\" "
-                + "                           AlphaFactor=\"1\" Color=\"@OurColor\" />"
-                + "                        <TextWidget WidthSizePolicy=\"CoverChildren\" HeightSizePolicy=\"CoverChildren\" "
-                + "                           HorizontalAlignment=\"Right\" VerticalAlignment=\"Center\" "
-                + "                           MarginRight=\"5\" MarginTop=\"5\" "
-                + "                           Brush=\"Kingdom.Wars.Stat.Value.Text.Left\" "
-                + "                           Brush.TextHorizontalAlignment=\"Right\" ClipContents=\"false\" "
-                + "                           IntText=\"@OurValue\" />"
-                + "                      </Children>"
-                + "                    </ListPanel>"
-                + "                    <HintWidget DataSource=\"{OurHint}\" WidthSizePolicy=\"StretchToParent\" "
-                + "                       HeightSizePolicy=\"StretchToParent\" Command.HoverBegin=\"ExecuteBeginHint\" "
-                + "                       Command.HoverEnd=\"ExecuteEndHint\" />"
-                + "                  </Children>"
-                + "                </FillBarHorizontalWidget>"
-                + "                <Widget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"2\" "
-                + "                   SuggestedHeight=\"35\" Sprite=\"SPKingdom\\Diplomacy\\bar_seperator\" />"
-                + "                <FillBarHorizontalWidget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" "
-                + "                   SuggestedWidth=\"350\" SuggestedHeight=\"35\" HorizontalAlignment=\"Center\" "
-                + "                   Sprite=\"BlankWhiteSquare_9\" Color=\"#00000040\" "
-                + "                   FillWidget=\"TheirValueParent\\FillWidget\" InitialAmount=\"@TheirPercentage\" "
-                + "                   IsDirectionRightward=\"true\" MaxAmount=\"100\">"
-                + "                  <Children>"
-                + "                    <ListPanel Id=\"TheirValueParent\" WidthSizePolicy=\"StretchToParent\" "
-                + "                       HeightSizePolicy=\"StretchToParent\" "
-                + "                       StackLayout.LayoutMethod=\"HorizontalLeftToRight\">"
-                + "                      <Children>"
-                + "                        <Widget Id=\"FillWidget\" WidthSizePolicy=\"Fixed\" "
-                + "                           HeightSizePolicy=\"StretchToParent\" Sprite=\"BlankWhiteSquare_9\" "
-                + "                           AlphaFactor=\"1\" Color=\"@TheirColor\" />"
-                + "                        <TextWidget WidthSizePolicy=\"CoverChildren\" HeightSizePolicy=\"CoverChildren\" "
-                + "                           HorizontalAlignment=\"Left\" VerticalAlignment=\"Center\" "
-                + "                           MarginLeft=\"5\" MarginTop=\"5\" "
-                + "                           Brush=\"Kingdom.Wars.Stat.Value.Text.Right\" ClipContents=\"false\" "
-                + "                           IntText=\"@TheirValue\" />"
-                + "                      </Children>"
-                + "                    </ListPanel>"
-                + "                    <HintWidget DataSource=\"{TheirHint}\" WidthSizePolicy=\"StretchToParent\" "
-                + "                       HeightSizePolicy=\"StretchToParent\" Command.HoverBegin=\"ExecuteBeginHint\" "
-                + "                       Command.HoverEnd=\"ExecuteEndHint\" />"
-                + "                  </Children>"
-                + "                </FillBarHorizontalWidget>"
-                + "              </Children>"
-                + "            </ListPanel>"
-                + "          </Children>"
-                + "        </ListPanel>"
-                + "      </ItemTemplate>"
-                + "    </ListPanel>"
-
-                // ---- action buttons, the panel's own proposal template ----------
-                + "    <ListPanel DataSource=\"{DiActions}\" WidthSizePolicy=\"CoverChildren\" "
-                + "       HeightSizePolicy=\"CoverChildren\" HorizontalAlignment=\"Center\" MarginTop=\"12\">"
-                + "      <ItemTemplate>"
-                + "        <ListPanel WidthSizePolicy=\"CoverChildren\" HeightSizePolicy=\"CoverChildren\" "
-                + "           StackLayout.LayoutMethod=\"VerticalTopToBottom\" MarginLeft=\"5\" MarginRight=\"5\" "
-                + "           VerticalAlignment=\"Bottom\">"
-                + "          <Children>"
-                + "            <TextWidget WidthSizePolicy=\"Fixed\" SuggestedWidth=\"290\" "
-                + "               HeightSizePolicy=\"CoverChildren\" Brush=\"Kingdom.ParagraphSmall.Text\" "
-                + "               MarginBottom=\"8\" Text=\"@Explanation\" IsEnabled=\"@IsEnabled\" "
-                + "               DoNotAcceptEvents=\"true\" />"
-                + "            <Widget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"227\" "
-                + "               SuggestedHeight=\"30\" HorizontalAlignment=\"Center\" VerticalAlignment=\"Bottom\" "
-                + "               MarginBottom=\"2\">"
-                + "              <Children>"
-                + "                <HintWidget DataSource=\"{Hint}\" WidthSizePolicy=\"StretchToParent\" "
-                + "                   HeightSizePolicy=\"StretchToParent\" Command.HoverBegin=\"ExecuteBeginHint\" "
-                + "                   Command.HoverEnd=\"ExecuteEndHint\" IsEnabled=\"false\" />"
-                + "                <ButtonWidget DoNotPassEventsToChildren=\"true\" WidthSizePolicy=\"StretchToParent\" "
-                + "                   HeightSizePolicy=\"StretchToParent\" Brush=\"ButtonBrush2\" "
-                + "                   UpdateChildrenStates=\"true\" Command.Click=\"ExecuteAction\" "
-                + "                   IsEnabled=\"@IsEnabled\">"
-                + "                  <Children>"
-                + "                    <TextWidget WidthSizePolicy=\"StretchToParent\" HeightSizePolicy=\"StretchToParent\" "
-                + "                       Brush=\"Kingdom.GeneralButtons.Text\" Text=\"@Name\" />"
-                + "                  </Children>"
-                + "                </ButtonWidget>"
-                + "              </Children>"
-                + "            </Widget>"
-                + "            <ListPanel DoNotAcceptEvents=\"true\" DoNotPassEventsToChildren=\"true\" "
-                + "               WidthSizePolicy=\"CoverChildren\" HeightSizePolicy=\"CoverChildren\" "
-                + "               HorizontalAlignment=\"Center\" IsVisible=\"@HasInfluenceCost\">"
-                + "              <Children>"
-                + "                <TextWidget WidthSizePolicy=\"CoverChildren\" HeightSizePolicy=\"CoverChildren\" "
-                + "                   HorizontalAlignment=\"Center\" VerticalAlignment=\"Bottom\" "
-                + "                   Brush=\"Kingdom.GeneralButtons.Text\" IntText=\"@InfluenceCost\" "
-                + "                   IsEnabled=\"@IsEnabled\" />"
-                + "                <Widget WidthSizePolicy=\"Fixed\" HeightSizePolicy=\"Fixed\" SuggestedWidth=\"17\" "
-                + "                   SuggestedHeight=\"27\" HorizontalAlignment=\"Right\" VerticalAlignment=\"Bottom\" "
-                + "                   Sprite=\"SPKingdom\\influence_icon_small\" />"
-                + "              </Children>"
-                + "            </ListPanel>"
-                + "          </Children>"
-                + "        </ListPanel>"
-                + "      </ItemTemplate>"
-                + "    </ListPanel>"
-                + "  </Children>"
-                + "</ListPanel>");
-            return document;
+            _document.LoadXml("<DiDiplomacyActions />");
         }
+
+        [PrefabExtensionXmlDocument]
+        public XmlDocument GetPrefabExtension() => _document;
     }
 
     /// <summary>
@@ -216,22 +81,36 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
     /// ever misses, the bars stay full height and the block overlaps them - ugly, and not
     /// fatal, which is the trade every patch in this folder is written around.
     /// </summary>
-#pragma warning disable CS0618
     [PrefabExtension("DiplomacyPanel", "descendant::Widget[@IsHidden='@IsDisplayingWarLogs']")]
     internal sealed class DiplomacyBarsMarginPatch : PrefabExtensionSetAttributePatch
-#pragma warning restore CS0618
     {
-        public override string Id => "DiplomacyIntrigue.DiplomacyPanel.BarsMargin";
+        public override List<PrefabExtensionSetAttributePatch.Attribute> Attributes => new List<PrefabExtensionSetAttributePatch.Attribute>
+        {
+            // Vanilla is 110, which clears the proposal buttons and nothing else. This has
+            // to clear our block as well: one button row of about 120 (a short explanation,
+            // the button, the influence cost) plus the strip's own margins. Measured
+            // against the war case on screen - at peace it leaves a gap, which is the
+            // right way round, since a gap reads as breathing space and an overlap reads
+            // as a bug.
+            new PrefabExtensionSetAttributePatch.Attribute("MarginBottom", "160"),
+        };
+    }
 
-        public override string Attribute => "MarginBottom";
-
-        /// <summary>
-        /// Vanilla is 110, which clears the proposal buttons and nothing else. This has to
-        /// clear our block as well, and our block is at its tallest during a war: four
-        /// comparison rows and two buttons. Measured against that case on screen - at peace
-        /// it leaves a gap, which is the right way round, since a gap reads as breathing
-        /// space and an overlap reads as a bug.
-        /// </summary>
-        public override string Value => "470";
+    /// <summary>
+    /// Hides the game's own proposal row while the mod runs diplomacy.
+    ///
+    /// See <see cref="KingdomDiplomacyVMMixin"/> for why: every vanilla proposal is
+    /// refused by our models and renders as a dead button on top of our own row. The
+    /// value is a binding, not a constant - Gauntlet reads "@..." against the panel VM,
+    /// where the mixin lives - so flipping the mod off in MCM brings vanilla's row back
+    /// on the next screen open.
+    /// </summary>
+    [PrefabExtension("DiplomacyPanel", "descendant::ListPanel[@DataSource='{Actions}']")]
+    internal sealed class DiplomacyVanillaActionsVisibilityPatch : PrefabExtensionSetAttributePatch
+    {
+        public override List<PrefabExtensionSetAttributePatch.Attribute> Attributes => new List<PrefabExtensionSetAttributePatch.Attribute>
+        {
+            new PrefabExtensionSetAttributePatch.Attribute("IsVisible", "@DiShowVanillaProposals"),
+        };
     }
 }

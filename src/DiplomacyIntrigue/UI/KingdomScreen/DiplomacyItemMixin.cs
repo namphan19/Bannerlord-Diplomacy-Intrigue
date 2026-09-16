@@ -8,7 +8,9 @@ using DiplomacyIntrigue.Diplomacy;
 using DiplomacyIntrigue.Models;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.ViewModelCollection.KingdomManagement.Diplomacy;
+using TaleWorlds.Core.ViewModelCollection.Information;
 using TaleWorlds.Library;
+using TaleWorlds.Localization;
 
 namespace DiplomacyIntrigue.UI.KingdomScreen
 {
@@ -16,36 +18,35 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
     /// What the mod knows about the other kingdom, and what the player can do about it,
     /// drawn in the Kingdom screen's Diplomacy tab with the game's own widgets.
     ///
-    /// **Three attempts, and the third is the one that works.** A label/value list of our
-    /// own was readable and looked nothing like Bannerlord, which the lead rejected on
-    /// sight. Appending to the panel's own <c>Stats</c> and <c>Actions</c> lists would have
-    /// been ideal and silently does nothing: those lists are rebuilt after UIExtenderEx's
-    /// hook runs, so the rows disappear with no error logged anywhere - the mixin stays
-    /// alive the whole time, as its other bindings kept proving. What is left, and what this
-    /// is, is our own lists drawn by a prefab that copies TaleWorlds' markup: their
-    /// comparison bars, their proposal buttons, their brushes.
+    /// Comparison rows go into the panel's own <c>Stats</c> list as vanilla
+    /// <c>KingdomWarComparableStatVM</c> rows, so TaleWorlds' own template draws them.
+    /// That only works hooked on <c>UpdateDiplomacyProperties</c>: it starts with
+    /// <c>Stats.Clear()</c> and runs on every selection, so anything appended after an
+    /// earlier method is erased on the next click, and anything computed in the mixin
+    /// constructor alone goes stale. An earlier revision hooked <c>RefreshValues</c>
+    /// (which <c>KingdomTruceItemVM</c> does not even override) and kept its own
+    /// parallel bar list with copied markup; both workarounds are gone.
     ///
-    /// **Our exhaustion exactly, theirs as a band** (spec 01 §8). The enemy bar carries the
-    /// floor of their band, never their figure - "Weary" reads as 40 whether they are at 41
-    /// or 59 - and the hover hint says so. A nicer surface is not a reason to give away what
-    /// Phase 3's ReadCourt is meant to sell.
+    /// <b>Our exhaustion exactly, theirs as a band</b> (spec 01 §8). The enemy side of
+    /// the exhaustion row carries the floor of their band, never their figure - "Weary"
+    /// reads as 40 whether they are at 41 or 59 - and the hover hint says so. A nicer
+    /// surface is not a reason to give away what Phase 3's ReadCourt is meant to sell.
     ///
-    /// Two concrete mixins rather than one on the base with derived types: the derived
-    /// RefreshValues is what the panel calls, and hooking the base one put us at the wrong
-    /// point in the sequence.
+    /// Two concrete mixins rather than one on the base: each item type rebuilds its own
+    /// rows in its own <c>UpdateDiplomacyProperties</c> override, and the hook must name
+    /// the method that rebuilds the data it touches.
     /// </summary>
     internal abstract class DiplomacyItemMixinBase<T> : BaseViewModelMixin<T>
         where T : KingdomDiplomacyItemVM
     {
-        private static readonly char[] NewlineChars = { '\n', '\r' };
-
         private string _rowSummary = string.Empty;
         private string _headline = string.Empty;
-        private MBBindingList<DiplomacyStatVM> _stats = new MBBindingList<DiplomacyStatVM>();
         private MBBindingList<DiplomacyActionVM> _actions = new MBBindingList<DiplomacyActionVM>();
 
         protected DiplomacyItemMixinBase(T vm) : base(vm)
         {
+            // The vanilla constructor already ran UpdateDiplomacyProperties before this
+            // mixin existed, so the first population is done by hand.
             Rebuild();
         }
 
@@ -86,18 +87,6 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         public bool DiHasHeadline => !string.IsNullOrEmpty(_headline);
 
         [DataSourceProperty]
-        public MBBindingList<DiplomacyStatVM> DiStats
-        {
-            get => _stats;
-            set
-            {
-                if (value == _stats) return;
-                _stats = value;
-                ViewModel?.OnPropertyChangedWithValue(value, nameof(DiStats));
-            }
-        }
-
-        [DataSourceProperty]
         public MBBindingList<DiplomacyActionVM> DiActions
         {
             get => _actions;
@@ -124,7 +113,6 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 Log.Error("UI", "Diplomacy tab additions failed; the tab stays vanilla.", ex);
                 DiRowSummary = string.Empty;
                 DiHeadline = string.Empty;
-                DiStats = new MBBindingList<DiplomacyStatVM>();
                 DiActions = new MBBindingList<DiplomacyActionVM>();
             }
         }
@@ -133,17 +121,15 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         {
             DiRowSummary = string.Empty;
             DiHeadline = string.Empty;
-            var stats = new MBBindingList<DiplomacyStatVM>();
             var actions = new MBBindingList<DiplomacyActionVM>();
 
             var state = CoreBehavior.State;
-            var us = ViewModel?.Faction1 as Kingdom;
-            var them = ViewModel?.Faction2 as Kingdom;
+            var faction1 = ViewModel?.Faction1 as Kingdom;
+            var faction2 = ViewModel?.Faction2 as Kingdom;
 
             if (!SubModule.Healthy || !Settings.Current.EnableDiplomacy
-                || state == null || us == null || them == null)
+                || state == null || faction1 == null || faction2 == null)
             {
-                DiStats = stats;
                 DiActions = actions;
                 return;
             }
@@ -151,11 +137,12 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             // Which side of the pair we are on is not guaranteed by the list, so it is
             // resolved against the player's own kingdom rather than assumed.
             var player = Clan.PlayerClan?.Kingdom;
+            var us = faction1;
+            var them = faction2;
             if (player != null && them == player)
             {
-                var swap = us;
-                us = them;
-                them = swap;
+                us = faction2;
+                them = faction1;
             }
 
             var war = state.OngoingWarBetween(us, them);
@@ -169,14 +156,17 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                                + "   " + (score >= 0f ? "+" : string.Empty) + score.ToString("0");
             }
 
-            BuildStats(state, us, them, war, stats);
+            // Vanilla's own comparison rows, in vanilla's own order (Faction1, Faction2)
+            // so our bars sit beside theirs rather than mirrored. Vanilla has just
+            // cleared and refilled Stats, so inserting at a fixed index is stable and
+            // cannot duplicate.
+            BuildStats(state, faction1, faction2, war);
 
             // Foreign policy belongs to the ruler. A vassal still sees everything - looking
             // is free, and a vassal has every reason to watch - but acts through no button.
             if (player != null && us == player && player.Leader == Hero.MainHero)
                 BuildActions(state, us, them, war, actions);
 
-            DiStats = stats;
             DiActions = actions;
         }
 
@@ -219,69 +209,134 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             return parts.Count == 0 ? "No standing agreements." : string.Join("   -   ", parts.ToArray());
         }
 
-        // ----- comparison rows -------------------------------------------------
+        // ----- comparison rows (vanilla's list, vanilla's row type) --------------
 
-        private void BuildStats(ModState state, Kingdom us, Kingdom them, WarRecord war,
-            ICollection<DiplomacyStatVM> into)
+        private void BuildStats(ModState state, Kingdom faction1, Kingdom faction2, WarRecord war)
         {
-            var ourColour = ColourOf(us);
-            var theirColour = ColourOf(them);
+            var stats = ViewModel?.Stats;
+            if (stats == null) return;
+
+            var player = Clan.PlayerClan?.Kingdom;
+            // The player's own side reads exactly; any other side reads as a band.
+            // With no player kingdom there is no secret to keep, so the first side
+            // stands in as the exact one, as before.
+            var exact1 = player != null ? faction1 == player : true;
+            var exact2 = player != null ? faction2 == player : false;
+
+            // Our rows go FIRST, not last: the bars viewport only shows the top rows,
+            // and anything appended after vanilla's sits below the fold. Vanilla has
+            // just cleared and refilled Stats, so inserting at a fixed index is stable.
+            var rows = new List<KingdomWarComparableStatVM>(3);
 
             if (war != null)
             {
-                var ours = war.ExhaustionOf(us);
-                var band = ExhaustionBands.Of(war.ExhaustionOf(them));
+                var exhaustHint1 = ExhaustionHint(war, faction1, exact1);
+                var exhaustHint2 = ExhaustionHint(war, faction2, exact2);
+                rows.Add(new KingdomWarComparableStatVM(
+                    DisplayExhaustion(war, faction1, exact1),
+                    DisplayExhaustion(war, faction2, exact2),
+                    new TextObject("War Exhaustion"),
+                    ColourOf(faction1), ColourOf(faction2), 100,
+                    new BasicTooltipViewModel(() => exhaustHint1),
+                    new BasicTooltipViewModel(() => exhaustHint2)));
 
-                into.Add(new DiplomacyStatVM("War Exhaustion",
-                    (int)ours, (int)ExhaustionBands.Floor(band), 100, ourColour, theirColour,
-                    "Ours exactly: " + ours.ToString("0.0") + ". A court sues for peace at "
-                    + DiplomacyConstants.ExhaustionSeekPeace.ToString("0") + ".",
-                    "Shown as a band, never a figure: " + ExhaustionBands.Name(band) + " - "
-                    + ExhaustionBands.Meaning(band)
-                    + " The exact number is what an espionage report buys."));
-
-// War score has no row of its own: the list row already carries it, the
+                // War score has no row of its own: the list row already carries it, the
                 // headline explains the war, and the pane only has room for so many bars
                 // before it starts fighting the game's own.
             }
 
-            into.Add(new DiplomacyStatVM("Diplomatic Trust",
-                (int)TrustRegistry.Get(state, us, them), (int)TrustRegistry.Get(state, them, us),
-                100, ourColour, theirColour,
-                "What we make of their word. Trust never decays: it is reputation, not feeling.",
-                "What they make of ours. Below "
-                + DiplomacyConstants.TrustFloorForPacts.ToString("0")
-                + " they will sign nothing but a truce."));
+            var trust12 = TrustRegistry.Get(state, faction1, faction2);
+            var trust21 = TrustRegistry.Get(state, faction2, faction1);
+            var trustHint1 = TrustHint(faction1, faction2, trust12);
+            var trustHint2 = TrustHint(faction2, faction1, trust21);
+            rows.Add(new KingdomWarComparableStatVM(
+                (int)trust12, (int)trust21,
+                new TextObject("Diplomatic Trust"),
+                ColourOf(faction1), ColourOf(faction2), 100,
+                new BasicTooltipViewModel(() => trustHint1),
+                new BasicTooltipViewModel(() => trustHint2)));
 
-            var ourClaims = Count(ClaimRegistry.LiveClaims(state, us, them));
-            var theirClaims = Count(ClaimRegistry.LiveClaims(state, them, us));
-            if (ourClaims <= 0 && theirClaims <= 0) return;
+            var claims12 = Count(ClaimRegistry.LiveClaims(state, faction1, faction2));
+            var claims21 = Count(ClaimRegistry.LiveClaims(state, faction2, faction1));
+            if (claims12 > 0 || claims21 > 0)
+            {
+                var best12 = ClaimRegistry.Best(state, faction1, faction2);
+                var best21 = ClaimRegistry.Best(state, faction2, faction1);
+                var claimHint1 = ClaimHint(faction1, faction2, best12);
+                var claimHint2 = ClaimHint(faction2, faction1, best21);
+                rows.Add(new KingdomWarComparableStatVM(
+                    claims12, claims21,
+                    new TextObject("Standing Claims"),
+                    ColourOf(faction1), ColourOf(faction2),
+                    Math.Max(5, Math.Max(claims12, claims21)),
+                    new BasicTooltipViewModel(() => claimHint1),
+                    new BasicTooltipViewModel(() => claimHint2)));
+            }
 
-            var ourBest = ClaimRegistry.Best(state, us, them);
-            var theirBest = ClaimRegistry.Best(state, them, us);
-            into.Add(new DiplomacyStatVM("Standing Claims",
-                ourClaims, theirClaims, 5, ourColour, theirColour,
-                ourBest == null
-                    ? "We hold no claim on them."
-                    : "Best: " + ourBest.Type + " at legitimacy "
-                      + CasusBelli.Legitimacy(ourBest.Type).ToString("0.00")
-                      + (ourBest.AllowsFiefDemands ? ". It entitles us to land at the peace table." : "."),
-                theirBest == null
-                    ? "They hold no claim on us."
-                    : "Their best: " + theirBest.Type + " at legitimacy "
-                      + CasusBelli.Legitimacy(theirBest.Type).ToString("0.00") + "."));
+            for (var i = 0; i < rows.Count; i++)
+                stats.Insert(Math.Min(i, stats.Count), rows[i]);
+        }
+
+        /// <summary>
+        /// What the bar shows for one side: the exact figure where the player may know
+        /// it, the band floor elsewhere. Hint strings are built eagerly and handed over
+        /// as constants, so hovering them cannot throw into Gauntlet.
+        /// </summary>
+        private static int DisplayExhaustion(WarRecord war, Kingdom side, bool exact)
+        {
+            var value = war.ExhaustionOf(side);
+            return exact ? (int)value : (int)ExhaustionBands.Floor(ExhaustionBands.Of(value));
+        }
+
+        private static string ExhaustionHint(WarRecord war, Kingdom side, bool exact)
+        {
+            var value = war.ExhaustionOf(side);
+            if (exact)
+                return side.Name + " exhaustion exactly: " + value.ToString("0.0")
+                       + ". A court sues for peace at "
+                       + DiplomacyConstants.ExhaustionSeekPeace.ToString("0") + ".";
+            var band = ExhaustionBands.Of(value);
+            return "Shown as a band, never a figure: " + ExhaustionBands.Name(band) + " - "
+                   + ExhaustionBands.Meaning(band)
+                   + " The exact number is what an espionage report buys.";
+        }
+
+        private static string TrustHint(Kingdom holder, Kingdom other, float value)
+        {
+            return "What " + holder.Name + " makes of " + other.Name + "'s word: "
+                   + value.ToString("0") + ". Trust never decays: it is reputation, not feeling."
+                   + " Below " + DiplomacyConstants.TrustFloorForPacts.ToString("0")
+                   + " they will sign nothing but a truce.";
+        }
+
+        private static string ClaimHint(Kingdom holder, Kingdom other, Claim best)
+        {
+            if (best == null)
+                return holder.Name + " holds no claim on " + other.Name + ".";
+            var text = holder.Name + "'s best: " + best.Type + " at legitimacy "
+                       + CasusBelli.Legitimacy(best.Type).ToString("0.00");
+            if (best.AllowsFiefDemands)
+                text += ". It entitles them to land at the peace table.";
+            return text + ".";
         }
 
         // ----- buttons ---------------------------------------------------------
+        // The strip these sit in is narrow: every explanation must fit its own
+        // column (~220px, about 32 characters) or it bleeds into the neighbour's.
+        // Anything longer lives in the hover hint instead - the numbers there are the
+        // same ones the AI uses, so nothing is hidden, only shortened on the surface.
 
         private void BuildActions(ModState state, Kingdom us, Kingdom them, WarRecord war,
             ICollection<DiplomacyActionVM> into)
         {
             if (war != null)
             {
+                var allowance = PeaceTable.DescribeAllowance(state, war, us);
+                var budget = PeaceTable.BudgetFor(war, us);
                 into.Add(new DiplomacyActionVM("Negotiate peace",
-                    FirstLine(PeaceTable.DescribeAllowance(state, war, us)), 0, true,
-                    "Opens the peace table: what this war has earned, and what they will sign.",
+                    budget <= 0f ? "White peace only." : "Budget " + budget.ToString("0") + ". See hint.",
+                    0, true,
+                    "Opens the peace table: what this war has earned, and what they will sign. " + allowance,
                     () => DiplomacyMenu.ShowPeace(state, us, them)));
             }
             else
@@ -295,14 +350,13 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             if (breakable != null)
             {
                 into.Add(new DiplomacyActionVM("Renounce " + breakable.Type,
+                    "Breaks the pact. Costs trust.",
+                    0, true,
                     "-" + (-DiplomacyConstants.TrustTreatyBrokenVictim).ToString("0")
                     + " trust with them, -"
                     + (-DiplomacyConstants.TrustTreatyBrokenObserver).ToString("0")
-                    + " with every other court.",
-                    0, true,
-                    "Always possible, never free. Breaking a treaty on purpose is a story beat, "
-                    + "not an accident, so the mod never blocks it - it only prices it. They gain "
-                    + "a reason for war.",
+                    + " with every other court. Always possible, never free: breaking a treaty "
+                    + "on purpose is a story beat, not an accident. They gain a reason for war.",
                     () => DiplomacyMenu.BreakTreaty(state, us, them)));
             }
 
@@ -328,9 +382,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
             into.Add(new DiplomacyActionVM("Propose " + name,
                 allowed
-                    ? them.Name + " values it at " + theirValue.ToString("0")
-                      + ", and needs " + threshold.ToString("0") + "."
-                    : reason,
+                    ? "Valued at " + theirValue.ToString("0")
+                      + " (need " + threshold.ToString("0") + ")."
+                    : "Cannot propose (see hint).",
                 cost, allowed && theirValue >= threshold,
                 allowed
                     ? "They sign only if their own valuation clears the bar. The number shown is "
@@ -340,13 +394,6 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         }
 
         // ----- helpers ---------------------------------------------------------
-
-        private static string FirstLine(string text)
-        {
-            if (string.IsNullOrEmpty(text)) return string.Empty;
-            var cut = text.IndexOfAny(NewlineChars);
-            return (cut < 0 ? text : text.Substring(0, cut)).Trim();
-        }
 
         private static string ColourOf(IFaction faction)
             => faction == null ? "#FFFFFFFF" : Color.FromUint(faction.Color).ToString();
@@ -359,15 +406,21 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         }
     }
 
-    /// <summary>The mod's reading of a war, on the row and in the detail pane.</summary>
-    [ViewModelMixin("RefreshValues")]
+    /// <summary>
+    /// The mod's reading of a war, on the row and in the detail pane. Hooked on the
+    /// method that rebuilds the rows, which is also what selection calls.
+    /// </summary>
+    [ViewModelMixin("UpdateDiplomacyProperties")]
     internal sealed class WarItemMixin : DiplomacyItemMixinBase<KingdomWarItemVM>
     {
         public WarItemMixin(KingdomWarItemVM vm) : base(vm) { }
     }
 
-    /// <summary>The same, for a kingdom we are at peace with.</summary>
-    [ViewModelMixin("RefreshValues")]
+    /// <summary>
+    /// The same, for a kingdom we are at peace with. This type does not override
+    /// <c>RefreshValues</c>, which is why that hook never fired here.
+    /// </summary>
+    [ViewModelMixin("UpdateDiplomacyProperties")]
     internal sealed class TruceItemMixin : DiplomacyItemMixinBase<KingdomTruceItemVM>
     {
         public TruceItemMixin(KingdomTruceItemVM vm) : base(vm) { }
