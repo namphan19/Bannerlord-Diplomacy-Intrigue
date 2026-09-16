@@ -459,12 +459,50 @@ namespace DiplomacyIntrigue.Diplomacy
             var trust = TrustRegistry.Get(state, us, them) / 100f;
             var aggression = Aggression(state, us, them);
             var relation = FactionManager.GetRelationBetweenClans(us.RulingClan, them.RulingClan) / 100f;
+            var balancing = BalancingPull(state, us, them, out _);
 
             return DiplomacyConstants.PactWeightSharedThreat * sharedThreat
                    + DiplomacyConstants.PactWeightProximity * proximity
                    + DiplomacyConstants.PactWeightTrust * trust
                    - DiplomacyConstants.PactWeightAggression * aggression
-                   + DiplomacyConstants.PactWeightRelation * relation;
+                   + DiplomacyConstants.PactWeightRelation * relation
+                   + DiplomacyConstants.PactWeightBalancing * balancing;
+        }
+
+        /// <summary>
+        /// How much the strongest sphere neither kingdom belongs to outweighs the two of them
+        /// together, 0..1, and which sphere that is.
+        ///
+        /// Symmetric in the pair, so both sides of a pact read the same pull. A vassal's
+        /// sphere is its patron's, so a vassal is never drawn to balance against its own
+        /// patron by this term - that is what Hold and revolt are for.
+        /// </summary>
+        public static float BalancingPull(ModState state, Kingdom us, Kingdom them, out Kingdom against)
+        {
+            against = null;
+            if (state == null || us == null || them == null) return 0f;
+
+            var pair = us.CurrentTotalStrength + them.CurrentTotalStrength;
+            if (pair <= 0f) return 0f;
+
+            var ourHead = Hegemony.SphereHead(state, us);
+            var theirHead = Hegemony.SphereHead(state, them);
+
+            var strongest = 0f;
+            foreach (var head in Kingdom.All)
+            {
+                if (head.IsEliminated || head == ourHead || head == theirHead) continue;
+                if (Hegemony.PatronOf(state, head) != null) continue;
+
+                var strength = Hegemony.SphereStrength(state, head);
+                if (strength <= strongest) continue;
+                strongest = strength;
+                against = head;
+            }
+
+            var pull = strongest / pair - 1f;
+            if (pull <= 0f) { against = null; return 0f; }
+            return pull > 1f ? 1f : pull;
         }
 
         /// <summary>Fraction of our enemies that are also theirs. Common enemies bind.</summary>

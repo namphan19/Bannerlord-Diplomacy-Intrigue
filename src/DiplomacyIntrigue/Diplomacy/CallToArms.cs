@@ -15,10 +15,11 @@ namespace DiplomacyIntrigue.Diplomacy
     /// defensive pact costs trust and nothing else: the pact survives and simply lapses at
     /// its next expiry.
     ///
-    /// Vassalage is different, and deliberately so. Military service is the substance of
-    /// being a vassal, so a vassal that refuses is not exercising an option - it is in open
-    /// defiance, and the treaty breaks. That is the moment the hegemony drama of Phase 2
-    /// hangs on.
+    /// Vassalage is different, and deliberately so, and it runs both ways. Military service
+    /// is the substance of being a vassal, so a vassal that refuses is not exercising an
+    /// option - it is in open defiance, it earns a mark, and the second mark breaks the
+    /// treaty. Protection is the substance of being a patron, so a patron is called when its
+    /// vassal is attacked; refusing costs it the vassal's trust and, day by day, its Hold.
     /// </summary>
     public static class CallToArms
     {
@@ -52,22 +53,7 @@ namespace DiplomacyIntrigue.Diplomacy
                     var treaty = obligations[i];
                     var ally = treaty.Other(caller);
                     if (!Applies(state, treaty, caller, ally, enemy, callerWasAttacked)) continue;
-
-                    if (IsPlayerDecision(ally))
-                    {
-                        AskPlayer(state, treaty, caller, ally, enemy);
-                        continue;
-                    }
-
-                    if (WouldAnswer(state, treaty, caller, ally, enemy, out var why))
-                    {
-                        Answer(state, treaty, caller, ally, enemy);
-                        answered++;
-                    }
-                    else
-                    {
-                        Refuse(state, treaty, caller, ally, why);
-                    }
+                    if (Put(state, treaty, caller, ally, enemy)) answered++;
                 }
                 return answered;
             }
@@ -76,6 +62,79 @@ namespace DiplomacyIntrigue.Diplomacy
                 _issuing = false;
             }
         }
+
+        /// <summary>
+        /// Calls a new patron into the wars its vassal was already defending when it
+        /// submitted. Returns how many it joined.
+        ///
+        /// The call to arms fires when a war is declared, so a kingdom that knelt *because* it
+        /// was under attack would otherwise get a patron that owes it nothing for the very
+        /// wars that made it kneel - and whose failure to join them then counts against Hold
+        /// from the first day. Wars the vassal started itself are not the patron's to answer,
+        /// exactly as with a war declared later.
+        /// </summary>
+        public static int DefendNewVassal(ModState state, Treaty vassalage)
+        {
+            if (_issuing || state == null || vassalage == null) return 0;
+            if (!vassalage.IsActive || vassalage.Type != TreatyType.Vassalage) return 0;
+
+            var vassal = vassalage.SubordinateParty;
+            var patron = vassalage.DominantParty;
+            if (vassal == null || patron == null) return 0;
+
+            // Collected first: answering opens war records, and the ledger is what we read.
+            var attackers = new List<Kingdom>();
+            foreach (var war in state.OngoingWarsOf(vassal))
+                if (war.Defender == vassal && war.Aggressor != null && war.Aggressor != patron)
+                    attackers.Add(war.Aggressor);
+
+            _issuing = true;
+            try
+            {
+                var answered = 0;
+                for (var i = 0; i < attackers.Count; i++)
+                {
+                    if (!Applies(state, vassalage, vassal, patron, attackers[i], callerWasAttacked: true)) continue;
+                    if (Put(state, vassalage, vassal, patron, attackers[i])) answered++;
+                }
+                return answered;
+            }
+            finally
+            {
+                _issuing = false;
+            }
+        }
+
+        /// <summary>
+        /// Puts one obligation to the party that owes it: the player is asked, an AI decides.
+        /// Returns true only when an AI answered on the spot.
+        /// </summary>
+        private static bool Put(ModState state, Treaty treaty, Kingdom caller, Kingdom ally, Kingdom enemy)
+        {
+            if (IsPlayerDecision(ally))
+            {
+                AskPlayer(state, treaty, caller, ally, enemy);
+                return false;
+            }
+
+            if (WouldAnswer(state, treaty, caller, ally, enemy, out var why))
+            {
+                Answer(state, treaty, caller, ally, enemy);
+                return true;
+            }
+
+            Refuse(state, treaty, caller, ally, why);
+            return false;
+        }
+
+        /// <summary>The vassal's side of a vassalage, as opposed to the patron's.</summary>
+        private static bool IsServingVassal(Treaty treaty, Kingdom party)
+            => treaty.SubordinatesForeignPolicy && treaty.SubordinateParty == party;
+
+        /// <summary>The patron's side of a vassalage.</summary>
+        private static bool IsProtectingPatron(Treaty treaty, Kingdom party)
+            => treaty.SubordinatesForeignPolicy && treaty.SubordinateParty != null
+               && treaty.SubordinateParty != party;
 
         /// <summary>
         /// Removes the vassals a patron may not call for this war, keeping those nearest the
@@ -133,8 +192,16 @@ namespace DiplomacyIntrigue.Diplomacy
             // already holds with the enemy wins, and the ally is simply not called.
             if (state.HasTreatyForbiddingWar(ally, enemy)) return false;
 
-            // A vassal is called by its patron, not the other way round.
-            if (treaty.SubordinatesForeignPolicy && treaty.SubordinateParty != ally) return false;
+            // The two directions of a vassalage owe different things. The vassal marches in
+            // its patron's wars, offensive or defensive. The patron owes protection: it is
+            // called when its vassal is attacked and never into a war the vassal started.
+            //
+            // This used to read "a vassal is called by its patron, not the other way round",
+            // and so the patron was never called at all. Design 04 §4.3 makes protection the
+            // patron's side of the bargain and Hold already punished its absence, but nothing
+            // ever asked a patron to provide it - Hold measured a duty no code could fulfil,
+            // which is a large part of why run 04's links sat at 15-36.
+            if (IsProtectingPatron(treaty, ally) && !callerWasAttacked) return false;
 
             return true;
         }
@@ -146,6 +213,12 @@ namespace DiplomacyIntrigue.Diplomacy
         /// Whether an AI ally honours the call. Vassals are held to a higher bar because
         /// service is what they agreed to, but even a vassal will not march while its own
         /// realm is collapsing.
+        ///
+        /// A patron answering its vassal is judged by the same rules as an ally, trust floor
+        /// included, and that is deliberate: a patron that no longer trusts its vassal - one
+        /// that refused its summons or treated with outsiders behind its back - leaves it to
+        /// fight alone. Protection is conditional on service, which is what makes the two
+        /// sides of the bargain answer each other.
         /// </summary>
         public static bool WouldAnswer(ModState state, Treaty treaty, Kingdom caller, Kingdom ally,
             Kingdom enemy, out string why)
@@ -157,7 +230,7 @@ namespace DiplomacyIntrigue.Diplomacy
                 return false;
             }
 
-            if (treaty.SubordinatesForeignPolicy)
+            if (IsServingVassal(treaty, ally))
             {
                 // A vassal marches while the patron still holds it. Hold is what replaced the
                 // old unconditional yes, and the two ways of saying no are deliberately
@@ -235,7 +308,7 @@ namespace DiplomacyIntrigue.Diplomacy
 
             TrustRegistry.OnCallToArmsRefused(state, caller, ally);
 
-            if (treaty.SubordinatesForeignPolicy)
+            if (IsServingVassal(treaty, ally))
             {
                 // Refusal is real defiance now rather than an instant divorce. One mark is a
                 // warning the patron can answer - by protecting them, by easing the tribute,
@@ -258,7 +331,13 @@ namespace DiplomacyIntrigue.Diplomacy
 
             Log.Info("CallToArms", ally.Name + " refused " + caller.Name
                                    + (why == null ? "" : " - " + why) + ".");
-            Announce(ally.Name + " refuses to honour its " + treaty.Type + " with " + caller.Name + ".",
+
+            // A patron that stays out breaks nothing - protection is not service, and the
+            // price is already paid where it belongs: the vassal's trust just fell, and Hold
+            // reads both that and the unanswered war every day it stays unanswered.
+            Announce(IsProtectingPatron(treaty, ally)
+                    ? ally.Name + " leaves its vassal " + caller.Name + " to fight alone."
+                    : ally.Name + " refuses to honour its " + treaty.Type + " with " + caller.Name + ".",
                 Colors.Yellow);
         }
 
@@ -268,13 +347,31 @@ namespace DiplomacyIntrigue.Diplomacy
         /// </summary>
         private static void AskPlayer(ModState state, Treaty treaty, Kingdom caller, Kingdom ally, Kingdom enemy)
         {
-            var cost = treaty.SubordinatesForeignPolicy
-                ? "Refusing renounces your vassalage and gives " + caller.Name + " a reason for war."
-                : "Refusing costs " + (-DiplomacyConstants.TrustCallToArmsRefused).ToString("0")
-                  + " trust with " + caller.Name + ", and the " + treaty.Type + " will lapse.";
+            var refusedTrust = (-DiplomacyConstants.TrustCallToArmsRefused).ToString("0");
+            string cost;
+            string body;
 
-            var body = caller.Name + " invokes its " + treaty.Type + " and calls you to war against "
+            if (IsProtectingPatron(treaty, ally))
+            {
+                cost = "Refusing costs " + refusedTrust + " trust with " + caller.Name
+                       + ", and a vassal left to fight alone loses its hold on you a little more"
+                       + " every day the war goes unanswered.";
+                body = "Your vassal " + caller.Name + " has been attacked by " + enemy.Name
+                       + " and calls on you for the protection it pays for." + "\n\n" + cost;
+            }
+            else
+            {
+                // A refused summons is a defiance mark; the second inside a year breaks the
+                // vassalage. The old text said the first refusal renounced it, which stopped
+                // being true when marks were introduced.
+                cost = IsServingVassal(treaty, ally)
+                    ? "Refusing is defiance: it earns a mark, and a second mark inside a year renounces"
+                      + " your vassalage and gives " + caller.Name + " a reason for war."
+                    : "Refusing costs " + refusedTrust + " trust with " + caller.Name
+                      + ", and the " + treaty.Type + " will lapse.";
+                body = caller.Name + " invokes its " + treaty.Type + " and calls you to war against "
                        + enemy.Name + "." + "\n\n" + cost;
+            }
 
             try
             {

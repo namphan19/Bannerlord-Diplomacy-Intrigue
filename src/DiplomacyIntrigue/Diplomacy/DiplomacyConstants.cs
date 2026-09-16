@@ -312,7 +312,14 @@ namespace DiplomacyIntrigue.Diplomacy
         /// <summary>Where a voluntary submission starts. A volunteer is a far steadier vassal.</summary>
         public const float HoldOnVoluntarySubmission = 60f;
 
-        /// <summary>Where a re-imposed vassalage restarts after a revolt is crushed.</summary>
+        /// <summary>
+        /// Where a vassalage imposed at a peace table starts when the loser walked out of a
+        /// vassalage to the same winner within <see cref="BrokenTreatyWindowYears"/> - a revolt
+        /// crushed, or a vassal taken back by force from the rival it defected to.
+        ///
+        /// This constant existed for a long time with nothing reading it, so the behaviour it
+        /// describes did not exist either. Wired in PeaceTable.ImposeSubmission.
+        /// </summary>
         public const float HoldAfterFailedRevolt = 20f;
 
         /// <summary>Hold for a link loaded from a save that predates the field.</summary>
@@ -370,8 +377,35 @@ namespace DiplomacyIntrigue.Diplomacy
         /// <summary>A mark older than this is forgotten.</summary>
         public const float DefianceMarkMemoryDays = 84f;
 
-        /// <summary>Hold lost by the patron's other vassals when one of them wins its freedom.</summary>
+        /// <summary>Hold lost by the patron's other vassals when one of them revolts.</summary>
         public const float SecessionContagionHold = 10f;
+
+        /// <summary>
+        /// A vassal whose Hold is below this once the contagion has landed joins a revolt that
+        /// has just broken out, rather than waiting out its own thirty days.
+        ///
+        /// Added after the design review of run 04, which found a saturated hegemony with no
+        /// way out: revolt was a decision each vassal took alone, against a patron that then
+        /// called half its other vassals onto the rebel. Seven resentful vassals revolting
+        /// one at a time lose seven times; the classic answer is that the first mover is the
+        /// signal the others were waiting for. Below this line they were already defiant
+        /// (treating with outsiders at 30), so joining is the next step, not a new one.
+        ///
+        /// **Un-tuned.** At 25, a sibling needs to have been under 35 before the news arrived.
+        /// </summary>
+        public const float RevoltJoinBelowHold = 25f;
+
+        /// <summary>
+        /// Least days between two defiance marks earned by withholding tribute.
+        ///
+        /// Withholding used to cost the vassal nothing at all: no mark, no trust, and the
+        /// patron had no lever - so below Hold 40 keeping the money was simply free, and run
+        /// 04 logged 193 withheld payments. It is defiance and now counts as such, but a
+        /// payment falls due every 7 days and a mark every week would turn one sullen season
+        /// into a broken treaty. Four weeks means a vassal that keeps withholding reaches two
+        /// marks in about a month and will not renew at its term. **Un-tuned.**
+        /// </summary>
+        public const float TributeWithheldMarkIntervalDays = 28f;
 
         /// <summary>Trust the poacher loses with the patron whose vassal it took.</summary>
         public const float PoachingTrustCost = -30f;
@@ -411,6 +445,13 @@ namespace DiplomacyIntrigue.Diplomacy
         /// 50 against the bar of 55, so being surrounded is never by itself enough - a
         /// cornered kingdom also has to be within reach of the patron, worn down, or already
         /// trust it. Re-scored against run 04's nine submissions, three still happen.
+        ///
+        /// **Since scaled by the patron's cover** (Hegemony.SubmissionValue): the term is how
+        /// much danger the patron can actually take off the candidate's hands, not how much
+        /// danger there is. Before that, the valuation had no term that depended on the
+        /// patron's strength at all, so a cornered kingdom knelt to its nearest same-culture
+        /// neighbour whether or not that neighbour could protect it. That re-scoring of run 04
+        /// predates the change and no longer applies.
         ///
         /// **Un-tuned beyond that arithmetic.** Run 05 is the measurement.
         /// </summary>
@@ -522,6 +563,27 @@ namespace DiplomacyIntrigue.Diplomacy
         public const float PactWeightTrust = 30f;
         public const float PactWeightAggression = 50f;
         public const float PactWeightRelation = 25f;
+
+        /// <summary>
+        /// Weight on the balancing pull: how far the strongest sphere neither party belongs to
+        /// outweighs the two of them together, clamped to 0..1.
+        ///
+        /// Added after the design review of run 04, where one sphere swallowed the map and
+        /// nothing pushed back. Every other pact term reads the present - wars already being
+        /// fought, borders, trust - so a rising power was never a reason to stand together
+        /// until it was already at somebody's gates. Balancing against the dominant power is
+        /// the oldest counterweight in the book and the one this evaluation lacked.
+        ///
+        /// It is zero across a balanced map (at campaign start no kingdom outweighs two
+        /// others) and only bites once one sphere is more than any pair of outsiders combined.
+        /// **Un-tuned**: 40 lets it carry two neighbours to a non-aggression pact on its own
+        /// when a sphere is twice their weight, and not to a defensive pact. That breaks the
+        /// "no single term clears the bar" rule the war and submission valuations follow, and
+        /// knowingly: the pact valuation never followed it (shared threat is worth 60), a
+        /// non-aggression pact is the cheapest commitment on the board, and two realms
+        /// facing a power twice their combined size have reason enough.
+        /// </summary>
+        public const float PactWeightBalancing = 40f;
 
         /// <summary>
         /// Mutual value needed before each treaty type is worth signing.

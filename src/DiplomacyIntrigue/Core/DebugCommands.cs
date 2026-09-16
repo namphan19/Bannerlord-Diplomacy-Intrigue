@@ -596,6 +596,14 @@ namespace DiplomacyIntrigue.Core
                           + AiDiplomacy.PactValue(state, a, b).ToString("0.0"));
             sb.AppendLine(b.Name + " values an agreement with " + a.Name + " at "
                           + AiDiplomacy.PactValue(state, b, a).ToString("0.0"));
+
+            var pull = AiDiplomacy.BalancingPull(state, a, b, out var against);
+            sb.AppendLine("Balancing pull, included above: "
+                          + (against == null
+                              ? "none - no sphere outweighs the two of them"
+                              : (pull * DiplomacyConstants.PactWeightBalancing).ToString("0.0")
+                                + " against " + against.Name + "'s sphere ("
+                                + Hegemony.SphereStrength(state, against).ToString("0") + " strength)"));
             sb.AppendLine("Thresholds: non-aggression " + DiplomacyConstants.AiNonAggressionThreshold.ToString("0")
                           + ", defensive pact " + DiplomacyConstants.AiDefensivePactThreshold.ToString("0")
                           + ", alliance " + DiplomacyConstants.AiAllianceThreshold.ToString("0"));

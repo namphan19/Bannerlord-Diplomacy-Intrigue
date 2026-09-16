@@ -342,14 +342,17 @@ namespace DiplomacyIntrigue.Diplomacy
         /// only definition the mod has - holding one.
         ///
         /// Hold starts low (<see cref="DiplomacyConstants.HoldOnCoercedSubmission"/>), because
-        /// submission at swordpoint is exactly the kind that comes apart.
+        /// submission at swordpoint is exactly the kind that comes apart - and lower still
+        /// for a vassal brought back after walking out on this same winner
+        /// (<see cref="Hegemony.StartingHoldWhenImposed"/>).
         /// </summary>
         private static void ImposeSubmission(ModState state, PeaceTerms terms)
         {
             if (!terms.ImposeVassalage) return;
 
+            var startingHold = Hegemony.StartingHoldWhenImposed(state, terms.Winner, terms.Loser);
             var treaty = Hegemony.Submit(state, terms.Winner, terms.Loser,
-                DiplomacyConstants.HoldOnCoercedSubmission, terms.TributePerPeriod, out var reason);
+                startingHold, terms.TributePerPeriod, out var reason);
 
             if (treaty == null)
             {
@@ -359,7 +362,10 @@ namespace DiplomacyIntrigue.Diplomacy
 
             Log.Info("Hegemony", terms.Loser.Name + " submits to " + terms.Winner.Name
                                  + " as a vassal at hold "
-                                 + DiplomacyConstants.HoldOnCoercedSubmission.ToString("0")
+                                 + startingHold.ToString("0")
+                                 + (startingHold < DiplomacyConstants.HoldOnCoercedSubmission
+                                     ? " (brought back by force)"
+                                     : "")
                                  + ". " + terms.Winner.Name + " now holds "
                                  + Hegemony.VassalCount(state, terms.Winner) + " vassal(s).");
         }

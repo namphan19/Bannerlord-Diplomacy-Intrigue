@@ -196,6 +196,11 @@ namespace DiplomacyIntrigue.Core
                     .Append((links.Count == 0 ? 0f : holdTotal / links.Count).ToString("0.0"));
                 line.Append(" defianceMarks=").Append(marks);
 
+                // Cumulative for the session. Run 04 could not say whether tribute ever
+                // arrived, because a payment that succeeded left no trace.
+                line.Append(" tributePaid=").Append(TreatyRegistry.TributePaidThisSession);
+                line.Append(" tributeWithheld=").Append(TreatyRegistry.TributeWithheldThisSession);
+
                 line.Append(" vanillaPeaceRefused=").Append(VanillaDiplomacy.PeaceRefused);
                 line.Append(" vanillaAlliancesRefused=").Append(VanillaDiplomacy.AllianceRefused);
                 line.Append(" vanillaTradeRefused=").Append(VanillaDiplomacy.TradeAgreementRefused);

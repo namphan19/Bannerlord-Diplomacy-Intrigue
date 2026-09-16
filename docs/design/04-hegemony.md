@@ -350,8 +350,10 @@ zero), spheres stay bounded — no single hegemon holding more than half the map
 
 ## 10a. Where the implementation departs from this spec
 
-Written down because a spec that quietly disagrees with the code is worse than no spec. All
-four departures were made while building 1.9 on 2026-09-16.
+Written down because a spec that quietly disagrees with the code is worse than no spec. The
+first four departures were made while building 1.9 on 2026-09-16; the last six came from the
+design review of run 04 the same day (docs/STATUS.md, "What to do next" §3). Several of those
+six are the code finally doing what this spec already said.
 
 | Spec said | Code does | Why |
 |---|---|---|
@@ -359,6 +361,12 @@ four departures were made while building 1.9 on 2026-09-16.
 | Contagion: other vassals lose Hold when a revolt **succeeds** | They lose it when the revolt is **declared** | Detecting victory means hooking the peace that ends a war whose treaty is already broken. And the demonstration effect starts when somebody defies, not when they win |
 | Defiance marks: a separate saved record of patron, vassal, when | Three fields on the `Treaty` itself (ids 15-17) | The link *is* the treaty. A new savable type needs a class definition **and** a container definition in `ModSaveDefiner`, and a missing container is the most common way to break a Bannerlord mod |
 | (Not in the spec) | A vassal is now barred from signing **any** treaty with an outsider, and defies that below Hold 30 | The prohibition existed for war only. Enforcing it for treaties is what gives the middle tier of defiance something to defy |
+| §4.3: the patron "joins the war within 10 days" | Until the run-04 review, nothing ever asked it to: the call to arms refused every call from vassal to patron. Now the patron is **called** when its vassal is attacked, and at signing into the wars the vassal is already defending, under the ally rules (trust floor, exhaustion, hopeless odds). Refusing costs trust and Hold, not a mark | Hold measured a duty no code could fulfil. A patron that distrusts its vassal staying out is intended: protection answers service |
+| §4.1 `protectionScore`: "did they defend me" | Counts only wars the vassal is **defending**, and only against attackers the patron may be called against | Otherwise a war between two vassals of the same patron - which the vassalage itself forbids the patron to join - scored as neglect |
+| §3.2: a cornered kingdom asks a stronger one | The submission value reads the patron at last: a patron no stronger than the candidate scores 0, and the threat term is scaled by the share of the danger the patron could actually take on | Nothing in the valuation depended on the patron's strength, so a kingdom knelt to its nearest neighbour whatever that neighbour could do for it |
+| §6.1: passive resistance withholds tribute | And earns a defiance mark for it, at most one per 28 days | Withholding was free, so it was simply what every link below 40 did |
+| §6.3: secession is one vassal's war | Siblings under Hold 25 after the contagion **rise with it**, all renouncing before anyone declares | A lone rebel faced the patron plus half the other vassals and lost every time; run 04's rebels knelt again within the run |
+| §5.3: the poached vassal's old link | Closed without charging the client; the poacher pays. Checked with `CanSign(replacing:)` before anything is torn up | Charging both parties priced one act twice, and the client's lost trust could make the new signing fail after the old link was already gone |
 
 Also worth recording: a coerced submission was measured starting at Hold 35 with a target of
 48.9 (base 40, fear +7.8, trust +15.0, tribute -3.8, culture -10.0). It spends about a

@@ -342,6 +342,12 @@ Vassal-party summons (design 04 §8) is the one piece deliberately left out: it 
 intrusive and the least load-bearing, and it belongs after Phase 2 gives refusal political
 weight.
 
+> **Reworked after run 04's design review (2026-09-16), unverified in a run.** A patron is now
+> actually called to defend its vassal, submission reads the patron's ability to protect,
+> withheld tribute is defiance, outsiders balance against a dominant sphere, and a revolt can
+> carry the other resentful vassals with it. Detail, live evidence and what stays unverified:
+> STATUS.md, "What to do next" §3.
+
 **1.11 Take inter-kingdom diplomacy from vanilla** ✅ **implemented**, partly verified — the
 lead's directive that our diplomacy overrides *all* vanilla diplomacy, plus the two bugs run
 02 exposed. Run 02 measured **86.8 % of wars ending without our peace table**, median length

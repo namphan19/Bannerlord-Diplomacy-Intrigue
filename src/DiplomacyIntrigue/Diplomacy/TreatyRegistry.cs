@@ -22,7 +22,14 @@ namespace DiplomacyIntrigue.Diplomacy
         /// The reason string is player-facing: it is what the UI in 1.8 will show, and what
         /// the console prints today.
         /// </summary>
-        public static bool CanSign(ModState state, Kingdom a, Kingdom b, TreatyType type, out string reason)
+        /// <param name="replacing">
+        /// A live treaty to treat as already gone, for a transfer that ends one bond and signs
+        /// another in the same act - a vassal poached from its patron. Asking with the old bond
+        /// still in force would refuse on it; asking only after tearing it up would find out
+        /// too late.
+        /// </param>
+        public static bool CanSign(ModState state, Kingdom a, Kingdom b, TreatyType type, out string reason,
+            Treaty replacing = null)
         {
             reason = null;
 
@@ -79,7 +86,7 @@ namespace DiplomacyIntrigue.Diplomacy
             // Vassalage and tribute both subordinate one party; being someone else's vassal
             // already spends that, so it cannot be spent twice.
             if ((type == TreatyType.Vassalage || type == TreatyType.TributaryPact)
-                && PatronOf(state, b) != null)
+                && PatronOf(state, b, replacing) != null)
             {
                 reason = b.Name + " is already subordinate to another kingdom.";
                 return false;
@@ -97,8 +104,8 @@ namespace DiplomacyIntrigue.Diplomacy
             // A vassal owes its foreign policy, and that is only now enforced for treaties -
             // until this, the prohibition existed for war alone. A badly held vassal ignores
             // it, which is the design's middle tier of defiance rather than a loophole.
-            if (IsForbiddenByPatron(state, a, b, type, out reason)) return false;
-            if (IsForbiddenByPatron(state, b, a, type, out reason)) return false;
+            if (IsForbiddenByPatron(state, a, b, type, replacing, out reason)) return false;
+            if (IsForbiddenByPatron(state, b, a, type, replacing, out reason)) return false;
 
             return true;
         }
@@ -111,13 +118,13 @@ namespace DiplomacyIntrigue.Diplomacy
         /// vassal. So is anything signed with the patron itself.
         /// </summary>
         private static bool IsForbiddenByPatron(ModState state, Kingdom signatory, Kingdom other,
-            TreatyType type, out string reason)
+            TreatyType type, Treaty replacing, out string reason)
         {
             reason = null;
             if (type == TreatyType.Truce) return false;
 
             var vassalage = Hegemony.VassalageOf(state, signatory);
-            if (vassalage == null) return false;
+            if (vassalage == null || vassalage == replacing) return false;
 
             var patron = vassalage.DominantParty;
             if (patron == null || patron == other) return false;
@@ -243,6 +250,9 @@ namespace DiplomacyIntrigue.Diplomacy
         /// per torn-up page would price one act as several, so the headline breach pays and
         /// these follow it.
         ///
+        /// Also how a poached vassal leaves its old patron: the cost of that act lands on the
+        /// poacher (trust, relation, a casus belli and a war), not a second time on the client.
+        ///
         /// Closed as <see cref="TreatyStatus.Broken"/> rather than dissolved because the
         /// save record has to stay honest: nobody consented to this.
         /// </summary>
@@ -253,7 +263,7 @@ namespace DiplomacyIntrigue.Diplomacy
             var victim = treaty.Other(breaker);
             treaty.Close(TreatyStatus.Broken, breaker);
             Log.Info("Treaty", breaker.Name + " repudiated its " + treaty.Type + " with "
-                               + victim.Name + " as part of the same breach.");
+                               + victim.Name + " - no separate charge; the act it belongs to carries the cost.");
         }
 
         /// <summary>Both parties agree to end it early. No penalty, no claim.</summary>
@@ -312,12 +322,22 @@ namespace DiplomacyIntrigue.Diplomacy
 
                 // Passive resistance, the cheapest form of defiance in the source document:
                 // the money simply stops arriving. Not a default - they can pay, they will
-                // not - so it costs the patron income without ending anything.
+                // not - so it ends nothing. But it is defiance, and it is now marked as such:
+                // it used to cost the vassal nothing at all, which made keeping the money the
+                // obvious move for every link below 40, and the patron had no lever against it.
                 if (treaty.Type == TreatyType.Vassalage
                     && Hegemony.HoldOf(treaty) < DiplomacyConstants.HoldPassiveResistanceThreshold)
                 {
+                    TributeWithheldThisSession++;
                     Log.Info("Hegemony", payer.Name + " withheld its tribute from " + receiver.Name
                                          + " (hold " + Hegemony.HoldOf(treaty).ToString("0.0") + ").");
+
+                    var sinceLastMark = treaty.LastDefianceOn == CampaignTime.Never
+                        ? float.MaxValue
+                        : (float)(CampaignTime.Now - treaty.LastDefianceOn).ToDays;
+                    if (sinceLastMark >= DiplomacyConstants.TributeWithheldMarkIntervalDays)
+                        Hegemony.NoteRefusal(state, treaty);
+
                     treaty.AdvanceTributeDate(CampaignTime.DaysFromNow(DiplomacyConstants.TributePeriodDays));
                     continue;
                 }
@@ -330,9 +350,23 @@ namespace DiplomacyIntrigue.Diplomacy
                 }
 
                 GiveGoldAction.ApplyBetweenCharacters(payerLeader, receiverLeader, treaty.TributeAmount, true);
+                TributePaidThisSession++;
                 treaty.AdvanceTributeDate(CampaignTime.DaysFromNow(DiplomacyConstants.TributePeriodDays));
             }
         }
+
+        /// <summary>
+        /// Tribute payments made and withheld this session, reported in the weekly snapshot.
+        ///
+        /// Run 04 could count 193 withheld payments and not a single successful one, because
+        /// only withholding was logged, so it could not say whether tribute ever arrived. A
+        /// log line per payment would be several hundred lines a year; two counters answer the
+        /// question. Session-scoped for the same reason as the vanilla refusal counters: they
+        /// describe the mod's behaviour, not the campaign, and do not belong in the save.
+        /// </summary>
+        public static int TributePaidThisSession { get; private set; }
+
+        public static int TributeWithheldThisSession { get; private set; }
 
         /// <summary>
         /// Pays the trust dividend for a peace that has held. Uses the closed war records
@@ -360,12 +394,12 @@ namespace DiplomacyIntrigue.Diplomacy
         // ----- Queries --------------------------------------------------------
 
         /// <summary>The kingdom this one answers to, or null. Vassalage only.</summary>
-        public static Kingdom PatronOf(ModState state, Kingdom client)
+        public static Kingdom PatronOf(ModState state, Kingdom client, Treaty ignoring = null)
         {
             for (var i = 0; i < state.Treaties.Count; i++)
             {
                 var treaty = state.Treaties[i];
-                if (!treaty.IsActive || !treaty.SubordinatesForeignPolicy) continue;
+                if (treaty == ignoring || !treaty.IsActive || !treaty.SubordinatesForeignPolicy) continue;
                 if (treaty.SubordinateParty == client) return treaty.DominantParty;
             }
             return null;

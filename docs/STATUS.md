@@ -16,7 +16,9 @@ zero errors over 5.1 in-game years.
 **And the same run found the pillar's real problem: hegemony forms far too easily.** Four
 kingdoms knelt in the first ninety seconds and one ended the run holding all seven others.
 Three defects behind it are listed under "What to do next"; none is a crash, all are Phase 1
-correctness and balance.
+correctness and balance. A design review afterwards found the cause was mostly structural —
+a patron's duty to protect existed only as a penalty, never as something code could do — and
+the fixes are in "What to do next" §3, verified piecewise in game and **not yet in a run**.
 
 ---
 
@@ -292,7 +294,86 @@ save now holds the run-04 world: one hegemon, seven vassals, Hold 15.7–44.9. S
 there measures whether a *saturated* hegemony comes apart, which is a fair question but not
 the same one as whether it forms too easily — that needs an earlier save.
 
-### 2. Phase 2 — court intrigue
+### 3. The design review of run 04: the hegemony's structure, fixed — unverified in a campaign
+
+Branch `feature/hegemony-structural-fixes`, 2026-09-16. The three changes in §2 each capped a
+number. A game-theory review of run 04 concluded that the collapse to one sphere was mostly
+**structural** rather than numerical: a bargain in which one side's duty did not exist in code,
+and no counterweight anywhere above the level of a single link. What changed, in the order the
+review ranked it:
+
+| # | Defect found by reading the code | Change | Where |
+|---|---|---|---|
+| 1 | **Protection was measured but never provided.** `CallToArms.Applies` refused every call from a vassal to its patron, and no AI code ever joined a vassal's war — so the Hold term `protection` could only ever read 0 or −20. The bargain had no enforceable patron side, and a sullen vassal was the rational equilibrium | A patron is called when its vassal is **attacked** (never into a war the vassal started), judged by the ally rules including the trust floor, and is called at signing into the wars its new vassal was already defending. A patron's refusal costs trust and Hold, never a mark | `CallToArms.cs` (`Applies`, `DefendNewVassal`), `Hegemony.Submit` |
+| 1b | `Protection` counted wars the patron could never be called into | Counts only wars where the vassal is the defender **and** no treaty stops the patron joining — the same rule as `Applies`. Found live: Battania showed −20 for a war with Aserai, a fellow vassal of the same patron | `Hegemony.Protection` |
+| 3 | **Submission never read the patron's strength.** Threat and pride are identical for every candidate patron, so the choice came down to reach, trust and culture — a cornered kingdom knelt to its nearest same-culture neighbour even when weaker | A patron no stronger than the candidate scores 0. The threat term is scaled by *cover*: the share of the attackers the patron may fight × how much of them it could match | `Hegemony.SubmissionValue` |
+| 5 | **Withholding tribute cost nothing** — no mark, no trust, no lever for the patron. Run 04: 193 withheld | Withholding earns a defiance mark, at most one per 28 days (`TributeWithheldMarkIntervalDays`). A vassal that keeps it up reaches two marks in about a month: no renewal, and its next refused summons breaks the link | `TreatyRegistry.PayDueTribute` |
+| 2a | **Nothing balanced against a rising sphere.** Every pact term reads the present | `PactValue` gains a balancing term: how far the strongest sphere neither party belongs to outweighs the two of them, weight 40 | `AiDiplomacy.BalancingPull`, `PactWeightBalancing` |
+| 2b | **Revolt was a lone act** against the patron plus half its other vassals, which is why run 04's rebels knelt again | When one vassal revolts, siblings under Hold 25 after the contagion rise with it. All rebels renounce before anyone declares, so the patron's call reaches only the loyal | `Hegemony.TryRevolt`, `RevoltJoinBelowHold` |
+| 8 | **`TryPoach` broke the old link before knowing the new one could be signed** — and the break's own −12 observer trust could be what made the signing fail, leaving the vassal free and nobody's | Checks `CanSign` first, with the old link set aside (`replacing:`). The old link now closes without charging the client: the poacher pays (trust, relation, casus belli, war), not both parties | `Hegemony.TryPoach`, `TreatyRegistry.CanSign` |
+| — | `HoldAfterFailedRevolt` was a constant nothing read | A vassalage imposed on a kingdom that walked out on the same winner inside two years starts at 20 | `Hegemony.StartingHoldWhenImposed`, `PeaceTable.ImposeSubmission` |
+| — | Run 04 could not say whether tribute ever arrived | `[SNAPSHOT]` carries `tributePaid=` and `tributeWithheld=`, cumulative per session | `Telemetry.cs` |
+
+No save data changed: every new behaviour reads existing fields.
+
+**Verified live on `di_phase1_full`, zero errors in the log.** Driven from the run-04 world
+through `diplomacy.break_treaty` and `campaign.declare_war`, never saved:
+
+```
+Southern Empire freed, declares on Khuzait (NE trusts Khuzait 97):
+  (CallToArms) Northern Empire answered Khuzait and declared war on Southern Empire.
+  (Core) War opened: Northern Empire -> Southern Empire (CausedByCallToWarAgreement => DefendAlly, legitimacy 1.00)
+  Khuzait   protection +20.0 ... => 49.8        (was +0.0 => 28.9)
+
+Western Empire freed, declares on Battania (NE trusts Battania -9):
+  (CallToArms) Northern Empire refused Battania - does not trust Battania (-9.0).
+  Battania  protection -20.0  trust +12.8 ... => 17.5
+
+Battania on load, at war only with Aserai (a fellow vassal):
+  protection +0.0 => 39.7                        (was -20.0 => 19.7 before fix 1b)
+
+diplomacy.submission_value Battania | Northern Empire
+  threat +0.0 (cover 0.00) ...                   (its attacker is NE's own vassal)
+diplomacy.submission_value Southern Empire | Northern Empire
+  Northern Empire is no stronger than Southern Empire and has no protection to offer => 0.0
+diplomacy.pact_value Western Empire | Southern Empire
+  Balancing pull, included above: 40.0 against Northern Empire's sphere (106389 strength)
+```
+
+A one-week `diplomacy.ai_week` on that world ran clean: Western Empire signed an alliance with
+Aserai and a non-aggression pact with Khuzait, both defiant vassals of NE. **That is not
+evidence for the balancing term** — `pact_value` shows it at 0 for both pairs, because the
+partner belongs to NE's sphere; shared threat carried them.
+
+**Not verified, and a tool call cannot verify it:** the joint revolt (needs Hold under 15 for
+30 days of real clock), the tribute marks (no payment fell due on the frozen date), the lower
+Hold on a re-imposed vassalage, a poach going through `CanSign(replacing:)`, and
+`DefendNewVassal` at the moment of submission — the run-04 world has no free kingdom that
+would kneel. The player's patron prompt text was built, not seen.
+
+**What run 05 should watch**, beyond §2's list: `answered <vassal> and declared war` and
+`leaves its vassal ... to fight alone` lines, whether `avgHold` still settles in the 15–36
+band, `tributePaid` against `tributeWithheld`, and whether a sphere ever loses more than one
+vassal at a time (`other vassal(s) rose with it`). The balancing weight and the join threshold
+are both un-tuned.
+
+**Deliberately left for after run 05**, so it can be measured against these changes rather
+than confounded with them — the other findings of the same review:
+
+- **Trust behaves as a grim trigger.** Non-decaying, broadcast to every observer on a breach,
+  repaid only bilaterally — and several breaches are forced by the system (revolt at Hold 15,
+  two automatic refusals below 40, tribute default). Two breaches put a kingdom below the pact
+  floor with every court, with no route back.
+- **Alliances do not deter.** `EvaluateWar` never reads the target's allies or patron.
+- **The weariness gate almost never binds.** A war ending at exhaustion 60–70 carries 30–35,
+  under the gate of 45.
+- **Vassals of one patron can be at war with each other** (Aserai / Battania in this save,
+  both NE's), and the patron has no way to impose peace between them.
+- **The same save holds a hegemon paying tribute to its own vassal**:
+  `TributaryPact(Khuzait / Northern Empire)`, 500 from NE, beside `Vassalage(NE / Khuzait)`.
+  Left over from an earlier peace; nothing stops the two coexisting.
+
+### 4. Phase 2 — court intrigue
 
 Specced in `docs/design/02-intrigue.md`; order is 2.1 grievances → 2.2 loyalty → 2.3 blocs →
 2.4 legitimacy → 2.5 succession → 2.6 civil war → 2.7 UI. Phase 1 leaves hooks waiting for
@@ -336,8 +417,9 @@ hegemony) and **titles** (Emperor, Khagan), which sit on top of legitimacy at 2.
   has no notion of the target's willingness beyond that; a weak kingdom with high trust will
   submit readily. Worth revisiting when Phase 2 gives courts an opinion.
 - **A vassal's existing wars are untouched when it submits.** Signing vassalage does not end
-  the client's own wars, so a patron can inherit a war it did not choose. Deliberate for now;
-  decide when hegemony is specced.
+  the client's own wars. Since the run-04 review the patron is called into the ones the vassal
+  is *defending* (`CallToArms.DefendNewVassal`) and may refuse at the usual price; wars the
+  vassal started stay its own.
 - **`ConcessionLadder` yields castles before towns** via a two-pass flag that reads awkwardly
   (`townsFirst: false`). It works; it would read better as two explicit loops.
 
