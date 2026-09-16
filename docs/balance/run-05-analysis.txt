@@ -1,0 +1,84 @@
+==================================================================
+RUN SIZE
+==================================================================
+  weekly snapshots : 52   (~4.3 in-game years)
+  wars ended       : 13
+  first snapshot   : Spring 2, 1137
+  last snapshot    : Summer 2, 1141
+
+==================================================================
+WAR DURATION  (acceptance: mean under 252 days = 3 years)
+==================================================================
+  CHOSEN wars       n=  10  mean= 109.1d  median= 69.5d  max= 203d  (1.30 years)
+  OBLIGATION wars   n=   3  mean=  94.3d  median=101.0d  max= 135d  (1.12 years)
+
+  who ended them:
+    PeaceTable             11    84.6%
+    FollowerRelease         1     7.7%
+    Dormant                 1     7.7%
+
+  terms conceded:
+    tributary_pact_at_500_per_period,_release_prisoners    5
+    white_peace                     5
+    cede_Flintolg_Castle,_release_prisoners    1
+    cede_Kranirog_Castle,_release_prisoners    1
+    released_by_Aserai              1
+
+  count   : 13
+  mean    : 105.7 days  (1.26 years)
+  median  : 76.0 days
+  min/max : 45 / 203 days
+  VERDICT : PASS
+
+  distribution:
+       1-3mo     7  ##########################
+       3-6mo     2  #######
+      6mo-3y     4  ###############
+
+==================================================================
+CASUS BELLI of ended wars
+==================================================================
+  Conquest                    4    30.8%
+  ReclaimAncestralLand        3    23.1%
+  BrokenTreaty                3    23.1%
+  DefendAlly                  3    23.1%
+
+  called in by an ally (vs chose the war):
+    none                       10
+    Sturgia                     1
+    Western_Empire              1
+    Aserai                      1
+
+==================================================================
+OUTCOMES
+==================================================================
+  wars with any fief change : 7 / 13  (53.8%)
+  total fiefs changing hands: 13
+  final war score |mean|    : 41.3
+  white-ish (|score| < 5)   : 0 / 13
+
+==================================================================
+WORLD STATE  (sampled every ~26 weeks)
+==================================================================
+  date                   kingdoms      atWar       wars  avgExhaus     claims  nonAggres      truce  defensive   alliance  tributary  vassalage
+  Spring 2, 1137                8          7          5       11.7         44          6          2          2          2          0          1
+  Spring 16, 1139               8          7          4       44.0         36          2          2          5          4          7          4
+  FINAL                         8          7          6       23.8         37          2          2          5          2          1          3
+
+==================================================================
+DID ALLIANCES EVER FORM?
+==================================================================
+  alliance             max=  5  weeks with any=  51 / 52
+  defensivePact        max=  5  weeks with any=  52 / 52
+  nonAggressionPact    max=  7  weeks with any=  52 / 52
+  tributaryPact        max=  7  weeks with any=  49 / 52
+  vassalage            max=  4  weeks with any=  52 / 52
+
+==================================================================
+PERMANENT TOTAL WAR CHECK
+==================================================================
+  kingdoms alive: first 8, last 8, min 8
+  share of kingdoms at war: mean 77.6%  min 25.0%  max 87.5%
+  weeks with EVERY kingdom at war : 0 / 52  (0.0%)
+  weeks with NOBODY at war        : 0 / 52  (0.0%)
+  average exhaustion across run   : 29.1  (max 59.1)
