@@ -413,7 +413,7 @@ the strongest kingdom and let it kneel anyway, because pride compares against th
 kingdom overall, not against the patron. §3 already closed that route; this section is what
 still let strength fail to matter once a link existed.
 
-Strength was already in nine formulas. The problems were in **how** it was read:
+Strength was already read in ten places before this branch (war gate and value, pact aggression, tribute demand, land hunger, the hopeless-call check, casualty exhaustion, Hold fear, rival pull, submission threat and pride). The problems were in **how** it was read:
 
 | Where | Defect | Change |
 |---|---|---|
