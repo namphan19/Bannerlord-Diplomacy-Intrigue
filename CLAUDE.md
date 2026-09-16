@@ -83,6 +83,14 @@ daily set. If a value looks frozen under a debug command, check the command befo
 
 **Launch through `games_start`, not by hand.** A manually launched game writes no bridge
 record GABS recognises, so the bridge never connects even though the game is running fine.
+Enabling the `Bannerlord.GABS` module in the launcher's own mod list does **not** fix this,
+which is worth knowing before trying: the mod's server comes up and listens (confirmed on
+2026-09-16, `127.0.0.1:4825` owned by the game's pid, module present in the `OnSubModuleLoad`
+list), but it authenticates with the `GABP_TOKEN` environment variable **GABS sets when it
+spawns the process**. A launcher-started game generates its own token that nothing outside it
+knows, and `games_connect` refuses with *"no runtime claim exists"* even with
+`forceTakeover: true`. There is no way in after the fact - the game has to be restarted
+through `games_start`.
 
 **`games_stop` can report success while the game is still running.** Under BLSE Standalone
 the pid GABS tracks as the workload is not the process that owns the game window: it reported
