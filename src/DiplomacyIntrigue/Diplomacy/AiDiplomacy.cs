@@ -591,27 +591,13 @@ namespace DiplomacyIntrigue.Diplomacy
                 if (kingdom.IsAtWarWith(target)) continue;
                 if (!TreatyEnforcement.IsWarAllowed(state, kingdom, target)) continue;
 
-                var theirs = target.CurrentTotalStrength;
-                if (theirs <= 0f) continue;
-                var ratio = kingdom.CurrentTotalStrength / theirs;
-                if (ratio < DiplomacyConstants.AiWarStrengthRatio) continue;
+                var terms = EvaluateWar(state, kingdom, target);
+                if (terms.Ratio < DiplomacyConstants.AiWarStrengthRatio) continue;
 
-                var claim = ClaimRegistry.Best(state, kingdom, target);
-                var casus = claim == null ? CasusBelliType.Conquest : claim.Type;
-                var legitimacy = CasusBelli.Legitimacy(casus);
-
-                var value = (ratio - 1f) * DiplomacyConstants.WarValuePerStrengthRatio
-                            + legitimacy * DiplomacyConstants.WarValueLegitimacy
-                            + Proximity(kingdom, target) * DiplomacyConstants.WarValueProximity
-                            + LandHunger(kingdom) * DiplomacyConstants.WarValueLandHunger
-                            - weariness * DiplomacyConstants.WarValueWearinessPenalty;
-
-                value *= Settings.Current.AiAggressiveness;
-
-                if (value <= bestValue) continue;
+                if (terms.Total <= bestValue) continue;
                 best = target;
-                bestValue = value;
-                bestCasus = casus;
+                bestValue = terms.Total;
+                bestCasus = terms.Casus;
             }
 
             if (best == null) return false;
@@ -640,6 +626,85 @@ namespace DiplomacyIntrigue.Diplomacy
                            + ", value " + bestValue.ToString("0") + ", cost " + cost + " influence).");
             Announce(kingdom.Name + " declares war on " + best.Name + ".");
             return true;
+        }
+
+        /// <summary>
+        /// Every term of the war valuation for one pair, kept together so the decision and
+        /// the diagnostic read the same numbers. <see cref="TryDeclareWar"/> acts on
+        /// <see cref="Total"/>; <see cref="ExplainWarValue"/> prints these fields. They were
+        /// two separate copies of the formula until 2026-09-16, which is the arrangement
+        /// that let a term drift without the diagnostic noticing.
+        /// </summary>
+        public struct WarValueTerms
+        {
+            public float Ratio;
+            public CasusBelliType Casus;
+            public float Legitimacy;
+            public float Proximity;
+            public float Hunger;
+            public float Weariness;
+
+            public bool AdvantageCapped;
+            public float FromRatio;
+            public float FromLegitimacy;
+            public float FromProximity;
+            public float FromHunger;
+            public float FromWeariness;
+
+            /// <summary>Before the player's aggressiveness setting.</summary>
+            public float Raw;
+            /// <summary>What the threshold is compared against.</summary>
+            public float Total;
+        }
+
+        /// <summary>
+        /// What a war on <paramref name="them"/> is worth to <paramref name="us"/>. Gates are
+        /// not applied here - the caller decides what to do with a value - but every term is.
+        /// </summary>
+        public static WarValueTerms EvaluateWar(ModState state, Kingdom us, Kingdom them)
+        {
+            var terms = new WarValueTerms();
+
+            var theirs = them.CurrentTotalStrength;
+            terms.Ratio = theirs <= 0f ? 0f : us.CurrentTotalStrength / theirs;
+
+            var claim = ClaimRegistry.Best(state, us, them);
+            terms.Casus = claim == null ? CasusBelliType.Conquest : claim.Type;
+            terms.Legitimacy = CasusBelli.Legitimacy(terms.Casus);
+            terms.Proximity = Proximity(us, them);
+            terms.Hunger = LandHunger(us);
+            terms.Weariness = state.WearinessOf(us);
+
+            // The strength advantage is the only term with no natural ceiling, and run 03
+            // shows what that costs: Vlandia valued a war on a beaten-down Northern Empire
+            // at 199, of which at least 138 was this term, against 85 as the most that
+            // legitimacy, proximity and land hunger can contribute together. An unbounded
+            // term does not change *whether* a war happens - the threshold is a floor - but
+            // it decides *which* target is chosen, so once any kingdom is weak every other
+            // reason to fight becomes noise. That is the shape of run 03's Vlandia: four of
+            // its five declarations were Conquest at legitimacy 0.20.
+            //
+            // Capped at twice our strength. Past that a war is already as one-sided as a
+            // decision needs to know, and the cap leaves a decisive advantage worth about
+            // as much as a good claim across a shared border rather than more than
+            // everything else put together.
+            var advantage = terms.Ratio - 1f;
+            if (advantage > DiplomacyConstants.WarValueMaxStrengthAdvantage)
+            {
+                advantage = DiplomacyConstants.WarValueMaxStrengthAdvantage;
+                terms.AdvantageCapped = true;
+            }
+
+            terms.FromRatio = advantage * DiplomacyConstants.WarValuePerStrengthRatio;
+            terms.FromLegitimacy = terms.Legitimacy * DiplomacyConstants.WarValueLegitimacy;
+            terms.FromProximity = terms.Proximity * DiplomacyConstants.WarValueProximity;
+            terms.FromHunger = terms.Hunger * DiplomacyConstants.WarValueLandHunger;
+            terms.FromWeariness = -terms.Weariness * DiplomacyConstants.WarValueWearinessPenalty;
+
+            terms.Raw = terms.FromRatio + terms.FromLegitimacy + terms.FromProximity
+                        + terms.FromHunger + terms.FromWeariness;
+            terms.Total = terms.Raw * Settings.Current.AiAggressiveness;
+            return terms;
         }
 
         /// <summary>
@@ -722,42 +787,34 @@ namespace DiplomacyIntrigue.Diplomacy
                           + " (must be <= " + DiplomacyConstants.AiMaxWearinessToExpand.ToString("0") + ")"
                           + (weariness > DiplomacyConstants.AiMaxWearinessToExpand ? "   BLOCKED" : ""));
 
-            var theirs = them.CurrentTotalStrength;
-            var ratio = theirs <= 0f ? 0f : us.CurrentTotalStrength / theirs;
-            sb.AppendLine("  strength ratio: " + ratio.ToString("0.00")
+            // Same resolver the decision uses, so this cannot describe a formula the AI
+            // does not run.
+            var terms = EvaluateWar(state, us, them);
+
+            sb.AppendLine("  strength ratio: " + terms.Ratio.ToString("0.00")
                           + " (must be >= " + DiplomacyConstants.AiWarStrengthRatio.ToString("0.00") + ")"
-                          + (ratio < DiplomacyConstants.AiWarStrengthRatio ? "   BLOCKED" : ""));
+                          + (terms.Ratio < DiplomacyConstants.AiWarStrengthRatio ? "   BLOCKED" : ""));
 
-            var claim = ClaimRegistry.Best(state, us, them);
-            var casus = claim == null ? CasusBelliType.Conquest : claim.Type;
-            var legitimacy = CasusBelli.Legitimacy(casus);
-            var proximity = Proximity(us, them);
-            var hunger = LandHunger(us);
-
-            var fromRatio = (ratio - 1f) * DiplomacyConstants.WarValuePerStrengthRatio;
-            var fromLegit = legitimacy * DiplomacyConstants.WarValueLegitimacy;
-            var fromProx = proximity * DiplomacyConstants.WarValueProximity;
-            var fromHunger = hunger * DiplomacyConstants.WarValueLandHunger;
-            var fromWeary = -weariness * DiplomacyConstants.WarValueWearinessPenalty;
-
-            var raw = fromRatio + fromLegit + fromProx + fromHunger + fromWeary;
-            var scaled = raw * Settings.Current.AiAggressiveness;
-
-            sb.AppendLine("  casus belli:    " + casus + " (legitimacy " + legitimacy.ToString("0.00") + ")");
-            sb.AppendLine("  value from strength advantage: " + fromRatio.ToString("0.0"));
-            sb.AppendLine("  value from legitimacy:         " + fromLegit.ToString("0.0"));
-            sb.AppendLine("  value from proximity:          " + fromProx.ToString("0.0")
-                          + "   (proximity " + proximity.ToString("0.00") + ")");
-            sb.AppendLine("  value from land hunger:        " + fromHunger.ToString("0.0")
-                          + "   (hunger " + hunger.ToString("0.00") + ")");
-            sb.AppendLine("  penalty from weariness:        " + fromWeary.ToString("0.0"));
-            sb.AppendLine("  total: " + raw.ToString("0.0")
+            sb.AppendLine("  casus belli:    " + terms.Casus
+                          + " (legitimacy " + terms.Legitimacy.ToString("0.00") + ")");
+            sb.AppendLine("  value from strength advantage: " + terms.FromRatio.ToString("0.0")
+                          + (terms.AdvantageCapped
+                              ? "   (capped at ratio "
+                                + (1f + DiplomacyConstants.WarValueMaxStrengthAdvantage).ToString("0.00") + ")"
+                              : ""));
+            sb.AppendLine("  value from legitimacy:         " + terms.FromLegitimacy.ToString("0.0"));
+            sb.AppendLine("  value from proximity:          " + terms.FromProximity.ToString("0.0")
+                          + "   (proximity " + terms.Proximity.ToString("0.00") + ")");
+            sb.AppendLine("  value from land hunger:        " + terms.FromHunger.ToString("0.0")
+                          + "   (hunger " + terms.Hunger.ToString("0.00") + ")");
+            sb.AppendLine("  penalty from weariness:        " + terms.FromWeariness.ToString("0.0"));
+            sb.AppendLine("  total: " + terms.Raw.ToString("0.0")
                           + " x aggressiveness " + Settings.Current.AiAggressiveness.ToString("0.00")
-                          + " = " + scaled.ToString("0.0")
+                          + " = " + terms.Total.ToString("0.0")
                           + " (needs " + DiplomacyConstants.AiWarThreshold.ToString("0") + ")"
-                          + (scaled < DiplomacyConstants.AiWarThreshold ? "   BLOCKED" : ""));
+                          + (terms.Total < DiplomacyConstants.AiWarThreshold ? "   BLOCKED" : ""));
 
-            var cost = (int)(DiplomacyConstants.WarDeclarationBaseInfluence * (2f - legitimacy)
+            var cost = (int)(DiplomacyConstants.WarDeclarationBaseInfluence * (2f - terms.Legitimacy)
                              * (1f + weariness / 100f));
             var available = us.RulingClan == null ? 0f : us.RulingClan.Influence;
             sb.AppendLine("  influence cost: " + cost + ", available " + available.ToString("0")

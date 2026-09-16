@@ -129,9 +129,24 @@ outside it, so it is **provisional** and run 04 should be read with that in mind
 
 - **Vlandia is an outlier.** Four of its five declarations were `Conquest` at legitimacy 0.20,
   and three of the four dormant wars were its — it declares wars it then does not fight. One
-  declaration scored **value 199** against a threshold of 18, which is far outside the 18–72
-  range of every other declaration and suggests `LandHunger` can blow up for a kingdom with a
-  large strength share and few fiefs. Worth a look before run 04.
+  declaration scored **value 199** against a threshold of 18, far outside the 18–72 range of
+  every other declaration.
+
+  **Corrected on 2026-09-16, before run 04 started.** This first read as `LandHunger` blowing
+  up. It cannot: that term is clamped to 1 and so contributes at most 35. With `Conquest`
+  legitimacy 0.20 every *bounded* term together reaches at most 6 + 20 + 35 = **61**, and
+  weariness only subtracts, so at least **138** of the 199 came from the one term with no
+  ceiling — `(ratio − 1) × 40` — which puts Vlandia at **4.45×** Northern Empire's strength.
+
+  The consequence is not the size of the number, since the threshold is only a floor. It is
+  **target selection**: an unbounded term means the weakest kingdom outranks any claim, any
+  border and any land hunger, which is exactly why four of Vlandia's five wars had no case.
+  Fixed by capping the term at twice our own strength (`WarValueMaxStrengthAdvantage`). How
+  much else that moves is **not** knowable from this log, which prints a total and never the
+  ratio behind it: what can be said is that none of the other nine declarations *needs* a
+  ratio above the cap to reach the value it recorded, the largest of them requiring only
+  1.27. The formula also now lives in one resolver shared with `diplomacy.war_value`, instead
+  of being written out twice.
 - **Tribute demands repeat.** `Khuzait imposed a tributary pact on Northern Empire` appears
   three times, `Vlandia … on Western Empire` three times. Pacts lapse and are re-imposed on the
   same pair, which reads as mechanical rather than political.

@@ -1,4 +1,4 @@
-# Status — 2026-09-15
+# Status — 2026-09-16
 
 Point-in-time state. [CLAUDE.md](../CLAUDE.md) holds the things that are always true; this
 file holds what changes. Update it when you finish a chunk of work.
@@ -10,6 +10,10 @@ Last measured: **balance run 03**, 6.2 in-game years, zero errors —
 
 **Phase 1 is code complete, 1.1 through 1.11.** The next run is the one that tests all of it
 at once, and it is the lead's call when to start it.
+
+**One fix landed on top of run 03, deployed and waiting for that run** — the war valuation's
+strength-advantage term is capped, and the formula now lives in one resolver. Detail below,
+under "Before run 04".
 
 ---
 
@@ -179,6 +183,42 @@ produced.
    the map collapsing to two is not.
 
 ## What to do next
+
+### Before run 04: the unbounded term in the war valuation, capped
+
+Run 03 recorded one war declaration at **value 199** against a threshold of 18 and put it down
+to `LandHunger` blowing up. That was wrong, and the arithmetic says so: `LandHunger` is clamped
+to 1 and so contributes at most 35, and with `Conquest` legitimacy 0.20 every bounded term
+together reaches at most 61. At least 138 of the 199 came from `(ratio − 1) × 40` — the one
+term in the valuation with no ceiling — which puts Vlandia at 4.45× Northern Empire.
+
+What that costs is not war frequency, since the threshold is only a floor. It is **which target
+gets picked**: an unbounded term makes "whoever is weakest" outrank claims, borders and land
+hunger together, which is the shape run 03 saw — four of Vlandia's five declarations were
+`Conquest` at legitimacy 0.20, wars it then did not fight.
+
+| Change | Where |
+|---|---|
+| `WarValueMaxStrengthAdvantage = 1` — the term caps at twice our own strength, 40 points | `DiplomacyConstants.cs` |
+| One resolver: `AiDiplomacy.EvaluateWar` returns every term, and `TryDeclareWar` and `ExplainWarValue` both read it. They were two hand-written copies of the same formula | `AiDiplomacy.cs` |
+| A comment claiming the valuation "punishes attacking upward, the strength term goes negative below parity" — it cannot, the `ratio >= 1.0` gate skips those targets before the valuation runs | `DiplomacyConstants.cs` |
+
+**Verified live** on `di_phase1_full` (Winter 3, 1131), zero errors in the log:
+
+```
+Vlandia considering war on Battania
+  strength ratio: 2.44 (must be >= 1.00)
+  value from strength advantage: 40.0   (capped at ratio 2.00)
+  ...
+  total: 62.9 x aggressiveness 1.00 = 62.9 (needs 18)
+```
+
+Uncapped that term would have been 57.6 and the total 80.5. A pair below the cap
+(Vlandia → Aserai, ratio 1.69) prints 27.4 with no cap note, and a pair below parity
+(Vlandia → Khuzait, 0.98) is still stopped by the gate rather than by its value.
+
+**The cap itself is un-tuned** — chosen so a decisive advantage weighs about as much as a good
+claim across a shared border, not measured. Run 04 is the first data on it.
 
 ### 1. Balance run 04 — the whole of Phase 1 at once
 

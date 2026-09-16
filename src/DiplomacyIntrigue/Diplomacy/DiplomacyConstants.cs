@@ -556,9 +556,11 @@ namespace DiplomacyIntrigue.Diplomacy
         /// most of the map. Measuring the mature world afterwards showed even 1.05 was rarely
         /// met - the best ratio Aserai could find against any neighbour was 1.08.
         ///
-        /// At 1.0 a kingdom may attack an equal, and the valuation still discourages
-        /// attacking upward: the strength term goes negative below parity, so a weaker
-        /// aggressor needs a strong claim and a close border to make the case.
+        /// At 1.0 a kingdom may attack an equal. An earlier version of this comment added
+        /// that the valuation "still discourages attacking upward, because the strength
+        /// term goes negative below parity" - it does not, and cannot: this gate skips a
+        /// stronger target before the valuation is ever reached, so that branch is dead.
+        /// Attacking upward is forbidden outright, not priced.
         /// </summary>
         public const float AiWarStrengthRatio = 1.0f;
 
@@ -566,6 +568,23 @@ namespace DiplomacyIntrigue.Diplomacy
         public const float AiTributeDemandStrengthRatio = 2.0f;
 
         public const float WarValuePerStrengthRatio = 40f;
+
+        /// <summary>
+        /// Ceiling on the strength-advantage term, as a multiple of our own strength: at 1
+        /// a kingdom twice as strong scores the full 40 and one four times as strong scores
+        /// no more.
+        ///
+        /// Added after run 03, where this was the only unbounded term in the valuation and
+        /// reached at least 138 in one declaration against the 85 that legitimacy,
+        /// proximity and land hunger can reach together. The threshold is a floor, so an
+        /// unbounded term does not create wars - it decides which target is chosen, and it
+        /// made "whoever is weakest" outrank every other reason to fight.
+        ///
+        /// **Un-tuned.** The cap was chosen so a decisive advantage weighs about as much as
+        /// a good claim across a shared border, not measured. Run 04 is the first data.
+        /// </summary>
+        public const float WarValueMaxStrengthAdvantage = 1f;
+
         public const float WarValueLegitimacy = 30f;
         public const float WarValueProximity = 20f;
         /// <summary>
