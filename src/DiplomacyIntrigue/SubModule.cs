@@ -51,6 +51,11 @@ namespace DiplomacyIntrigue
                 _harmony = new Harmony(HarmonyId);
                 _harmony.PatchAll(Assembly.GetExecutingAssembly());
 
+                // After Harmony and inside the same try: the Kingdom screen additions are
+                // not load-bearing, and ModUI.Install swallows its own failures so a broken
+                // prefab patch cannot cost us the campaign systems below it.
+                UI.KingdomScreen.ModUI.Install();
+
                 Healthy = true;
                 Log.Info("SubModule", "OnSubModuleLoad complete. Harmony patches applied.");
             }

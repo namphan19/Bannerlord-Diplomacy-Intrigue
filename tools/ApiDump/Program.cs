@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -13,9 +13,15 @@ namespace ApiDump
     /// API documentation for Bannerlord, and names move between game versions.
     ///
     ///     dotnet run --project tools/ApiDump -- [type-or-namespace-filter ...]
+    ///     dotnet run --project tools/ApiDump -- --from Bannerlord.UIExtenderEx BaseViewModelMixin
     ///
     /// With no arguments it dumps the set the mod currently needs. Output goes to
     /// artifacts/api/&lt;Type&gt;.txt so it can be grepped while writing code.
+    ///
+    /// **--from &lt;module-or-path&gt;** also indexes an assembly outside the game bin: a module
+    /// name resolves to Modules/&lt;name&gt;/bin/Win64_Shipping_Client, or pass a folder or a
+    /// .dll directly. Added when the Kingdom-screen UI work needed UIExtenderEx's surface,
+    /// which lives in a module rather than in TaleWorlds.*.dll and so was invisible here.
     /// </summary>
     internal static class Program
     {
@@ -55,6 +61,34 @@ namespace ApiDump
             var resolver = new DefaultAssemblyResolver();
             resolver.AddSearchDirectory(gameBin);
 
+            // --from pulls in assemblies the game bin does not hold: module DLLs. Parsed out
+            // of the argument list before the filters are read.
+            var extraDlls = new List<string>();
+            var filters = new List<string>();
+            for (var i = 0; i < args.Length; i++)
+            {
+                if (!string.Equals(args[i], "--from", StringComparison.Ordinal))
+                {
+                    filters.Add(args[i]);
+                    continue;
+                }
+
+                if (i + 1 >= args.Length)
+                {
+                    Console.WriteLine("FATAL: --from needs a module name, a folder or a .dll path.");
+                    return 2;
+                }
+
+                var where = args[++i];
+                var resolved = ResolveSource(where, gameFolder);
+                if (resolved.Count == 0)
+                {
+                    Console.WriteLine("FATAL: nothing to read for --from " + where);
+                    return 2;
+                }
+                extraDlls.AddRange(resolved);
+            }
+
             // Index every public type in the game assemblies once.
             var index = new Dictionary<string, TypeDefinition>(StringComparer.Ordinal);
             foreach (var dll in Directory.EnumerateFiles(gameBin, "TaleWorlds.*.dll"))
@@ -66,13 +100,40 @@ namespace ApiDump
                 }
                 catch { continue; }
 
+                // IsPublic is false for a public type nested in another type, and those are
+                // real API - UIExtenderEx's PrefabExtensionTextAttribute is one, and it was
+                // invisible here until this line said IsNestedPublic too.
                 foreach (var type in asm.MainModule.GetTypes())
-                    if (type.IsPublic && !index.ContainsKey(type.FullName))
+                    if ((type.IsPublic || type.IsNestedPublic) && !index.ContainsKey(type.FullName))
                         index[type.FullName] = type;
             }
             Console.WriteLine("indexed " + index.Count + " public types from " + gameBin);
 
-            var wanted = args.Length > 0 ? args : DefaultTypes;
+            foreach (var dll in extraDlls)
+            {
+                AssemblyDefinition asm;
+                try
+                {
+                    resolver.AddSearchDirectory(Path.GetDirectoryName(dll));
+                    asm = AssemblyDefinition.ReadAssembly(dll, new ReaderParameters { AssemblyResolver = resolver });
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("  skipped " + dll + ": " + ex.Message);
+                    continue;
+                }
+
+                var added = 0;
+                foreach (var type in asm.MainModule.GetTypes())
+                {
+                    if ((!type.IsPublic && !type.IsNestedPublic) || index.ContainsKey(type.FullName)) continue;
+                    index[type.FullName] = type;
+                    added++;
+                }
+                Console.WriteLine("  +" + added + " public types from " + Path.GetFileName(dll));
+            }
+
+            var wanted = filters.Count > 0 ? filters.ToArray() : DefaultTypes;
             var written = 0;
 
             foreach (var name in wanted)
@@ -178,6 +239,31 @@ namespace ApiDump
             if (t is GenericInstanceType git)
                 name = git.Name.Split('`')[0] + "<" + string.Join(", ", git.GenericArguments.Select(Short)) + ">";
             return name.TrimEnd('&');
+        }
+
+        /// <summary>
+        /// A module name, a folder or a .dll. A bare name is looked up the way the game
+        /// lays modules out, which is the common case and saves typing the whole path.
+        /// </summary>
+        private static List<string> ResolveSource(string where, string gameFolder)
+        {
+            var found = new List<string>();
+
+            if (File.Exists(where) && where.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+            {
+                found.Add(Path.GetFullPath(where));
+                return found;
+            }
+
+            var dir = Directory.Exists(where)
+                ? where
+                : Path.Combine(gameFolder, "Modules", where, "bin", "Win64_Shipping_Client");
+
+            if (!Directory.Exists(dir)) return found;
+
+            foreach (var dll in Directory.EnumerateFiles(dir, "*.dll"))
+                found.Add(dll);
+            return found;
         }
 
         private static string SafeFileName(string name)
