@@ -5,15 +5,18 @@ file holds what changes. Update it when you finish a chunk of work.
 
 Module version 0.1.0. Save schema **v4**, definer base id **2749100**.
 Treaty save ids now run to **17** (`Hold`, defiance marks, the revolt clock).
-Last measured: **balance run 03**, 6.2 in-game years, zero errors —
-[docs/balance/run-03.md](balance/run-03.md).
+Last measured: **balance run 04**, 5.1 in-game years, zero errors —
+[docs/balance/run-04.md](balance/run-04.md).
 
-**Phase 1 is code complete, 1.1 through 1.11.** The next run is the one that tests all of it
-at once, and it is the lead's call when to start it.
+**Phase 1 is code complete, 1.1 through 1.11, and run 04 met every acceptance criterion.**
+Wars end (median 66 days, 12 of 15 through our peace table, nothing outside our systems),
+the world came off total war (73 % of weeks → 3.3 %), alliances hold, nobody was eliminated,
+zero errors over 5.1 in-game years.
 
-**One fix landed on top of run 03, deployed and waiting for that run** — the war valuation's
-strength-advantage term is capped, and the formula now lives in one resolver. Detail below,
-under "Before run 04".
+**And the same run found the pillar's real problem: hegemony forms far too easily.** Four
+kingdoms knelt in the first ninety seconds and one ended the run holding all seven others.
+Three defects behind it are listed under "What to do next"; none is a crash, all are Phase 1
+correctness and balance.
 
 ---
 
@@ -220,25 +223,29 @@ Uncapped that term would have been 57.6 and the total 80.5. A pair below the cap
 **The cap itself is un-tuned** — chosen so a decisive advantage weighs about as much as a good
 claim across a shared border, not measured. Run 04 is the first data on it.
 
-### 1. Balance run 04 — the whole of Phase 1 at once
+### 1. What run 04 found, in the order it matters
 
-Everything in Phase 1 now exists and is deployed. What this run has to answer, in order of
-how much rests on it:
+Full report: [docs/balance/run-04.md](balance/run-04.md). Everything below is measured, not
+inferred; nothing below has been decided or changed yet.
 
-| Question | Run 03 reference | What to look for |
+| # | Finding | Evidence |
 |---|---|---|
-| Do wars now end in the intended band? | median 60d for ended wars, but the five survivors averaged **407 days** | `ExhaustionPerDayAtWar` raised 0.08 → **0.30**, so the clock alone reaches the threshold at day 200. Median should land 150-200 |
-| Does the world come off total war? | 73% of weeks with **every** kingdom at war | wars that can end mean treaties can be signed again |
-| Do hegemonies form in a real campaign? | zero, for 13 years | `hegemons=` and `vassalLinks=` in `[SNAPSHOT]`. Both routes are live |
-| Do they come apart? | n/a | `avgHold=` and `defianceMarks=`. A revolt needs Hold under 15 for 30 days, which only real time can produce |
-| Is voluntary submission too eager? | n/a | the threat term saturates at +140 against a threshold of 55, so any kingdom outnumbered two to one will kneel. **Provisional** |
-| Is `Dormant` too eager? | closed 4 of 10 wars | watch for `endedBy=Dormant` on a war with real fief changes or war score |
-| Did anything internal break? | — | policy votes, clan defections, king selection, annexation |
+| 1 | **Submission is automatic, not political.** 9 submissions, values **55.5–166.9 against a threshold of 55**, `threat` at its +140 ceiling in three of them. Four kingdoms knelt on the first weekly tick after load | `submitted to` lines in `run-04.log` |
+| 2 | **The map collapsed to one sphere.** Northern Empire ends holding **all seven** other kingdoms. All 8 alive, none eliminated — but the run's peace is subjugation, not diplomacy | `hegemons=1 vassalLinks=7` |
+| 3 | **Poaching is a metronome.** Battania changed patron 4× in 2.5 years at values 151/151/159/158. Below Hold 40 a vassal is always on the market, and average Hold was 30 | 5 poaches |
+| 4 | **A revolt can be silently refused.** `Hegemony.Revolt` breaks only the vassalage, so a `DefensivePact` with the same patron vetoed the war of independence — and `Revolt` logged the war anyway. 1 of this run's 2 revolts is recorded wrongly | 11:12:52 in `run-04.log` |
+| 5 | **Nothing ends a hegemony.** Both revolts were back under the same patron inside the run, one after 20 seconds. Hold settles at 15–36 and drifts *up* | `avgHold=` series |
+| 6 | **Tribute barely arrives** — 193 withheld payments, and a successful payment is not logged at all, so the ratio is unknown | add the missing log line |
+| 7 | **Wars are shorter than intended.** Wars begun and ended inside the run: median **63 days** against the design target of 150–200. The acceptance bar passes either way | 47–202 day spread |
 
-Two constants remain deliberately unapplied, waiting on this measurement:
-`ExhaustionSeekPeace` 60 → 70, and the pact thresholds `AiAllianceThreshold` 70 → 82 /
-`AiDefensivePactThreshold` 55 → 65. The second pair looks much less necessary than it did
-after run 02 — run 03's alliance web collapsed on its own.
+The two fixes carried into this run both did their job, verified against the mechanism:
+`ExhaustionPerDayAtWar` 0.30 closed all five of run 03's 400-day wars at exhaustion 58–62, and
+the war-value cap pulled declarations into 18–81 from run 03's 18–199, with the three highest
+now carrying a claim at legitimacy 0.70 rather than naked opportunism.
+
+Two constants remain deliberately unapplied and both look less urgent after this run:
+`ExhaustionSeekPeace` 60 → 70, and `AiAllianceThreshold` 70 → 82 / `AiDefensivePactThreshold`
+55 → 65 — the alliance web has behaved for two runs running.
 
 ### 2. Phase 2 — court intrigue
 
