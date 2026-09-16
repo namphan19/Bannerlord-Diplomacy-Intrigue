@@ -84,6 +84,22 @@ daily set. If a value looks frozen under a debug command, check the command befo
 **Launch through `games_start`, not by hand.** A manually launched game writes no bridge
 record GABS recognises, so the bridge never connects even though the game is running fine.
 
+**`games_stop` can report success while the game is still running.** Under BLSE Standalone
+the pid GABS tracks as the workload is not the process that owns the game window: it reported
+*"workload pid 19884 is gone"* twice while pid 18664 — `Bannerlord.BLSE.Standalone`, holding
+the `Mount and Blade II Bannerlord - Singleplayer` window title — kept running and kept
+answering bridge calls. Confirm a stop against the game itself, with
+`Get-Process Bannerlord*` and `bannerlord.core.get_game_state`, not against what GABS says.
+The `deploy.ps1` guard matches `Bannerlord*`, so a process left over this way blocks the next
+deploy, and the rule against force-killing still applies — ask the lead to close the window.
+
+**`bannerlord.core.load_save` only works from the main menu.** Called while a campaign is
+already running it returns `"Loading save: <name>"` and does nothing at all: the world carries
+on unchanged, which is easy to miss because the reply looks like success. Verify with
+`diplomacy.wars` or `core.get_campaign_time` that the state actually moved. Getting back to a
+clean save mid-session therefore means restarting the game — there is no quit-to-menu tool on
+the bridge.
+
 **The game throttles hard when its window is unfocused** — roughly two in-game hours per real
 minute. A campaign day takes about an hour of real time in the background. This is why
 long-run verification cannot be done from a tool call.
