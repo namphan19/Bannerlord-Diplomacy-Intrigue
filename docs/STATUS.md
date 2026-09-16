@@ -256,7 +256,9 @@ hegemony) and **titles** (Emperor, Khagan), which sit on top of legitimacy at 2.
 | `tools/LoadProbe` | Pre-flight: target framework vs game host, reference resolution, `SubModuleClassType`. Catches the class of failure that produces no log at all |
 | `tools/ApiDump` | Dumps the real public surface of game types to `artifacts/api/`. Use before writing against any unfamiliar API |
 | `diplomacy.war_value A \| B` | The AI war valuation term by term, naming the gate that blocks. Written after guessing wrong twice |
-| `diplomacy.tick_days N` | N days of upkeep, real functions, clock unmoved |
+| `diplomacy.tick_days N` | N days of the **full** daily upkeep, real functions, clock unmoved |
+| `diplomacy.hegemony` | every sphere, each link's hold, and the terms pulling it |
+| `diplomacy.submission_value A \| B` | what submitting to B is worth to A, term by term |
 | `diplomacy.ai_week N` | N weeks of AI evaluation plus matching upkeep. Prints its own limitations past 4 weeks |
 | `diplomacy.report` | Telemetry snapshot to the log plus a full world report to file |
 | `tools/analyse-log.py` | Parses a run log into the acceptance numbers: war durations, alliance formation, permanent-war check, casus belli mix. `python tools/analyse-log.py <log>` |

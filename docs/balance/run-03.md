@@ -82,10 +82,29 @@ Ten declarations in 6.2 years, all with a stated casus belli and paid for at 52�
 The one-war-at-a-time cap plus the influence cost cut the rate by seven times.
 
 **But the wars still running at the end had been running for an average of 407 days, the
-longest 485.** At 485 days, 38.8 of that war's 43.6 exhaustion is the 0.08/day that elapsed
-time alone contributes — meaning roughly five points in sixteen months came from actual
-fighting. Those wars were dead on their feet, and nothing could close them: they had crept
-past the 300-casualty dormancy cap years earlier, and no kingdom in a war can sign a treaty.
+longest 485** — and nothing could close them, because no kingdom in a war can sign a treaty.
+
+**Correction, made the next morning by reading the war records instead of inferring from
+averages.** I first wrote that those wars were barely being fought: 38.8 of 43.6 exhaustion
+from the calendar, so "roughly five points in sixteen months came from fighting". That
+arithmetic mixed the *longest* war's duration with the *average* exhaustion of five different
+wars. The records say otherwise:
+
+```
+Sturgia / Western Empire   486 days  exhaustion 58.4/65.9  casualties 12591/13244  = 53/day
+Southern Empire / Aserai   432 days  exhaustion 42.5/43.5  casualties  3656/6804   = 24/day
+Khuzait / Battania         379 days  exhaustion 32.7/32.2  casualties  3101/1034   = 11/day
+```
+
+These are real wars, fought hard, and **none of them is dormant under any threshold**. What
+kept them open was the exhaustion *rate*: 0.10-0.12 a day, needing 500-600 days to reach the
+threshold of 60. Two thirds of that came from the calendar even at 24-53 casualties a day,
+because the casualty term divides by kingdom strength and these kingdoms field 13,000.
+
+So the fix was **`ExhaustionPerDayAtWar` 0.08 → 0.30**, not the dormancy rate rule. The rate
+rule still earns its place for wars nobody fights at all — it closed four in this very run —
+but it was not the answer to the long ones, and saying it was would have sent the next run
+looking in the wrong place.
 
 That is the mechanism behind the rest of the world state:
 
@@ -101,11 +120,10 @@ Weeks with every kingdom at war: **54 of 74 (73 %)**. The map went from locked i
 locked in war, by the same mechanism in reverse — wars that cannot end crowd out everything
 diplomacy would otherwise do.
 
-**Fix applied:** dormancy is now judged on casualties **per day** as well as in total. Under
-3/day after 42 days counts as not being fought. Measured rates: the four wars the old rule
-caught ran at 1.9, 5.8, 3.0 and 1.9 per day; the 400-day survivors at roughly 1. The threshold
-sits inside that spread rather than cleanly between the two groups, so it is **provisional** and
-run 04 should be read with that in mind.
+**Fixes applied:** the exhaustion rate above, and dormancy now also judged on casualties
+**per day** (under 3/day after 42 days). The four wars the absolute rule caught ran at 1.9,
+5.8, 3.0 and 1.9 per day; the rate threshold sits inside that spread rather than cleanly
+outside it, so it is **provisional** and run 04 should be read with that in mind.
 
 ## Smaller observations
 
@@ -124,7 +142,9 @@ run 04 should be read with that in mind.
 
 ## What run 04 has to answer
 
-1. Do the 400-day wars disappear, and does the world come off 73 % total war?
+1. Do the 400-day wars disappear, and does the world come off 73 % total war? The
+   exhaustion rate is the lever that should do it: 0.30/day reaches the threshold on day 200
+   with no fighting at all.
 2. Does `endedBy=External` stay at zero now that the instrument is honest?
 3. Do alliances and truces come back once kingdoms can leave wars?
 4. Is `Dormant` now *too* eager — are real wars being closed as dormant? Watch for

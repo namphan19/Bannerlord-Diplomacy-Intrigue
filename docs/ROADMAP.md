@@ -159,22 +159,19 @@ suicide pact the AI would never sign. Refusing as a **vassal** breaks the vassal
 service is the substance of that bargain.
 Code: `Diplomacy/CallToArms.cs`, `Behaviors/CallToArmsBehavior.cs`.
 
-> **Gap, and it is a real one: vassalage cannot be reached in play.** Every route that
-> creates a treaty was traced — `TreatyBehavior.SignTruceOnPeace` (truce),
-> `AiDiplomacy` (non-aggression / defensive / alliance, and tributary from a tribute
-> demand), `PeaceTable` (tributary as a peace term), `DiplomacyMenu` (non-aggression /
-> defensive / alliance for the player) and `DebugCommands`. **Only the debug command can
-> create a `Vassalage` treaty.** The AI never proposes subordination, `PeaceTerms` has no
-> vassalage field, and the player's menu does not offer it.
+> **Closed by 1.9 on 2026-09-16. Kept here because the shape of the mistake is worth
+> remembering.** For three balance runs the *mechanics* of vassalage were implemented and
+> verified in the live game — a vassal could not declare war, tribute was scheduled, the call
+> to arms pulled it into its patron's war — while the *event* of one kingdom subordinating
+> another had no route at all. Every treaty-creating call site was traced and only
+> `DebugCommands` could create a `Vassalage` treaty: `PeaceTerms` had no vassalage field and
+> the AI never proposed subordination. Run 02 confirmed it from the other side, `vassalage=0`
+> across all 157 weekly snapshots.
 >
-> Balance run 02 confirms it from the other side: `vassalage=0` in all 157 weekly
-> snapshots of a 13.1-year campaign, while tributary pacts reached 9.
->
-> So the *mechanics* of vassalage are implemented and were verified in the live game, but
-> the *event* of one kingdom subordinating another has never happened outside a console
-> command. Calling 1.6 implemented is fair; calling vassalage playable was not. A feature
-> with no way to occur is not finished, and this one is the foundation the hegemony spec
-> ([design/04](design/04-hegemony.md) §2) sits on.
+> Calling 1.6 implemented was fair. Leaving the impression that vassalage was *playable* was
+> not: a feature with no way to occur is not finished, and this one was the foundation the
+> whole hegemony design sits on. 1.9 added the routes - peace table at war score 90, voluntary
+> submission, poaching.
 
 Two things worth recording:
 

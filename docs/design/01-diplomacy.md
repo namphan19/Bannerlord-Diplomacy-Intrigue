@@ -231,12 +231,26 @@ season, but a reputation that follows the player for the rest of the campaign.
 Peace is a package, not a yes/no. What the stronger side may demand is bounded by **war
 score** and gated by **casus belli**.
 
-> **Implemented as a point budget, not the tiers below.** Each demand costs war-score
-> points (town 45, castle 25, tributary pact 60, prisoners 5, indemnity 8 per 1000 denars)
+> **Implemented as a point budget, not the tiers below.** Each demand costs war-score points
 > and the package must fit inside the winner's war score. It reproduces the intent of the
 > table without exclusive-or branches, and adding a demand type is one constant in
 > `DiplomacyConstants` rather than a rewritten table. The tiers are kept here as the
 > calibration reference they became.
+>
+> The ladder as built, cheapest first:
+>
+> | Demand | Cost |
+> |---|---|
+> | Release prisoners | 5 |
+> | Indemnity | 8 per 1000 denars |
+> | Castle | 25 |
+> | Town | 45 |
+> | Tributary pact | 60 |
+> | **Submission as a vassal** | **90** |
+>
+> Submission is the top rung and the one that changes what the loser *is* rather than what it
+> owns - it is also what makes the winner a hegemon. See
+> [design 04](04-hegemony.md) for everything downstream of it.
 
 
 | War score (winner's view) | May demand |
@@ -251,9 +265,21 @@ Gate by casus belli: **fief transfers require a territorial claim** — `Conques
 `ReclaimAncestralLand`. A war fought on `AvengeRaid` can extract tribute and prisoners but
 not land. This is what makes the choice of casus belli matter beyond a cost modifier.
 
-Acceptance: a side accepts when
-`exhaustion >= 60 - warScoreAgainstThem/2` and the package value is within
-`±25%` of what its own valuation says the war is worth.
+Acceptance takes **two** signatures, and the second was missing for the project's first
+thirteen measured in-game years:
+
+- **The loser signs** when `exhaustion >= 60 - warScoreAgainstThem/2` and the package costs no
+  more than `warScoreAgainstThem x 1.25`.
+- **The winner signs** when the package is worth at least **half** of what the war earned, or
+  it earned nothing, or the winner's own exhaustion has reached 70 and it no longer cares.
+
+Without the second rule the side suing for peace offered a white peace, the only willingness
+check asked *that same side*, and it granted itself a free peace - `terms=white_peace` 13 times
+out of 13 in balance run 02. The concession ladder was unreachable and looked tuned wrong.
+
+One more way a war can end, added when peace was taken from vanilla: a **dormant** war - past
+42 days with under 300 casualties, or under 3 a day - lapses by mutual indifference, on white
+terms only. Vanilla had quietly been closing the wars nobody fought; nothing else would.
 
 ---
 

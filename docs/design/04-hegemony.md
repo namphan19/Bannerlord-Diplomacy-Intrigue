@@ -63,12 +63,18 @@ Everything the vassal side of this needs is built and was verified in the live g
 scheduling, the refusal-breaks-vassalage rule, and the refusal to let a kingdom serve two
 patrons.
 
-**But vassalage has no route into play.** Every treaty-creating call site was traced: only
-`DebugCommands` can create a `Vassalage` treaty. `PeaceTerms` has no vassalage field, the AI
-never proposes subordination, and the player's menu does not offer it. Balance run 02 confirms
-it from the other end — `vassalage=0` in all 157 weekly snapshots of a 13.1-year campaign.
+**Vassalage had no route into play, and that was the whole of 1.9.** When this document was
+written, every treaty-creating call site had been traced and only `DebugCommands` could create
+a `Vassalage` treaty: `PeaceTerms` had no vassalage field, the AI never proposed subordination,
+and the player's menu did not offer it. Balance run 02 confirmed it from the other end —
+`vassalage=0` in all 157 weekly snapshots of a 13.1-year campaign.
 
-So 1.9 is mostly about **routes in** and **one new number**, not about new machinery.
+So 1.9 was mostly about **routes in** and **one new number**, not new machinery.
+
+**Built and verified on 2026-09-16.** All three routes are live, and the first hegemon was
+made through the real peace table rather than a debug command: Southern Empire, holding Aserai
+at war score 99.2. Three more links followed inside three simulated weeks by the AI's own
+voluntary route. §10a records where the code departs from what is written below.
 
 ---
 

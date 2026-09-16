@@ -68,6 +68,19 @@ Get-WinEvent -FilterHashtable @{LogName='Application'; StartTime=(Get-Date).AddM
 `SubModule.InstallCrashLogging` now catches unhandled exceptions into the mod log, so this
 should only be needed for faults that happen before the module loads.
 
+**A hegemon is derived, never stored.** Any kingdom holding one active `Vassalage` treaty is
+one; `Hegemony.IsHegemon` reads the treaties and there is deliberately no flag, no title
+record and no list. Several hegemons coexist by construction, and a link ending makes the
+hegemony end with no event having to fire. Do not add a stored "is hegemon" anywhere - that
+would be a second source of truth for something already derivable, which is the mistake
+`CasusBelli.Resolve` exists to prevent.
+
+**A diagnostic that drives only part of a tick lies convincingly.**
+`diplomacy.tick_days` used to run exhaustion and claims but not the treaty upkeep, so a
+vassalage `Hold` sat unchanged through 20 simulated days and looked like a broken drift - the
+campaign's own daily handler had been calling it correctly all along. It now runs the full
+daily set. If a value looks frozen under a debug command, check the command before the system.
+
 **Launch through `games_start`, not by hand.** A manually launched game writes no bridge
 record GABS recognises, so the bridge never connects even though the game is running fine.
 
@@ -105,6 +118,11 @@ The GABS MCP server drives the running game. The loop that works:
 3. `bannerlord.core.set_cheat_mode` true — needed before any `campaign.*` command
 4. Drive with `bannerlord.core.run_command`, read the mod log, `ui.take_screenshot` for UI
 
+Useful commands beyond `status`/`wars`/`treaties`: `diplomacy.hegemony` (every sphere, each
+link's hold and the terms pulling it), `diplomacy.submission_value A | B`,
+`diplomacy.offer_peace <winner> | <loser> | vassalage, prisoners` (drives the real peace-table
+route rather than fabricating a treaty), `diplomacy.war_value`, `diplomacy.peace_allowance`.
+
 Saves used for testing: `di_phase1_full` (richest state), `di_treaty_test`, `di_phase0_test`.
 
 **What the bridge cannot do:** click buttons inside a `MultiSelectionInquiry` — GABS only
@@ -122,7 +140,8 @@ suspect and say so.
 
 **Save data is frozen once shipped.** Never renumber or reuse a `SaveableProperty` id, never
 reuse a save-definer local id for a different type, never change the definer base id
-(`2749100`, block `2749100`–`2749199`). Adding a new savable type means a class definition
+(`2749100`, block `2749100`–`2749199`). `Treaty` currently uses ids **1-17** (14 `Hold`, 15
+defiance marks, 16 last defiance, 17 the revolt clock), so the next free id there is **18**. Adding a new savable type means a class definition
 **and** a container definition in `ModSaveDefiner` — a missing container definition crashes
 on save, which is the single most common way to break a Bannerlord mod. Bump
 `ModState.CurrentSchemaVersion` only when the *meaning* of existing data changes; adding a
