@@ -142,6 +142,17 @@ namespace DiplomacyIntrigue.Diplomacy
                              + ". That bond would have to be broken before ours could be made.";
                     return false;
                 }
+
+                // Winning a war is not the same as being able to hold the loser afterwards.
+                // Every other route into vassalage asks this; the peace table did not, so a
+                // kingdom that won on points could take a vassal it was weaker than, and the
+                // link would begin with fear already working against it.
+                if (!Hegemony.IsStrongEnoughToHold(terms.Winner, terms.Loser))
+                {
+                    reason = terms.Winner.Name + " is no stronger than " + terms.Loser.Name
+                             + " and could not hold it as a vassal. Tribute or land is still on the table.";
+                    return false;
+                }
             }
 
             var budget = BudgetFor(war, terms.Winner);
@@ -405,7 +416,9 @@ namespace DiplomacyIntrigue.Diplomacy
                     + (hasClaim ? "" : "   (blocked: no territorial claim)"),
                 "  tributary pact    " + DiplomacyConstants.PeaceCostTributaryPact.ToString("0"),
                 "  submission        " + DiplomacyConstants.PeaceCostVassalage.ToString("0")
-                    + "   (they become our vassal)",
+                    + (Hegemony.IsStrongEnoughToHold(winner, loser)
+                        ? "   (they become our vassal)"
+                        : "   (blocked: we are no stronger than them)"),
                 "  release prisoners " + DiplomacyConstants.PeaceCostPrisoners.ToString("0"),
                 "  indemnity         " + DiplomacyConstants.PeaceCostPerThousandIndemnity.ToString("0") + " per 1000 denars",
                 "Their exhaustion is " + war.ExhaustionOf(loser).ToString("0.0")

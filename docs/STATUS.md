@@ -294,6 +294,21 @@ save now holds the run-04 world: one hegemon, seven vassals, Hold 15.7–44.9. S
 there measures whether a *saturated* hegemony comes apart, which is a fair question but not
 the same one as whether it forms too easily — that needs an earlier save.
 
+**Measured since, in run 05** — the lead's own session from the launcher, archived in commit
+`29f8abc` as [run-05.log](balance/run-05.log) but not written up here until now. 52 snapshots,
+~4.3 in-game years, zero errors, starting from a save of the lead's own (Spring 1137, one
+vassal link) rather than `di_phase1_full`. It measured the §2 changes:
+
+- **The submission cap held.** Three submissions against run 04's nine, at 64.5, 61.9 and 63.8
+  against the bar of 55, with `threat` at +50.0, +50.0 and +41.0 — never above its new ceiling.
+- **`avgHold` ended at 52.3**, from 26.7 at the start, but the set of links changed underneath
+  it (1 → 4 → 3) and it sat at 23.1 halfway, so this is not the same links recovering.
+  Tribute was withheld **125** times.
+- **No poach and no revolt happened**, so neither of the paths §2 changed was exercised. The
+  "watch for" lines above are still unanswered.
+- Wars: 13 ended, 11 through the peace table, median 76 days, no week with every kingdom at
+  war.
+
 ### 3. The design review of run 04: the hegemony's structure, fixed — unverified in a campaign
 
 Branch `feature/hegemony-structural-fixes`, 2026-09-16. The three changes in §2 each capped a
@@ -351,13 +366,13 @@ Hold on a re-imposed vassalage, a poach going through `CanSign(replacing:)`, and
 `DefendNewVassal` at the moment of submission — the run-04 world has no free kingdom that
 would kneel. The player's patron prompt text was built, not seen.
 
-**What run 05 should watch**, beyond §2's list: `answered <vassal> and declared war` and
+**What run 06 should watch**, beyond §2's list: `answered <vassal> and declared war` and
 `leaves its vassal ... to fight alone` lines, whether `avgHold` still settles in the 15–36
 band, `tributePaid` against `tributeWithheld`, and whether a sphere ever loses more than one
 vassal at a time (`other vassal(s) rose with it`). The balancing weight and the join threshold
 are both un-tuned.
 
-**Deliberately left for after run 05**, so it can be measured against these changes rather
+**Deliberately left for after run 06**, so it can be measured against these changes rather
 than confounded with them — the other findings of the same review:
 
 - **Trust behaves as a grim trigger.** Non-decaying, broadcast to every observer on a breach,
@@ -372,6 +387,72 @@ than confounded with them — the other findings of the same review:
 - **The same save holds a hegemon paying tribute to its own vassal**:
   `TributaryPact(Khuzait / Northern Empire)`, 500 from NE, beside `Vassalage(NE / Khuzait)`.
   Left over from an earlier peace; nothing stops the two coexisting.
+
+### 3b. Strength, read where it decides — unverified in a campaign
+
+Raised by the lead, who found reading the save by hand that the hegemon of the whole map was
+nearly its weakest kingdom. `diplomacy.strength` (new) on `di_phase1_full`:
+
+```
+rank  kingdom            strength   share  fiefs  sphere
+   1  Khuzait               28329   19.9%    31  vassal of Northern Empire (balance vs patron +1.00)
+   2  Vlandia               20486   14.4%    23  vassal of Northern Empire (balance vs patron +0.66)
+   3  Southern Empire       18487   13.0%    12  vassal of Northern Empire (balance vs patron +0.51)
+   4  Western Empire        17254   12.1%    13  vassal of Northern Empire (balance vs patron +0.42)
+   5  Aserai                16572   11.7%    13  vassal of Northern Empire (balance vs patron +0.36)
+   6  Sturgia               16016   11.3%    14  vassal of Northern Empire (balance vs patron +0.31)
+   7  Northern Empire       12938    9.1%     7  hegemon, 7 vassal(s), sphere 142130
+   8  Battania              12047    8.5%     7  vassal of Northern Empire (balance vs patron -0.10)
+```
+
+The strongest kingdom on the map, at 2.2× its patron's strength and 4.4× its fiefs, was a
+vassal. **How it happened, from run-04.log:** every one of Northern Empire's links came by
+voluntary submission or by poaching, never through the peace table, and neither route read
+the patron's strength. Khuzait knelt at 55.5 with `pride -50.0` — the valuation knew it was
+the strongest kingdom and let it kneel anyway, because pride compares against the strongest
+kingdom overall, not against the patron. §3 already closed that route; this section is what
+still let strength fail to matter once a link existed.
+
+Strength was already in nine formulas. The problems were in **how** it was read:
+
+| Where | Defect | Change |
+|---|---|---|
+| Hold's `fear` term | `ratio − 1`, clamped ±1: twice the vassal's strength scored +25 but half of it only −12.5, and −25 needed a patron with no army. Northern Empire lost at most 13.6 to any vassal for being weaker than six of them | `Hegemony.PowerBalance` — log2 of the ratio, clamped ±1, so the scale is symmetric. One helper for the hegemony system's two-sided comparisons |
+| Revolt | Read resentment only. A vassal a fifth of its patron's size revolted at the same Hold as one twice its size: the weak marched to certain defeat, the strong sat under a patron they could have thrown off | The revolt line moves with strength: `15 + 15 × PowerBalance(vassal, patron)`, clamped 0..30. Twice the patron: revolts below 30. Half: never alone — its link still lapses at term, and it can rise with a stronger sibling. `SecessionCapabilityWeight`, un-tuned |
+| Peace table | Vassalage could be imposed by a winner weaker than the loser — the one route into vassalage that still asked nothing | `IsDemandable` refuses it; `DescribeAllowance` says why. All three routes now ask `Hegemony.IsStrongEnoughToHold` |
+| `Treaty.SetHold` | A Hold stored as exactly 0 read back as the load default of 40 (`HoldOf` treats 0 as "unset"), drifted to 0 and read 40 again — a sawtooth, reachable because the target can be 0 | Set Hold floors at 0.1 |
+
+The same world, before and after, nothing else changed:
+
+| Vassal | fear before → after | Hold target before → after | revolts below |
+|---|---|---|---|
+| Khuzait (2.19× NE) | −13.6 → **−25.0** | 28.9 → **17.5** | **30.0** — at 28.9, now counting down |
+| Vlandia | −9.2 → −16.6 | 33.6 → 26.2 | 24.9 |
+| Southern Empire | −7.5 → −12.9 | 32.8 → 27.5 | 22.7 |
+| Western Empire | −6.3 → −10.4 | 44.9 → 40.8 | 21.2 |
+| Aserai | −5.5 → −8.9 | 35.7 → 32.2 | 20.4 — at 15.7 it starts counting, but its target is 32.2 and it climbs out in about five days |
+| Sturgia | −4.8 → −7.7 | 36.6 → 33.7 | 19.6 |
+| Battania (0.93× NE) | +1.8 → +2.6 | 39.7 → 40.4 | 13.5 |
+
+The peace-table gate, live: with Aserai freed, `offer_peace Battania | Aserai | vassalage` is
+refused with *"Battania is no stronger than Aserai and could not hold it as a vassal"*; the
+reverse passes the strength check and stops at the existing one (Battania already has a
+patron). A one-week `ai_week` afterwards ran with zero errors and zero warnings.
+
+**Not verified:** a revolt actually firing on the moved line, which needs 30 days of real
+clock. The arithmetic, if nothing else in the world moved: Khuzait's target (17.5) sits under
+its line (30), so it counts down the full 30 days and revolts. By then every link has drifted
+to its target, and after §3's contagion of −10 Southern Empire (17.5), Aserai (22.2), Vlandia
+(16.2) and Sturgia (23.7) are under 25 and rise with it; Western Empire (30.8) and Battania
+(30.4) stay. Five of seven in one event. The world will move in 30 days, so this is a
+prediction to check in run 06, not a result.
+
+**What strength still does not mean, and why it was left:** `CurrentTotalStrength` is the
+engine's live military figure. It swings after every large battle, and it counts nothing a
+kingdom owns - Khuzait's 31 fiefs and Northern Empire's 7 weigh the same in it. A smoothed or
+economic measure (fiefs, prosperity) would describe power better, but a smoothed one needs saved
+state and an economic one is a new concept with its own balance. Not started; worth deciding
+after run 06 shows how much the swings matter.
 
 ### 4. Phase 2 — court intrigue
 
@@ -432,6 +513,7 @@ hegemony) and **titles** (Emperor, Khagan), which sit on top of legitimacy at 2.
 | `diplomacy.war_value A \| B` | The AI war valuation term by term, naming the gate that blocks. Written after guessing wrong twice |
 | `diplomacy.tick_days N` | N days of the **full** daily upkeep, real functions, clock unmoved |
 | `diplomacy.hegemony` | every sphere, each link's hold, and the terms pulling it |
+| `diplomacy.strength` | every kingdom ranked by the strength the formulas read, its share, fiefs, sphere, and balance against its patron |
 | `diplomacy.submission_value A \| B` | what submitting to B is worth to A, term by term |
 | `diplomacy.ai_week N` | N weeks of AI evaluation plus matching upkeep. Prints its own limitations past 4 weeks |
 | `diplomacy.report` | Telemetry snapshot to the log plus a full world report to file |

@@ -142,7 +142,8 @@ The GABS MCP server drives the running game. The loop that works:
 3. `bannerlord.core.set_cheat_mode` true — needed before any `campaign.*` command
 4. Drive with `bannerlord.core.run_command`, read the mod log, `ui.take_screenshot` for UI
 
-Useful commands beyond `status`/`wars`/`treaties`: `diplomacy.hegemony` (every sphere, each
+Useful commands beyond `status`/`wars`/`treaties`: `diplomacy.strength` (every kingdom ranked
+by the strength the formulas read, with its sphere), `diplomacy.hegemony` (every sphere, each
 link's hold and the terms pulling it), `diplomacy.submission_value A | B`,
 `diplomacy.offer_peace <winner> | <loser> | vassalage, prisoners` (drives the real peace-table
 route rather than fabricating a treaty), `diplomacy.war_value`, `diplomacy.peace_allowance`.

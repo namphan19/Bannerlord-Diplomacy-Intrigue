@@ -775,20 +775,83 @@ namespace DiplomacyIntrigue.Core
                       .Append("  tribute ").Append(link.TributeAmount)
                       .Append("  until ").Append(link.ExpiresOn).AppendLine();
                     sb.Append("      ").AppendLine(explanation);
-                    sb.Append("      ").AppendLine(Describe(hold));
+                    sb.Append("      ").Append(Describe(link))
+                      .Append("   (revolts below ").Append(Hegemony.SecessionThreshold(link).ToString("0.0"))
+                      .AppendLine(")");
                 }
             }
 
             return sb.ToString();
         }
 
-        private static string Describe(float hold)
+        private static string Describe(Models.Treaty link)
         {
+            var hold = Hegemony.HoldOf(link);
             if (hold >= DiplomacyConstants.HoldRenewThreshold) return "loyal - will renew willingly";
             if (hold >= DiplomacyConstants.HoldPassiveResistanceThreshold) return "serving, but will let the term lapse";
             if (hold >= DiplomacyConstants.HoldDefianceThreshold) return "resisting - refuses summons, withholds tribute";
-            if (hold >= DiplomacyConstants.HoldSecessionThreshold) return "defiant - will treat with outsiders";
+            if (!Hegemony.IsAtBreakingPoint(link)) return "defiant - will treat with outsiders";
             return "at breaking point - counting down to revolt";
+        }
+
+        /// <summary>
+        /// Every kingdom's strength as the diplomacy formulas read it: the engine's live
+        /// military figure, its share of the world, its fortifications, and the sphere it
+        /// belongs to. Written because the lead found, reading a save by hand, that the
+        /// hegemon of the whole map was nearly its weakest kingdom - a fact no command could
+        /// show.
+        /// Usage: diplomacy.strength
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("strength", "diplomacy")]
+        public static string StrengthCommand(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var kingdoms = new List<Kingdom>();
+            var total = 0f;
+            foreach (var kingdom in Kingdom.All)
+            {
+                if (kingdom.IsEliminated) continue;
+                kingdoms.Add(kingdom);
+                total += kingdom.CurrentTotalStrength;
+            }
+            kingdoms.Sort((x, y) => y.CurrentTotalStrength.CompareTo(x.CurrentTotalStrength));
+
+            var sb = new StringBuilder();
+            sb.AppendLine("rank  kingdom            strength   share  fiefs  sphere");
+            for (var i = 0; i < kingdoms.Count; i++)
+            {
+                var k = kingdoms[i];
+                var fiefs = 0;
+                for (var s = 0; s < k.Settlements.Count; s++)
+                    if (k.Settlements[s].IsFortification) fiefs++;
+
+                string sphere;
+                var patron = Hegemony.PatronOf(state, k);
+                if (patron != null)
+                {
+                    sphere = "vassal of " + patron.Name + " (balance vs patron "
+                             + Hegemony.PowerBalance(k, patron).ToString("+0.00;-0.00") + ")";
+                }
+                else if (Hegemony.IsHegemon(state, k))
+                {
+                    sphere = "hegemon, " + Hegemony.VassalCount(state, k) + " vassal(s), sphere "
+                             + Hegemony.SphereStrength(state, k).ToString("0");
+                }
+                else
+                {
+                    sphere = "free";
+                }
+
+                sb.Append((i + 1).ToString().PadLeft(4)).Append("  ")
+                  .Append(k.Name.ToString().PadRight(18)).Append(' ')
+                  .Append(k.CurrentTotalStrength.ToString("0").PadLeft(8)).Append(' ')
+                  .Append((total <= 0f ? 0f : k.CurrentTotalStrength / total * 100f).ToString("0.0").PadLeft(6)).Append("% ")
+                  .Append(fiefs.ToString().PadLeft(5)).Append("  ")
+                  .AppendLine(sphere);
+            }
+            return sb.ToString();
         }
 
         [CommandLineFunctionality.CommandLineArgumentFunction("report", "diplomacy")]

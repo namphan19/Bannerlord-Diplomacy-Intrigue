@@ -183,7 +183,8 @@ hegemon stops being one.
 
 Three routes:
 
-1. **At the peace table**, at war score 90 — submission is the top rung of the ladder.
+1. **At the peace table**, at war score 90 — submission is the top rung of the ladder. You
+   have to be the stronger of the two: a war won on points does not make you able to hold them.
 2. **Voluntarily**, when a cornered kingdom decides a protector is better than the war it is
    losing. It only asks a kingdom stronger than itself, and it counts the danger **you could
    actually take off its hands** — not an enemy you are bound by treaty not to fight, and not
@@ -206,6 +207,12 @@ a vassal does depends on where Hold sits:
 | **30–39** | **passive resistance** — withholds tribute, refuses summons |
 | **15–29** | **diplomatic defiance** — signs treaties with outsiders behind your back, and will listen to a rival patron |
 | **below 15** | thirty days here and it **revolts**: a war of independence, and every other vassal of yours takes −10 Hold for having watched — any left below 25 **rise with it** |
+
+The revolt line is 15 only for a vassal as strong as you. It rises to **30** for a vassal twice
+your strength — a kingdom that could beat you does not wait long — and falls to **0** for one
+half your size, which will not revolt alone however much it resents you. `diplomacy.strength`
+shows where every kingdom stands. Fear works the same way in both directions: being twice your
+vassal's strength holds it by +25, being half of it costs you −25.
 
 Refusing a summons, treating with outsiders, or withholding tribute earns a **defiance mark**
 (withholding at most once every four weeks). Two marks and the vassalage will not renew when

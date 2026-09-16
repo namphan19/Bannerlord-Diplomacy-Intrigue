@@ -337,7 +337,17 @@ namespace DiplomacyIntrigue.Diplomacy
         // Terms of the Hold target. The lead's source document (§16) as a weighted sum of
         // quantities the mod already tracks.
         public const float HoldBase = 40f;
-        /// <summary>Fear: the patron's strength advantage, clamped to +/-1.</summary>
+
+        /// <summary>
+        /// Fear: the balance of strength between patron and vassal, on a log scale clamped to
+        /// +/-1 (Hegemony.PowerBalance) - so twice as strong reads +25 and half as strong -25.
+        ///
+        /// It was `ratio - 1` until the review of the run-04 world, which is lopsided: twice
+        /// the vassal's strength earned the full +25, but half of it cost only -12.5, and the
+        /// floor of -25 was reachable only by a patron with no army at all. That world was the
+        /// case it hid: Northern Empire, weaker than six of its seven vassals, lost at most
+        /// 13.6 Hold to any of them for it, and trust (+15) paid most of that back.
+        /// </summary>
         public const float HoldStrengthWeight = 25f;
         /// <summary>Protection: wars of the vassal's the patron has joined, against those it ignored.</summary>
         public const float HoldProtectionWeight = 20f;
@@ -365,8 +375,30 @@ namespace DiplomacyIntrigue.Diplomacy
         /// <summary>Below this a vassal will treat with outsiders despite the terms.</summary>
         public const float HoldDefianceThreshold = 30f;
 
-        /// <summary>Below this, sustained, a vassal fights for its independence.</summary>
+        /// <summary>
+        /// Below this, sustained, a vassal fights for its independence - for a vassal exactly
+        /// as strong as its patron. The line moves with the balance of strength; see
+        /// <see cref="SecessionCapabilityWeight"/>.
+        /// </summary>
         public const float HoldSecessionThreshold = 15f;
+
+        /// <summary>
+        /// How far the secession line moves with the vassal's strength against its patron's:
+        /// up to 30 for a vassal twice the patron's strength, down to 0 - never alone - for one
+        /// half as strong (Hegemony.SecessionThreshold).
+        ///
+        /// A revolt is a war, and the decision to start one used to read resentment only. A
+        /// vassal a fifth of its patron's size revolted at exactly the same Hold as one twice
+        /// its size - so the weak ones marched to certain defeat, and the strong ones sat
+        /// sullen under a patron they could have thrown off. Run 04's world ended with
+        /// Northern Empire, weaker than six of its seven vassals, holding every one of them.
+        /// Resentment is the motive; strength is whether acting on it is anything but
+        /// suicide. Both have to be there. A weak vassal alone is not trapped: its link still
+        /// lapses at the end of its term, and it can rise with a stronger sibling.
+        ///
+        /// **Un-tuned.** 15 keeps the band symmetric around the old fixed line.
+        /// </summary>
+        public const float SecessionCapabilityWeight = 15f;
 
         /// <summary>How long Hold must stay under the secession threshold before the revolt.</summary>
         public const float SecessionDaysBelowThreshold = 30f;

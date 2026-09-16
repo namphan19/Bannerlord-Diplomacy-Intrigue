@@ -160,7 +160,7 @@ namespace DiplomacyIntrigue.UI
                 var patron = ourPatron.DominantParty;
                 var hold = Hegemony.HoldOf(ourPatron);
                 sb.AppendLine("We answer to " + patron.Name + ".");
-                sb.AppendLine("  our hold to them: " + hold.ToString("0.0") + " / 100  -  " + HoldMeaning(hold));
+                sb.AppendLine("  our hold to them: " + hold.ToString("0.0") + " / 100  -  " + HoldMeaning(ourPatron));
                 Hegemony.HoldTarget(state, ourPatron, out var pull);
                 if (pull != null) sb.AppendLine("  pulling toward: " + pull);
                 sb.AppendLine("  tribute " + ourPatron.TributeAmount + " per period, term ends " + ourPatron.ExpiresOn);
@@ -182,7 +182,7 @@ namespace DiplomacyIntrigue.UI
                                   + "  hold " + hold.ToString("0.0")
                                   + "  marks " + link.DefianceMarks
                                   + "  tribute " + link.TributeAmount);
-                    sb.AppendLine("      " + HoldMeaning(hold));
+                    sb.AppendLine("      " + HoldMeaning(link));
                     Hegemony.HoldTarget(state, link, out var pull);
                     if (pull != null) sb.AppendLine("      pulling toward: " + pull);
                 }
@@ -207,7 +207,7 @@ namespace DiplomacyIntrigue.UI
                 for (var i = 0; i < held.Count; i++)
                 {
                     var link = held[i];
-                    sb.AppendLine("  " + link.SubordinateParty.Name + " - " + HoldMeaning(Hegemony.HoldOf(link)));
+                    sb.AppendLine("  " + link.SubordinateParty.Name + " - " + HoldMeaning(link));
                 }
                 sb.AppendLine();
             }
@@ -229,12 +229,14 @@ namespace DiplomacyIntrigue.UI
         /// What a hold figure means in behaviour, which is the only part of it a player can
         /// act on. Shown for rivals too - watching a bond fail needs no spies.
         /// </summary>
-        private static string HoldMeaning(float hold)
+        private static string HoldMeaning(Treaty link)
         {
+            var hold = Hegemony.HoldOf(link);
             if (hold >= DiplomacyConstants.HoldRenewThreshold) return "loyal; will renew when the term ends";
             if (hold >= DiplomacyConstants.HoldPassiveResistanceThreshold) return "serving, but will let the term lapse";
             if (hold >= DiplomacyConstants.HoldDefianceThreshold) return "resisting; refuses summons and withholds tribute";
-            if (hold >= DiplomacyConstants.HoldSecessionThreshold) return "defiant; treats with outsiders";
+            // The revolt line moves with the balance of strength, so it is read per link.
+            if (!Hegemony.IsAtBreakingPoint(link)) return "defiant; treats with outsiders";
             return "at breaking point; counting down to revolt";
         }
 

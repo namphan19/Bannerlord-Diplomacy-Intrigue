@@ -93,8 +93,7 @@ namespace DiplomacyIntrigue.Diplomacy
             var patron = treaty.DominantParty;
             if (vassal == null || patron == null) return DiplomacyConstants.HoldDefault;
 
-            var fear = Clamp(Ratio(patron.CurrentTotalStrength, vassal.CurrentTotalStrength) - 1f, -1f, 1f)
-                       * DiplomacyConstants.HoldStrengthWeight;
+            var fear = PowerBalance(patron, vassal) * DiplomacyConstants.HoldStrengthWeight;
             var protection = Protection(state, treaty, vassal, patron) * DiplomacyConstants.HoldProtectionWeight;
             var trust = TrustRegistry.Get(state, vassal, patron) / 100f * DiplomacyConstants.HoldTrustWeight;
             var tribute = TributeBurden(treaty, vassal) * DiplomacyConstants.HoldTributeBurdenWeight;
@@ -265,8 +264,10 @@ namespace DiplomacyIntrigue.Diplomacy
             treaty.SetHold(next);
 
             // The revolt clock runs only while the collapse is sustained, and resets the
-            // moment the link recovers - a bad month is not a rebellion.
-            if (next < DiplomacyConstants.HoldSecessionThreshold)
+            // moment the link recovers - a bad month is not a rebellion. The line itself moves
+            // with the balance of strength, so a vassal that has lost its army stops counting
+            // down even at the same Hold.
+            if (next < SecessionThreshold(treaty))
             {
                 if (treaty.CriticalSince == CampaignTime.Never) treaty.SetCriticalSince(CampaignTime.Now);
             }
@@ -512,7 +513,7 @@ namespace DiplomacyIntrigue.Diplomacy
             // reach, trust and culture - and a cornered kingdom knelt to its nearest
             // same-culture neighbour even when that neighbour was the weaker of the two.
             var patronStrength = patron.CurrentTotalStrength;
-            if (patronStrength <= ownStrength)
+            if (!IsStrongEnoughToHold(patron, candidate))
             {
                 explanation = patron.Name + " is no stronger than " + candidate.Name
                               + " and has no protection to offer => 0.0";
@@ -791,6 +792,63 @@ namespace DiplomacyIntrigue.Diplomacy
                 if (treaty.IsActive && treaty.Type == TreatyType.Vassalage) into.Add(treaty);
             }
         }
+
+        // ================= Strength ============================================
+        //
+        // One place for how the hegemony system weighs one kingdom's strength against
+        // another's. The engine's figure is CurrentTotalStrength, a live military number that
+        // swings after every large battle - which is why comparisons below are clamped rather
+        // than trusted at the extremes.
+
+        /// <summary>
+        /// The balance of strength between two kingdoms, -1..+1: log2 of the ratio, clamped.
+        /// +1 when <paramref name="a"/> is at least twice <paramref name="b"/>, -1 at half, 0
+        /// at parity.
+        ///
+        /// A log scale because the question is two-sided. `ratio - 1` - what the fear term
+        /// used - reaches +1 at twice as strong but only -0.5 at half as strong, so every
+        /// formula built on it treated a weak patron far more gently than a strong one.
+        /// </summary>
+        public static float PowerBalance(Kingdom a, Kingdom b)
+        {
+            var sa = a == null ? 0f : a.CurrentTotalStrength;
+            var sb = b == null ? 0f : b.CurrentTotalStrength;
+            if (sa <= 0f && sb <= 0f) return 0f;
+            if (sb <= 0f) return 1f;
+            if (sa <= 0f) return -1f;
+
+            return Clamp((float)(System.Math.Log(sa / sb) / System.Math.Log(2.0)), -1f, 1f);
+        }
+
+        /// <summary>
+        /// Whether a patron could hold this vassal at all: it has to be the stronger of the
+        /// two. Every route into vassalage asks this - a voluntary submission, a poach, and a
+        /// vassalage imposed at the peace table - because each of them used to ask something
+        /// different or nothing, and Northern Empire ended run 04 as patron to six kingdoms
+        /// stronger than itself.
+        /// </summary>
+        public static bool IsStrongEnoughToHold(Kingdom patron, Kingdom vassal)
+            => patron != null && vassal != null
+               && patron.CurrentTotalStrength > vassal.CurrentTotalStrength;
+
+        /// <summary>
+        /// The Hold below which this vassal, sustained, revolts. The base line at parity,
+        /// raised for a vassal stronger than its patron and lowered for a weaker one; see
+        /// <see cref="DiplomacyConstants.SecessionCapabilityWeight"/>. Never above the
+        /// defiance line - a vassal does not skip straight from obedience to war.
+        /// </summary>
+        public static float SecessionThreshold(Treaty vassalage)
+        {
+            if (vassalage == null) return DiplomacyConstants.HoldSecessionThreshold;
+
+            var line = DiplomacyConstants.HoldSecessionThreshold
+                       + DiplomacyConstants.SecessionCapabilityWeight
+                       * PowerBalance(vassalage.SubordinateParty, vassalage.DominantParty);
+            return Clamp(line, 0f, DiplomacyConstants.HoldDefianceThreshold);
+        }
+
+        public static bool IsAtBreakingPoint(Treaty vassalage)
+            => vassalage != null && HoldOf(vassalage) < SecessionThreshold(vassalage);
 
         // ================= Small helpers =======================================
 
