@@ -564,22 +564,32 @@ namespace DiplomacyIntrigue.Diplomacy
 
         // ================= 4. War, as a last resort =============================
 
+        /// <summary>
+        /// The three gates of restraint every deliberate new war has to clear, whatever
+        /// starts it. One resolver, because poaching a rival's vassal now means war too
+        /// (design 04, the lead's call after run 04), and a kingdom that may not declare a
+        /// war may not walk into one through the back door either.
+        ///
+        /// One war of our own at a time. Wars a treaty dragged us into do not count: they
+        /// were not our decision, and a kingdom already honouring an obligation may still
+        /// pursue its own quarrel. Without this the rate is set purely by the value
+        /// threshold, and run 02 shows where that lands - 1.4 chosen wars per kingdom per
+        /// year, which only worked because vanilla ended every war in six days.
+        /// </summary>
+        public static bool CanTakeOnAnotherWar(ModState state, Kingdom kingdom)
+        {
+            if (state == null || kingdom == null) return false;
+            if (ChosenWarCount(state, kingdom) >= DiplomacyConstants.AiMaxConcurrentChosenWars) return false;
+            if (WorstExhaustion(state, kingdom) > DiplomacyConstants.AiMaxExhaustionToExpand) return false;
+            if (state.WearinessOf(kingdom) > DiplomacyConstants.AiMaxWearinessToExpand) return false;
+            return true;
+        }
+
         private static bool TryDeclareWar(ModState state, Kingdom kingdom)
         {
-            // One war of our own at a time. Wars we were dragged into by a treaty do not
-            // count against this - they were not our decision, and a kingdom already
-            // honouring an obligation may still pursue its own quarrel.
-            //
-            // Without this the rate is set purely by the value threshold, and run 02 shows
-            // where that lands: 1.4 chosen wars per kingdom per year, which only worked
-            // because vanilla ended every war in six days. Fixing peace without fixing the
-            // rate would trade one broken world for another.
-            if (ChosenWarCount(state, kingdom) >= DiplomacyConstants.AiMaxConcurrentChosenWars) return false;
-
-            if (WorstExhaustion(state, kingdom) > DiplomacyConstants.AiMaxExhaustionToExpand) return false;
+            if (!CanTakeOnAnotherWar(state, kingdom)) return false;
 
             var weariness = state.WearinessOf(kingdom);
-            if (weariness > DiplomacyConstants.AiMaxWearinessToExpand) return false;
 
             Kingdom best = null;
             var bestValue = 0f;

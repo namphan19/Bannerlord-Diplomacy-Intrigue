@@ -376,6 +376,15 @@ namespace DiplomacyIntrigue.Diplomacy
         /// <summary>Trust the poacher loses with the patron whose vassal it took.</summary>
         public const float PoachingTrustCost = -30f;
 
+        /// <summary>
+        /// Relation the two rulers lose over a poached vassal, on top of the trust cost.
+        ///
+        /// Fifteen against the fabrication penalty's five, because this is done openly and
+        /// to their face. Trust is the institutional memory between realms; relation is what
+        /// the two people think of each other, and taking a man's vassal is personal.
+        /// </summary>
+        public const int PoachingRelationLoss = 15;
+
         /// <summary>A vassal will listen to a rival patron below this Hold.</summary>
         public const float PoachableBelowHold = 40f;
 
@@ -386,7 +395,26 @@ namespace DiplomacyIntrigue.Diplomacy
         public const float AiSubmissionThreshold = 55f;
 
         // Weights of the submission valuation (design 04 §3.2).
-        public const float SubmissionThreatWeight = 70f;
+
+        /// <summary>
+        /// Weight on the threat term - the strength of everyone at war with the candidate,
+        /// against its own, clamped at twice over.
+        ///
+        /// **Lowered from 70 after run 04, where submission stopped being a decision.** At 70
+        /// the term reached 140 against a threshold of 55, so a kingdom outnumbered two to
+        /// one knelt whatever else was true of it: nine submissions at values 55.5-166.9,
+        /// four of them in the first ninety seconds of play, and one kingdom ended the run
+        /// holding all seven others. Every other term in the valuation was decoration.
+        ///
+        /// The rule now, and the same one the war valuation's strength term was capped to:
+        /// **no single term may clear the threshold on its own.** At 25 the term tops out at
+        /// 50 against the bar of 55, so being surrounded is never by itself enough - a
+        /// cornered kingdom also has to be within reach of the patron, worn down, or already
+        /// trust it. Re-scored against run 04's nine submissions, three still happen.
+        ///
+        /// **Un-tuned beyond that arithmetic.** Run 05 is the measurement.
+        /// </summary>
+        public const float SubmissionThreatWeight = 25f;
         public const float SubmissionReachWeight = 40f;
         public const float SubmissionWearinessWeight = 30f;
         public const float SubmissionTrustWeight = 20f;

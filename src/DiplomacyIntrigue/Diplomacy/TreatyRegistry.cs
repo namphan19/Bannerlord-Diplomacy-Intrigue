@@ -232,6 +232,30 @@ namespace DiplomacyIntrigue.Diplomacy
                                + " - " + victim.Name + " now has a casus belli.");
         }
 
+        /// <summary>
+        /// Ends a treaty as broken by <paramref name="breaker"/> and charges nothing for it.
+        ///
+        /// For the agreements swept up in a larger breach that has already been paid for in
+        /// full. A vassal revolting against its patron repudiates its oath *and* whatever
+        /// else stood between them; run 04 found a revolt silently refused because a
+        /// DefensivePact with the same patron survived the broken vassalage and vetoed the
+        /// war of independence. Charging the trust penalty and granting a casus belli once
+        /// per torn-up page would price one act as several, so the headline breach pays and
+        /// these follow it.
+        ///
+        /// Closed as <see cref="TreatyStatus.Broken"/> rather than dissolved because the
+        /// save record has to stay honest: nobody consented to this.
+        /// </summary>
+        public static void RepudiateAlongside(ModState state, Treaty treaty, Kingdom breaker)
+        {
+            if (treaty == null || !treaty.IsActive || !treaty.Involves(breaker)) return;
+
+            var victim = treaty.Other(breaker);
+            treaty.Close(TreatyStatus.Broken, breaker);
+            Log.Info("Treaty", breaker.Name + " repudiated its " + treaty.Type + " with "
+                               + victim.Name + " as part of the same breach.");
+        }
+
         /// <summary>Both parties agree to end it early. No penalty, no claim.</summary>
         public static void Dissolve(ModState state, Treaty treaty)
         {

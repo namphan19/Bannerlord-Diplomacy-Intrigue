@@ -293,6 +293,19 @@ namespace DiplomacyIntrigue.Diplomacy
 
             TreatyRegistry.Break(state, treaty, vassal);
 
+            // Everything else standing between the two goes with the oath. Run 04 found a
+            // revolt refused by a DefensivePact the vassal still held with the very patron
+            // it was renouncing: the war veto reads every live treaty, and breaking the
+            // vassalage alone left that one in force. A vassal at breaking point is
+            // repudiating the relationship, not one page of it.
+            for (var i = 0; i < state.Treaties.Count; i++)
+            {
+                var other = state.Treaties[i];
+                if (other == treaty || !other.IsActive || !other.ForbidsWar) continue;
+                if (!other.IsBetween(vassal, patron)) continue;
+                TreatyRegistry.RepudiateAlongside(state, other, vassal);
+            }
+
             TreatyEnforcement.BeginSanctionedWar();
             try
             {
@@ -312,11 +325,26 @@ namespace DiplomacyIntrigue.Diplomacy
                 spread++;
             }
 
-            Log.Info("Hegemony", vassal.Name + " renounced " + patron.Name
-                                 + " and declared war for its independence after "
-                                 + days.ToString("0") + " days at breaking point"
-                                 + (spread > 0 ? "; " + spread + " other vassal(s) took note." : "."));
-            Announce(vassal.Name + " throws off " + patron.Name + " and fights for independence.");
+            // The renunciation stands either way - the oath is broken and the vassal is
+            // free - but the log may only claim the war it can see. Run 04 recorded one of
+            // two revolts as a war of independence that never opened.
+            var atWar = vassal.IsAtWarWith(patron);
+            var watching = spread > 0 ? "; " + spread + " other vassal(s) took note." : ".";
+
+            if (atWar)
+            {
+                Log.Info("Hegemony", vassal.Name + " renounced " + patron.Name
+                                     + " and declared war for its independence after "
+                                     + days.ToString("0") + " days at breaking point" + watching);
+                Announce(vassal.Name + " throws off " + patron.Name + " and fights for independence.");
+            }
+            else
+            {
+                Log.Info("Hegemony", vassal.Name + " renounced " + patron.Name + " after "
+                                     + days.ToString("0") + " days at breaking point, but the war of"
+                                     + " independence was refused and did not open" + watching);
+                Announce(vassal.Name + " renounces " + patron.Name + ".");
+            }
             return true;
         }
 
@@ -483,15 +511,27 @@ namespace DiplomacyIntrigue.Diplomacy
         // ================= Rival hegemons ======================================
 
         /// <summary>
-        /// Courts another patron's neglected vassal. The cheapest interesting thing in the
-        /// whole design: the offer is already a term in <see cref="HoldTarget"/>, so a rival
-        /// worth defecting to erodes a link before it ever succeeds, and courting somebody
-        /// else's vassal destabilises them even when it fails.
+        /// Courts another patron's neglected vassal. The offer is already a term in
+        /// <see cref="HoldTarget"/>, so a rival worth defecting to erodes a link before it
+        /// ever succeeds, and courting somebody else's vassal destabilises them even when it
+        /// fails.
+        ///
+        /// **Taking one means war with the patron it was taken from** - the lead's decision
+        /// after run 04, where this was the cheapest move on the board and behaved like one:
+        /// Battania changed hands four times in two and a half years at valuations that never
+        /// moved, because nothing about the act cost anybody anything. A hegemon now reaches
+        /// for a rival's client knowing it is reaching for the rival, and the two spheres
+        /// follow their patrons in through the ordinary call to arms.
         /// </summary>
         public static bool TryPoach(ModState state, Kingdom suitor)
         {
             if (suitor == null || suitor.IsEliminated) return false;
             if (!IsHegemon(state, suitor)) return false;
+
+            // Poaching is a war decision now, so it clears the same restraint any other war
+            // does. A hegemon already fighting a war of its own, or worn out by the last one,
+            // does not open a second front by shopping for vassals.
+            var canFight = AiDiplomacy.CanTakeOnAnotherWar(state, suitor);
 
             Treaty best = null;
             var bestValue = 0f;
@@ -507,6 +547,16 @@ namespace DiplomacyIntrigue.Diplomacy
                 if (vassal == null || patron == null || vassal == suitor) continue;
                 if (vassal.IsEliminated || suitor.IsAtWarWith(vassal)) continue;
                 if (HoldOf(treaty) >= DiplomacyConstants.PoachableBelowHold) continue;
+
+                // Already at war with the patron: the war this would start is the war we are
+                // already in, so there is nothing further to weigh. Otherwise it has to be a
+                // war we are allowed to start and fit to fight - a treaty with the patron
+                // forbids taking its vassal too, or this would be the back door around it.
+                if (!suitor.IsAtWarWith(patron))
+                {
+                    if (!canFight) continue;
+                    if (!TreatyEnforcement.IsWarAllowed(state, suitor, patron)) continue;
+                }
 
                 var value = SubmissionValue(state, vassal, suitor, out _);
                 if (value < DiplomacyConstants.AiSubmissionThreshold) continue;
@@ -538,8 +588,42 @@ namespace DiplomacyIntrigue.Diplomacy
                 "took our vassal " + client.Name);
             ClaimRegistry.GrantBrokenTreatyClaim(state, oldPatron, suitor);
 
+            // Personal as well as institutional: trust is what a realm remembers, relation is
+            // what the two rulers think of each other, and this was done to his face.
+            var suitorLeader = suitor.Leader;
+            var patronLeader = oldPatron.Leader;
+            if (suitorLeader != null && patronLeader != null)
+            {
+                ChangeRelationAction.ApplyRelationChangeBetweenHeroes(
+                    suitorLeader, patronLeader, -DiplomacyConstants.PoachingRelationLoss, false);
+            }
+
+            var warOpened = false;
+            var alreadyAtWar = suitor.IsAtWarWith(oldPatron);
+            if (!alreadyAtWar)
+            {
+                TreatyEnforcement.BeginSanctionedWar();
+                try
+                {
+                    DeclareWarAction.ApplyByKingdomDecision(suitor, oldPatron);
+                }
+                finally
+                {
+                    TreatyEnforcement.EndSanctionedWar();
+                }
+
+                // Read back off the world rather than assumed, for the reason run 04 gave us:
+                // a declaration that is refused must never be logged as one that happened.
+                warOpened = suitor.IsAtWarWith(oldPatron);
+            }
+
             Log.Info("Hegemony", suitor.Name + " took " + client.Name + " as a vassal from "
-                                 + oldPatron.Name + " (submission value " + bestValue.ToString("0") + ").");
+                                 + oldPatron.Name + " (submission value " + bestValue.ToString("0") + ")"
+                                 + (alreadyAtWar
+                                     ? " while already at war with it."
+                                     : warOpened
+                                         ? " and went to war with " + oldPatron.Name + " over it."
+                                         : ", but the war that should have followed was refused."));
             Announce(client.Name + " transfers its allegiance from " + oldPatron.Name + " to " + suitor.Name + ".");
             return true;
         }

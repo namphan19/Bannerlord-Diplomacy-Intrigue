@@ -247,6 +247,51 @@ Two constants remain deliberately unapplied and both look less urgent after this
 `ExhaustionSeekPeace` 60 → 70, and `AiAllianceThreshold` 70 → 82 / `AiDefensivePactThreshold`
 55 → 65 — the alliance web has behaved for two runs running.
 
+### 2. Applied after run 04, on the lead's decision — all three unverified in a campaign
+
+Committed and deployed the same day the run finished. None of this has been measured yet;
+run 05 is the measurement.
+
+**The revolt bug, fixed.** `Hegemony.TryRevolt` now repudiates *every* live war-forbidding
+treaty the vassal holds with its patron, not just the vassalage, through a new
+`TreatyRegistry.RepudiateAlongside` — which closes them as `Broken` so the save record stays
+honest, but charges nothing, because the headline breach has already been paid for in trust
+and in the casus belli it hands over. And the revolt now reads the war back off the world
+before it claims one: if the declaration is refused anyway, the renunciation still stands and
+the log says so instead of asserting a war that does not exist.
+
+**The submission threat term, capped.** `SubmissionThreatWeight` 70 → **25**, so the term tops
+out at 50 against a threshold of 55 and being surrounded is never by itself enough — the same
+rule the war valuation's strength term was capped to: *no single term may clear the threshold
+alone*.
+
+*Verified live* on the run-04 world: Battania's threat ratio of 1.376 now contributes **34.4**
+where it would have contributed 96.3, and the verdict flips from a comfortable submission at
+~107 to **45.1, would not submit**. That is the same input scored both ways, not a rerun.
+
+**Poaching now means war.** The lead's call: taking a rival patron's vassal is a serious act,
+so it costs relation as well as trust and, by default, puts the two hegemons at war — and
+their spheres follow them in through the ordinary call to arms. `PoachingRelationLoss` = 15
+between the two rulers, on top of the existing −30 trust and the casus belli. The suitor now
+has to clear the same restraint any other war does (`AiDiplomacy.CanTakeOnAnotherWar`, one
+resolver shared with `TryDeclareWar`), and a treaty forbidding war with the patron forbids
+taking its vassal too — otherwise poaching would be the back door around it.
+
+**Not verified in game, and it cannot be from a tool call.** A poach needs two hegemons and a
+neglected vassal whose submission value clears the bar; a revolt needs Hold under 15 sustained
+for 30 days. Both are states the frozen campaign clock cannot produce, and a fabricated
+scenario that fails to fire would say nothing. Run 05 will show them: watch for
+`took ... as a vassal from ... and went to war with it` and for the two-branch revolt line.
+
+**The `deploy.ps1` guard, widened.** It matched `Bannerlord*` only, which does not match a
+game hosted by the official launcher (`TaleWorlds.MountAndBlade.Launcher`). It saw nothing at
+all during run 04 and would have overwritten the DLL underneath a 30-minute session.
+
+**`di_phase1_full` is no longer run 03's end state.** Run 04 saved over it at 11:15, so the
+save now holds the run-04 world: one hegemon, seven vassals, Hold 15.7–44.9. Starting run 05
+there measures whether a *saturated* hegemony comes apart, which is a fair question but not
+the same one as whether it forms too easily — that needs an earlier save.
+
 ### 2. Phase 2 — court intrigue
 
 Specced in `docs/design/02-intrigue.md`; order is 2.1 grievances → 2.2 loyalty → 2.3 blocs →
