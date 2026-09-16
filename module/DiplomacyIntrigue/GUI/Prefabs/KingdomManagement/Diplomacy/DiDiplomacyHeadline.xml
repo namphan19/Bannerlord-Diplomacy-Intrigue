@@ -1,0 +1,11 @@
+<Prefab>
+  <Window>
+    <TextWidget DataSource="{CurrentSelectedDiplomacyItem}" DoNotAcceptEvents="true"
+        WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+        HorizontalAlignment="Center" MarginLeft="60" MarginRight="60"
+        MarginTop="6" MarginBottom="4"
+        Brush="ArmyManagement.Army.Tuple.Name" Brush.FontSize="20"
+        Brush.TextHorizontalAlignment="Center" IsEnabled="false"
+        IsVisible="@DiHasHeadline" Text="@DiHeadline" />
+  </Window>
+</Prefab>
