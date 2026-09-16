@@ -249,13 +249,15 @@ namespace DiplomacyIntrigue.Diplomacy
             // Submission: the dearest thing on the ladder at 90, and the only rung that
             // changes what the loser *is* rather than what it owns. Offered ahead of land
             // because a realm intact under a patron will usually prefer that to being
-            // carved up - and because it is what makes the winner a hegemon.
-            yield return new PeaceTerms(winner, loser)
-            {
-                ReleasePrisoners = true,
-                ImposeVassalage = true,
-                TributePerPeriod = DiplomacyConstants.AiDefaultTributePerPeriod,
-            };
+            // carved up - and because it is what makes the winner a hegemon. Not by a greedy
+            // winner, which wants the land itself.
+            if (WouldTakeVassals(state, winner))
+                yield return new PeaceTerms(winner, loser)
+                {
+                    ReleasePrisoners = true,
+                    ImposeVassalage = true,
+                    TributePerPeriod = DiplomacyConstants.AiDefaultTributePerPeriod,
+                };
 
             // Land last, and only what they could take anyway. A castle before a town.
             foreach (var fief in CedeCandidates(loser, townsFirst: false))
@@ -308,6 +310,11 @@ namespace DiplomacyIntrigue.Diplomacy
                 if (Hegemony.VassalageOf(state, patron) != null) continue;
 
                 if (!TreatyRegistry.CanSign(state, patron, kingdom, TreatyType.Vassalage, out _)) continue;
+
+                // A greedy AI ruler no longer wants vassals. A player patron is still asked -
+                // taking a vassal is their decision, and the candidate's own dread of a greedy
+                // patron is already in its valuation.
+                if (patron.Leader != Hero.MainHero && !WouldTakeVassals(state, patron)) continue;
 
                 var value = Hegemony.SubmissionValue(state, kingdom, patron, out var explanation);
                 if (value <= bestValue) continue;
@@ -460,13 +467,15 @@ namespace DiplomacyIntrigue.Diplomacy
             var aggression = Aggression(state, us, them);
             var relation = FactionManager.GetRelationBetweenClans(us.RulingClan, them.RulingClan) / 100f;
             var balancing = BalancingPull(state, us, them, out _);
+            var ambition = Power.Ambition(us);
 
             return DiplomacyConstants.PactWeightSharedThreat * sharedThreat
                    + DiplomacyConstants.PactWeightProximity * proximity
                    + DiplomacyConstants.PactWeightTrust * trust
                    - DiplomacyConstants.PactWeightAggression * aggression
                    + DiplomacyConstants.PactWeightRelation * relation
-                   + DiplomacyConstants.PactWeightBalancing * balancing;
+                   + DiplomacyConstants.PactWeightBalancing * balancing
+                   - DiplomacyConstants.PactWeightAmbition * ambition;
         }
 
         /// <summary>
@@ -482,7 +491,9 @@ namespace DiplomacyIntrigue.Diplomacy
             against = null;
             if (state == null || us == null || them == null) return 0f;
 
-            var pair = us.CurrentTotalStrength + them.CurrentTotalStrength;
+            // Smoothed: whether a power is worth banding against is a judgment about what it
+            // has become, not about where its armies happen to be this week (Power.cs).
+            var pair = Power.Smoothed(state, us) + Power.Smoothed(state, them);
             if (pair <= 0f) return 0f;
 
             var ourHead = Hegemony.SphereHead(state, us);
@@ -494,7 +505,7 @@ namespace DiplomacyIntrigue.Diplomacy
                 if (head.IsEliminated || head == ourHead || head == theirHead) continue;
                 if (Hegemony.PatronOf(state, head) != null) continue;
 
-                var strength = Hegemony.SphereStrength(state, head);
+                var strength = Power.SmoothedSphere(state, head);
                 if (strength <= strongest) continue;
                 strongest = strength;
                 against = head;
@@ -617,11 +628,21 @@ namespace DiplomacyIntrigue.Diplomacy
         public static bool CanTakeOnAnotherWar(ModState state, Kingdom kingdom)
         {
             if (state == null || kingdom == null) return false;
-            if (ChosenWarCount(state, kingdom) >= DiplomacyConstants.AiMaxConcurrentChosenWars) return false;
+            if (ChosenWarCount(state, kingdom) >= MaxChosenWars(kingdom)) return false;
             if (WorstExhaustion(state, kingdom) > DiplomacyConstants.AiMaxExhaustionToExpand) return false;
             if (state.WearinessOf(kingdom) > DiplomacyConstants.AiMaxWearinessToExpand) return false;
             return true;
         }
+
+        /// <summary>
+        /// How many wars of its own choosing a kingdom's evaluation will run at once: one, or
+        /// two for a kingdom holding <see cref="DiplomacyConstants.AiDominanceForSecondWar"/>
+        /// even shares of the world's strength. Live - the lead's design: a ruler whose armies
+        /// are full wants to use them.
+        /// </summary>
+        public static int MaxChosenWars(Kingdom kingdom)
+            => DiplomacyConstants.AiMaxConcurrentChosenWars
+               + (Power.Dominance(kingdom) >= DiplomacyConstants.AiDominanceForSecondWar ? 1 : 0);
 
         private static bool TryDeclareWar(ModState state, Kingdom kingdom)
         {
@@ -631,21 +652,32 @@ namespace DiplomacyIntrigue.Diplomacy
 
             Kingdom best = null;
             var bestValue = 0f;
+            var bestAnnexation = false;
             CasusBelliType bestCasus = CasusBelliType.Conquest;
 
             foreach (var target in Kingdom.All)
             {
                 if (target == kingdom || target.IsEliminated) continue;
                 if (kingdom.IsAtWarWith(target)) continue;
-                if (!TreatyEnforcement.IsWarAllowed(state, kingdom, target)) continue;
 
-                var terms = EvaluateWar(state, kingdom, target);
+                // A war a treaty forbids is off the table - unless the treaty is our own
+                // vassal's oath and we have grown greedy enough to tear it up. That is the only
+                // way this evaluation ever breaks a treaty on purpose, and it is priced below.
+                var annexation = false;
+                if (!TreatyEnforcement.IsWarAllowed(state, kingdom, target))
+                {
+                    if (!Hegemony.CouldAnnex(state, kingdom, target)) continue;
+                    annexation = true;
+                }
+
+                var terms = EvaluateWar(state, kingdom, target, annexation);
                 if (terms.Ratio < DiplomacyConstants.AiWarStrengthRatio) continue;
 
                 if (terms.Total <= bestValue) continue;
                 best = target;
                 bestValue = terms.Total;
                 bestCasus = terms.Casus;
+                bestAnnexation = annexation;
             }
 
             if (best == null) return false;
@@ -659,6 +691,9 @@ namespace DiplomacyIntrigue.Diplomacy
 
             ChangeClanInfluenceAction.Apply(kingdom.RulingClan, -cost);
 
+            // The oath goes first, with the full price of a breach, or the war would be vetoed.
+            if (bestAnnexation) Hegemony.TurnOnVassal(state, kingdom, best);
+
             TreatyEnforcement.BeginSanctionedWar();
             try
             {
@@ -669,10 +704,18 @@ namespace DiplomacyIntrigue.Diplomacy
                 TreatyEnforcement.EndSanctionedWar();
             }
 
-            Log.Info("AI", kingdom.Name + " declared war on " + best.Name
+            // Read back rather than assumed, for the reason run 04 gave: a refused declaration
+            // must never be logged as a war.
+            var opened = kingdom.IsAtWarWith(best);
+            Log.Info("AI", kingdom.Name + (opened ? " declared war on " : " tried and failed to declare war on ")
+                           + best.Name
+                           + (bestAnnexation ? " to annex its former vassal" : "")
                            + " (" + bestCasus + ", legitimacy " + legit.ToString("0.00")
                            + ", value " + bestValue.ToString("0") + ", cost " + cost + " influence).");
-            Announce(kingdom.Name + " declares war on " + best.Name + ".");
+            if (opened)
+                Announce(bestAnnexation
+                    ? kingdom.Name + " turns on its vassal " + best.Name + " to annex it."
+                    : kingdom.Name + " declares war on " + best.Name + ".");
             return true;
         }
 
@@ -685,7 +728,18 @@ namespace DiplomacyIntrigue.Diplomacy
         /// </summary>
         public struct WarValueTerms
         {
+            /// <summary>
+            /// Our side against theirs, each kingdom plus the support it can expect
+            /// (CallToArms.ExpectedSupport). What the gate and the strength term read.
+            /// </summary>
             public float Ratio;
+            /// <summary>Us against them alone - what Ratio was before alliances counted.</summary>
+            public float OwnRatio;
+            public float OurSupport;
+            public float TheirSupport;
+            public float Ambition;
+            /// <summary>True when the target is our own vassal and this war means breaking its oath.</summary>
+            public bool Annexation;
             public CasusBelliType Casus;
             public float Legitimacy;
             public float Proximity;
@@ -698,6 +752,8 @@ namespace DiplomacyIntrigue.Diplomacy
             public float FromProximity;
             public float FromHunger;
             public float FromWeariness;
+            public float FromAmbition;
+            public float FromAnnexation;
 
             /// <summary>Before the player's aggressiveness setting.</summary>
             public float Raw;
@@ -709,12 +765,23 @@ namespace DiplomacyIntrigue.Diplomacy
         /// What a war on <paramref name="them"/> is worth to <paramref name="us"/>. Gates are
         /// not applied here - the caller decides what to do with a value - but every term is.
         /// </summary>
-        public static WarValueTerms EvaluateWar(ModState state, Kingdom us, Kingdom them)
+        public static WarValueTerms EvaluateWar(ModState state, Kingdom us, Kingdom them, bool asAnnexation = false)
         {
-            var terms = new WarValueTerms();
+            var terms = new WarValueTerms { Annexation = asAnnexation };
 
-            var theirs = them.CurrentTotalStrength;
-            terms.Ratio = theirs <= 0f ? 0f : us.CurrentTotalStrength / theirs;
+            var ours = Power.Strength(us);
+            var theirs = Power.Strength(them);
+            terms.OwnRatio = theirs <= 0f ? 0f : ours / theirs;
+
+            // Sides, not kingdoms. This used to weigh the target alone, so an alliance never
+            // deterred anyone: a kingdom picked its victim as if the victim stood by itself and
+            // discovered the coalition only when the call to arms went out. Counting the
+            // support each side can expect is what makes a lone kingdom the natural target and
+            // gives the weak a reason to stand together - the counterweight to ambition.
+            terms.OurSupport = CallToArms.ExpectedSupport(state, us, them, principalWasAttacked: false);
+            terms.TheirSupport = CallToArms.ExpectedSupport(state, them, us, principalWasAttacked: true);
+            var theirSide = theirs + terms.TheirSupport;
+            terms.Ratio = theirSide <= 0f ? 0f : (ours + terms.OurSupport) / theirSide;
 
             var claim = ClaimRegistry.Best(state, us, them);
             terms.Casus = claim == null ? CasusBelliType.Conquest : claim.Type;
@@ -749,8 +816,15 @@ namespace DiplomacyIntrigue.Diplomacy
             terms.FromHunger = terms.Hunger * DiplomacyConstants.WarValueLandHunger;
             terms.FromWeariness = -terms.Weariness * DiplomacyConstants.WarValueWearinessPenalty;
 
+            terms.Ambition = Power.Ambition(us);
+            terms.FromAmbition = terms.Ambition * DiplomacyConstants.WarValueAmbition;
+
+            if (asAnnexation)
+                terms.FromAnnexation = Power.Greed(state, us) * DiplomacyConstants.AnnexGreedWeight
+                                       - DiplomacyConstants.AnnexBreachPenalty;
+
             terms.Raw = terms.FromRatio + terms.FromLegitimacy + terms.FromProximity
-                        + terms.FromHunger + terms.FromWeariness;
+                        + terms.FromHunger + terms.FromWeariness + terms.FromAmbition + terms.FromAnnexation;
             terms.Total = terms.Raw * Settings.Current.AiAggressiveness;
             return terms;
         }
@@ -814,16 +888,20 @@ namespace DiplomacyIntrigue.Diplomacy
             if (us.IsAtWarWith(them)) { sb.AppendLine("  already at war."); return sb.ToString(); }
 
             var block = TreatyEnforcement.WhyWarBlocked(state, us, them);
+            var annexation = block != TreatyEnforcement.Block.None && Hegemony.CouldAnnex(state, us, them);
             sb.AppendLine("  enforcement:   " + (block == TreatyEnforcement.Block.None
                 ? "allowed"
-                : "BLOCKED - " + TreatyEnforcement.Explain(state, us, them, block)));
+                : annexation
+                    ? "our own vassal - greedy enough to tear up its oath and annex it"
+                    : "BLOCKED - " + TreatyEnforcement.Explain(state, us, them, block)));
 
             // Listed first among the gates because it is the one that will most often be the
             // answer, and a diagnostic that omits the binding constraint is worse than none.
             var chosen = ChosenWarCount(state, us);
+            var allowed = MaxChosenWars(us);
             sb.AppendLine("  chosen wars:    " + chosen
-                          + " (must be < " + DiplomacyConstants.AiMaxConcurrentChosenWars + ")"
-                          + (chosen >= DiplomacyConstants.AiMaxConcurrentChosenWars ? "   BLOCKED" : ""));
+                          + " (must be < " + allowed + ", dominance " + Power.Dominance(us).ToString("0.00") + ")"
+                          + (chosen >= allowed ? "   BLOCKED" : ""));
 
             var worstExhaustion = WorstExhaustion(state, us);
             sb.AppendLine("  our exhaustion: " + worstExhaustion.ToString("0.0")
@@ -837,11 +915,14 @@ namespace DiplomacyIntrigue.Diplomacy
 
             // Same resolver the decision uses, so this cannot describe a formula the AI
             // does not run.
-            var terms = EvaluateWar(state, us, them);
+            var terms = EvaluateWar(state, us, them, annexation);
 
             sb.AppendLine("  strength ratio: " + terms.Ratio.ToString("0.00")
-                          + " (must be >= " + DiplomacyConstants.AiWarStrengthRatio.ToString("0.00") + ")"
+                          + " sides (must be >= " + DiplomacyConstants.AiWarStrengthRatio.ToString("0.00") + ")"
                           + (terms.Ratio < DiplomacyConstants.AiWarStrengthRatio ? "   BLOCKED" : ""));
+            sb.AppendLine("      alone " + terms.OwnRatio.ToString("0.00")
+                          + "; support we expect " + terms.OurSupport.ToString("0")
+                          + ", support they expect " + terms.TheirSupport.ToString("0"));
 
             sb.AppendLine("  casus belli:    " + terms.Casus
                           + " (legitimacy " + terms.Legitimacy.ToString("0.00") + ")");
@@ -856,6 +937,11 @@ namespace DiplomacyIntrigue.Diplomacy
             sb.AppendLine("  value from land hunger:        " + terms.FromHunger.ToString("0.0")
                           + "   (hunger " + terms.Hunger.ToString("0.00") + ")");
             sb.AppendLine("  penalty from weariness:        " + terms.FromWeariness.ToString("0.0"));
+            sb.AppendLine("  value from ambition:           " + terms.FromAmbition.ToString("0.0")
+                          + "   (ambition " + terms.Ambition.ToString("0.00") + ")");
+            if (terms.Annexation)
+                sb.AppendLine("  annexation (greed - breach):   " + terms.FromAnnexation.ToString("0.0")
+                              + "   (greed " + Power.Greed(state, us).ToString("0.00") + ")");
             sb.AppendLine("  total: " + terms.Raw.ToString("0.0")
                           + " x aggressiveness " + Settings.Current.AiAggressiveness.ToString("0.00")
                           + " = " + terms.Total.ToString("0.0")
@@ -872,6 +958,14 @@ namespace DiplomacyIntrigue.Diplomacy
         }
 
         // ================= shared helpers =======================================
+
+        /// <summary>
+        /// Whether a ruler still wants vassals at all. Below
+        /// <see cref="DiplomacyConstants.GreedRefusesVassals"/> it does; above it, it wants
+        /// provinces - no voluntary submissions, no poaching, no vassalage at its peace table.
+        /// </summary>
+        public static bool WouldTakeVassals(ModState state, Kingdom ruler)
+            => Power.Greed(state, ruler) < DiplomacyConstants.GreedRefusesVassals;
 
         private static bool CanAffordInfluence(Kingdom kingdom, int cost)
             => cost <= 0 || (kingdom.RulingClan != null && kingdom.RulingClan.Influence >= cost);

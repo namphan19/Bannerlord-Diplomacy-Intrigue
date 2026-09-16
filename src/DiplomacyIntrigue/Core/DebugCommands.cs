@@ -213,6 +213,7 @@ namespace DiplomacyIntrigue.Core
             // sat unchanged through 20 simulated days and looked like a bug in the drift.
             for (var day = 0; day < days; day++)
             {
+                Power.DailySample(state);
                 WarExhaustion.DailyTick(state);
                 Hegemony.DailyTick(state);
                 TreatyRegistry.ExpireAndReward(state);
@@ -536,6 +537,7 @@ namespace DiplomacyIntrigue.Core
                 // permanently discouraged by wars it finished years ago.
                 for (var day = 0; day < 7; day++)
                 {
+                    Power.DailySample(state);
                     WarExhaustion.DailyTick(state);
                     ClaimRegistry.ExpireStale(state);
                     ClaimRegistry.ResolveFabrications(state);
@@ -597,13 +599,18 @@ namespace DiplomacyIntrigue.Core
             sb.AppendLine(b.Name + " values an agreement with " + a.Name + " at "
                           + AiDiplomacy.PactValue(state, b, a).ToString("0.0"));
 
+            sb.AppendLine("Ambition, subtracted above: " + a.Name + " "
+                          + (Power.Ambition(a) * DiplomacyConstants.PactWeightAmbition).ToString("0.0")
+                          + ", " + b.Name + " "
+                          + (Power.Ambition(b) * DiplomacyConstants.PactWeightAmbition).ToString("0.0"));
+
             var pull = AiDiplomacy.BalancingPull(state, a, b, out var against);
             sb.AppendLine("Balancing pull, included above: "
                           + (against == null
                               ? "none - no sphere outweighs the two of them"
                               : (pull * DiplomacyConstants.PactWeightBalancing).ToString("0.0")
                                 + " against " + against.Name + "'s sphere ("
-                                + Hegemony.SphereStrength(state, against).ToString("0") + " strength)"));
+                                + Power.SmoothedSphere(state, against).ToString("0") + " smoothed strength)"));
             sb.AppendLine("Thresholds: non-aggression " + DiplomacyConstants.AiNonAggressionThreshold.ToString("0")
                           + ", defensive pact " + DiplomacyConstants.AiDefensivePactThreshold.ToString("0")
                           + ", alliance " + DiplomacyConstants.AiAllianceThreshold.ToString("0"));
@@ -775,8 +782,8 @@ namespace DiplomacyIntrigue.Core
                       .Append("  tribute ").Append(link.TributeAmount)
                       .Append("  until ").Append(link.ExpiresOn).AppendLine();
                     sb.Append("      ").AppendLine(explanation);
-                    sb.Append("      ").Append(Describe(link))
-                      .Append("   (revolts below ").Append(Hegemony.SecessionThreshold(link).ToString("0.0"))
+                    sb.Append("      ").Append(Describe(state, link))
+                      .Append("   (revolts below ").Append(Hegemony.SecessionThreshold(state, link).ToString("0.0"))
                       .AppendLine(")");
                 }
             }
@@ -784,13 +791,13 @@ namespace DiplomacyIntrigue.Core
             return sb.ToString();
         }
 
-        private static string Describe(Models.Treaty link)
+        private static string Describe(ModState state, Models.Treaty link)
         {
             var hold = Hegemony.HoldOf(link);
             if (hold >= DiplomacyConstants.HoldRenewThreshold) return "loyal - will renew willingly";
             if (hold >= DiplomacyConstants.HoldPassiveResistanceThreshold) return "serving, but will let the term lapse";
             if (hold >= DiplomacyConstants.HoldDefianceThreshold) return "resisting - refuses summons, withholds tribute";
-            if (!Hegemony.IsAtBreakingPoint(link)) return "defiant - will treat with outsiders";
+            if (!Hegemony.IsAtBreakingPoint(state, link)) return "defiant - will treat with outsiders";
             return "at breaking point - counting down to revolt";
         }
 
@@ -802,6 +809,35 @@ namespace DiplomacyIntrigue.Core
         /// show.
         /// Usage: diplomacy.strength
         /// </summary>
+        /// <summary>
+        /// Sets a kingdom's smoothed strength, for testing greed and dread without waiting a
+        /// year of campaign for a kingdom to grow into them. It moves only the average: live
+        /// strength, the armies and every other system are untouched, and each daily sample
+        /// pulls the figure back toward the live one. Never use it in a save you mean to keep.
+        /// Usage: diplomacy.set_smoothed_strength Northern Empire | 60000
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("set_smoothed_strength", "diplomacy")]
+        public static string SetSmoothedStrength(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var parts = SplitOnPipe(args);
+            if (parts.Count < 2 || !float.TryParse(parts[1], System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out var value) || value < 0f)
+                return "Usage: diplomacy.set_smoothed_strength <kingdom> | <strength>";
+
+            var kingdom = FindKingdom(parts[0]);
+            if (kingdom == null) return "No kingdom matching \"" + parts[0] + "\".";
+
+            state.PowerRecords.RemoveAll(r => r.Kingdom == kingdom);
+            state.PowerRecords.Add(new KingdomPower(kingdom, value));
+
+            return kingdom.Name + " smoothed strength set to " + value.ToString("0")
+                   + ": smoothed dominance " + Power.SmoothedDominance(state, kingdom).ToString("0.00")
+                   + ", greed " + Power.Greed(state, kingdom).ToString("0.00") + ". Test only - do not save.";
+        }
+
         [CommandLineFunctionality.CommandLineArgumentFunction("strength", "diplomacy")]
         public static string StrengthCommand(List<string> args)
         {
@@ -819,7 +855,9 @@ namespace DiplomacyIntrigue.Core
             kingdoms.Sort((x, y) => y.CurrentTotalStrength.CompareTo(x.CurrentTotalStrength));
 
             var sb = new StringBuilder();
-            sb.AppendLine("rank  kingdom            strength   share  fiefs  sphere");
+            sb.AppendLine("Live strength decides war now; smoothed (" + DiplomacyConstants.StrengthSmoothingDays.ToString("0")
+                          + "-day average) decides greed and coalitions.");
+            sb.AppendLine("rank  kingdom            strength   share  dom.  smoothed  s.dom  ambit  greed  fiefs  sphere");
             for (var i = 0; i < kingdoms.Count; i++)
             {
                 var k = kingdoms[i];
@@ -832,7 +870,7 @@ namespace DiplomacyIntrigue.Core
                 if (patron != null)
                 {
                     sphere = "vassal of " + patron.Name + " (balance vs patron "
-                             + Hegemony.PowerBalance(k, patron).ToString("+0.00;-0.00") + ")";
+                             + Power.Balance(k, patron).ToString("+0.00;-0.00") + ")";
                 }
                 else if (Hegemony.IsHegemon(state, k))
                 {
@@ -848,7 +886,12 @@ namespace DiplomacyIntrigue.Core
                   .Append(k.Name.ToString().PadRight(18)).Append(' ')
                   .Append(k.CurrentTotalStrength.ToString("0").PadLeft(8)).Append(' ')
                   .Append((total <= 0f ? 0f : k.CurrentTotalStrength / total * 100f).ToString("0.0").PadLeft(6)).Append("% ")
-                  .Append(fiefs.ToString().PadLeft(5)).Append("  ")
+                  .Append(Power.Dominance(k).ToString("0.00").PadLeft(5)).Append(' ')
+                  .Append(Power.Smoothed(state, k).ToString("0").PadLeft(9)).Append(' ')
+                  .Append(Power.SmoothedDominance(state, k).ToString("0.00").PadLeft(6)).Append(' ')
+                  .Append(Power.Ambition(k).ToString("0.00").PadLeft(6)).Append(' ')
+                  .Append(Power.Greed(state, k).ToString("0.00").PadLeft(6)).Append(' ')
+                  .Append(fiefs.ToString().PadLeft(6)).Append("  ")
                   .AppendLine(sphere);
             }
             return sb.ToString();

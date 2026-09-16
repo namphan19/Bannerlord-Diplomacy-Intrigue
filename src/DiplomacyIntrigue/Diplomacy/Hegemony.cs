@@ -67,9 +67,9 @@ namespace DiplomacyIntrigue.Diplomacy
         }
 
         /// <summary>
-        /// Hold as it should be read, treating an unset zero as the default. Vassalage has
-        /// never existed in a campaign (runs 01-03 all report `vassalage=0`), so a zero can
-        /// only mean a save written before the field, never a link about to collapse.
+        /// Hold as it should be read, treating an unset zero as the default. Zero can only mean
+        /// a link from a save written before the field: a Hold that has been set never falls
+        /// below <see cref="Treaty.MinimumSetHold"/>, so a collapsed link is not mistaken for one.
         /// </summary>
         public static float HoldOf(Treaty treaty)
         {
@@ -93,7 +93,8 @@ namespace DiplomacyIntrigue.Diplomacy
             var patron = treaty.DominantParty;
             if (vassal == null || patron == null) return DiplomacyConstants.HoldDefault;
 
-            var fear = PowerBalance(patron, vassal) * DiplomacyConstants.HoldStrengthWeight;
+            var fear = Power.Balance(patron, vassal) * DiplomacyConstants.HoldStrengthWeight;
+            var dread = Power.Greed(state, patron) * DiplomacyConstants.HoldDreadWeight;
             var protection = Protection(state, treaty, vassal, patron) * DiplomacyConstants.HoldProtectionWeight;
             var trust = TrustRegistry.Get(state, vassal, patron) / 100f * DiplomacyConstants.HoldTrustWeight;
             var tribute = TributeBurden(treaty, vassal) * DiplomacyConstants.HoldTributeBurdenWeight;
@@ -102,7 +103,7 @@ namespace DiplomacyIntrigue.Diplomacy
             var culture = patron.Culture != vassal.Culture ? DiplomacyConstants.HoldCultureMismatchWeight : 0f;
 
             var target = DiplomacyConstants.HoldBase + fear + protection + trust
-                         - tribute - wars - rival - culture;
+                         - tribute - wars - rival - culture - dread;
 
             explanation = "base " + DiplomacyConstants.HoldBase.ToString("0")
                           + "  fear " + Signed(fear)
@@ -112,6 +113,7 @@ namespace DiplomacyIntrigue.Diplomacy
                           + "  wars " + Signed(-wars)
                           + "  rival " + Signed(-rival)
                           + "  culture " + Signed(-culture)
+                          + "  dread " + Signed(-dread)
                           + "  => " + Clamp(target, 0f, 100f).ToString("0.0");
 
             return Clamp(target, 0f, 100f);
@@ -267,7 +269,7 @@ namespace DiplomacyIntrigue.Diplomacy
             // moment the link recovers - a bad month is not a rebellion. The line itself moves
             // with the balance of strength, so a vassal that has lost its army stops counting
             // down even at the same Hold.
-            if (next < SecessionThreshold(treaty))
+            if (next < SecessionThreshold(state, treaty))
             {
                 if (treaty.CriticalSince == CampaignTime.Never) treaty.SetCriticalSince(CampaignTime.Now);
             }
@@ -327,7 +329,7 @@ namespace DiplomacyIntrigue.Diplomacy
             // on the first declaration, and it must reach only the vassals still loyal - not a
             // sibling that is a moment away from joining the other side.
             for (var i = 0; i < rebels.Count; i++)
-                Renounce(state, rebels[i]);
+                Renounce(state, rebels[i], rebels[i].SubordinateParty);
 
             var fighting = new List<string>();
             var refused = new List<string>();
@@ -372,28 +374,85 @@ namespace DiplomacyIntrigue.Diplomacy
         }
 
         /// <summary>
-        /// Breaks a vassal's oath and everything else standing between it and its patron.
+        /// Breaks a vassalage and everything else standing between the two parties, charged to
+        /// <paramref name="breaker"/> - the vassal in a revolt, the patron in an annexation.
         ///
         /// Run 04 found a revolt refused by a DefensivePact the vassal still held with the
         /// very patron it was renouncing: the war veto reads every live treaty, and breaking
-        /// the vassalage alone left that one in force. A vassal at breaking point is
-        /// repudiating the relationship, not one page of it.
+        /// the vassalage alone left that one in force. Whoever ends the bond is repudiating
+        /// the relationship, not one page of it.
         /// </summary>
-        private static void Renounce(ModState state, Treaty vassalage)
+        private static void Renounce(ModState state, Treaty vassalage, Kingdom breaker)
         {
             var vassal = vassalage.SubordinateParty;
             var patron = vassalage.DominantParty;
             if (vassal == null || patron == null || !vassalage.IsActive) return;
 
-            TreatyRegistry.Break(state, vassalage, vassal);
+            TreatyRegistry.Break(state, vassalage, breaker);
 
             for (var i = 0; i < state.Treaties.Count; i++)
             {
                 var other = state.Treaties[i];
                 if (other == vassalage || !other.IsActive || !other.ForbidsWar) continue;
                 if (!other.IsBetween(vassal, patron)) continue;
-                TreatyRegistry.RepudiateAlongside(state, other, vassal);
+                TreatyRegistry.RepudiateAlongside(state, other, breaker);
             }
+        }
+
+        // ================= Annexation ==========================================
+
+        /// <summary>
+        /// Whether <paramref name="patron"/> could turn on <paramref name="target"/> to annex
+        /// it: the target is its vassal, the patron has grown greedy enough to want provinces
+        /// instead (<see cref="DiplomacyConstants.GreedRefusesVassals"/>), and nothing but
+        /// treaties between the two stands in the way.
+        ///
+        /// Annexation happens only through war - the lead's decision. There is no action that
+        /// folds a vassal into its patron; a greedy patron tears up the oath and conquers, the
+        /// peace table carves the loser up, and the engine destroys a kingdom that loses its
+        /// last settlement.
+        /// </summary>
+        public static bool CouldAnnex(ModState state, Kingdom patron, Kingdom target)
+        {
+            var link = VassalageOf(state, target);
+            if (link == null || link.DominantParty != patron) return false;
+            if (AiDiplomacy.WouldTakeVassals(state, patron)) return false;
+            return TreatyEnforcement.WhyWarBlocked(state, patron, target) == TreatyEnforcement.Block.TreatyForbidsIt;
+        }
+
+        /// <summary>Annexation wars begun this session, for the weekly snapshot.</summary>
+        public static int AnnexationWarsThisSession { get; private set; }
+
+        /// <summary>
+        /// A greedy patron breaks its vassal's oath in order to conquer it. Charged in full as a
+        /// breach - the vassal's trust, every other court's, a BrokenTreaty casus belli handed to
+        /// the victim - and every other vassal of the same patron takes the lesson: it loses Hold
+        /// as it would watching a revolt, because it has just seen what it is to its patron.
+        /// The war itself is declared by the caller.
+        /// </summary>
+        public static void TurnOnVassal(ModState state, Kingdom patron, Kingdom vassal)
+        {
+            var link = VassalageOf(state, vassal);
+            if (link == null || link.DominantParty != patron) return;
+
+            var siblings = new List<Treaty>();
+            CollectVassalages(state, patron, siblings);
+
+            Renounce(state, link, patron);
+            AnnexationWarsThisSession++;
+
+            var warned = 0;
+            for (var i = 0; i < siblings.Count; i++)
+            {
+                var sibling = siblings[i];
+                if (sibling == link || !sibling.IsActive) continue;
+                sibling.SetHold(HoldOf(sibling) - DiplomacyConstants.SecessionContagionHold);
+                warned++;
+            }
+
+            Log.Info("Hegemony", patron.Name + " tore up its vassalage with " + vassal.Name
+                                 + " to annex it (greed " + Power.Greed(state, patron).ToString("0.00") + ")"
+                                 + (warned > 0 ? "; " + warned + " other vassal(s) saw it happen." : "."));
         }
 
         /// <summary>
@@ -412,6 +471,21 @@ namespace DiplomacyIntrigue.Diplomacy
             treaty.ExtendTo(CampaignTime.YearsFromNow(DiplomacyConstants.VassalageYears));
             Log.Info("Hegemony", vassal.Name + " renewed its submission to " + patron.Name
                                  + " at hold " + hold.ToString("0.0") + ".");
+        }
+
+        /// <summary>
+        /// Collapses every vassalage a destroyed kingdom held, either side. The daily tick
+        /// would find them tomorrow; doing it on the event means the rest of that day's
+        /// upkeep never reads a patron that no longer exists.
+        /// </summary>
+        public static void OnKingdomDestroyed(ModState state, Kingdom destroyed)
+        {
+            var links = new List<Treaty>();
+            foreach (var treaty in state.ActiveTreatiesOf(destroyed))
+                if (treaty.Type == TreatyType.Vassalage) links.Add(treaty);
+
+            for (var i = 0; i < links.Count; i++)
+                Collapse(state, links[i], links[i].DominantParty, links[i].SubordinateParty);
         }
 
         private static void Collapse(ModState state, Treaty treaty, Kingdom patron, Kingdom vassal)
@@ -558,12 +632,17 @@ namespace DiplomacyIntrigue.Diplomacy
             var prideTerm = Clamp(ownStrength / strongestNeighbour, 0f, 1f) * DiplomacyConstants.SubmissionPrideWeight;
             var cultureTerm = candidate.Culture != patron.Culture ? DiplomacyConstants.SubmissionCultureWeight : 0f;
 
-            var value = threatTerm + reachTerm + wearyTerm + trustTerm - prideTerm - cultureTerm;
+            // Kneeling to a ruler who wants provinces rather than vassals is volunteering to
+            // be annexed. The same dread a sitting vassal feels (Hold), read before signing.
+            var dreadTerm = Power.Greed(state, patron) * DiplomacyConstants.HoldDreadWeight;
+
+            var value = threatTerm + reachTerm + wearyTerm + trustTerm - prideTerm - cultureTerm - dreadTerm;
 
             explanation = "threat " + Signed(threatTerm) + " (cover " + cover.ToString("0.00") + ")"
                           + "  reach " + Signed(reachTerm)
                           + "  weariness " + Signed(wearyTerm) + "  trust " + Signed(trustTerm)
                           + "  pride " + Signed(-prideTerm) + "  culture " + Signed(-cultureTerm)
+                          + "  dread " + Signed(-dreadTerm)
                           + "  => " + value.ToString("0.0")
                           + " (submits at " + DiplomacyConstants.AiSubmissionThreshold.ToString("0") + ")";
 
@@ -586,8 +665,34 @@ namespace DiplomacyIntrigue.Diplomacy
             if (treaty == null) return null;
 
             treaty.SetHold(startingHold);
+
+            // The oath is new, so the grievances between the two from the last one are answered.
+            var settled = ClaimRegistry.SettleBreaches(state, patron, vassal);
+            if (settled > 0)
+                Log.Info("Claims", "Submission settled " + settled + " broken-treaty claim(s) between "
+                                   + patron.Name + " and " + vassal.Name + ".");
+
             CallToArms.DefendNewVassal(state, treaty);
             return treaty;
+        }
+
+        /// <summary>
+        /// Settles the broken-treaty claims that an active vassalage has already answered - the
+        /// ones acquired before it was signed. Run once when a session launches, for saves made
+        /// before <see cref="Submit"/> settled them itself: the run-04 world carries exactly
+        /// such a claim, Northern Empire's against Sturgia from a revolt Sturgia knelt again
+        /// after, and it let an annexation be filed as a just war.
+        /// </summary>
+        public static int SettleBreachesPredatingOaths(ModState state)
+        {
+            var links = new List<Treaty>();
+            CollectLinks(state, links);
+
+            var settled = 0;
+            for (var i = 0; i < links.Count; i++)
+                settled += ClaimRegistry.SettleBreaches(state, links[i].DominantParty, links[i].SubordinateParty,
+                    acquiredBefore: links[i].SignedOn);
+            return settled;
         }
 
         /// <summary>
@@ -657,6 +762,7 @@ namespace DiplomacyIntrigue.Diplomacy
         {
             if (suitor == null || suitor.IsEliminated) return false;
             if (!IsHegemon(state, suitor)) return false;
+            if (!AiDiplomacy.WouldTakeVassals(state, suitor)) return false;
 
             // Poaching is a war decision now, so it clears the same restraint any other war
             // does. A hegemon already fighting a war of its own, or worn out by the last one,
@@ -795,30 +901,8 @@ namespace DiplomacyIntrigue.Diplomacy
 
         // ================= Strength ============================================
         //
-        // One place for how the hegemony system weighs one kingdom's strength against
-        // another's. The engine's figure is CurrentTotalStrength, a live military number that
-        // swings after every large battle - which is why comparisons below are clamped rather
-        // than trusted at the extremes.
-
-        /// <summary>
-        /// The balance of strength between two kingdoms, -1..+1: log2 of the ratio, clamped.
-        /// +1 when <paramref name="a"/> is at least twice <paramref name="b"/>, -1 at half, 0
-        /// at parity.
-        ///
-        /// A log scale because the question is two-sided. `ratio - 1` - what the fear term
-        /// used - reaches +1 at twice as strong but only -0.5 at half as strong, so every
-        /// formula built on it treated a weak patron far more gently than a strong one.
-        /// </summary>
-        public static float PowerBalance(Kingdom a, Kingdom b)
-        {
-            var sa = a == null ? 0f : a.CurrentTotalStrength;
-            var sb = b == null ? 0f : b.CurrentTotalStrength;
-            if (sa <= 0f && sb <= 0f) return 0f;
-            if (sb <= 0f) return 1f;
-            if (sa <= 0f) return -1f;
-
-            return Clamp((float)(System.Math.Log(sa / sb) / System.Math.Log(2.0)), -1f, 1f);
-        }
+        // The hegemony system's questions about strength. The arithmetic lives in Power.cs;
+        // these say what it means for a vassalage.
 
         /// <summary>
         /// Whether a patron could hold this vassal at all: it has to be the stronger of the
@@ -829,26 +913,30 @@ namespace DiplomacyIntrigue.Diplomacy
         /// </summary>
         public static bool IsStrongEnoughToHold(Kingdom patron, Kingdom vassal)
             => patron != null && vassal != null
-               && patron.CurrentTotalStrength > vassal.CurrentTotalStrength;
+               && Power.Strength(patron) > Power.Strength(vassal);
 
         /// <summary>
         /// The Hold below which this vassal, sustained, revolts. The base line at parity,
-        /// raised for a vassal stronger than its patron and lowered for a weaker one; see
-        /// <see cref="DiplomacyConstants.SecessionCapabilityWeight"/>. Never above the
-        /// defiance line - a vassal does not skip straight from obedience to war.
+        /// raised for a vassal stronger than its patron and lowered for a weaker one (live
+        /// strength - whether it could win *now*; see
+        /// <see cref="DiplomacyConstants.SecessionCapabilityWeight"/>), and raised again by
+        /// dread of a greedy patron (smoothed; <see cref="DiplomacyConstants.SecessionDreadWeight"/>).
+        /// Never above the defiance line - a vassal does not skip straight from obedience to war.
         /// </summary>
-        public static float SecessionThreshold(Treaty vassalage)
+        public static float SecessionThreshold(ModState state, Treaty vassalage)
         {
             if (vassalage == null) return DiplomacyConstants.HoldSecessionThreshold;
 
             var line = DiplomacyConstants.HoldSecessionThreshold
                        + DiplomacyConstants.SecessionCapabilityWeight
-                       * PowerBalance(vassalage.SubordinateParty, vassalage.DominantParty);
+                       * Power.Balance(vassalage.SubordinateParty, vassalage.DominantParty)
+                       + DiplomacyConstants.SecessionDreadWeight
+                       * Power.Greed(state, vassalage.DominantParty);
             return Clamp(line, 0f, DiplomacyConstants.HoldDefianceThreshold);
         }
 
-        public static bool IsAtBreakingPoint(Treaty vassalage)
-            => vassalage != null && HoldOf(vassalage) < SecessionThreshold(vassalage);
+        public static bool IsAtBreakingPoint(ModState state, Treaty vassalage)
+            => vassalage != null && HoldOf(vassalage) < SecessionThreshold(state, vassalage);
 
         // ================= Small helpers =======================================
 

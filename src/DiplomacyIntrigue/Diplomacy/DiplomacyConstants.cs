@@ -500,6 +500,90 @@ namespace DiplomacyIntrigue.Diplomacy
         /// </summary>
         public const float VassalExcusedAboveExhaustion = 50f;
 
+        // ---- Power: ambition, greed, and what they provoke (docs/design/06-power.md) --------
+        //
+        // The lead's design, 2026-09-16: strength makes a ruler hungry for war, the rest of the
+        // map bands together against whoever is strongest, and a ruler grown too strong stops
+        // wanting vassals and starts wanting provinces - which its vassals can see coming.
+        // Every value below is un-tuned; run 06 is the first measurement.
+
+        /// <summary>
+        /// Days of the smoothed-strength average: the fraction of the gap closed each day is
+        /// one over this. One in-game year (84 days).
+        ///
+        /// Longer than a war, which is the point: run 04's wars had a median of 63 days and
+        /// run 05's 76, so the losses and recruiting of a single war move the average by about
+        /// half rather than all the way. Greed and dread should describe a reign, not a campaign.
+        /// </summary>
+        public const float StrengthSmoothingDays = 84f;
+
+        /// <summary>
+        /// Dominance at which ambition is full. With eight kingdoms: 31% of the world's
+        /// strength. Ambition is zero at an even split and rises linearly to here.
+        /// </summary>
+        public const float AmbitionFullAtDominance = 2.5f;
+
+        /// <summary>
+        /// War value added by full ambition. Under the war threshold of 18, so ambition alone
+        /// never starts a war - the rule every term of the valuation follows since run 03.
+        /// </summary>
+        public const float WarValueAmbition = 15f;
+
+        /// <summary>
+        /// Pact value an ambitious ruler loses: a realm hungry for war has little use for a
+        /// promise not to make one.
+        /// </summary>
+        public const float PactWeightAmbition = 20f;
+
+        /// <summary>
+        /// Live dominance at which a kingdom's own evaluation allows a second war of its choosing
+        /// at once. With eight kingdoms: a quarter of the world's strength. Below it the
+        /// restraint of <see cref="AiMaxConcurrentChosenWars"/> stands, for the reason run 02
+        /// gave it.
+        /// </summary>
+        public const float AiDominanceForSecondWar = 2f;
+
+        /// <summary>
+        /// Smoothed dominance at which greed begins; it is full one even share above. With
+        /// eight kingdoms: from 25% of the world's strength, full at 37.5%.
+        /// </summary>
+        public const float GreedStartsAtDominance = 2f;
+
+        /// <summary>
+        /// Greed at which a ruler takes no new vassals - no voluntary submission, no poaching,
+        /// no vassalage at its peace table - and may make war on the ones it has.
+        /// </summary>
+        public const float GreedRefusesVassals = 0.5f;
+
+        /// <summary>
+        /// War value a greedy patron adds, at full greed, for turning on its own vassal: the
+        /// vassal is near, weaker by construction, and already half-owned.
+        /// </summary>
+        public const float AnnexGreedWeight = 20f;
+
+        /// <summary>
+        /// War value taken off for tearing up the vassalage to do it. With the greed weight,
+        /// annexation is 5 points less attractive than an ordinary war at the greed threshold
+        /// and 5 more at full greed. The trust, the casus belli handed over and the influence
+        /// of a Conquest war are charged on top, by the machinery that always charges them.
+        /// </summary>
+        public const float AnnexBreachPenalty = 15f;
+
+        /// <summary>
+        /// Hold a vassal loses to dread, at its patron's full greed. On a different axis from
+        /// fear on purpose: fear reads the patron against this vassal, dread reads the patron
+        /// against the world. A patron twice its vassal's strength at full greed nets zero -
+        /// strong enough to hold them, too strong to be trusted with them.
+        /// </summary>
+        public const float HoldDreadWeight = 25f;
+
+        /// <summary>
+        /// How far the revolt line rises, at the patron's full greed. A vassal that expects to
+        /// be swallowed has less to lose by fighting at poor odds - so capability matters less
+        /// when the alternative is extinction.
+        /// </summary>
+        public const float SecessionDreadWeight = 15f;
+
         // ---- Call to arms ----------------------------------------------------
 
         /// <summary>

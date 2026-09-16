@@ -53,7 +53,7 @@ namespace DiplomacyIntrigue.Diplomacy
                     var treaty = obligations[i];
                     var ally = treaty.Other(caller);
                     if (!Applies(state, treaty, caller, ally, enemy, callerWasAttacked)) continue;
-                    if (Put(state, treaty, caller, ally, enemy)) answered++;
+                    if (Put(state, treaty, caller, ally, enemy, callerWasAttacked)) answered++;
                 }
                 return answered;
             }
@@ -95,7 +95,7 @@ namespace DiplomacyIntrigue.Diplomacy
                 for (var i = 0; i < attackers.Count; i++)
                 {
                     if (!Applies(state, vassalage, vassal, patron, attackers[i], callerWasAttacked: true)) continue;
-                    if (Put(state, vassalage, vassal, patron, attackers[i])) answered++;
+                    if (Put(state, vassalage, vassal, patron, attackers[i], callerWasAttacked: true)) answered++;
                 }
                 return answered;
             }
@@ -109,7 +109,8 @@ namespace DiplomacyIntrigue.Diplomacy
         /// Puts one obligation to the party that owes it: the player is asked, an AI decides.
         /// Returns true only when an AI answered on the spot.
         /// </summary>
-        private static bool Put(ModState state, Treaty treaty, Kingdom caller, Kingdom ally, Kingdom enemy)
+        private static bool Put(ModState state, Treaty treaty, Kingdom caller, Kingdom ally, Kingdom enemy,
+            bool callerWasAttacked)
         {
             if (IsPlayerDecision(ally))
             {
@@ -117,7 +118,7 @@ namespace DiplomacyIntrigue.Diplomacy
                 return false;
             }
 
-            if (WouldAnswer(state, treaty, caller, ally, enemy, out var why))
+            if (WouldAnswer(state, treaty, caller, ally, enemy, callerWasAttacked, out var why))
             {
                 Answer(state, treaty, caller, ally, enemy);
                 return true;
@@ -149,7 +150,7 @@ namespace DiplomacyIntrigue.Diplomacy
         /// vassals whose borders face west, not the ones three kingdoms away.
         /// </summary>
         private static void CapVassalCascade(ModState state, Kingdom caller, Kingdom enemy,
-            List<Treaty> obligations)
+            List<Treaty> obligations, bool quiet = false)
         {
             var vassalages = new List<Treaty>();
             for (var i = 0; i < obligations.Count; i++)
@@ -172,6 +173,7 @@ namespace DiplomacyIntrigue.Diplomacy
             for (var i = allowed; i < vassalages.Count; i++)
             {
                 obligations.Remove(vassalages[i]);
+                if (quiet) continue;
                 Log.Debug("CallToArms", vassalages[i].SubordinateParty.Name
                                         + " is not called: " + caller.Name + " may raise "
                                         + allowed + " of " + vassalages.Count + " vassals for this war.");
@@ -221,7 +223,43 @@ namespace DiplomacyIntrigue.Diplomacy
         /// sides of the bargain answer each other.
         /// </summary>
         public static bool WouldAnswer(ModState state, Treaty treaty, Kingdom caller, Kingdom ally,
-            Kingdom enemy, out string why)
+            Kingdom enemy, bool callerWasAttacked, out string why)
+        {
+            if (!WillingToAnswer(state, treaty, caller, ally, out why)) return false;
+
+            // A vassal marching for its patron does not weigh the odds - Hold already decided
+            // whether it serves, and service is what it owes.
+            if (IsServingVassal(treaty, ally)) return true;
+
+            // Joining a war that cannot be won is not loyalty, it is suicide - but "cannot be
+            // won" is a judgment about both whole sides, not about the two kingdoms in this
+            // conversation. It used to compare the enemy with the caller and this one ally,
+            // so against a dominant power every ally refused in turn, each reckoning it would
+            // stand alone: a coalition dissolved exactly when it was attacked, which is
+            // bandwagoning, the opposite of what an alliance against the strong is for.
+            var ourSide = Power.Strength(caller) + Power.Strength(ally)
+                          + ExpectedSupport(state, caller, enemy, callerWasAttacked, exclude: ally);
+            var theirSide = Power.Strength(enemy)
+                            + ExpectedSupport(state, enemy, caller, !callerWasAttacked);
+            if (theirSide > ourSide * DiplomacyConstants.CallToArmsHopelessRatio)
+            {
+                why = enemy.Name + " and those who would stand with it are too strong for our side ("
+                      + theirSide.ToString("0") + " against " + ourSide.ToString("0") + ")";
+                return false;
+            }
+
+            why = null;
+            return true;
+        }
+
+        /// <summary>
+        /// Everything in <see cref="WouldAnswer"/> except the odds: whether this party is
+        /// able and inclined to honour the obligation at all. Split out so the odds can ask
+        /// the same question of everyone else on the same side without asking about odds
+        /// again, which would never end.
+        /// </summary>
+        private static bool WillingToAnswer(ModState state, Treaty treaty, Kingdom caller, Kingdom ally,
+            out string why)
         {
             var worstExhaustion = WorstExhaustion(state, ally);
             if (worstExhaustion > DiplomacyConstants.CallToArmsRefuseAboveExhaustion)
@@ -258,16 +296,53 @@ namespace DiplomacyIntrigue.Diplomacy
                 return false;
             }
 
-            // Joining a war that cannot be won is not loyalty, it is suicide.
-            var ourSide = caller.CurrentTotalStrength + ally.CurrentTotalStrength;
-            if (enemy.CurrentTotalStrength > ourSide * DiplomacyConstants.CallToArmsHopelessRatio)
-            {
-                why = enemy.Name + " is too strong for the two of us";
-                return false;
-            }
-
             why = null;
             return true;
+        }
+
+        /// <summary>
+        /// The strength <paramref name="principal"/> can expect beside it in a war with
+        /// <paramref name="opponent"/>: every kingdom bound to it whose obligation applies and
+        /// who would be willing to honour it, plus any already at war with the opponent. Live
+        /// strength - this is about a war now.
+        ///
+        /// One resolver for "who stands with whom", read by two questions that used to ignore
+        /// it: whether an ally thinks a war is hopeless, and what an aggressor thinks it is
+        /// taking on. The second is what lets an alliance deter rather than only escalate - a
+        /// kingdom choosing a target now sees the coalition behind it.
+        ///
+        /// The vassal cap applies, and willingness is judged without the odds (see
+        /// <see cref="WillingToAnswer"/>). The player is estimated by the same rules as anyone;
+        /// what the player actually does is their own business.
+        /// </summary>
+        public static float ExpectedSupport(ModState state, Kingdom principal, Kingdom opponent,
+            bool principalWasAttacked, Kingdom exclude = null)
+        {
+            if (state == null || principal == null || opponent == null || principal == opponent) return 0f;
+
+            var obligations = new List<Treaty>();
+            foreach (var treaty in TreatyRegistry.AlliesOf(state, principal)) obligations.Add(treaty);
+            CapVassalCascade(state, principal, opponent, obligations, quiet: true);
+
+            var counted = new HashSet<Kingdom>();
+            var total = 0f;
+            for (var i = 0; i < obligations.Count; i++)
+            {
+                var treaty = obligations[i];
+                var ally = treaty.Other(principal);
+                if (ally == null || ally == exclude || ally == opponent || ally.IsEliminated) continue;
+                if (counted.Contains(ally)) continue;
+
+                // Already fighting the opponent: on our side of this whatever the paperwork says.
+                var stands = ally.IsAtWarWith(opponent)
+                             || (Applies(state, treaty, principal, ally, opponent, principalWasAttacked)
+                                 && WillingToAnswer(state, treaty, principal, ally, out _));
+                if (!stands) continue;
+
+                counted.Add(ally);
+                total += Power.Strength(ally);
+            }
+            return total;
         }
 
         public static void Answer(ModState state, Treaty treaty, Kingdom caller, Kingdom ally, Kingdom enemy)

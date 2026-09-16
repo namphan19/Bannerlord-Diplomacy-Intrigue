@@ -40,6 +40,11 @@ namespace DiplomacyIntrigue.Core
             /// that was never really a war, and both end on white terms.
             /// </summary>
             Dormant = 3,
+            /// <summary>
+            /// One side no longer exists: conquered down to its last settlement and destroyed by
+            /// the engine, which ends its wars without a peace.
+            /// </summary>
+            Eliminated = 4,
         }
 
         /// <summary>
@@ -200,6 +205,27 @@ namespace DiplomacyIntrigue.Core
                 // arrived, because a payment that succeeded left no trace.
                 line.Append(" tributePaid=").Append(TreatyRegistry.TributePaidThisSession);
                 line.Append(" tributeWithheld=").Append(TreatyRegistry.TributeWithheldThisSession);
+
+                // Power (docs/design/06-power.md): who is on top, by how much, and whether it has
+                // turned greedy. Live dominance for the leader; greed reads the smoothed figure.
+                var topDominance = 0f;
+                var topName = "none";
+                var greedy = 0;
+                foreach (var kingdom in Kingdom.All)
+                {
+                    if (kingdom.IsEliminated) continue;
+                    var dominance = Power.Dominance(kingdom);
+                    if (dominance > topDominance)
+                    {
+                        topDominance = dominance;
+                        topName = kingdom.Name.ToString().Replace(' ', '_');
+                    }
+                    if (!AiDiplomacy.WouldTakeVassals(state, kingdom)) greedy++;
+                }
+                line.Append(" topKingdom=").Append(topName);
+                line.Append(" topDominance=").Append(topDominance.ToString("0.00"));
+                line.Append(" greedy=").Append(greedy);
+                line.Append(" annexationWars=").Append(Hegemony.AnnexationWarsThisSession);
 
                 line.Append(" vanillaPeaceRefused=").Append(VanillaDiplomacy.PeaceRefused);
                 line.Append(" vanillaAlliancesRefused=").Append(VanillaDiplomacy.AllianceRefused);

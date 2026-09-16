@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using DiplomacyIntrigue.Core;
 using DiplomacyIntrigue.Diplomacy;
 using DiplomacyIntrigue.Models;
@@ -40,6 +41,91 @@ namespace DiplomacyIntrigue.Behaviors
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
             CampaignEvents.WarDeclared.AddNonSerializedListener(this, OnWarDeclared);
             CampaignEvents.MakePeace.AddNonSerializedListener(this, OnPeaceMade);
+            CampaignEvents.KingdomDestroyedEvent.AddNonSerializedListener(this, OnKingdomDestroyed);
+            CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
+        }
+
+        /// <summary>
+        /// Samples every kingdom's smoothed strength. Here rather than in a system behavior
+        /// because it belongs to no one pillar: greed, dread and coalitions all read it.
+        ///
+        /// Readers may see today's sample or yesterday's depending on which daily listener
+        /// the engine calls first - and listeners do not fire in registration order. With an
+        /// 84-day average, one day's difference moves nothing a decision reads.
+        /// </summary>
+        private void OnDailyTick()
+        {
+            if (_state == null || !Settings.Current.EnableDiplomacy) return;
+
+            try
+            {
+                Diplomacy.Power.DailySample(_state);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Core", "Daily strength sample failed.", ex);
+            }
+        }
+
+        /// <summary>
+        /// A kingdom was destroyed - for an AI kingdom, the engine does this the moment its last
+        /// settlement changes hands (FactionDiscontinuationCampaignBehavior, verified by IL in
+        /// v1.4.8), so conquest now ends kingdoms.
+        ///
+        /// The engine removes the kingdom from every war through FactionManager and raises no
+        /// peace event, and our war ledger closes wars only on the peace event. Without this,
+        /// the conqueror would carry a war against a kingdom that no longer exists for the rest
+        /// of the campaign - counted as a chosen war, so its own evaluation could never start
+        /// another. No run has eliminated a kingdom yet, which is the only reason that never
+        /// showed.
+        /// </summary>
+        private void OnKingdomDestroyed(Kingdom destroyed)
+        {
+            if (_state == null || destroyed == null) return;
+
+            try
+            {
+                // Collected first: closing a war and releasing followers both touch the ledger.
+                var wars = new List<WarRecord>();
+                foreach (var war in _state.OngoingWarsOf(destroyed)) wars.Add(war);
+
+                for (var i = 0; i < wars.Count; i++)
+                {
+                    var war = wars[i];
+                    var enemy = war.Other(destroyed);
+
+                    var previous = Telemetry.NotePeaceCause(Telemetry.PeaceCause.Eliminated,
+                        "eliminated_" + destroyed.Name.ToString().Replace(' ', '_'));
+                    try
+                    {
+                        CloseWar(war, destroyed, enemy);
+                    }
+                    finally
+                    {
+                        Telemetry.RestorePeaceCause(previous);
+                    }
+
+                    // Kingdoms fighting only because the destroyed one called them in have
+                    // nothing left to fight for - the same release a peace would have given.
+                    if (enemy != null && !enemy.IsEliminated)
+                        Diplomacy.CallToArms.ReleaseFollowers(_state, destroyed, enemy);
+                }
+
+                // Its vassalages collapse the way a destroyed patron's always did, and nothing
+                // else it signed can bind anyone now.
+                Diplomacy.Hegemony.OnKingdomDestroyed(_state, destroyed);
+                var remaining = new List<Treaty>();
+                foreach (var treaty in _state.ActiveTreatiesOf(destroyed)) remaining.Add(treaty);
+                for (var i = 0; i < remaining.Count; i++)
+                    Diplomacy.TreatyRegistry.Dissolve(_state, remaining[i]);
+
+                Log.Info("Core", destroyed.Name + " no longer exists: " + wars.Count + " war(s) closed, "
+                                 + remaining.Count + " other treaty(ies) dissolved.");
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Core", "Handling the destruction of a kingdom failed.", ex);
+            }
         }
 
         public override void SyncData(IDataStore dataStore)
@@ -64,6 +150,11 @@ namespace DiplomacyIntrigue.Behaviors
             try
             {
                 BackfillOngoingWars();
+
+                var settled = Hegemony.SettleBreachesPredatingOaths(_state);
+                if (settled > 0)
+                    Log.Info("Claims", "Settled " + settled + " broken-treaty claim(s) that a later submission had already answered.");
+
                 Log.Info("Core", "Session launched.");
             }
             catch (Exception ex)
@@ -131,23 +222,29 @@ namespace DiplomacyIntrigue.Behaviors
                 var war = _state.OngoingWarBetween(a, b);
                 if (war == null) return;
 
-                war.Close();
-
-                // The peace has to leave a mark, or a kingdom can walk straight into the
-                // next war with nothing to show for the last one.
-                Diplomacy.WarExhaustion.CarryOverToWeariness(_state, war);
-
-                // Machine-readable first, so a long run can be parsed out of the log.
-                if (Settings.Current.EnableTelemetry) Telemetry.WriteWarEnded(war);
-
-                Log.Info("Core", "War closed after " + war.DaysElapsed.ToString("0") + " days: " + war
-                                 + " | weariness now " + a.Name + "=" + _state.WearinessOf(a).ToString("0.0")
-                                 + ", " + b.Name + "=" + _state.WearinessOf(b).ToString("0.0") + ".");
+                CloseWar(war, a, b);
             }
             catch (Exception ex)
             {
                 Log.Error("Core", "OnPeaceMade failed.", ex);
             }
+        }
+
+        /// <summary>The one way a war record closes, whether by peace or by elimination.</summary>
+        private void CloseWar(WarRecord war, Kingdom a, Kingdom b)
+        {
+            war.Close();
+
+            // The peace has to leave a mark, or a kingdom can walk straight into the
+            // next war with nothing to show for the last one.
+            Diplomacy.WarExhaustion.CarryOverToWeariness(_state, war);
+
+            // Machine-readable first, so a long run can be parsed out of the log.
+            if (Settings.Current.EnableTelemetry) Telemetry.WriteWarEnded(war);
+
+            Log.Info("Core", "War closed after " + war.DaysElapsed.ToString("0") + " days: " + war
+                             + " | weariness now " + a.Name + "=" + _state.WearinessOf(a).ToString("0.0")
+                             + ", " + (b == null ? "?" : b.Name + "=" + _state.WearinessOf(b).ToString("0.0")) + ".");
         }
 
     }

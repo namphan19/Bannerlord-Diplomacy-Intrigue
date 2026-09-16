@@ -70,6 +70,32 @@ namespace DiplomacyIntrigue.Diplomacy
             => Grant(state, victim, breaker, CasusBelliType.BrokenTreaty,
                 CampaignTime.YearsFromNow(DiplomacyConstants.BrokenTreatyWindowYears));
 
+        /// <summary>
+        /// Settles every live BrokenTreaty claim either kingdom holds against the other, and
+        /// returns how many. Called when one submits to the other: a kingdom that kneels has
+        /// answered for the oath it broke, and a patron that takes it back has accepted that.
+        ///
+        /// Found by driving an annexation on the run-04 world. Northern Empire turned on
+        /// Sturgia and the war was filed as BrokenTreaty at legitimacy 0.95, at the price of a
+        /// just war - because Sturgia's revolt, from before it knelt again, was still a live
+        /// claim. A patron tearing up an oath must not be able to cite a breach it forgave.
+        /// Land claims are left alone: a submission settles a betrayal, not a border.
+        /// </summary>
+        public static int SettleBreaches(ModState state, Kingdom a, Kingdom b, CampaignTime? acquiredBefore = null)
+        {
+            var settled = 0;
+            for (var i = 0; i < state.Claims.Count; i++)
+            {
+                var claim = state.Claims[i];
+                if (!claim.IsLive || claim.Type != CasusBelliType.BrokenTreaty) continue;
+                if (acquiredBefore.HasValue && claim.AcquiredOn > acquiredBefore.Value) continue;
+                if (!((claim.Claimant == a && claim.Target == b) || (claim.Claimant == b && claim.Target == a))) continue;
+                claim.Settle();
+                settled++;
+            }
+            return settled;
+        }
+
         // ----- Queries --------------------------------------------------------
 
         public static IEnumerable<Claim> LiveClaims(ModState state, Kingdom claimant, Kingdom target)

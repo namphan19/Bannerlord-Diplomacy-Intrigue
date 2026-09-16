@@ -28,6 +28,13 @@ namespace DiplomacyIntrigue.Core
         [SaveableProperty(8)] public List<FabricationAttempt> Fabrications { get; private set; }
         [SaveableProperty(9)] public List<TrustRecord> Trust { get; private set; }
 
+        /// <summary>
+        /// Smoothed strength per kingdom (Diplomacy/Power.cs). Added without a schema bump: a
+        /// save that predates it loads with the list empty, and each kingdom's first daily
+        /// sample starts its average at the live figure.
+        /// </summary>
+        [SaveableProperty(10)] public List<KingdomPower> PowerRecords { get; private set; }
+
         public ModState()
         {
             SchemaVersion = CurrentSchemaVersion;
@@ -38,6 +45,7 @@ namespace DiplomacyIntrigue.Core
             Claims = new List<Claim>();
             Fabrications = new List<FabricationAttempt>();
             Trust = new List<TrustRecord>();
+            PowerRecords = new List<KingdomPower>();
             NextTreatyId = 1;
         }
 
@@ -54,6 +62,7 @@ namespace DiplomacyIntrigue.Core
             if (Claims == null) Claims = new List<Claim>();
             if (Fabrications == null) Fabrications = new List<FabricationAttempt>();
             if (Trust == null) Trust = new List<TrustRecord>();
+            if (PowerRecords == null) PowerRecords = new List<KingdomPower>();
             if (NextTreatyId < 1) NextTreatyId = 1;
 
             Migrate();
@@ -67,6 +76,7 @@ namespace DiplomacyIntrigue.Core
             Claims.RemoveAll(c => c == null || c.Claimant == null || c.Target == null);
             Fabrications.RemoveAll(f => f == null || f.Claimant == null || f.Target == null);
             Trust.RemoveAll(t => t == null || t.From == null || t.To == null);
+            PowerRecords.RemoveAll(p => p == null || p.Kingdom == null);
 
             Log.Info("State", "Loaded: " + Treaties.Count + " treaties, " + Wars.Count
                               + " war records, " + Weariness.Count + " weariness entries, "
