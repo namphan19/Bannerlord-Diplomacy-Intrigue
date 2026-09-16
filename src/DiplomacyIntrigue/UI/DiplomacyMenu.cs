@@ -388,7 +388,7 @@ namespace DiplomacyIntrigue.UI
             into.Add(new InquiryElement(type, "Propose " + type, null, allowed, hint));
         }
 
-        private static float ThresholdFor(TreatyType type)
+        internal static float ThresholdFor(TreatyType type)
         {
             switch (type)
             {
@@ -433,7 +433,7 @@ namespace DiplomacyIntrigue.UI
 
         // ----- Actions ---------------------------------------------------------
 
-        private static void ProposePact(ModState state, Kingdom us, Kingdom them, TreatyType type)
+        internal static void ProposePact(ModState state, Kingdom us, Kingdom them, TreatyType type)
         {
             // The other side has to want it too, judged by the same function the AI uses.
             var theirValue = AiDiplomacy.PactValue(state, them, us);
@@ -462,7 +462,7 @@ namespace DiplomacyIntrigue.UI
             Notify(us.Name + " and " + them.Name + " sign a " + type + ".", Colors.Green);
         }
 
-        private static void ShowPeace(ModState state, Kingdom us, Kingdom them)
+        internal static void ShowPeace(ModState state, Kingdom us, Kingdom them)
         {
             var war = state.OngoingWarBetween(us, them);
             if (war == null) { Notify("We are not at war with " + them.Name + "."); return; }
@@ -727,7 +727,7 @@ namespace DiplomacyIntrigue.UI
             Notify("Peace signed with " + terms.Loser.Name + ": " + terms + ".", Colors.Green);
         }
 
-        private static void BreakTreaty(ModState state, Kingdom us, Kingdom them)
+        internal static void BreakTreaty(ModState state, Kingdom us, Kingdom them)
         {
             var treaty = FirstBreakableTreaty(state, us, them);
             if (treaty == null) { Notify("We hold nothing with " + them.Name + " to renounce."); return; }
@@ -737,7 +737,7 @@ namespace DiplomacyIntrigue.UI
                    + ". Every court has taken note.", Colors.Red);
         }
 
-        private static void ShowFabricationTargets(ModState state, Kingdom us, Kingdom them)
+        internal static void ShowFabricationTargets(ModState state, Kingdom us, Kingdom them)
         {
             var elements = new List<InquiryElement>();
             var settlements = them.Settlements;
@@ -811,7 +811,7 @@ namespace DiplomacyIntrigue.UI
             }
         }
 
-        private static Treaty FirstBreakableTreaty(ModState state, Kingdom us, Kingdom them)
+        internal static Treaty FirstBreakableTreaty(ModState state, Kingdom us, Kingdom them)
         {
             foreach (var treaty in state.ActiveTreatiesOf(us))
                 if (treaty.Other(us) == them && treaty.Type != TreatyType.Truce) return treaty;

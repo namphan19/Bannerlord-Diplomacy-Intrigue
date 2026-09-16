@@ -44,6 +44,23 @@ namespace DiplomacyIntrigue.Diplomacy
             }
         }
 
+        /// <summary>
+        /// The exhaustion a band begins at. This is what a rival's bar in the Kingdom screen
+        /// carries: "Weary" reads as 40 whether they are at 41 or 59, so the band stays a
+        /// band even when it is drawn as a number.
+        /// </summary>
+        public static float Floor(ExhaustionBand band)
+        {
+            switch (band)
+            {
+                case ExhaustionBand.Breaking: return DiplomacyConstants.ExhaustionAcceptBadTerms;
+                case ExhaustionBand.Exhausted: return DiplomacyConstants.ExhaustionSeekPeace;
+                case ExhaustionBand.Weary: return DiplomacyConstants.ExhaustionCourtPressure;
+                case ExhaustionBand.Strained: return DiplomacyConstants.PeaceWhitePeaceOnlyBelow;
+                default: return 0f;
+            }
+        }
+
         /// <summary>What the band actually tells the player, in behavioural terms.</summary>
         public static string Meaning(ExhaustionBand band)
         {
