@@ -72,6 +72,7 @@ namespace DiplomacyIntrigue.Diplomacy
                 var fief = terms.FiefsCeded[i];
                 cost += fief.IsTown ? DiplomacyConstants.PeaceCostTown : DiplomacyConstants.PeaceCostCastle;
             }
+            if (terms.ImposeVassalage) cost += DiplomacyConstants.PeaceCostVassalage;
             if (terms.ImposeTributaryPact) cost += DiplomacyConstants.PeaceCostTributaryPact;
             if (terms.ReleasePrisoners) cost += DiplomacyConstants.PeaceCostPrisoners;
             cost += terms.IndemnityGold / 1000f * DiplomacyConstants.PeaceCostPerThousandIndemnity;
@@ -126,6 +127,19 @@ namespace DiplomacyIntrigue.Diplomacy
                 if (!fief.IsFortification)
                 {
                     reason = fief.Name + " is not a town or castle.";
+                    return false;
+                }
+            }
+
+            // Submission is the one demand that can be structurally impossible rather than
+            // merely unaffordable: a kingdom has one patron or none.
+            if (terms.ImposeVassalage)
+            {
+                var existingPatron = TreatyRegistry.PatronOf(state, terms.Loser);
+                if (existingPatron != null && existingPatron != terms.Winner)
+                {
+                    reason = terms.Loser.Name + " already answers to " + existingPatron.Name
+                             + ". That bond would have to be broken before ours could be made.";
                     return false;
                 }
             }
@@ -266,6 +280,7 @@ namespace DiplomacyIntrigue.Diplomacy
             PayIndemnity(terms);
             ReleaseHeroes(terms);
             ImposeTribute(state, terms);
+            ImposeSubmission(state, terms);
 
             Log.Info("Peace", winner.Name + " and " + loser.Name + " made peace: " + summary + ".");
             return true;
@@ -322,6 +337,33 @@ namespace DiplomacyIntrigue.Diplomacy
             if (freed > 0) Log.Info("Peace", terms.Loser.Name + " released " + freed + " captive hero(es).");
         }
 
+        /// <summary>
+        /// The top rung: the loser becomes a vassal, and the winner becomes a hegemon by the
+        /// only definition the mod has - holding one.
+        ///
+        /// Hold starts low (<see cref="DiplomacyConstants.HoldOnCoercedSubmission"/>), because
+        /// submission at swordpoint is exactly the kind that comes apart.
+        /// </summary>
+        private static void ImposeSubmission(ModState state, PeaceTerms terms)
+        {
+            if (!terms.ImposeVassalage) return;
+
+            var treaty = Hegemony.Submit(state, terms.Winner, terms.Loser,
+                DiplomacyConstants.HoldOnCoercedSubmission, terms.TributePerPeriod, out var reason);
+
+            if (treaty == null)
+            {
+                Log.Warn("Peace", "Could not impose submission: " + reason);
+                return;
+            }
+
+            Log.Info("Hegemony", terms.Loser.Name + " submits to " + terms.Winner.Name
+                                 + " as a vassal at hold "
+                                 + DiplomacyConstants.HoldOnCoercedSubmission.ToString("0")
+                                 + ". " + terms.Winner.Name + " now holds "
+                                 + Hegemony.VassalCount(state, terms.Winner) + " vassal(s).");
+        }
+
         private static void ImposeTribute(ModState state, PeaceTerms terms)
         {
             if (!terms.ImposeTributaryPact) return;
@@ -356,6 +398,8 @@ namespace DiplomacyIntrigue.Diplomacy
                 "  castle            " + DiplomacyConstants.PeaceCostCastle.ToString("0")
                     + (hasClaim ? "" : "   (blocked: no territorial claim)"),
                 "  tributary pact    " + DiplomacyConstants.PeaceCostTributaryPact.ToString("0"),
+                "  submission        " + DiplomacyConstants.PeaceCostVassalage.ToString("0")
+                    + "   (they become our vassal)",
                 "  release prisoners " + DiplomacyConstants.PeaceCostPrisoners.ToString("0"),
                 "  indemnity         " + DiplomacyConstants.PeaceCostPerThousandIndemnity.ToString("0") + " per 1000 denars",
                 "Their exhaustion is " + war.ExhaustionOf(loser).ToString("0.0")

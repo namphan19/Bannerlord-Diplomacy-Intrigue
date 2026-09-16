@@ -177,6 +177,25 @@ namespace DiplomacyIntrigue.Core
                 // look identical from outside - vanilla might simply never have wanted any of
                 // these - so the only honest way to know the overrides are installed and
                 // being reached is to count what they refuse.
+                // Hegemony is derived from treaties rather than stored, so it is derived here
+                // too. `hegemons` is the headline: the number of kingdoms holding at least
+                // one vassal, which is the only definition the mod has.
+                var links = new List<Treaty>();
+                Hegemony.CollectLinks(state, links);
+                var holdTotal = 0f;
+                var marks = 0;
+                for (var i = 0; i < links.Count; i++)
+                {
+                    holdTotal += Hegemony.HoldOf(links[i]);
+                    marks += links[i].DefianceMarks;
+                }
+
+                line.Append(" hegemons=").Append(Hegemony.CountHegemons(state));
+                line.Append(" vassalLinks=").Append(links.Count);
+                line.Append(" avgHold=")
+                    .Append((links.Count == 0 ? 0f : holdTotal / links.Count).ToString("0.0"));
+                line.Append(" defianceMarks=").Append(marks);
+
                 line.Append(" vanillaPeaceRefused=").Append(VanillaDiplomacy.PeaceRefused);
                 line.Append(" vanillaAlliancesRefused=").Append(VanillaDiplomacy.AllianceRefused);
                 line.Append(" vanillaTradeRefused=").Append(VanillaDiplomacy.TradeAgreementRefused);

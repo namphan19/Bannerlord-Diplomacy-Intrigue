@@ -55,6 +55,8 @@ namespace DiplomacyIntrigue.UI
                     "Standing justifications for war, and what they allow."),
                 Element("kingdoms", "Other kingdoms",
                     "Relations, trust, and what we can propose."),
+                Element("hegemony", DescribeOurStanding(state, kingdom),
+                    "Who answers to whom. A kingdom holding one vassal is a hegemon."),
                 Element("report", "Write a report to file",
                     "Saves the whole world state to Documents/Mount and Blade II Bannerlord/"
                     + "DiplomacyIntrigue/Reports, for sharing or for balance work."),
@@ -72,6 +74,7 @@ namespace DiplomacyIntrigue.UI
                     case "treaties": ShowTreaties(state, kingdom); break;
                     case "claims": ShowClaims(state, kingdom); break;
                     case "kingdoms": ShowKingdomList(state, kingdom, isRuler); break;
+                    case "hegemony": ShowHegemony(state, kingdom); break;
                     case "report": WriteReport(state); break;
                 }
             });
@@ -124,6 +127,115 @@ namespace DiplomacyIntrigue.UI
                 sb.AppendLine("Lingering weariness from past wars: " + weariness.ToString("0.0"));
 
             ShowText("Our wars", any ? sb.ToString() : "We are at peace with the world.");
+        }
+
+        /// <summary>
+        /// The root menu label, so the player can see where they stand without opening
+        /// anything: patron, vassals, or neither.
+        /// </summary>
+        private static string DescribeOurStanding(ModState state, Kingdom kingdom)
+        {
+            var patron = Hegemony.PatronOf(state, kingdom);
+            if (patron != null) return "Our standing - vassal of " + patron.Name;
+
+            var vassals = Hegemony.VassalCount(state, kingdom);
+            if (vassals > 0) return "Our standing - hegemon over " + vassals + " kingdom(s)";
+
+            return "Our standing - independent";
+        }
+
+        /// <summary>
+        /// Every sphere on the map, ours first. Our own links show the hold figure; other
+        /// patrons show only what anyone could see - who answers to whom, and how that bond
+        /// is behaving - because a rival's exact hold is the sort of thing Phase 3 espionage
+        /// is meant to sell.
+        /// </summary>
+        private static void ShowHegemony(ModState state, Kingdom kingdom)
+        {
+            var sb = new StringBuilder();
+
+            var ourPatron = Hegemony.VassalageOf(state, kingdom);
+            if (ourPatron != null)
+            {
+                var patron = ourPatron.DominantParty;
+                var hold = Hegemony.HoldOf(ourPatron);
+                sb.AppendLine("We answer to " + patron.Name + ".");
+                sb.AppendLine("  our hold to them: " + hold.ToString("0.0") + " / 100  -  " + HoldMeaning(hold));
+                Hegemony.HoldTarget(state, ourPatron, out var pull);
+                if (pull != null) sb.AppendLine("  pulling toward: " + pull);
+                sb.AppendLine("  tribute " + ourPatron.TributeAmount + " per period, term ends " + ourPatron.ExpiresOn);
+                if (ourPatron.DefianceMarks > 0)
+                    sb.AppendLine("  we have defied them " + ourPatron.DefianceMarks + " time(s)");
+                sb.AppendLine();
+            }
+
+            var ours = new List<Treaty>();
+            Hegemony.CollectVassalages(state, kingdom, ours);
+            if (ours.Count > 0)
+            {
+                sb.AppendLine("Our vassals (" + ours.Count + "):");
+                for (var i = 0; i < ours.Count; i++)
+                {
+                    var link = ours[i];
+                    var hold = Hegemony.HoldOf(link);
+                    sb.AppendLine("  " + link.SubordinateParty.Name
+                                  + "  hold " + hold.ToString("0.0")
+                                  + "  marks " + link.DefianceMarks
+                                  + "  tribute " + link.TributeAmount);
+                    sb.AppendLine("      " + HoldMeaning(hold));
+                    Hegemony.HoldTarget(state, link, out var pull);
+                    if (pull != null) sb.AppendLine("      pulling toward: " + pull);
+                }
+                sb.AppendLine();
+                sb.AppendLine("  We may call " + Hegemony.MaxVassalsToCall(ours.Count)
+                              + " of them into any one war, nearest the enemy first.");
+                sb.AppendLine();
+            }
+
+            var otherSpheres = 0;
+            foreach (var other in Kingdom.All)
+            {
+                if (other == kingdom || other.IsEliminated) continue;
+                if (!Hegemony.IsHegemon(state, other)) continue;
+
+                var held = new List<Treaty>();
+                Hegemony.CollectVassalages(state, other, held);
+                if (held.Count == 0) continue;
+
+                otherSpheres++;
+                sb.AppendLine(other.Name + " holds " + held.Count + " vassal(s):");
+                for (var i = 0; i < held.Count; i++)
+                {
+                    var link = held[i];
+                    sb.AppendLine("  " + link.SubordinateParty.Name + " - " + HoldMeaning(Hegemony.HoldOf(link)));
+                }
+                sb.AppendLine();
+            }
+
+            if (ourPatron == null && ours.Count == 0 && otherSpheres == 0)
+            {
+                sb.AppendLine("Nobody on this map holds a vassal.");
+                sb.AppendLine();
+                sb.AppendLine("Submission is imposed at a peace table once a war has earned "
+                              + DiplomacyConstants.PeaceCostVassalage.ToString("0")
+                              + " points of war score, or offered by a kingdom that cannot survive"
+                              + " alone. One vassal is all it takes to be a hegemon.");
+            }
+
+            ShowText("Hegemony", sb.ToString());
+        }
+
+        /// <summary>
+        /// What a hold figure means in behaviour, which is the only part of it a player can
+        /// act on. Shown for rivals too - watching a bond fail needs no spies.
+        /// </summary>
+        private static string HoldMeaning(float hold)
+        {
+            if (hold >= DiplomacyConstants.HoldRenewThreshold) return "loyal; will renew when the term ends";
+            if (hold >= DiplomacyConstants.HoldPassiveResistanceThreshold) return "serving, but will let the term lapse";
+            if (hold >= DiplomacyConstants.HoldDefianceThreshold) return "resisting; refuses summons and withholds tribute";
+            if (hold >= DiplomacyConstants.HoldSecessionThreshold) return "defiant; treats with outsiders";
+            return "at breaking point; counting down to revolt";
         }
 
         private static void ShowTreaties(ModState state, Kingdom kingdom)
@@ -383,6 +495,13 @@ namespace DiplomacyIntrigue.UI
                         "Costs " + DiplomacyConstants.PeaceCostTributaryPact.ToString("0")
                         + " of a budget of " + budget.ToString("0") + "."));
 
+                if (budget >= DiplomacyConstants.PeaceCostVassalage)
+                    elements.Add(Element("vassalage", "Demand their submission",
+                        "Costs " + DiplomacyConstants.PeaceCostVassalage.ToString("0")
+                        + " of a budget of " + budget.ToString("0")
+                        + ". They keep their ruler and their lands, and owe us troops, tribute"
+                        + " and their foreign policy - and we owe them protection."));
+
                 if (ClaimRegistry.HasTerritorialClaim(state, us, them))
                     elements.Add(Element("land", "Demand land", "Choose a fief to annex."));
                 else
@@ -409,6 +528,10 @@ namespace DiplomacyIntrigue.UI
                         break;
                     case "tribute":
                         terms.ImposeTributaryPact = true;
+                        terms.TributePerPeriod = DiplomacyConstants.AiDefaultTributePerPeriod;
+                        break;
+                    case "vassalage":
+                        terms.ImposeVassalage = true;
                         terms.TributePerPeriod = DiplomacyConstants.AiDefaultTributePerPeriod;
                         break;
                     case "land":
@@ -450,6 +573,13 @@ namespace DiplomacyIntrigue.UI
                 "Worth " + DiplomacyConstants.PeaceCostTributaryPact.ToString("0")
                 + ". A tributary pays for peace and keeps everything else."));
 
+            if (budget >= DiplomacyConstants.PeaceCostVassalage)
+                elements.Add(Element("submit", "Submit as their vassal",
+                    "Worth " + DiplomacyConstants.PeaceCostVassalage.ToString("0")
+                    + ", the most this war can be worth to them. We keep our ruler, our lands"
+                    + " and our court, and owe troops, tribute and our foreign policy - and"
+                    + " they owe us protection. A patron who fails to protect loses the vassal."));
+
             if (ClaimRegistry.HasTerritorialClaim(state, them, us))
                 elements.Add(Element("land", "Cede a holding", "Choose what to give up."));
             else
@@ -473,6 +603,10 @@ namespace DiplomacyIntrigue.UI
                             break;
                         case "tribute":
                             terms.ImposeTributaryPact = true;
+                            terms.TributePerPeriod = DiplomacyConstants.AiDefaultTributePerPeriod;
+                            break;
+                        case "submit":
+                            terms.ImposeVassalage = true;
                             terms.TributePerPeriod = DiplomacyConstants.AiDefaultTributePerPeriod;
                             break;
                         case "land":

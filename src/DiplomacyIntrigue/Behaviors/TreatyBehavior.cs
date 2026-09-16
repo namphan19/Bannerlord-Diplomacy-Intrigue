@@ -34,6 +34,11 @@ namespace DiplomacyIntrigue.Behaviors
 
             try
             {
+                // Before the expiry sweep on purpose: a vassal with high hold renews its
+                // term in place, and that decision has to happen before the registry retires
+                // the treaty for having run out.
+                Hegemony.DailyTick(state);
+
                 TreatyRegistry.ExpireAndReward(state);
                 TreatyRegistry.PayDueTribute(state);
                 TreatyRegistry.PayPeaceDividends(state);

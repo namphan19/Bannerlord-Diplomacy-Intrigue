@@ -41,6 +41,29 @@ namespace DiplomacyIntrigue.Models
         /// </summary>
         [SaveableProperty(13)] public Kingdom SubordinateParty { get; private set; }
 
+        /// <summary>
+        /// How firmly the patron holds this vassal, 0-100. Vassalage only; zero on every
+        /// other type and on a link loaded from a save written before this field existed.
+        ///
+        /// The load-time default is handled where it is read rather than here, because the
+        /// save system rehydrates without a constructor. Zero is safe to treat as "not set":
+        /// vassalage has never once existed in a campaign (runs 01-03 all report
+        /// `vassalage=0`), so no save can carry a live link with a meaningful zero.
+        /// </summary>
+        [SaveableProperty(14)] public float Hold { get; private set; }
+
+        /// <summary>Times this vassal has refused its obligations. Two inside a year and the link lapses.</summary>
+        [SaveableProperty(15)] public int DefianceMarks { get; private set; }
+
+        /// <summary>When the most recent mark was earned, so old defiance can be forgotten.</summary>
+        [SaveableProperty(16)] public CampaignTime LastDefianceOn { get; private set; }
+
+        /// <summary>
+        /// When Hold first fell under the secession threshold, or Never. A revolt needs the
+        /// collapse to be sustained rather than a bad week.
+        /// </summary>
+        [SaveableProperty(17)] public CampaignTime CriticalSince { get; private set; }
+
         // The save system rehydrates instances without running a constructor.
         internal Treaty() { }
 
@@ -121,6 +144,25 @@ namespace DiplomacyIntrigue.Models
         internal void AdvanceTributeDate(CampaignTime next) => NextTributeDue = next;
 
         internal void SetSubordinate(Kingdom subordinate) => SubordinateParty = subordinate;
+
+        internal void SetHold(float value) => Hold = value < 0f ? 0f : (value > 100f ? 100f : value);
+
+        internal void AddDefianceMark()
+        {
+            DefianceMarks++;
+            LastDefianceOn = CampaignTime.Now;
+        }
+
+        internal void ForgiveDefiance()
+        {
+            DefianceMarks = 0;
+            LastDefianceOn = CampaignTime.Never;
+        }
+
+        internal void SetCriticalSince(CampaignTime when) => CriticalSince = when;
+
+        /// <summary>Extends the term in place, for a vassalage the vassal chooses to renew.</summary>
+        internal void ExtendTo(CampaignTime expiry) => ExpiresOn = expiry;
 
         /// <summary>The party on the receiving end of an asymmetric treaty, or null.</summary>
         public Kingdom DominantParty => SubordinateParty == null ? null : Other(SubordinateParty);

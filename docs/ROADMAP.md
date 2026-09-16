@@ -286,18 +286,64 @@ An honest correction: an earlier pass justified two of these constants as "measu
 were not; the run behind that claim was confounded by the limits above. The comments have
 been corrected rather than left to mislead.
 
-**1.9 Submission and hegemony** — spec only, no code. Added to Phase 1 by the project lead
-(2026-09-15): the mechanism by which one kingdom rises over others must work before Phase 1
-closes. A hegemon is **derived**, not declared — any kingdom holding at least one active
-vassalage is one, several may coexist, and there are no titles yet.
-Three routes in (imposed at the peace table at war score 90, offered voluntarily, or poached
-from a rival), one new number (`Hold` per link), three escalating forms of defiance ending in
-a secession war. Spec and the selection from the lead's source document:
-[design/04](design/04-hegemony.md). **Gated on 1.11** — submission needs war scores near 90
-and no war currently survives long enough to earn one.
+**1.9 Submission and hegemony** ✅ **implemented**, partly verified — the mechanism by which
+one kingdom rises over others. Spec and the selection from the lead's source document:
+[design/04](design/04-hegemony.md).
 
-**1.10 Hegemony competition and UI** — rival poaching, the call-to-arms cascade cap, collapse
-rules, a hegemony section in the Ctrl+D menu, and vassal-party summons last.
+A hegemon is **derived, never declared**: any kingdom holding one active vassalage is one,
+several coexist by construction, and there is no title state to keep in sync. Three routes in
+- imposed at a peace table at war score 90, offered voluntarily by a cornered kingdom at
+submission value 55, or poached off a rival patron - and one new number, `Hold`, per link.
+
+| Piece | Code |
+|---|---|
+| The system: who holds whom, Hold and its terms, defiance, revolt, collapse, poaching | `Diplomacy/Hegemony.cs` |
+| The top rung of the concession ladder at 90 | `Diplomacy/PeaceTable.cs`, `Models/PeaceTerms.cs` |
+| Voluntary submission as a weekly AI move, and the player's prompt to accept or refuse | `Diplomacy/AiDiplomacy.cs` |
+| Hold-gated service, the cascade cap, excused-versus-defiant refusals | `Diplomacy/CallToArms.cs` |
+| Foreign policy finally enforced for treaties, withheld tribute, no chains of patrons | `Diplomacy/TreatyRegistry.cs` |
+| `Hold`, defiance marks, the revolt clock | `Models/Treaty.cs` ids 14-17 |
+
+**Verified in a live campaign (2026-09-16),** driving the real route rather than a debug
+shortcut. `Southern Empire vs Aserai` stood at war score 99.2 after 432 days, and
+`diplomacy.offer_peace Southern Empire | Aserai | vassalage, prisoners` produced:
+
+```
+Peace signed: submit as a vassal paying 500 per period; release prisoners
+
+Hegemons: 1   links: 1
+Southern Empire holds 1 vassal(s):
+  Aserai  hold 35.0  marks 0  tribute 500  until Winter 3, 1136
+      base 40  fear +7.8  protection +0.0  trust +15.0  tribute -3.8
+      wars +0.0  rival +0.0  culture -10.0  => 48.9
+      resisting - refuses summons, withholds tribute
+```
+
+The first hegemon in the project's existence, and every term of the Hold target is visibly
+doing its job: Southern Empire is stronger (+7.8), Aserai trusts it (+15.0), the two are of
+different cultures (-10.0), the tribute is mild against Aserai's holdings (-3.8). A coerced
+vassal starts at 35 - sullen, withholding tribute - and drifts toward 48.9 at a point a day,
+crossing into service in a fortnight. That is the designed shape: submission at swordpoint
+starts badly and settles only if the patron is strong and does not abuse it.
+
+**Not verified, and it cannot be from a tool call:** everything measured in dates. The revolt
+countdown, renewal at the end of a term, and defiance marks being forgotten all read
+`CampaignTime.Now`, which no console command can move. Poaching and the cascade cap need a
+world with several hegemons, which run 04 is the first chance to produce.
+
+A gap this found, worth recording: `diplomacy.tick_days` drove only exhaustion and claims, not
+the treaty upkeep - so Hold sat unchanged through 20 simulated days and looked like a broken
+drift. The campaign's own daily handler was always calling it. The command now runs the full
+daily set and says which things a frozen clock still cannot move.
+
+**1.10 Hegemony competition and UI** ✅ **implemented** — rival patrons courting each other's
+neglected vassals (below Hold 40, for -30 trust and a casus belli), the call-to-arms cascade
+cap at half the vassals nearest the target, collapse when a patron is destroyed (treaties
+dissolved rather than broken, plus a two-year grace between the freed), and a hegemony view in
+the Ctrl+D menu showing our patron, our vassals with their Hold, and every rival sphere.
+Vassal-party summons (design 04 §8) is the one piece deliberately left out: it is the most
+intrusive and the least load-bearing, and it belongs after Phase 2 gives refusal political
+weight.
 
 **1.11 Take inter-kingdom diplomacy from vanilla** ✅ **implemented**, partly verified — the
 lead's directive that our diplomacy overrides *all* vanilla diplomacy, plus the two bugs run

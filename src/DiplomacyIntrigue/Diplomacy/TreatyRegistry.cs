@@ -85,6 +85,49 @@ namespace DiplomacyIntrigue.Diplomacy
                 return false;
             }
 
+            // Hegemony is flat: one patron per vassal, no chains. The engine has two faction
+            // tiers and no parent-of-kingdom slot, so a patron of patrons is not something the
+            // game could draw, and the call-to-arms cascade would have no bound.
+            if (type == TreatyType.Vassalage && Hegemony.IsHegemon(state, b))
+            {
+                reason = b.Name + " holds vassals of its own and cannot itself submit.";
+                return false;
+            }
+
+            // A vassal owes its foreign policy, and that is only now enforced for treaties -
+            // until this, the prohibition existed for war alone. A badly held vassal ignores
+            // it, which is the design's middle tier of defiance rather than a loophole.
+            if (IsForbiddenByPatron(state, a, b, type, out reason)) return false;
+            if (IsForbiddenByPatron(state, b, a, type, out reason)) return false;
+
+            return true;
+        }
+
+        /// <summary>
+        /// Whether <paramref name="signatory"/> may sign this with <paramref name="other"/> at
+        /// all, given who it answers to.
+        ///
+        /// A truce is always exempt: stopping a war has to stay possible, whoever is whose
+        /// vassal. So is anything signed with the patron itself.
+        /// </summary>
+        private static bool IsForbiddenByPatron(ModState state, Kingdom signatory, Kingdom other,
+            TreatyType type, out string reason)
+        {
+            reason = null;
+            if (type == TreatyType.Truce) return false;
+
+            var vassalage = Hegemony.VassalageOf(state, signatory);
+            if (vassalage == null) return false;
+
+            var patron = vassalage.DominantParty;
+            if (patron == null || patron == other) return false;
+
+            // Defiance: the bond is weak enough that the vassal simply does as it likes. The
+            // cost lands in Sign, where the act actually happens.
+            if (Hegemony.WillDefyForeignPolicy(vassalage)) return false;
+
+            reason = signatory.Name + " answers to " + patron.Name
+                     + " and cannot sign with outsiders on its own account.";
             return true;
         }
 
@@ -115,12 +158,38 @@ namespace DiplomacyIntrigue.Diplomacy
             }
 
             state.Treaties.Add(treaty);
+            NoteDefiantSigning(state, a, b, type);
+            NoteDefiantSigning(state, b, a, type);
             Log.Info("Treaty", "Signed: " + treaty
                                + (treaty.TributeAmount > 0
                                    ? " tribute " + treaty.TributeAmount + " from " + treaty.TributePayer.Name
                                      + " every " + DiplomacyConstants.TributePeriodDays + " days"
                                    : ""));
             return treaty;
+        }
+
+        /// <summary>
+        /// A vassal that signed with an outsider anyway has defied its patron, and the patron
+        /// finds out. One mark, exactly as a refused summons would be - the two are the same
+        /// act of independence wearing different clothes.
+        /// </summary>
+        private static void NoteDefiantSigning(ModState state, Kingdom signatory, Kingdom other,
+            TreatyType type)
+        {
+            if (type == TreatyType.Truce) return;
+
+            var vassalage = Hegemony.VassalageOf(state, signatory);
+            if (vassalage == null) return;
+
+            var patron = vassalage.DominantParty;
+            if (patron == null || patron == other) return;
+
+            Hegemony.NoteRefusal(state, vassalage);
+            TrustRegistry.Adjust(state, patron, signatory,
+                DiplomacyConstants.TrustCallToArmsRefused, "treated with outsiders behind our back");
+
+            Log.Info("Hegemony", signatory.Name + " signed a " + type + " with " + other.Name
+                                 + " in defiance of its patron " + patron.Name + ".");
         }
 
         /// <summary>
@@ -213,6 +282,18 @@ namespace DiplomacyIntrigue.Diplomacy
 
                 if (payerLeader == null || receiverLeader == null)
                 {
+                    treaty.AdvanceTributeDate(CampaignTime.DaysFromNow(DiplomacyConstants.TributePeriodDays));
+                    continue;
+                }
+
+                // Passive resistance, the cheapest form of defiance in the source document:
+                // the money simply stops arriving. Not a default - they can pay, they will
+                // not - so it costs the patron income without ending anything.
+                if (treaty.Type == TreatyType.Vassalage
+                    && Hegemony.HoldOf(treaty) < DiplomacyConstants.HoldPassiveResistanceThreshold)
+                {
+                    Log.Info("Hegemony", payer.Name + " withheld its tribute from " + receiver.Name
+                                         + " (hold " + Hegemony.HoldOf(treaty).ToString("0.0") + ").");
                     treaty.AdvanceTributeDate(CampaignTime.DaysFromNow(DiplomacyConstants.TributePeriodDays));
                     continue;
                 }

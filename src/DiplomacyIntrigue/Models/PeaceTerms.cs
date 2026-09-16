@@ -33,6 +33,13 @@ namespace DiplomacyIntrigue.Models
         /// <summary>Per-period amount when <see cref="ImposeTributaryPact"/> is set.</summary>
         public int TributePerPeriod { get; set; }
 
+        /// <summary>
+        /// The loser submits: it becomes the winner's vassal, owing troops, tribute and its
+        /// foreign policy. The top rung of the ladder, and the thing that makes the winner a
+        /// hegemon.
+        /// </summary>
+        public bool ImposeVassalage { get; set; }
+
         /// <summary>Fiefs passing from loser to winner. Requires a territorial claim.</summary>
         public List<Settlement> FiefsCeded { get; } = new List<Settlement>();
 
@@ -44,7 +51,8 @@ namespace DiplomacyIntrigue.Models
 
         /// <summary>Nothing changes hands. Always available to both sides.</summary>
         public bool IsWhitePeace
-            => IndemnityGold <= 0 && !ReleasePrisoners && !ImposeTributaryPact && FiefsCeded.Count == 0;
+            => IndemnityGold <= 0 && !ReleasePrisoners && !ImposeTributaryPact
+               && !ImposeVassalage && FiefsCeded.Count == 0;
 
         public override string ToString()
         {
@@ -57,6 +65,10 @@ namespace DiplomacyIntrigue.Models
                 for (var i = 0; i < FiefsCeded.Count; i++) names.Add(FiefsCeded[i].Name.ToString());
                 parts.Add("cede " + string.Join(", ", names));
             }
+            if (ImposeVassalage) parts.Add("submit as a vassal"
+                                          + (TributePerPeriod > 0
+                                              ? " paying " + TributePerPeriod + " per period"
+                                              : ""));
             if (ImposeTributaryPact) parts.Add("tributary pact at " + TributePerPeriod + " per period");
             if (IndemnityGold > 0) parts.Add("indemnity of " + IndemnityGold);
             if (ReleasePrisoners) parts.Add("release prisoners");

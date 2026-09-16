@@ -342,6 +342,24 @@ Plus the volume checks: at least one vassalage forms **without a debug command**
 zero), spheres stay bounded — no single hegemon holding more than half the map — and
 `DefendAlly` plus obligation wars stay under ~35 % of all wars with the §5.4 caps on.
 
+## 10a. Where the implementation departs from this spec
+
+Written down because a spec that quietly disagrees with the code is worse than no spec. All
+four departures were made while building 1.9 on 2026-09-16.
+
+| Spec said | Code does | Why |
+|---|---|---|
+| Protection: a discrete **-25 Hold** when a patron fails to join within 10 days | A continuous term from -20 to +20, recomputed daily from the vassal's current wars | No event bookkeeping and no saved flags, it cannot get stuck, and it reads better: ignoring a war for three weeks costs three weeks of Hold, and joining late starts earning it back the same day |
+| Contagion: other vassals lose Hold when a revolt **succeeds** | They lose it when the revolt is **declared** | Detecting victory means hooking the peace that ends a war whose treaty is already broken. And the demonstration effect starts when somebody defies, not when they win |
+| Defiance marks: a separate saved record of patron, vassal, when | Three fields on the `Treaty` itself (ids 15-17) | The link *is* the treaty. A new savable type needs a class definition **and** a container definition in `ModSaveDefiner`, and a missing container is the most common way to break a Bannerlord mod |
+| (Not in the spec) | A vassal is now barred from signing **any** treaty with an outsider, and defies that below Hold 30 | The prohibition existed for war only. Enforcing it for treaties is what gives the middle tier of defiance something to defy |
+
+Also worth recording: a coerced submission was measured starting at Hold 35 with a target of
+48.9 (base 40, fear +7.8, trust +15.0, tribute -3.8, culture -10.0). It spends about a
+fortnight below the resistance threshold of 40 - withholding tribute, refusing summons - and
+then settles into service. That is the intended shape of a submission at swordpoint, and it
+happens without any special case for it.
+
 ## 11. Implementation order
 
 Gated on the run-02 fixes: submission needs war scores near 90, and no war currently survives

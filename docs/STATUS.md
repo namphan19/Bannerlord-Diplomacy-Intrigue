@@ -4,8 +4,12 @@ Point-in-time state. [CLAUDE.md](../CLAUDE.md) holds the things that are always 
 file holds what changes. Update it when you finish a chunk of work.
 
 Module version 0.1.0. Save schema **v4**, definer base id **2749100**.
+Treaty save ids now run to **17** (`Hold`, defiance marks, the revolt clock).
 Last measured: **balance run 03**, 6.2 in-game years, zero errors —
 [docs/balance/run-03.md](balance/run-03.md).
+
+**Phase 1 is code complete, 1.1 through 1.11.** The next run is the one that tests all of it
+at once, and it is the lead's call when to start it.
 
 ---
 
@@ -34,9 +38,10 @@ no assets.
 Every failing run's mod log stops at `OnSubModuleLoad complete` with no `Notify` line, so the
 module loaded and the game died before the main-menu screen.
 
-**Not yet answered: is this mod implicated at all?** The decisive test needs one launcher run
-with the mod unticked, which needs a human to press Play. Until then the honest statement is
-that the launcher-hosted path is broken on this machine and the two direct paths are not.
+**Not yet answered: is this mod implicated at all?** The decisive test is one launcher run
+with the mod unticked, which needs a human to press Play. Since the same path has now carried
+a 25-minute session with zero errors, the honest statement is that it fails intermittently and
+nothing yet points at the module.
 
 Two things were added because of this, independent of the cause:
 
@@ -51,10 +56,10 @@ Two things were added because of this, independent of the cause:
 | Phase | State |
 |---|---|
 | **0 — Foundation** | ✅ done, verified in a live campaign |
-| **1 — Diplomacy core (1.1–1.8)** | ✅ code complete, **acceptance met** over a measured 28-year run. Two constants tuned from it and awaiting a confirming run |
+| **1 — Diplomacy core (1.1–1.11)** | ✅ **code complete**, including submission and hegemony (1.9/1.10) and the vanilla takeover (1.11). Verified piecewise in live campaigns; the whole-pillar run is run 04 |
 | **2 — Court intrigue** | ⬜ spec written and reviewed, no code |
 | **3 — Espionage** | ⬜ spec written and reviewed, no code |
-| **4 — Integration, balance, release** | 🔄 balance run 01 done, run 02 wanted |
+| **4 — Integration, balance, release** | 🔄 runs 01-03 done and archived, run 04 is the Phase 1 acceptance run |
 
 ### Phase 1, feature by feature
 
@@ -71,6 +76,9 @@ the per-feature evidence tables.
 | 1.6 | Call to arms, refusal, follower release | `Diplomacy/CallToArms.cs` |
 | 1.7 | Weekly AI evaluation, one action per kingdom | `Diplomacy/AiDiplomacy.cs` |
 | 1.8 | Ctrl+D diplomacy menu, exhaustion bands | `UI/DiplomacyMenu.cs`, `Diplomacy/ExhaustionBands.cs` |
+| 1.9 | Submission, Hold, defiance, revolt, collapse | `Diplomacy/Hegemony.cs` |
+| 1.10 | Rival poaching, cascade cap, hegemony UI | `Diplomacy/Hegemony.cs`, `Diplomacy/CallToArms.cs`, `UI/DiplomacyMenu.cs` |
+| 1.11 | Inter-kingdom diplomacy taken from vanilla | `GameModels/` (four models), `Diplomacy/VanillaDiplomacy.cs` |
 
 ---
 
@@ -170,55 +178,39 @@ produced.
    actually changing hands, that may no longer hold — and a kingdom being destroyed is fine,
    the map collapsing to two is not.
 
-## What to do next — decided by the lead, in this order
+## What to do next
 
-Run 02 (13.1 in-game years, analysed) and the lead's directives of 2026-09-15 settled the
-order. It is a chain, not a menu: each step is what makes the next one measurable.
+### 1. Balance run 04 — the whole of Phase 1 at once
 
-**1. Take the rest of vanilla diplomacy (1.11).** ✅ **Done and deployed.** Four game models,
-no new Harmony patch; `PeaceTable.WinnerWouldAccept`; a sue-for-peace path in the menu;
-one-chosen-war-at-a-time for the AI. Live smoke test after two in-game days:
-`vanillaPeaceRefused=5 vanillaAlliancesRefused=6 vanillaTradeRefused=1
-vanillaCallToWarRefused=74` — every override reached and refusing. Details and the
-per-check results: [ROADMAP 1.11](ROADMAP.md) and
-[design/05 §3.1](design/05-vanilla-override.md).
+Everything in Phase 1 now exists and is deployed. What this run has to answer, in order of
+how much rests on it:
 
-**2. Run 03 — done, analysed, archived.** [docs/balance/run-03.md](balance/run-03.md).
-6.2 in-game years, zero errors. The headline: **wars ending outside our systems went from
-86.8% to 0%**, vanilla was refused 3,141 peaces / 823 alliances / 804 trade agreements, the
-median ended war went from 6 days to 60, and the concession ladder finally fired - a castle
-ceded and two tributary pacts imposed, where run 02 produced 13 white peaces out of 13.
+| Question | Run 03 reference | What to look for |
+|---|---|---|
+| Do wars now end in the intended band? | median 60d for ended wars, but the five survivors averaged **407 days** | `ExhaustionPerDayAtWar` raised 0.08 → **0.30**, so the clock alone reaches the threshold at day 200. Median should land 150-200 |
+| Does the world come off total war? | 73% of weeks with **every** kingdom at war | wars that can end mean treaties can be signed again |
+| Do hegemonies form in a real campaign? | zero, for 13 years | `hegemons=` and `vassalLinks=` in `[SNAPSHOT]`. Both routes are live |
+| Do they come apart? | n/a | `avgHold=` and `defianceMarks=`. A revolt needs Hold under 15 for 30 days, which only real time can produce |
+| Is voluntary submission too eager? | n/a | the threat term saturates at +140 against a threshold of 55, so any kingdom outnumbered two to one will kneel. **Provisional** |
+| Is `Dormant` too eager? | closed 4 of 10 wars | watch for `endedBy=Dormant` on a war with real fief changes or war score |
+| Did anything internal break? | — | policy votes, clan defections, king selection, annexation |
 
-Two problems it exposed, both fixed and deployed the same evening:
+Two constants remain deliberately unapplied, waiting on this measurement:
+`ExhaustionSeekPeace` 60 → 70, and the pact thresholds `AiAllianceThreshold` 70 → 82 /
+`AiDefensivePactThreshold` 55 → 65. The second pair looks much less necessary than it did
+after run 02 — run 03's alliance web collapsed on its own.
 
-- **Nested peaces lost their cause**, so two wars our own peace table settled with real terms
-  were filed as `endedBy=External`. The instrument was lying about the one number the whole
-  takeover was being measured against. `NotePeaceCause` now returns the previous value and
-  `RestorePeaceCause` puts it back.
-- **Low-intensity wars could not end.** The five wars still running at the end averaged **407
-  days, the longest 485**, at roughly one casualty a day - past the absolute dormancy cap
-  years earlier, so nothing could close them, and no kingdom in a war can sign a treaty. That
-  is what drove the map to 73% of weeks with every kingdom at war and the alliance web from 10
-  to 1. Dormancy now also reads casualties **per day** (under 3/day after 42 days);
-  **provisional**, see run-03.md.
+### 2. Phase 2 — court intrigue
 
-**2b. Run 04** answers whether those two fixes land: do the 400-day wars disappear, does the
-world come off total war, do treaties return, and is `Dormant` now too eager? Full list in
-run-03.md.
+Specced in `docs/design/02-intrigue.md`; order is 2.1 grievances → 2.2 loyalty → 2.3 blocs →
+2.4 legitimacy → 2.5 succession → 2.6 civil war → 2.7 UI. Phase 1 leaves hooks waiting for
+it: `ExhaustionCourtPressure` (40) for doves, a note in `CallToArms.WouldAnswer` where vassal
+defiance should read grievances, and the `Hold` formula wants a legitimacy term
+([design/04](design/04-hegemony.md) §1.2).
 
-**3. Submission and hegemony (1.9, 1.10).** Spec and the selection from the lead's source
-document: [design/04](design/04-hegemony.md). A hegemon is **derived** — any kingdom holding
-one active vassalage — so several coexist and no title machinery is needed. Gated on step 1
-for a concrete reason: submission costs a war score of 90, and no war currently lives long
-enough to earn one.
-
-**4. Phase 2 — court intrigue.** Specced in `docs/design/02-intrigue.md`; 2.1 grievances →
-2.2 loyalty → 2.3 blocs → 2.4 legitimacy → 2.5 succession → 2.6 civil war → 2.7 UI. Phase 1
-leaves hooks: `ExhaustionCourtPressure` (40) for doves, and a note in
-`CallToArms.WouldAnswer` where vassal defiance should read grievances. Titles (Emperor,
-Khagan) sit after 2.4 as flavour over a measured mechanism.
-
----
+Two Phase 1 pieces are deliberately parked until Phase 2 makes them mean something:
+**vassal-party summons** (design 04 §8 — the most intrusive and least load-bearing part of
+hegemony) and **titles** (Emperor, Khagan), which sit on top of legitimacy at 2.4.
 
 ## Decisions already made. Do not re-litigate.
 

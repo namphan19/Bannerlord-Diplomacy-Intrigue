@@ -207,15 +207,25 @@ namespace DiplomacyIntrigue.Core
             if (days < 1 || days > 400)
                 return "Pick between 1 and 400 days.";
 
+            // Everything the campaign's own daily handlers call, in the same order. This
+            // command used to drive only exhaustion and claims, which made it silently
+            // useless for anything living in the treaty upkeep - the hold on a vassalage
+            // sat unchanged through 20 simulated days and looked like a bug in the drift.
             for (var day = 0; day < days; day++)
             {
                 WarExhaustion.DailyTick(state);
+                Hegemony.DailyTick(state);
+                TreatyRegistry.ExpireAndReward(state);
+                TreatyRegistry.PayDueTribute(state);
+                TreatyRegistry.PayPeaceDividends(state);
                 ClaimRegistry.ExpireStale(state);
                 ClaimRegistry.ResolveFabrications(state);
             }
 
             var sb = new StringBuilder();
             sb.AppendLine("Ran " + days + " day(s) of upkeep. Campaign time unchanged.");
+            sb.AppendLine("Anything measured in dates - treaty expiry, tribute due, the revolt"
+                          + " countdown - cannot move while the clock is frozen.");
             sb.AppendLine("Expected baseline exhaustion from elapsed time alone: "
                           + (days * DiplomacyConstants.ExhaustionPerDayAtWar
                              * Settings.Current.WarExhaustionRate).ToString("0.00"));
@@ -405,7 +415,8 @@ namespace DiplomacyIntrigue.Core
             var parts = SplitOnPipe(args);
             if (parts.Count < 2)
                 return "Usage: diplomacy.offer_peace <winner> | <loser> | <terms>" + Environment.NewLine
-                       + "  terms: white, prisoners, indemnity=5000, tribute=800, fief=<name>";
+                       + "  terms: white, prisoners, indemnity=5000, tribute=800, fief=<name>,"
+                       + " vassalage";
 
             var winner = FindKingdom(parts[0]);
             var loser = FindKingdom(parts[1]);
@@ -446,6 +457,14 @@ namespace DiplomacyIntrigue.Core
                 if (string.Equals(token, "prisoners", StringComparison.OrdinalIgnoreCase))
                 {
                     terms.ReleasePrisoners = true;
+                    continue;
+                }
+                if (string.Equals(token, "vassalage", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(token, "submit", StringComparison.OrdinalIgnoreCase))
+                {
+                    terms.ImposeVassalage = true;
+                    if (terms.TributePerPeriod <= 0)
+                        terms.TributePerPeriod = DiplomacyConstants.AiDefaultTributePerPeriod;
                     continue;
                 }
 
@@ -671,6 +690,99 @@ namespace DiplomacyIntrigue.Core
         /// The weekly snapshot happens on its own; this is for grabbing one at a moment of
         /// interest, and for checking both writers work.
         /// </summary>
+        /// <summary>
+        /// Every sphere on the map, with the hold on each link and what is pulling it.
+        /// Usage: diplomacy.hegemony
+        /// </summary>
+        /// <summary>
+        /// What submitting to a patron is worth to a kingdom, term by term.
+        /// Usage: diplomacy.submission_value Sturgia | Khuzait
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("submission_value", "diplomacy")]
+        public static string SubmissionValueCommand(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var parts = SplitOnPipe(args);
+            if (parts.Count < 2) return "Usage: diplomacy.submission_value <candidate> | <patron>";
+
+            var candidate = FindKingdom(parts[0]);
+            var patron = FindKingdom(parts[1]);
+            if (candidate == null) return "No kingdom matching \"" + parts[0] + "\".";
+            if (patron == null) return "No kingdom matching \"" + parts[1] + "\".";
+
+            var value = Hegemony.SubmissionValue(state, candidate, patron, out var explanation);
+
+            var sb = new StringBuilder();
+            sb.AppendLine(candidate.Name + " considering submission to " + patron.Name);
+            sb.AppendLine("  " + explanation);
+            sb.AppendLine("  verdict: " + (value >= DiplomacyConstants.AiSubmissionThreshold
+                ? "would submit"
+                : "would not submit"));
+
+            if (!TreatyRegistry.CanSign(state, patron, candidate, Models.TreatyType.Vassalage, out var why))
+                sb.AppendLine("  but it could not be signed: " + why);
+
+            return sb.ToString();
+        }
+
+        [CommandLineFunctionality.CommandLineArgumentFunction("hegemony", "diplomacy")]
+        public static string HegemonyCommand(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var links = new List<Models.Treaty>();
+            Hegemony.CollectLinks(state, links);
+            if (links.Count == 0)
+                return "Nobody holds a vassal. There are no hegemons - submission is imposed at"
+                       + " a peace table above war score "
+                       + DiplomacyConstants.PeaceCostVassalage.ToString("0")
+                       + ", or offered voluntarily at submission value "
+                       + DiplomacyConstants.AiSubmissionThreshold.ToString("0") + ".";
+
+            var sb = new StringBuilder();
+            sb.Append("Hegemons: ").Append(Hegemony.CountHegemons(state))
+              .Append("   links: ").Append(links.Count).AppendLine();
+
+            foreach (var patron in Kingdom.All)
+            {
+                if (patron.IsEliminated || !Hegemony.IsHegemon(state, patron)) continue;
+
+                var held = new List<Models.Treaty>();
+                Hegemony.CollectVassalages(state, patron, held);
+                sb.AppendLine();
+                sb.Append(patron.Name).Append(" holds ").Append(held.Count).AppendLine(" vassal(s):");
+
+                for (var i = 0; i < held.Count; i++)
+                {
+                    var link = held[i];
+                    var hold = Hegemony.HoldOf(link);
+                    Hegemony.HoldTarget(state, link, out var explanation);
+
+                    sb.Append("  ").Append(link.SubordinateParty.Name)
+                      .Append("  hold ").Append(hold.ToString("0.0"))
+                      .Append("  marks ").Append(link.DefianceMarks)
+                      .Append("  tribute ").Append(link.TributeAmount)
+                      .Append("  until ").Append(link.ExpiresOn).AppendLine();
+                    sb.Append("      ").AppendLine(explanation);
+                    sb.Append("      ").AppendLine(Describe(hold));
+                }
+            }
+
+            return sb.ToString();
+        }
+
+        private static string Describe(float hold)
+        {
+            if (hold >= DiplomacyConstants.HoldRenewThreshold) return "loyal - will renew willingly";
+            if (hold >= DiplomacyConstants.HoldPassiveResistanceThreshold) return "serving, but will let the term lapse";
+            if (hold >= DiplomacyConstants.HoldDefianceThreshold) return "resisting - refuses summons, withholds tribute";
+            if (hold >= DiplomacyConstants.HoldSecessionThreshold) return "defiant - will treat with outsiders";
+            return "at breaking point - counting down to revolt";
+        }
+
         [CommandLineFunctionality.CommandLineArgumentFunction("report", "diplomacy")]
         public static string Report(List<string> args)
         {

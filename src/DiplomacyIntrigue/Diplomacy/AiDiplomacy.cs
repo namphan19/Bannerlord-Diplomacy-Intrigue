@@ -32,6 +32,10 @@ namespace DiplomacyIntrigue.Diplomacy
             OfferedPact = 2,
             DemandedTribute = 3,
             DeclaredWar = 4,
+            /// <summary>Asked a stronger kingdom for protection, as its vassal.</summary>
+            Submitted = 5,
+            /// <summary>Took a neglected vassal off a rival patron.</summary>
+            PoachedVassal = 6,
         }
 
         /// <summary>
@@ -51,8 +55,19 @@ namespace DiplomacyIntrigue.Diplomacy
             // is available, the map signs itself into permanent peace - which is exactly
             // what run 01 produced, with a standing web of truces, pacts and alliances and
             // almost nothing happening. A kingdom with a good war available takes it.
+            // Submission ranks with peace rather than with the pacts, because it is the same
+            // kind of decision: a realm that cannot survive alone is not shopping, it is
+            // looking for a protector. Ahead of war for the same reason - a kingdom about to
+            // kneel has no business starting a fight.
+            if (TrySubmit(state, kingdom)) return Move.Submitted;
+
             if (TryDeclareWar(state, kingdom)) return Move.DeclaredWar;
             if (TryDemandTribute(state, kingdom)) return Move.DemandedTribute;
+
+            // Courting somebody else's vassal comes before ordinary pacts: it is worth more
+            // than a non-aggression pact and it is only ever available for a moment.
+            if (Hegemony.TryPoach(state, kingdom)) return Move.PoachedVassal;
+
             if (TryOfferPact(state, kingdom)) return Move.OfferedPact;
 
             return Move.None;
@@ -231,6 +246,17 @@ namespace DiplomacyIntrigue.Diplomacy
                 TributePerPeriod = DiplomacyConstants.AiDefaultTributePerPeriod,
             };
 
+            // Submission: the dearest thing on the ladder at 90, and the only rung that
+            // changes what the loser *is* rather than what it owns. Offered ahead of land
+            // because a realm intact under a patron will usually prefer that to being
+            // carved up - and because it is what makes the winner a hegemon.
+            yield return new PeaceTerms(winner, loser)
+            {
+                ReleasePrisoners = true,
+                ImposeVassalage = true,
+                TributePerPeriod = DiplomacyConstants.AiDefaultTributePerPeriod,
+            };
+
             // Land last, and only what they could take anyway. A castle before a town.
             foreach (var fief in CedeCandidates(loser, townsFirst: false))
             {
@@ -253,6 +279,117 @@ namespace DiplomacyIntrigue.Diplomacy
                     if (settlement.IsTown != wantTowns) continue;
                     yield return settlement;
                 }
+            }
+        }
+
+        // ================= 1b. Submit, when there is no other way out ===========
+
+        /// <summary>
+        /// Asks a stronger kingdom for protection, as its vassal.
+        ///
+        /// Deliberately restricted: a kingdom that already answers to someone cannot submit
+        /// twice, and one that holds vassals of its own cannot submit at all. The engine has
+        /// two faction tiers and no parent-of-kingdom slot, so a chain of patrons is
+        /// unrepresentable - hegemony stays flat, one patron per vassal (design 04 §1.2).
+        /// </summary>
+        private static bool TrySubmit(ModState state, Kingdom kingdom)
+        {
+            if (Hegemony.VassalageOf(state, kingdom) != null) return false;
+            if (Hegemony.IsHegemon(state, kingdom)) return false;
+
+            Kingdom best = null;
+            var bestValue = 0f;
+            string bestExplanation = null;
+
+            foreach (var patron in Kingdom.All)
+            {
+                if (patron == kingdom || patron.IsEliminated) continue;
+                if (patron.IsAtWarWith(kingdom)) continue;
+                if (Hegemony.VassalageOf(state, patron) != null) continue;
+
+                if (!TreatyRegistry.CanSign(state, patron, kingdom, TreatyType.Vassalage, out _)) continue;
+
+                var value = Hegemony.SubmissionValue(state, kingdom, patron, out var explanation);
+                if (value <= bestValue) continue;
+
+                best = patron;
+                bestValue = value;
+                bestExplanation = explanation;
+            }
+
+            if (best == null) return false;
+            if (bestValue < DiplomacyConstants.AiSubmissionThreshold) return false;
+
+            // A player patron is asked rather than told. Everywhere else in this file the
+            // player is treated exactly as the AI is; here the asymmetry is the point,
+            // because accepting a vassal is a decision with consequences and the player
+            // should get to refuse it.
+            if (best.Leader == Hero.MainHero)
+            {
+                AskPlayerToAcceptSubmission(state, kingdom, best, bestValue);
+                return true;
+            }
+
+            var treaty = Hegemony.Submit(state, best, kingdom,
+                DiplomacyConstants.HoldOnVoluntarySubmission,
+                DiplomacyConstants.AiDefaultTributePerPeriod, out var reason);
+
+            if (treaty == null)
+            {
+                Log.Debug("AI", kingdom.Name + " could not submit to " + best.Name + ": " + reason);
+                return false;
+            }
+
+            Log.Info("Hegemony", kingdom.Name + " submitted to " + best.Name
+                                 + " as a vassal. " + bestExplanation);
+            Announce(kingdom.Name + " submits to " + best.Name + " in exchange for protection.");
+            return true;
+        }
+
+        /// <summary>
+        /// Puts a submission offer in front of the player. Accepting makes them a hegemon.
+        /// </summary>
+        private static void AskPlayerToAcceptSubmission(ModState state, Kingdom candidate,
+            Kingdom patron, float value)
+        {
+            var body = candidate.Name + " asks to become our vassal: tribute of "
+                       + DiplomacyConstants.AiDefaultTributePerPeriod + " per period, troops in our wars, "
+                       + "and their foreign policy answers to us." + System.Environment.NewLine
+                       + System.Environment.NewLine
+                       + "In exchange we are expected to defend them. A patron who does not"
+                       + " loses the vassal, and a vassal that resents us will eventually revolt.";
+
+            try
+            {
+                InformationManager.ShowInquiry(new InquiryData(
+                    "Offer of submission",
+                    body,
+                    true, true, "Accept", "Refuse",
+                    () =>
+                    {
+                        var treaty = Hegemony.Submit(state, patron, candidate,
+                            DiplomacyConstants.HoldOnVoluntarySubmission,
+                            DiplomacyConstants.AiDefaultTributePerPeriod, out var reason);
+
+                        if (treaty == null)
+                        {
+                            Log.Notify("Could not accept the submission: " + reason, Colors.Red);
+                            return;
+                        }
+
+                        Log.Notify(candidate.Name + " is now our vassal.", Colors.Green);
+                        Log.Info("Hegemony", candidate.Name + " submitted to the player's kingdom "
+                                             + patron.Name + " (value " + value.ToString("0") + ").");
+                    },
+                    () =>
+                    {
+                        Log.Info("Hegemony", "The player refused " + candidate.Name + "'s submission.");
+                        TrustRegistry.Adjust(state, candidate, patron, -5f, "refused our submission");
+                    }), true);
+            }
+            catch (System.Exception ex)
+            {
+                Log.Error("Hegemony", "Could not show the submission offer.", ex);
             }
         }
 
@@ -345,7 +482,12 @@ namespace DiplomacyIntrigue.Diplomacy
             return ours == 0 ? 0f : (float)shared / ours;
         }
 
-        private static float Proximity(Kingdom a, Kingdom b)
+        /// <summary>
+        /// 1 for neighbours, 0 for opposite ends of the map. Public because the hegemony
+        /// cascade cap calls its vassals nearest the target first, and two measures of
+        /// "nearby" that disagree would be one bug waiting to happen.
+        /// </summary>
+        public static float Proximity(Kingdom a, Kingdom b)
         {
             var from = a.FactionMidSettlement;
             var to = b.FactionMidSettlement;
