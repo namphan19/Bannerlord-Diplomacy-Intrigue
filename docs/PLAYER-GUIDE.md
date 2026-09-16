@@ -227,7 +227,26 @@ enough and independence is a war you choose.
 
 ---
 
-## 7. Common questions
+## 7. Power: ambition, coalitions, greed
+
+Every kingdom's strength is measured against the whole world, not only against its neighbours.
+Ctrl+D → Other kingdoms shows what anyone watching its armies could see: *"holds 27% of Calradia's
+strength; growing greedy"*.
+
+- **Strength breeds ambition.** A kingdom well above its even share wants war more, and one holding
+  a quarter of Calradia's strength will run two wars at once.
+- **The strong make the weak stand together.** Kingdoms outweighed by a sphere find each other's
+  pacts worth more, and an alliance now **deters**: a court choosing whom to attack weighs the
+  allies who would answer, not the target alone — and an ally no longer abandons you because your
+  enemy is strong, only because *both sides together* are hopeless.
+- **Too much strength turns to greed.** A ruler holding a quarter or more of the world's strength,
+  sustained over about a year, stops accepting vassals and starts wanting provinces. It may tear up
+  a vassal's oath and conquer it. Its vassals see it coming: their Hold falls, and they are willing
+  to revolt at worse odds. **This applies to you**: grow too strong and your vassals will fear you.
+- **Conquest ends kingdoms.** A kingdom that loses its last town or castle is gone; its wars end
+  with it, and anyone fighting only because it called them in is released.
+
+## 8. Common questions
 
 **Why can't I declare war on anyone?**
 Check the Diplomacy tab: a treaty may forbid it, or you may already be a vassal, or your

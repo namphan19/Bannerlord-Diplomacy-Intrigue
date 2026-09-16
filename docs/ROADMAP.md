@@ -348,6 +348,14 @@ weight.
 > carry the other resentful vassals with it. Detail, live evidence and what stays unverified:
 > STATUS.md, "What to do next" §3.
 
+**1.12 Power: ambition, coalitions, greed** ✅ **implemented**, verified piecewise, not yet in a run
+— the lead's design of 2026-09-16. Strength against the world makes a ruler ambitious; the rest of
+the map finds it easier to stand together against the strongest, and alliances now deter because
+the war valuation reads whole sides; a ruler past a quarter of the world's (smoothed) strength turns
+greedy, takes no new vassals and may tear up a vassal's oath to conquer it; its vassals dread it.
+Annexation only through war, and a kingdom that loses its last settlement is eliminated.
+[design/06](design/06-power.md); evidence in STATUS.md "What to do next" §3c.
+
 **1.11 Take inter-kingdom diplomacy from vanilla** ✅ **implemented**, partly verified — the
 lead's directive that our diplomacy overrides *all* vanilla diplomacy, plus the two bugs run
 02 exposed. Run 02 measured **86.8 % of wars ending without our peace table**, median length

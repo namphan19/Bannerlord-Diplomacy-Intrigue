@@ -88,6 +88,7 @@ the per-feature evidence tables.
 | 1.9 | Submission, Hold, defiance, revolt, collapse | `Diplomacy/Hegemony.cs` |
 | 1.10 | Rival poaching, cascade cap, hegemony UI | `Diplomacy/Hegemony.cs`, `Diplomacy/CallToArms.cs`, `UI/DiplomacyMenu.cs` |
 | 1.11 | Inter-kingdom diplomacy taken from vanilla | `GameModels/` (four models), `Diplomacy/VanillaDiplomacy.cs` |
+| 1.12 | Power: ambition, coalitions, greed, annexation, elimination | `Diplomacy/Power.cs`, `CallToArms.ExpectedSupport`, `Hegemony` — [design/06](design/06-power.md) |
 
 ---
 
@@ -453,6 +454,44 @@ kingdom owns - Khuzait's 31 fiefs and Northern Empire's 7 weigh the same in it. 
 economic measure (fiefs, prosperity) would describe power better, but a smoothed one needs saved
 state and an economic one is a new concept with its own balance. Not started; worth deciding
 after run 06 shows how much the swings matter.
+
+### 3c. Power — the lead's design, built and verified piecewise, unverified in a run
+
+Spec: [design/06-power.md](design/06-power.md). The lead's decisions: strength breeds ambition,
+the strong provoke coalitions, a ruler grown too strong turns greedy and wants provinces rather
+than vassals, **annexation only through war**, and **a kingdom that loses all its land is gone**.
+How strength is measured was left to the implementation: **live** strength for what a kingdom can
+do now (ambition, revolt capability, allies), a **smoothed 84-day average** for what it is becoming
+(greed, dread, the balancing pull). New save data: `KingdomPower`, definer id 9, `ModState` 10.
+
+Found and fixed on the way, both real:
+
+- **Elimination would have frozen the conqueror.** The engine already destroys an AI kingdom on its
+  last settlement (verified by IL), but raises no peace event, and our ledger closed wars only on
+  that event. The war would have stayed open forever, counted as a chosen war. Wars now close with
+  `endedBy=Eliminated`.
+- **Coalitions could not work.** Allies judged a war hopeless against the caller plus one ally, so
+  against a strong enemy every ally refused in turn; and the war valuation ignored the target's
+  allies, so an alliance never deterred. Both read whole sides now (`CallToArms.ExpectedSupport`).
+- **An annexation was filed as a just war** — BrokenTreaty at 0.95 — on a revolt claim the patron
+  had forgiven by taking the vassal back. Submission now settles breach claims between the two; a
+  sweep at load settles the old ones (1 in `di_phase1_full`).
+
+**Verified live on `di_phase1_full`, zero errors, never saved:**
+
+| What | Evidence |
+|---|---|
+| Strength table | Khuzait dominance 1.59, ambition 0.40; every greed 0.00 — nobody dominant |
+| Greed and dread (smoothed strength set by the new test command) | NE at greed 0.54: every link `dread -13.4`, revolt lines up 8.1 |
+| Annexation by the real AI evaluation | `Northern Empire tore up its vassalage with Sturgia to annex it (greed 0.93); 6 other vassal(s) saw it happen` — war declared, vassals refusing the summons, one vassalage broken on its third mark |
+| Coalition carried by the balancing pull | Sturgia / Southern Empire defensive pact at 63.9, of which the pull was 40.0 — 23.9 without it, under the bar of 35 |
+| Sides in the war valuation | NE → Battania: alone 1.07, with expected support 17,254 vs 0 → 2.51 |
+| Elimination | Battania's seven fiefs given away; on the last: both its wars closed `endedBy=Eliminated`, the vassalage dissolved, two further AI weeks ran clean |
+| Old breach claim settled on load | `Settled 1 broken-treaty claim(s)`; `Northern Empire vs Sturgia: BrokenTreaty` gone |
+
+**Not verified:** anything that needs the clock or a genuinely dominant kingdom — greed arising on
+its own, dread-driven revolts, the second-war allowance in use, coalitions deterring over years.
+Run 06 is that measurement.
 
 ### 4. Phase 2 — court intrigue
 

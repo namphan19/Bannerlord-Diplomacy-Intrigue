@@ -166,7 +166,8 @@ suspect and say so.
 **Save data is frozen once shipped.** Never renumber or reuse a `SaveableProperty` id, never
 reuse a save-definer local id for a different type, never change the definer base id
 (`2749100`, block `2749100`–`2749199`). `Treaty` currently uses ids **1-17** (14 `Hold`, 15
-defiance marks, 16 last defiance, 17 the revolt clock), so the next free id there is **18**. Adding a new savable type means a class definition
+defiance marks, 16 last defiance, 17 the revolt clock), so the next free id there is **18**. `ModState` uses
+properties **1-10** (10 is `PowerRecords`), and the definer's class ids run to **9** (`KingdomPower`). Adding a new savable type means a class definition
 **and** a container definition in `ModSaveDefiner` — a missing container definition crashes
 on save, which is the single most common way to break a Bannerlord mod. Bump
 `ModState.CurrentSchemaVersion` only when the *meaning* of existing data changes; adding a
