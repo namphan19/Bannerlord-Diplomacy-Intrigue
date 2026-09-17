@@ -88,35 +88,51 @@ namespace DiplomacyIntrigue.Diplomacy
         {
             explanation = null;
             if (treaty == null || treaty.Type != TreatyType.Vassalage) return 0f;
+            if (treaty.SubordinateParty == null || treaty.DominantParty == null) return DiplomacyConstants.HoldDefault;
 
-            var vassal = treaty.SubordinateParty;
-            var patron = treaty.DominantParty;
-            if (vassal == null || patron == null) return DiplomacyConstants.HoldDefault;
-
-            var fear = Power.Balance(patron, vassal) * DiplomacyConstants.HoldStrengthWeight;
-            var dread = Power.Greed(state, patron) * DiplomacyConstants.HoldDreadWeight;
-            var protection = Protection(state, treaty, vassal, patron) * DiplomacyConstants.HoldProtectionWeight;
-            var trust = TrustRegistry.Get(state, vassal, patron) / 100f * DiplomacyConstants.HoldTrustWeight;
-            var tribute = TributeBurden(treaty, vassal) * DiplomacyConstants.HoldTributeBurdenWeight;
-            var wars = WarBurden(state, vassal) * DiplomacyConstants.HoldWarBurdenWeight;
-            var rival = BestRivalPull(state, vassal, patron) * DiplomacyConstants.HoldRivalWeight;
-            var culture = patron.Culture != vassal.Culture ? DiplomacyConstants.HoldCultureMismatchWeight : 0f;
-
-            var target = DiplomacyConstants.HoldBase + fear + protection + trust
-                         - tribute - wars - rival - culture - dread;
-
+            var t = HoldTermsOf(state, treaty);
             explanation = "base " + DiplomacyConstants.HoldBase.ToString("0")
-                          + "  fear " + Signed(fear)
-                          + "  protection " + Signed(protection)
-                          + "  trust " + Signed(trust)
-                          + "  tribute " + Signed(-tribute)
-                          + "  wars " + Signed(-wars)
-                          + "  rival " + Signed(-rival)
-                          + "  culture " + Signed(-culture)
-                          + "  dread " + Signed(-dread)
-                          + "  => " + Clamp(target, 0f, 100f).ToString("0.0");
+                          + "  fear " + Signed(t.Fear)
+                          + "  protection " + Signed(t.Protection)
+                          + "  trust " + Signed(t.Trust)
+                          + "  tribute " + Signed(-t.Tribute)
+                          + "  wars " + Signed(-t.Wars)
+                          + "  rival " + Signed(-t.Rival)
+                          + "  culture " + Signed(-t.Culture)
+                          + "  dread " + Signed(-t.Dread)
+                          + "  => " + t.Target.ToString("0.0");
+            return t.Target;
+        }
 
-            return Clamp(target, 0f, 100f);
+        /// <summary>
+        /// Every term of the Hold target, as magnitudes (the negative terms are subtracted).
+        /// One computation read by the drift, the diagnostic and the weekly telemetry, so a run
+        /// log cannot describe a target the game did not use.
+        /// </summary>
+        public struct HoldTerms
+        {
+            public float Fear, Protection, Trust, Tribute, Wars, Rival, Culture, Dread, Target;
+        }
+
+        public static HoldTerms HoldTermsOf(ModState state, Treaty treaty)
+        {
+            var t = new HoldTerms();
+            var vassal = treaty?.SubordinateParty;
+            var patron = treaty?.DominantParty;
+            if (vassal == null || patron == null) { t.Target = DiplomacyConstants.HoldDefault; return t; }
+
+            t.Fear = Power.Balance(patron, vassal) * DiplomacyConstants.HoldStrengthWeight;
+            t.Dread = Power.Greed(state, patron) * DiplomacyConstants.HoldDreadWeight;
+            t.Protection = Protection(state, treaty, vassal, patron) * DiplomacyConstants.HoldProtectionWeight;
+            t.Trust = TrustRegistry.Get(state, vassal, patron) / 100f * DiplomacyConstants.HoldTrustWeight;
+            t.Tribute = TributeBurden(treaty, vassal) * DiplomacyConstants.HoldTributeBurdenWeight;
+            t.Wars = WarBurden(state, vassal) * DiplomacyConstants.HoldWarBurdenWeight;
+            t.Rival = BestRivalPull(state, vassal, patron) * DiplomacyConstants.HoldRivalWeight;
+            t.Culture = patron.Culture != vassal.Culture ? DiplomacyConstants.HoldCultureMismatchWeight : 0f;
+
+            t.Target = Clamp(DiplomacyConstants.HoldBase + t.Fear + t.Protection + t.Trust
+                             - t.Tribute - t.Wars - t.Rival - t.Culture - t.Dread, 0f, 100f);
+            return t;
         }
 
         /// <summary>
@@ -365,6 +381,15 @@ namespace DiplomacyIntrigue.Diplomacy
                        + (watched > 0 ? ". " + watched + " other vassal(s) took note." : ".");
             Log.Info("Hegemony", summary);
 
+            var rebelNames = new List<string>();
+            for (var i = 0; i < rebels.Count; i++) rebelNames.Add(rebels[i].SubordinateParty.Name.ToString());
+            Telemetry.Event("revolt", "leader", vassal, "patron", patron,
+                "rebels", string.Join("+", rebelNames.ToArray()),
+                "atWar", string.Join("+", fighting.ToArray()),
+                "refused", refused.Count == 0 ? "none" : string.Join("+", refused.ToArray()),
+                "watched", watched, "daysAtBreakingPoint", days,
+                "patronStrength", Power.Strength(patron), "patronGreed", Power.Greed(state, patron));
+
             Announce(rebels.Count > 1
                 ? vassal.Name + " and " + (rebels.Count - 1) + " other vassal(s) throw off " + patron.Name + "."
                 : fighting.Count > 0
@@ -450,6 +475,8 @@ namespace DiplomacyIntrigue.Diplomacy
                 warned++;
             }
 
+            Telemetry.Event("annexation_breach", "patron", patron, "vassal", vassal,
+                "greed", Power.Greed(state, patron), "siblingsWarned", warned);
             Log.Info("Hegemony", patron.Name + " tore up its vassalage with " + vassal.Name
                                  + " to annex it (greed " + Power.Greed(state, patron).ToString("0.00") + ")"
                                  + (warned > 0 ? "; " + warned + " other vassal(s) saw it happen." : "."));
@@ -469,6 +496,7 @@ namespace DiplomacyIntrigue.Diplomacy
             if (treaty.DefianceMarks >= DiplomacyConstants.DefianceMarksToLapse) return;
 
             treaty.ExtendTo(CampaignTime.YearsFromNow(DiplomacyConstants.VassalageYears));
+            Telemetry.Event("vassalage_renewed", "patron", patron, "vassal", vassal, "hold", hold);
             Log.Info("Hegemony", vassal.Name + " renewed its submission to " + patron.Name
                                  + " at hold " + hold.ToString("0.0") + ".");
         }
@@ -493,6 +521,9 @@ namespace DiplomacyIntrigue.Diplomacy
             var siblings = new List<Treaty>();
             CollectVassalages(state, patron, siblings);
 
+            Telemetry.Event("vassalage_collapsed", "patron", patron, "vassal", vassal,
+                "patronEliminated", patron == null || patron.IsEliminated,
+                "vassalEliminated", vassal == null || vassal.IsEliminated);
             TreatyRegistry.Dissolve(state, treaty);
             Log.Info("Hegemony", "Vassalage dissolved: " + (patron?.Name.ToString() ?? "a destroyed patron")
                                  + " no longer holds " + (vassal?.Name.ToString() ?? "a destroyed vassal") + ".");
@@ -537,6 +568,8 @@ namespace DiplomacyIntrigue.Diplomacy
             if (treaty == null || treaty.Type != TreatyType.Vassalage) return;
 
             treaty.AddDefianceMark();
+            Telemetry.Event("defiance_mark", "vassal", treaty.SubordinateParty, "patron", treaty.DominantParty,
+                "marks", treaty.DefianceMarks, "hold", HoldOf(treaty));
             var vassal = treaty.SubordinateParty;
             var patron = treaty.DominantParty;
 
@@ -658,13 +691,19 @@ namespace DiplomacyIntrigue.Diplomacy
         /// vassal is already defending (<see cref="CallToArms.DefendNewVassal"/>).
         /// </summary>
         public static Treaty Submit(ModState state, Kingdom patron, Kingdom vassal, float startingHold,
-            int tributePerPeriod, out string reason)
+            int tributePerPeriod, out string reason, string route = "unknown", float value = -1f,
+            string detail = null)
         {
             var treaty = TreatyRegistry.Sign(state, patron, vassal, TreatyType.Vassalage, out reason,
                 tributePayer: vassal, tributeAmount: tributePerPeriod);
             if (treaty == null) return null;
 
             treaty.SetHold(startingHold);
+
+            Telemetry.Event("vassalage_formed", "patron", patron, "vassal", vassal, "route", route,
+                "startHold", startingHold, "value", value, "tribute", tributePerPeriod,
+                "patronStrength", Power.Strength(patron), "vassalStrength", Power.Strength(vassal),
+                "patronGreed", Power.Greed(state, patron), "terms", detail == null ? "none" : detail.Replace("  ", "|"));
 
             // The oath is new, so the grievances between the two from the last one are answered.
             var settled = ClaimRegistry.SettleBreaches(state, patron, vassal);
@@ -826,7 +865,7 @@ namespace DiplomacyIntrigue.Diplomacy
             TreatyRegistry.RepudiateAlongside(state, best, client);
 
             var moved = Submit(state, suitor, client, DiplomacyConstants.HoldOnVoluntarySubmission,
-                DiplomacyConstants.AiDefaultTributePerPeriod, out var reason);
+                DiplomacyConstants.AiDefaultTributePerPeriod, out var reason, route: "poached", value: bestValue);
             if (moved == null)
             {
                 // CanSign was asked with the old link set aside, so this should not happen.
@@ -869,6 +908,8 @@ namespace DiplomacyIntrigue.Diplomacy
                 warOpened = suitor.IsAtWarWith(oldPatron);
             }
 
+            Telemetry.Event("poach", "suitor", suitor, "vassal", client, "oldPatron", oldPatron,
+                "value", bestValue, "alreadyAtWar", alreadyAtWar, "warOpened", warOpened);
             Log.Info("Hegemony", suitor.Name + " took " + client.Name + " as a vassal from "
                                  + oldPatron.Name + " (submission value " + bestValue.ToString("0") + ")"
                                  + (alreadyAtWar

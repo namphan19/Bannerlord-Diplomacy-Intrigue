@@ -165,6 +165,9 @@ namespace DiplomacyIntrigue.Diplomacy
             }
 
             state.Treaties.Add(treaty);
+            Telemetry.Event("treaty_signed", "type", type, "a", a, "b", b,
+                "subordinate", treaty.SubordinateParty, "tribute", treaty.TributeAmount, "years",
+                DiplomacyConstants.TreatyDurationYears(type));
             NoteDefiantSigning(state, a, b, type);
             NoteDefiantSigning(state, b, a, type);
             Log.Info("Treaty", "Signed: " + treaty
@@ -215,6 +218,7 @@ namespace DiplomacyIntrigue.Diplomacy
             var treaty = new Treaty(state.TakeNextTreatyId(), TreatyType.Truce, a, b,
                 CampaignTime.Now, CampaignTime.YearsFromNow(DiplomacyConstants.TruceYears));
             state.Treaties.Add(treaty);
+            Telemetry.Event("treaty_signed", "type", TreatyType.Truce, "a", a, "b", b, "years", DiplomacyConstants.TruceYears);
             return treaty;
         }
 
@@ -231,6 +235,8 @@ namespace DiplomacyIntrigue.Diplomacy
 
             var victim = treaty.Other(breaker);
             treaty.Close(TreatyStatus.Broken, breaker);
+            Telemetry.Event("treaty_broken", "type", treaty.Type, "breaker", breaker, "victim", victim,
+                "daysInForce", (float)(CampaignTime.Now - treaty.SignedOn).ToDays);
 
             TrustRegistry.OnTreatyBroken(state, treaty, breaker);
             ClaimRegistry.GrantBrokenTreatyClaim(state, victim, breaker);
@@ -262,6 +268,7 @@ namespace DiplomacyIntrigue.Diplomacy
 
             var victim = treaty.Other(breaker);
             treaty.Close(TreatyStatus.Broken, breaker);
+            Telemetry.Event("treaty_repudiated", "type", treaty.Type, "breaker", breaker, "victim", victim);
             Log.Info("Treaty", breaker.Name + " repudiated its " + treaty.Type + " with "
                                + victim.Name + " - no separate charge; the act it belongs to carries the cost.");
         }
@@ -271,6 +278,7 @@ namespace DiplomacyIntrigue.Diplomacy
         {
             if (treaty == null || !treaty.IsActive) return;
             treaty.Close(TreatyStatus.Dissolved);
+            Telemetry.Event("treaty_dissolved", "type", treaty.Type, "a", treaty.PartyA, "b", treaty.PartyB);
             Log.Info("Treaty", "Dissolved by mutual consent: " + treaty);
         }
 
@@ -289,6 +297,8 @@ namespace DiplomacyIntrigue.Diplomacy
                 if (!treaty.IsActive || !treaty.HasRunOut) continue;
 
                 treaty.Close(TreatyStatus.Expired);
+                Telemetry.Event("treaty_expired", "type", treaty.Type, "a", treaty.PartyA, "b", treaty.PartyB,
+                    "hold", treaty.Type == TreatyType.Vassalage ? Hegemony.HoldOf(treaty) : 0f);
                 TrustRegistry.OnTreatyHonoured(state, treaty);
                 Log.Info("Treaty", "Expired, honoured in full: " + treaty);
                 expired++;

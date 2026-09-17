@@ -455,6 +455,48 @@ economic measure (fiefs, prosperity) would describe power better, but a smoothed
 state and an economic one is a new concept with its own balance. Not started; worth deciding
 after run 06 shows how much the swings matter.
 
+### 3d. Run 06 in progress, and the log it writes
+
+Run 06 started 2026-09-16 from `di_phase1_full` and has covered Winter 1136 to Summer 1140 so
+far, in two sessions archived as [run-06-part1.log](balance/run-06-part1.log) and
+[run-06-part2.log](balance/run-06-part2.log) (part 2 continues from the save part 1 ended on).
+It is resumed unattended from **`di_run06_resume`** (Summer 1, 1140; the test hero cured and aged
+35, cheat mode off), launched with `pwsh ./scripts/play.ps1 -Without BirthAndDeath` so the module
+set matches the first two parts, which ran under GABS without that module.
+
+What it showed before the telemetry was extended, from the monitor, not yet analysed:
+
+- The prediction in §3b held exactly: Khuzait revolted after 30 days at breaking point and
+  Southern Empire, Aserai, Vlandia and Sturgia rose with it; Western Empire left through defiance
+  the same day. Battania revolted alone ten months later. Northern Empire's sphere went from
+  seven vassals to none.
+- Western Empire rose first, taking Northern Empire as a vassal (value 90.4); Khuzait followed,
+  taking Battania (68.3, cover 0.97) and then poaching Northern Empire from Western Empire.
+- A coalition answered Southern Empire against Khuzait: Vlandia, Sturgia and Western Empire.
+
+**The log was rebuilt for runs nobody watches** (2026-09-17). Beside the prose it now writes:
+
+| Record | When | What |
+|---|---|---|
+| `[RUN]`, `[CONFIG]` | session launch | build time, settings, and **every constant** in `DiplomacyConstants` |
+| `[SNAPSHOT]` | weekly, and at launch | world totals, as before |
+| `[KINGDOM]` | weekly, per kingdom | live and smoothed strength, dominance, ambition, greed, towns/castles/villages, clans, ruler, influence, gold, weariness, wars, worst exhaustion, patron, vassals, pacts, tribute, trust in and out, last AI move |
+| `[LINK]` | weekly, per vassalage | hold, target and every term of it, marks, revolt line, days at breaking point |
+| `[WAR]` | weekly, per war | exhaustion, score, casualties, fiefs taken, called by |
+| `[EVENT]` | as it happens | `ai_war_declared` (every valuation term, sides, support), `ai_pact_signed` (balancing pull), `war_opened`, `vassalage_formed` (route, value), `poach`, `revolt`, `annexation_breach`, `vassalage_collapsed`/`renewed`, `defiance_mark`, `call_to_arms` (role, outcome, reason), `treaty_signed`/`broken`/`repudiated`/`dissolved`/`expired`, `kingdom_eliminated`, `fief_changed`, `clan_changed_kingdom`, `ruler_changed`, `ruler_died`, `player_died`, `yearly_report` |
+| report file | each campaign year | the full world, with the strength table and every sphere |
+
+Every record is `[KIND] day=<absolute day> date=<Season_D;_Year> key=value ...`, no spaces inside
+a value. Logs kept: 60, up from 10. Verified live on `di_run06_resume`: the header, the weekly
+records, `ai_pact_signed`, `treaty_signed`, `fief_changed` and `war_opened` wrote correctly with
+zero errors, and the analyser read them. `call_to_arms` and the hegemony events were not
+triggered in that check.
+
+`python tools/analyse-log.py <log> [<log> ...]` reads several logs, oldest first, and drops what a
+later log re-covers after a reload. New sections: RUN (flags constants that changed between
+sessions), POWER by year, TOP KINGDOM, AI MOVES, EVENTS, HEGEMONY TIMELINE, FIEFS, COALITIONS,
+ENGINE (rulers, clans, the player), VASSAL LINKS.
+
 ### 3c. Power — the lead's design, built and verified piecewise, unverified in a run
 
 Spec: [design/06-power.md](design/06-power.md). The lead's decisions: strength breeds ambition,
@@ -556,4 +598,5 @@ hegemony) and **titles** (Emperor, Khagan), which sit on top of legitimacy at 2.
 | `diplomacy.submission_value A \| B` | what submitting to B is worth to A, term by term |
 | `diplomacy.ai_week N` | N weeks of AI evaluation plus matching upkeep. Prints its own limitations past 4 weeks |
 | `diplomacy.report` | Telemetry snapshot to the log plus a full world report to file |
-| `tools/analyse-log.py` | Parses a run log into the acceptance numbers: war durations, alliance formation, permanent-war check, casus belli mix. `python tools/analyse-log.py <log>` |
+| `tools/analyse-log.py` | Parses one run, across any number of logs, into the acceptance numbers and the power, hegemony, fief, coalition and engine timelines. `python tools/analyse-log.py <log> [<log> ...]` |
+| `diplomacy.test_set_player_age N` | Test saves only: sets the player hero's age and cures an old-age illness, so a long run does not end on the Game Over screen |

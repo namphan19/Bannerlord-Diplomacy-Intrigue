@@ -1,26 +1,90 @@
-import re, sys, statistics, collections, pathlib
+"""
+Turns one balance run into the numbers the design is judged on.
 
-path = pathlib.Path(sys.argv[1])
-text = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    python tools/analyse-log.py run.log [more.log ...]
+
+A run is often several logs: every game restart opens a new one, and a run resumed from a save
+made midway repeats the days after that save. Logs are read in the order given, and when a log
+starts on a day earlier than the previous one reached, everything the previous logs recorded
+from that day on is discarded - the resumed branch replaces it. Pass the logs oldest first.
+
+Records it reads (all `[KIND] key=value`, one per line):
+  [SNAPSHOT] weekly world totals     [KINGDOM] weekly, one per kingdom
+  [LINK]     weekly, one per vassal  [WAR]     weekly, one per ongoing war
+  [WAR-ENDED] per war                [EVENT]   per decision or engine event
+  [RUN] / [CONFIG] once per session: the build and every constant
+"""
+import re, sys, statistics, collections, pathlib
 
 DAYS_PER_YEAR = 84          # four 21-day seasons
 TARGET_DAYS = 3 * DAYS_PER_YEAR   # "under ~3 years" = 252 days
+SEASONS = {"Spring": 0, "Summer": 1, "Autumn": 2, "Winter": 3}
 
-wars = []
-snaps = []
 
-for line in text:
-    if "[WAR-ENDED]" in line:
-        d = dict(re.findall(r"(\w+)=([^\s]+)", line.split("[WAR-ENDED]", 1)[1]))
-        wars.append(d)
-    elif "[SNAPSHOT]" in line:
-        body = line.split("[SNAPSHOT]", 1)[1]
-        # date= holds spaces; pull it out first, then parse the rest
-        m = re.search(r"date=(.*?)\s+kingdoms=", body)
-        date = m.group(1) if m else "?"
-        d = dict(re.findall(r"(\w+)=([\-\d\.]+)", body[body.index("kingdoms="):]))
-        d["date"] = date
-        snaps.append(d)
+def date_to_day(text):
+    """'Summer 8, 1139' or 'Summer_8;_1139' -> an absolute day, or None."""
+    m = re.match(r"(Spring|Summer|Autumn|Winter)[ _](\d+)[,;]?[ _](\d+)", text or "")
+    if not m:
+        return None
+    return int(m.group(3)) * DAYS_PER_YEAR + SEASONS[m.group(1)] * 21 + int(m.group(2)) - 1
+
+
+def kv(body):
+    return dict(re.findall(r"(\w+)=([^\s]+)", body))
+
+
+records = []     # (day, kind, dict)
+configs = []     # (file, {name: value})
+runs = []        # [RUN] dicts
+
+for name in sys.argv[1:]:
+    lines = pathlib.Path(name).read_text(encoding="utf-8", errors="replace").splitlines()
+    current_day = None
+    file_records = []
+    file_config = {}
+    for line in lines:
+        m = re.search(r"\[(SNAPSHOT|KINGDOM|LINK|WAR|WAR-ENDED|EVENT|RUN|CONFIG)\]", line)
+        if not m:
+            continue
+        kind = m.group(1)
+        body = line[m.end():]
+        if kind == "CONFIG":
+            file_config.update(kv(body))
+            continue
+        if kind == "SNAPSHOT":
+            dm = re.search(r"date=(.*?)\s+kingdoms=", body)
+            d = kv(body[body.index("kingdoms="):]) if "kingdoms=" in body else {}
+            d["date"] = dm.group(1) if dm else "?"
+            day = date_to_day(d["date"])
+        else:
+            d = kv(body)
+            day = int(d["day"]) if "day" in d else date_to_day(d.get("date", "").replace("_", " "))
+        if day is None:
+            day = current_day          # old WAR-ENDED lines carry no date
+        else:
+            current_day = day
+        if kind == "RUN":
+            runs.append(d)
+            continue
+        file_records.append((day, kind, d))
+    if file_records:
+        first = next((r[0] for r in file_records if r[0] is not None), None)
+        if first is not None:
+            records = [r for r in records if r[0] is None or r[0] < first]
+    records.extend(file_records)
+    if file_config:
+        configs.append((name, file_config))
+
+wars = [d for _, k, d in records if k == "WAR-ENDED"]
+snaps = [d for _, k, d in records if k == "SNAPSHOT"]
+# A session launch writes a baseline snapshot; keep one snapshot per date.
+_seen = {}
+for s_ in snaps:
+    _seen[s_["date"]] = s_
+snaps = sorted(_seen.values(), key=lambda x: date_to_day(x["date"]) or 0)
+kingdom_rows = [(day, d) for day, k, d in records if k == "KINGDOM"]
+link_rows = [(day, d) for day, k, d in records if k == "LINK"]
+events = [(day, d) for day, k, d in records if k == "EVENT"]
 
 print("=" * 66)
 print("RUN SIZE")
@@ -158,3 +222,157 @@ if snaps:
     print(f"  weeks with NOBODY at war        : {none_at_war} / {len(snaps)}  ({100*none_at_war/len(snaps):.1f}%)")
     exh = [float(s.get("avgExhaustion", 0)) for s in snaps]
     print(f"  average exhaustion across run   : {statistics.mean(exh):.1f}  (max {max(exh):.1f})")
+
+
+# ================= Everything below needs the 2026-09-17 telemetry =============
+def section(title):
+    print()
+    print("=" * 66)
+    print(title)
+    print("=" * 66)
+
+
+def f(x, default=0.0):
+    try:
+        return float(x)
+    except (TypeError, ValueError):
+        return default
+
+
+if runs or configs:
+    section("RUN")
+    for r in runs:
+        print(f"  session at {r.get('date','?'):<16} mod {r.get('mod','?')} built {r.get('built','?')}"
+              f"  aggressiveness {r.get('aggressiveness','?')}  player {r.get('player','?')}")
+    if len(configs) > 1:
+        base = configs[0][1]
+        for name, cfg in configs[1:]:
+            changed = {k: (base.get(k), v) for k, v in cfg.items() if base.get(k) != v}
+            if changed:
+                print(f"  CONSTANTS CHANGED in {name}: {changed}")
+
+if kingdom_rows:
+    section("POWER  (yearly: live dominance / smoothed / greed / fortifications / vassals)")
+    by_year = collections.defaultdict(dict)
+    for day, d in kingdom_rows:
+        by_year[day // DAYS_PER_YEAR][d["kingdom"]] = d
+    names = sorted({d["kingdom"] for _, d in kingdom_rows})
+    for year in sorted(by_year):
+        row = by_year[year]
+        cells = []
+        for n in names:
+            d = row.get(n)
+            if d is None:
+                cells.append(f"{n[:14]:<14} gone")
+                continue
+            forts = int(f(d.get("towns"))) + int(f(d.get("castles")))
+            cells.append(f"{n[:14]:<14} {f(d.get('dominance')):4.2f}/{f(d.get('smoothedDominance')):4.2f}"
+                         f" g{f(d.get('greed')):3.1f} f{forts:2d} v{int(f(d.get('vassals')))}")
+        print(f"  year {year}:")
+        for c in cells:
+            print(f"      {c}")
+
+    section("TOP KINGDOM OVER TIME")
+    top = collections.Counter()
+    for year in sorted(by_year):
+        best = max(by_year[year].values(), key=lambda d: f(d.get("dominance")))
+        top[best["kingdom"]] += 1
+        print(f"  year {year}: {best['kingdom']:<18} dominance {f(best.get('dominance')):.2f}"
+              f"  smoothed {f(best.get('smoothedDominance')):.2f}  greed {f(best.get('greed')):.2f}")
+
+    section("AI MOVES  (weekly evaluations, per kingdom)")
+    moves = collections.defaultdict(collections.Counter)
+    for _, d in kingdom_rows:
+        moves[d["kingdom"]][d.get("lastMove", "?")] += 1
+    for n in names:
+        print(f"  {n:<18} " + ", ".join(f"{m}={c}" for m, c in moves[n].most_common()))
+
+if events:
+    counts = collections.Counter(d.get("kind") for _, d in events)
+    section("EVENTS  (counts)")
+    for k, n in counts.most_common():
+        print(f"  {k:<26} {n:5d}")
+
+    section("HEGEMONY TIMELINE")
+    wanted = {"vassalage_formed", "poach", "revolt", "annexation_breach", "vassalage_collapsed",
+              "vassalage_renewed", "kingdom_eliminated", "ai_war_declared"}
+    for day, d in events:
+        k = d.get("kind")
+        if k not in wanted:
+            continue
+        if k == "ai_war_declared" and d.get("annexation") != "true":
+            continue
+        date = d.get("date", "?")
+        if k == "vassalage_formed":
+            print(f"  {date:<18} VASSAL   {d.get('vassal')} -> {d.get('patron')} ({d.get('route')}, value {d.get('value')}, hold {d.get('startHold')})")
+        elif k == "poach":
+            print(f"  {date:<18} POACH    {d.get('suitor')} took {d.get('vassal')} from {d.get('oldPatron')} (war opened {d.get('warOpened')})")
+        elif k == "revolt":
+            print(f"  {date:<18} REVOLT   against {d.get('patron')}: {d.get('rebels')} (at war: {d.get('atWar')})")
+        elif k == "annexation_breach":
+            print(f"  {date:<18} ANNEX    {d.get('patron')} turned on {d.get('vassal')} (greed {d.get('greed')})")
+        elif k == "ai_war_declared":
+            print(f"  {date:<18} ANNEXWAR {d.get('kingdom')} -> {d.get('target')} value {d.get('value')} opened {d.get('opened')}")
+        elif k == "vassalage_collapsed":
+            print(f"  {date:<18} COLLAPSE {d.get('vassal')} / {d.get('patron')}")
+        elif k == "vassalage_renewed":
+            print(f"  {date:<18} RENEWED  {d.get('vassal')} -> {d.get('patron')} at hold {d.get('hold')}")
+        elif k == "kingdom_eliminated":
+            print(f"  {date:<18} GONE     {d.get('kingdom')} ({d.get('warsClosed')} wars closed)")
+
+    section("FIEFS  (fortifications gained minus lost, by kingdom)")
+    net = collections.Counter()
+    moved = 0
+    for _, d in events:
+        if d.get("kind") != "fief_changed":
+            continue
+        moved += 1
+        if d.get("from") not in (None, "none"):
+            net[d["from"]] -= 1
+        if d.get("to") not in (None, "none"):
+            net[d["to"]] += 1
+    print(f"  fortifications changing hands: {moved}")
+    for k, n in sorted(net.items(), key=lambda x: -x[1]):
+        print(f"    {k:<20} {n:+d}")
+
+    section("COALITIONS  (call to arms by role and outcome)")
+    cta = collections.Counter((d.get("role"), d.get("outcome")) for _, d in events if d.get("kind") == "call_to_arms")
+    for (role, outcome), n in sorted(cta.items()):
+        print(f"  {role:<8} {outcome:<9} {n:5d}")
+    pulled = [d for _, d in events if d.get("kind") == "ai_pact_signed"]
+    if pulled:
+        with_pull = [d for d in pulled if f(d.get("balancingPull")) > 0]
+        print(f"  AI pacts signed: {len(pulled)}, carrying a balancing pull: {len(with_pull)}")
+        for d in with_pull[:10]:
+            print(f"    {d.get('date','?'):<18} {d.get('kingdom')} + {d.get('partner')} {d.get('type')}"
+                  f" mutual {d.get('mutualValue')} pull {d.get('balancingPull')} against {d.get('against')}")
+    declared = [d for _, d in events if d.get("kind") == "ai_war_declared"]
+    if declared:
+        deterred = sum(1 for d in declared if f(d.get("sideRatio")) < f(d.get("ownRatio")))
+        print(f"  AI wars declared: {len(declared)}; where the target's allies lowered the odds: {deterred}")
+
+    section("ENGINE  (rulers, clans, the player)")
+    for kind in ("ruler_died", "ruler_changed", "player_died"):
+        rows = [d for _, d in events if d.get("kind") == kind]
+        print(f"  {kind:<16} {len(rows)}")
+        for d in rows[:12]:
+            print(f"    {d.get('date','?'):<18} {d.get('kingdom')} {d.get('hero', d.get('ruler'))} {d.get('detail','')}")
+    defect = collections.Counter()
+    for _, d in events:
+        if d.get("kind") == "clan_changed_kingdom":
+            defect[(d.get("from"), d.get("to"))] += 1
+    print(f"  clans changing kingdom: {sum(defect.values())}")
+    for (a, b), n in defect.most_common(12):
+        print(f"    {a} -> {b}: {n}")
+
+if link_rows:
+    section("VASSAL LINKS  (weeks observed, hold min/mean/last, weeks at breaking point)")
+    per = collections.defaultdict(list)
+    for _, d in link_rows:
+        per[(d.get("patron"), d.get("vassal"))].append(d)
+    for (patron, vassal), rows in per.items():
+        holds = [f(r.get("hold")) for r in rows]
+        breaking = sum(1 for r in rows if f(r.get("hold")) < f(r.get("revoltLine")))
+        last = rows[-1]
+        print(f"  {vassal:<18} -> {patron:<18} weeks {len(rows):3d}  hold {min(holds):5.1f}/{statistics.mean(holds):5.1f}/{holds[-1]:5.1f}"
+              f"  breaking {breaking:3d}  last terms fear {last.get('fear')} prot {last.get('protection')} dread {last.get('dread')}")

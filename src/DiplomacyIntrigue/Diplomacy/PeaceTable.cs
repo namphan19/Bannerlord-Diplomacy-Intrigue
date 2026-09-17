@@ -363,7 +363,7 @@ namespace DiplomacyIntrigue.Diplomacy
 
             var startingHold = Hegemony.StartingHoldWhenImposed(state, terms.Winner, terms.Loser);
             var treaty = Hegemony.Submit(state, terms.Winner, terms.Loser,
-                startingHold, terms.TributePerPeriod, out var reason);
+                startingHold, terms.TributePerPeriod, out var reason, route: "imposed");
 
             if (treaty == null)
             {

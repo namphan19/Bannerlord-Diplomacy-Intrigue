@@ -128,6 +128,9 @@ namespace DiplomacyIntrigue.Diplomacy
             return false;
         }
 
+        private static string Role(Treaty treaty, Kingdom party)
+            => IsServingVassal(treaty, party) ? "vassal" : IsProtectingPatron(treaty, party) ? "patron" : "ally";
+
         /// <summary>The vassal's side of a vassalage, as opposed to the patron's.</summary>
         private static bool IsServingVassal(Treaty treaty, Kingdom party)
             => treaty.SubordinatesForeignPolicy && treaty.SubordinateParty == party;
@@ -359,6 +362,8 @@ namespace DiplomacyIntrigue.Diplomacy
             if (joined != null) joined.MarkCalledBy(caller);
 
             TrustRegistry.OnCallToArmsAnswered(state, caller, ally);
+            Telemetry.Event("call_to_arms", "caller", caller, "ally", ally, "enemy", enemy,
+                "treaty", treaty.Type, "role", Role(treaty, ally), "outcome", "answered");
 
             Log.Info("CallToArms", ally.Name + " answered " + caller.Name
                                    + " and declared war on " + enemy.Name + ".");
@@ -376,12 +381,17 @@ namespace DiplomacyIntrigue.Diplomacy
             // vassals, which is not the system this is meant to be.
             if (why != null && why.StartsWith(Excused))
             {
+                Telemetry.Event("call_to_arms", "caller", caller, "ally", ally, "treaty", treaty.Type,
+                    "role", Role(treaty, ally), "outcome", "excused", "reason", why.Substring(Excused.Length));
                 Log.Info("CallToArms", ally.Name + " could not answer " + caller.Name
                                        + " - " + why.Substring(Excused.Length) + ".");
                 return;
             }
 
             TrustRegistry.OnCallToArmsRefused(state, caller, ally);
+            Telemetry.Event("call_to_arms", "caller", caller, "ally", ally, "treaty", treaty.Type,
+                "role", Role(treaty, ally), "outcome", IsServingVassal(treaty, ally) ? "defied" : "refused",
+                "reason", why);
 
             if (IsServingVassal(treaty, ally))
             {

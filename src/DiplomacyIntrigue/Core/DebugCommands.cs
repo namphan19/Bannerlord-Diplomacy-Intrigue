@@ -838,6 +838,37 @@ namespace DiplomacyIntrigue.Core
                    + ", greed " + Power.Greed(state, kingdom).ToString("0.00") + ". Test only - do not save.";
         }
 
+        /// <summary>
+        /// Sets the player hero's age and cures the old-age illness, for keeping a test
+        /// character alive through a long balance run. Written during run 06, when the test
+        /// save's 75-year-old hero with no heir was dying of old age - which ends the game and
+        /// stalls the run. The alternative, turning off the campaign's life and death cycle,
+        /// would have stopped every AI ruler dying too and changed what the run measures.
+        /// Touches nobody else.
+        ///
+        /// Age alone is not enough, as the first attempt found: the engine does not kill the
+        /// main hero outright but makes it ill (AgingCampaignBehavior, verified by IL in
+        /// v1.4.8), and an illness already under way drains hit points until death whatever
+        /// the age. Illness is <c>Campaign.MainHeroIllDays != -1</c>.
+        /// Usage: diplomacy.test_set_player_age 35
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_set_player_age", "diplomacy")]
+        public static string TestSetPlayerAge(List<string> args)
+        {
+            if (Campaign.Current == null || Hero.MainHero == null) return NoCampaign;
+            if (args == null || args.Count == 0 || !int.TryParse(args[0], out var years) || years < 18 || years > 100)
+                return "Usage: diplomacy.test_set_player_age <18-100>";
+
+            var wasIll = Hero.IsMainHeroIll;
+            Hero.MainHero.SetBirthDay(CampaignTime.YearsFromNow(-years));
+            Campaign.Current.MainHeroIllDays = -1;
+            Hero.MainHero.HitPoints = Hero.MainHero.MaxHitPoints;
+
+            return Hero.MainHero.Name + " is now " + Hero.MainHero.Age.ToString("0")
+                   + (wasIll ? ", cured of the illness" : "")
+                   + ", at full health. Test characters only.";
+        }
+
         [CommandLineFunctionality.CommandLineArgumentFunction("strength", "diplomacy")]
         public static string StrengthCommand(List<string> args)
         {

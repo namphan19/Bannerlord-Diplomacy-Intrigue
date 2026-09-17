@@ -119,6 +119,8 @@ namespace DiplomacyIntrigue.Behaviors
                 for (var i = 0; i < remaining.Count; i++)
                     Diplomacy.TreatyRegistry.Dissolve(_state, remaining[i]);
 
+                Telemetry.Event("kingdom_eliminated", "kingdom", destroyed, "warsClosed", wars.Count,
+                    "treatiesDissolved", remaining.Count);
                 Log.Info("Core", destroyed.Name + " no longer exists: " + wars.Count + " war(s) closed, "
                                  + remaining.Count + " other treaty(ies) dissolved.");
             }
@@ -156,6 +158,11 @@ namespace DiplomacyIntrigue.Behaviors
                     Log.Info("Claims", "Settled " + settled + " broken-treaty claim(s) that a later submission had already answered.");
 
                 Log.Info("Core", "Session launched.");
+
+                // Which build and which numbers produced this log, then a baseline of the world
+                // as it loaded - so a run's first week has something to be compared with.
+                Telemetry.WriteRunHeader(_state);
+                if (Settings.Current.EnableTelemetry) Telemetry.WriteSnapshot(_state);
             }
             catch (Exception ex)
             {
@@ -202,6 +209,8 @@ namespace DiplomacyIntrigue.Behaviors
                 var cb = CasusBelli.Resolve(_state, a, d, detail);
 
                 _state.Wars.Add(new WarRecord(a, d, cb));
+                Telemetry.Event("war_opened", "aggressor", a, "defender", d, "detail", detail,
+                    "casusBelli", cb, "legitimacy", CasusBelli.Legitimacy(cb));
                 Log.Info("Core", "War opened: " + a.Name + " -> " + d.Name + " (" + detail + " => " + cb
                                  + ", legitimacy " + CasusBelli.Legitimacy(cb).ToString("0.00") + ").");
             }

@@ -1,0 +1,292 @@
+﻿23:03:24.532 [INFO] (Log) Diplomacy & Intrigue 0.1.0 log opened.
+23:03:24.536 [INFO] (SubModule) OnSubModuleLoad begin. host=Bannerlord.BLSE.Standalone modules=[Bannerlord.Harmony,Bannerlord.ButterLib,Bannerlord.UIExtenderEx,Bannerlord.MBOptionScreen,Bannerlord.GABS,Native,SandBoxCore,CustomBattle,Sandbox,StoryMode,DiplomacyIntrigue]
+23:03:24.601 [INFO] (UI) Kingdom screen extensions registered.
+23:03:24.601 [INFO] (SubModule) OnSubModuleLoad complete. Harmony patches applied.
+23:03:28.530 [INFO] (Notify) Diplomacy & Intrigue v0.1.0 loaded. Press Ctrl+D on the map.
+23:03:36.286 [INFO] (SubModule) Diplomacy game models registered: kingdom decisions, peace, alliances, trade agreements.
+23:03:36.287 [INFO] (SubModule) Campaign behaviors registered.
+23:03:37.469 [INFO] (State) Loaded: 757 treaties, 443 war records, 5 weariness entries, 35 claims, 436 fief records, 56 trust records, schema v4.
+23:03:40.470 [INFO] (Claims) Settled 1 broken-treaty claim(s) that a later submission had already answered.
+23:03:40.470 [INFO] (Core) Session launched.
+23:04:01.942 [INFO] (Telemetry) [SNAPSHOT] date=Winter 14, 1136 kingdoms=8 atWar=2 wars=1 warsChosen=1 warsObligation=0 avgWarDays=106 longestWarDays=106 avgExhaustion=41.5 claims=34 trustRecords=56 fabrications=0 vanillaWarsRefused=0 hegemons=1 vassalLinks=7 avgHold=30.3 defianceMarks=6 tributePaid=0 tributeWithheld=0 topKingdom=Khuzait topDominance=1.59 greedy=0 annexationWars=0 vanillaPeaceRefused=0 vanillaAlliancesRefused=0 vanillaTradeRefused=0 vanillaCallToWarRefused=0 nonAggressionPact=2 truce=2 defensivePact=3 alliance=1 tributaryPact=1 vassalage=7
+23:04:01.946 [INFO] (Telemetry) Report written to C:\Users\nambi\Documents\Mount and Blade II Bannerlord\DiplomacyIntrigue\Reports\report-20260916-230401.txt
+23:04:27.719 [INFO] (Telemetry) [SNAPSHOT] date=Winter 15, 1136 kingdoms=8 atWar=2 wars=1 warsChosen=1 warsObligation=0 avgWarDays=107 longestWarDays=107 avgExhaustion=41.9 claims=34 trustRecords=56 fabrications=0 vanillaWarsRefused=0 hegemons=1 vassalLinks=7 avgHold=29.9 defianceMarks=6 tributePaid=0 tributeWithheld=0 topKingdom=Khuzait topDominance=1.59 greedy=0 annexationWars=0 vanillaPeaceRefused=2 vanillaAlliancesRefused=0 vanillaTradeRefused=0 vanillaCallToWarRefused=0 nonAggressionPact=2 truce=2 defensivePact=3 alliance=1 tributaryPact=1 vassalage=7
+23:04:38.336 [INFO] (Hegemony) Sturgia withheld its tribute from Northern Empire (hold 33.7).
+23:04:38.336 [INFO] (Hegemony) Sturgia defied Northern Empire (mark 1 of 2, hold 33.7).
+23:04:49.013 [INFO] (Hegemony) Khuzait withheld its tribute from Northern Empire (hold 23.9).
+23:04:49.013 [INFO] (Hegemony) Khuzait defied Northern Empire (mark 1 of 2, hold 23.9).
+23:04:49.013 [INFO] (Hegemony) Battania withheld its tribute from Northern Empire (hold 24.8).
+23:04:49.013 [INFO] (Hegemony) Battania defied Northern Empire (mark 1 of 2, hold 24.8).
+23:04:49.013 [INFO] (Hegemony) Southern Empire withheld its tribute from Northern Empire (hold 27.8).
+23:04:49.013 [INFO] (Hegemony) Southern Empire defied Northern Empire (mark 3 of 2, hold 27.8).
+23:04:59.678 [INFO] (Hegemony) Aserai withheld its tribute from Northern Empire (hold 22.7).
+23:04:59.678 [INFO] (Hegemony) Aserai defied Northern Empire (mark 3 of 2, hold 22.7).
+23:05:05.014 [INFO] (Hegemony) Vlandia withheld its tribute from Northern Empire (hold 26.1).
+23:05:05.014 [INFO] (Hegemony) Vlandia defied Northern Empire (mark 3 of 2, hold 26.1).
+23:05:05.016 [INFO] (Telemetry) [SNAPSHOT] date=Spring 1, 1137 kingdoms=8 atWar=2 wars=1 warsChosen=1 warsObligation=0 avgWarDays=114 longestWarDays=114 avgExhaustion=44.1 claims=34 trustRecords=56 fabrications=0 vanillaWarsRefused=0 hegemons=1 vassalLinks=7 avgHold=28.8 defianceMarks=12 tributePaid=2 tributeWithheld=6 topKingdom=Khuzait topDominance=1.58 greedy=0 annexationWars=0 vanillaPeaceRefused=9 vanillaAlliancesRefused=12 vanillaTradeRefused=12 vanillaCallToWarRefused=0 nonAggressionPact=2 truce=2 defensivePact=3 alliance=1 tributaryPact=1 vassalage=7
+23:05:15.672 [INFO] (Hegemony) Sturgia withheld its tribute from Northern Empire (hold 33.6).
+23:05:31.681 [INFO] (Hegemony) Khuzait withheld its tribute from Northern Empire (hold 17.5).
+23:05:31.681 [INFO] (Hegemony) Battania withheld its tribute from Northern Empire (hold 32.8).
+23:05:31.681 [INFO] (Hegemony) Southern Empire withheld its tribute from Northern Empire (hold 28.3).
+23:05:42.342 [INFO] (Hegemony) Aserai withheld its tribute from Northern Empire (hold 30.7).
+23:05:42.344 [INFO] (Telemetry) [SNAPSHOT] date=Spring 8, 1137 kingdoms=8 atWar=2 wars=1 warsChosen=1 warsObligation=0 avgWarDays=121 longestWarDays=121 avgExhaustion=46.3 claims=34 trustRecords=56 fabrications=0 vanillaWarsRefused=0 hegemons=1 vassalLinks=7 avgHold=30.8 defianceMarks=12 tributePaid=4 tributeWithheld=11 topKingdom=Khuzait topDominance=1.57 greedy=0 annexationWars=0 vanillaPeaceRefused=19 vanillaAlliancesRefused=20 vanillaTradeRefused=23 vanillaCallToWarRefused=0 nonAggressionPact=2 truce=2 defensivePact=3 alliance=1 tributaryPact=1 vassalage=7
+23:05:47.681 [INFO] (Hegemony) Vlandia withheld its tribute from Northern Empire (hold 26.4).
+23:05:53.009 [INFO] (Treaty) Expired, honoured in full: TributaryPact(Khuzait / Northern Empire, Expired)
+23:05:53.009 [INFO] (Hegemony) Sturgia withheld its tribute from Northern Empire (hold 34.2).
+23:06:14.348 [INFO] (Hegemony) Khuzait withheld its tribute from Northern Empire (hold 18.4).
+23:06:14.348 [INFO] (Hegemony) Southern Empire withheld its tribute from Northern Empire (hold 28.7).
+23:06:19.676 [INFO] (Treaty) Expired, honoured in full: DefensivePact(Sturgia / Northern Empire, Expired)
+23:06:19.678 [INFO] (Telemetry) [SNAPSHOT] date=Spring 15, 1137 kingdoms=8 atWar=2 wars=1 warsChosen=1 warsObligation=0 avgWarDays=128 longestWarDays=128 avgExhaustion=48.5 claims=33 trustRecords=56 fabrications=0 vanillaWarsRefused=0 hegemons=1 vassalLinks=7 avgHold=32.1 defianceMarks=12 tributePaid=6 tributeWithheld=15 topKingdom=Khuzait topDominance=1.56 greedy=0 annexationWars=0 vanillaPeaceRefused=31 vanillaAlliancesRefused=27 vanillaTradeRefused=36 vanillaCallToWarRefused=0 nonAggressionPact=2 truce=2 defensivePact=2 alliance=1 tributaryPact=0 vassalage=7
+23:06:25.021 [INFO] (Hegemony) Aserai withheld its tribute from Northern Empire (hold 33.2).
+23:06:25.022 [INFO] (Hegemony) Vlandia withheld its tribute from Northern Empire (hold 25.9).
+23:06:30.349 [INFO] (Hegemony) Sturgia withheld its tribute from Northern Empire (hold 33.4).
+23:06:51.674 [INFO] (Treaty) Signed: DefensivePact(Sturgia / Northern Empire, Active)
+23:06:51.674 [INFO] (AI) Sturgia signed a DefensivePact with Northern Empire (mutual value 61).
+23:06:57.009 [INFO] (Hegemony) Khuzait withheld its tribute from Northern Empire (hold 18.4).
+23:06:57.009 [INFO] (Hegemony) Southern Empire withheld its tribute from Northern Empire (hold 28.1).
+23:06:57.012 [INFO] (Telemetry) [SNAPSHOT] date=Summer 1, 1137 kingdoms=8 atWar=2 wars=1 warsChosen=1 warsObligation=0 avgWarDays=135 longestWarDays=135 avgExhaustion=50.8 claims=33 trustRecords=56 fabrications=0 vanillaWarsRefused=0 hegemons=1 vassalLinks=7 avgHold=31.7 defianceMarks=12 tributePaid=8 tributeWithheld=20 topKingdom=Khuzait topDominance=1.56 greedy=0 annexationWars=0 vanillaPeaceRefused=41 vanillaAlliancesRefused=38 vanillaTradeRefused=46 vanillaCallToWarRefused=0 nonAggressionPact=2 truce=2 defensivePact=3 alliance=1 tributaryPact=0 vassalage=7
+23:07:07.688 [INFO] (Treaty) Khuzait broke Vassalage with Northern Empire - Northern Empire now has a casus belli.
+23:07:07.689 [INFO] (Treaty) Southern Empire broke Vassalage with Northern Empire - Northern Empire now has a casus belli.
+23:07:07.689 [INFO] (Treaty) Aserai broke Vassalage with Northern Empire - Northern Empire now has a casus belli.
+23:07:07.689 [INFO] (Treaty) Vlandia broke Vassalage with Northern Empire - Northern Empire now has a casus belli.
+23:07:07.689 [INFO] (Treaty) Vlandia repudiated its NonAggressionPact with Northern Empire - no separate charge; the act it belongs to carries the cost.
+23:07:07.689 [INFO] (Treaty) Sturgia broke Vassalage with Northern Empire - Northern Empire now has a casus belli.
+23:07:07.690 [INFO] (Treaty) Sturgia repudiated its DefensivePact with Northern Empire - no separate charge; the act it belongs to carries the cost.
+23:07:07.696 [INFO] (Hegemony) Western Empire defied Northern Empire (mark 1 of 2, hold 31.7).
+23:07:07.697 [INFO] (Core) War opened: Khuzait -> Northern Empire (CausedByKingdomDecision => Conquest, legitimacy 0.20).
+23:07:07.703 [INFO] (Hegemony) Western Empire defied Northern Empire (mark 2 of 2, hold 31.7).
+23:07:07.703 [INFO] (CallToArms) Western Empire defied its patron Northern Empire once too often - vassalage broken.
+23:07:07.703 [INFO] (Treaty) Western Empire broke Vassalage with Northern Empire - Northern Empire now has a casus belli.
+23:07:07.703 [INFO] (Core) War opened: Southern Empire -> Northern Empire (CausedByKingdomDecision => ReclaimAncestralLand, legitimacy 0.70).
+23:07:07.706 [INFO] (Core) War opened: Vlandia -> Northern Empire (CausedByCallToWarAgreement => DefendAlly, legitimacy 1.00).
+23:07:07.707 [INFO] (CallToArms) Vlandia answered Aserai and declared war on Northern Empire.
+23:07:07.707 [INFO] (Core) War opened: Aserai -> Northern Empire (CausedByKingdomDecision => Conquest, legitimacy 0.20).
+23:07:07.708 [INFO] (CallToArms) Battania could not answer Northern Empire - spent (exhaustion 57.3).
+23:07:07.709 [INFO] (CallToArms) Battania could not answer Northern Empire - spent (exhaustion 57.3).
+23:07:07.709 [INFO] (Core) War opened: Sturgia -> Northern Empire (CausedByKingdomDecision => Conquest, legitimacy 0.20).
+23:07:07.710 [INFO] (Hegemony) Khuzait renounced Northern Empire after 30 days at breaking point, and 4 other vassal(s) rose with it. At war for independence: Khuzait, Southern Empire, Aserai, Vlandia, Sturgia. 2 other vassal(s) took note.
+23:07:18.346 [INFO] (Treaty) Signed: Alliance(Southern Empire / Vlandia, Active)
+23:07:18.346 [INFO] (AI) Southern Empire signed a Alliance with Vlandia (mutual value 103).
+23:07:23.679 [INFO] (Treaty) Signed: Alliance(Aserai / Southern Empire, Active)
+23:07:23.679 [INFO] (AI) Aserai signed a Alliance with Southern Empire (mutual value 87).
+23:07:29.022 [INFO] (Treaty) Signed: Alliance(Sturgia / Southern Empire, Active)
+23:07:29.022 [INFO] (AI) Sturgia signed a Alliance with Southern Empire (mutual value 76).
+23:07:34.353 [INFO] (Treaty) Signed: NonAggressionPact(Northern Empire / Western Empire, Active)
+23:07:34.353 [INFO] (AI) Northern Empire signed a NonAggressionPact with Western Empire (mutual value 37).
+23:07:34.354 [INFO] (Core) War opened: Southern Empire -> Battania (CausedByCallToWarAgreement => DefendAlly, legitimacy 1.00).
+23:07:34.356 [INFO] (CallToArms) Southern Empire answered Vlandia and declared war on Battania.
+23:07:34.356 [INFO] (Core) War opened: Vlandia -> Battania (CausedByKingdomDecision => ReclaimAncestralLand, legitimacy 0.70).
+23:07:34.357 [INFO] (AI) Vlandia declared war on Battania (ReclaimAncestralLand, legitimacy 0.70, value 79, cost 58 influence).
+23:07:34.357 [INFO] (Hegemony) Battania withheld its tribute from Northern Empire (hold 38.4).
+23:07:34.357 [INFO] (Hegemony) Battania defied Northern Empire (mark 2 of 2, hold 38.4).
+23:07:34.358 [INFO] (Telemetry) [SNAPSHOT] date=Summer 8, 1137 kingdoms=8 atWar=7 wars=8 warsChosen=6 warsObligation=2 avgWarDays=21 longestWarDays=142 avgExhaustion=8.4 claims=40 trustRecords=56 fabrications=0 vanillaWarsRefused=0 hegemons=1 vassalLinks=1 avgHold=38.4 defianceMarks=2 tributePaid=8 tributeWithheld=21 topKingdom=Khuzait topDominance=1.57 greedy=0 annexationWars=0 vanillaPeaceRefused=78 vanillaAlliancesRefused=50 vanillaTradeRefused=55 vanillaCallToWarRefused=0 nonAggressionPact=2 truce=2 defensivePact=2 alliance=4 tributaryPact=0 vassalage=1
+23:07:39.677 [INFO] (Treaty) Signed: Alliance(Khuzait / Aserai, Active)
+23:07:39.678 [INFO] (AI) Khuzait signed a Alliance with Aserai (mutual value 77).
+23:07:45.013 [INFO] (Core) War opened: Western Empire -> Battania (CausedByKingdomDecision => Conquest, legitimacy 0.20).
+23:07:45.014 [INFO] (AI) Western Empire declared war on Battania (Conquest, legitimacy 0.20, value 54, cost 72 influence).
+23:08:06.354 [INFO] (Treaty) Signed: Alliance(Sturgia / Aserai, Active)
+23:08:06.354 [INFO] (AI) Sturgia signed a Alliance with Aserai (mutual value 71).
+23:08:06.354 [INFO] (Treaty) Expired, honoured in full: Truce(Sturgia / Aserai, Expired)
+23:08:11.679 [INFO] (Telemetry) [SNAPSHOT] date=Summer 15, 1137 kingdoms=8 atWar=8 wars=9 warsChosen=7 warsObligation=2 avgWarDays=25 longestWarDays=149 avgExhaustion=11.8 claims=44 trustRecords=56 fabrications=0 vanillaWarsRefused=0 hegemons=1 vassalLinks=1 avgHold=39.7 defianceMarks=2 tributePaid=8 tributeWithheld=21 topKingdom=Khuzait topDominance=1.64 greedy=0 annexationWars=0 vanillaPeaceRefused=130 vanillaAlliancesRefused=66 vanillaTradeRefused=65 vanillaCallToWarRefused=0 nonAggressionPact=2 truce=1 defensivePact=2 alliance=6 tributaryPact=0 vassalage=1
+23:08:14.028 [INFO] (Claims) Northern Empire now has a claim to retake Atrion Castle from Southern Empire.
+23:08:22.350 [INFO] (Treaty) Signed: Alliance(Western Empire / Southern Empire, Active)
+23:08:22.350 [INFO] (AI) Western Empire signed a Alliance with Southern Empire (mutual value 78).
+23:08:35.908 [INFO] (Claims) Northern Empire now has a claim to retake Amprela from Khuzait.
+23:08:49.021 [INFO] (Telemetry) [SNAPSHOT] date=Autumn 1, 1137 kingdoms=8 atWar=8 wars=9 warsChosen=7 warsObligation=2 avgWarDays=32 longestWarDays=156 avgExhaustion=16.5 claims=45 trustRecords=56 fabrications=0 vanillaWarsRefused=0 hegemons=1 vassalLinks=1 avgHold=44.7 defianceMarks=2 tributePaid=9 tributeWithheld=21 topKingdom=Khuzait topDominance=1.68 greedy=0 annexationWars=0 vanillaPeaceRefused=178 vanillaAlliancesRefused=85 vanillaTradeRefused=80 vanillaCallToWarRefused=0 nonAggressionPact=2 truce=1 defensivePact=2 alliance=7 tributaryPact=0 vassalage=1
+23:08:59.690 [INFO] (Treaty) Signed: DefensivePact(Western Empire / Southern Empire, Active)
+23:08:59.690 [INFO] (AI) Western Empire signed a DefensivePact with Southern Empire (mutual value 68).
+23:09:05.014 [INFO] (Treaty) Truce recorded until Autumn 4, 1138 between Aserai and Battania.
+23:09:05.016 [INFO] (Telemetry) [WAR-ENDED] endedBy=PeaceTable terms=white_peace aggressor=Aserai defender=Battania days=159 casusBelli=ReclaimAncestralLand finalScore=-10.7 exhaustion=52.0/66.1 fiefsTaken=1/0 calledBy=none
+23:09:05.016 [INFO] (Core) War closed after 159 days: Aserai vs Battania [ReclaimAncestralLand] score=-10.71 exhaustion=52.03/66.11 | weariness now Aserai=26.4, Battania=34.3.
+23:09:05.022 [INFO] (Peace) Aserai and Battania made peace: white peace.
+23:09:05.023 [INFO] (AI) Battania sued for peace with Aserai at exhaustion 66.1: white peace.
+23:09:08.482 [INFO] (Claims) Battania now has a claim to retake Marunath from Vlandia.
+23:09:13.123 [INFO] (Claims) Battania now has a claim to retake Ataconia Castle from Southern Empire.
+23:09:14.028 [INFO] (Claims) Northern Empire now has a claim to retake Epicrotea from Sturgia.
+23:09:26.352 [INFO] (Telemetry) [SNAPSHOT] date=Autumn 8, 1137 kingdoms=8 atWar=8 wars=8 warsChosen=6 warsObligation=2 avgWarDays=24 longestWarDays=26 avgExhaustion=19.0 claims=48 trustRecords=56 fabrications=0 vanillaWarsRefused=0 hegemons=1 vassalLinks=1 avgHold=43.3 defianceMarks=2 tributePaid=10 tributeWithheld=21 topKingdom=Khuzait topDominance=1.77 greedy=0 annexationWars=0 vanillaPeaceRefused=232 vanillaAlliancesRefused=95 vanillaTradeRefused=91 vanillaCallToWarRefused=0 nonAggressionPact=2 truce=2 defensivePact=3 alliance=7 tributaryPact=0 vassalage=1
+23:09:31.681 [INFO] (Treaty) Expired, honoured in full: Truce(Sturgia / Vlandia, Expired)
+23:10:01.807 [INFO] (Claims) Battania now has a claim to retake Gersegos Castle from Southern Empire.
+23:10:03.684 [INFO] (Telemetry) [SNAPSHOT] date=Autumn 15, 1137 kingdoms=8 atWar=8 wars=8 warsChosen=6 warsObligation=2 avgWarDays=31 longestWarDays=33 avgExhaustion=23.7 claims=50 trustRecords=56 fabrications=0 vanillaWarsRefused=2 hegemons=1 vassalLinks=1 avgHold=39.9 defianceMarks=2 tributePaid=11 tributeWithheld=21 topKingdom=Khuzait topDominance=1.84 greedy=0 annexationWars=0 vanillaPeaceRefused=286 vanillaAlliancesRefused=103 vanillaTradeRefused=96 vanillaCallToWarRefused=0 nonAggressionPact=2 truce=1 defensivePact=3 alliance=7 tributaryPact=0 vassalage=1
+23:10:05.472 [INFO] (Claims) Northern Empire now has a claim to retake Rhesos Castle from Sturgia.
+23:10:13.203 [INFO] (Claims) Battania now has a claim to retake Lageta from Western Empire.
+23:10:14.352 [INFO] (Hegemony) Battania withheld its tribute from Northern Empire (hold 37.9).
+23:10:14.353 [INFO] (Hegemony) Battania defied Northern Empire (mark 3 of 2, hold 37.9).
+23:11:26.910 [INFO] (Claims) Battania now has a claim to retake Marunath from Vlandia.
+23:11:41.345 [INFO] (Treaty) Truce recorded until Winter 1, 1138 between Sturgia and Northern Empire.
+23:11:41.346 [INFO] (Telemetry) [WAR-ENDED] endedBy=PeaceTable terms=tributary_pact_at_500_per_period,_release_prisoners aggressor=Sturgia defender=Northern_Empire days=40 casusBelli=Conquest finalScore=100.0 exhaustion=18.7/65.7 fiefsTaken=2/0 calledBy=none
+23:11:41.346 [INFO] (Core) War closed after 40 days: Sturgia vs Northern Empire [Conquest] score=100.00 exhaustion=18.72/65.67 | weariness now Sturgia=2.7, Northern Empire=32.8.
+23:11:41.348 [INFO] (Treaty) Signed: TributaryPact(Sturgia / Northern Empire, Active) tribute 500 from Northern Empire every 7 days
+23:11:41.348 [INFO] (Peace) Sturgia and Northern Empire made peace: tributary pact at 500 per period; release prisoners.
+23:11:41.348 [INFO] (AI) Northern Empire bought peace from Sturgia at exhaustion 64.6: tributary pact at 500 per period; release prisoners.
+23:11:41.351 [INFO] (Telemetry) [SNAPSHOT] date=Winter 1, 1137 kingdoms=8 atWar=7 wars=7 warsChosen=5 warsObligation=2 avgWarDays=38 longestWarDays=40 avgExhaustion=27.5 claims=52 trustRecords=56 fabrications=0 vanillaWarsRefused=2 hegemons=1 vassalLinks=1 avgHold=32.9 defianceMarks=3 tributePaid=11 tributeWithheld=22 topKingdom=Khuzait topDominance=1.90 greedy=0 annexationWars=0 vanillaPeaceRefused=331 vanillaAlliancesRefused=117 vanillaTradeRefused=108 vanillaCallToWarRefused=0 nonAggressionPact=2 truce=2 defensivePact=3 alliance=7 tributaryPact=1 vassalage=1
+23:11:51.059 [INFO] (Claims) Northern Empire now has a claim to retake Myzea from Southern Empire.
+23:11:57.344 [INFO] (Treaty) Truce recorded until Winter 4, 1138 between Southern Empire and Battania.
+23:11:57.344 [INFO] (Telemetry) [WAR-ENDED] endedBy=FollowerRelease terms=released_by_Vlandia aggressor=Southern_Empire defender=Battania days=38 casusBelli=DefendAlly finalScore=2.5 exhaustion=14.2/26.2 fiefsTaken=2/0 calledBy=Vlandia
+23:11:57.344 [INFO] (Core) War closed after 38 days: Southern Empire vs Battania [DefendAlly] score=2.45 exhaustion=14.21/26.23 | weariness now Southern Empire=0.0, Battania=22.4.
+23:11:57.345 [INFO] (CallToArms) Southern Empire leaves the war against Battania now that Vlandia has made peace.
+23:11:57.345 [INFO] (Treaty) Truce recorded until Winter 4, 1138 between Vlandia and Battania.
+23:11:57.346 [INFO] (Telemetry) [WAR-ENDED] endedBy=PeaceTable terms=cede_Uthelaim_Castle,_release_prisoners aggressor=Vlandia defender=Battania days=38 casusBelli=ReclaimAncestralLand finalScore=37.6 exhaustion=22.1/61.4 fiefsTaken=2/0 calledBy=none
+23:11:57.346 [INFO] (Core) War closed after 38 days: Vlandia vs Battania [ReclaimAncestralLand] score=37.57 exhaustion=22.12/61.42 | weariness now Vlandia=16.6, Battania=53.2.
+23:11:57.371 [INFO] (Peace) Vlandia and Battania made peace: cede Uthelaim Castle; release prisoners.
+23:11:57.371 [INFO] (AI) Battania bought peace from Vlandia at exhaustion 61.3: cede Uthelaim Castle; release prisoners.
+23:11:57.372 [INFO] (Hegemony) Battania withheld its tribute from Northern Empire (hold 29.9).
+23:12:08.027 [INFO] (Treaty) Truce recorded until Winter 6, 1138 between Vlandia and Northern Empire.
+23:12:08.027 [INFO] (Telemetry) [WAR-ENDED] endedBy=FollowerRelease terms=released_by_Aserai aggressor=Vlandia defender=Northern_Empire days=45 casusBelli=DefendAlly finalScore=-8.0 exhaustion=13.8/13.9 fiefsTaken=0/0 calledBy=Aserai
+23:12:08.028 [INFO] (Core) War closed after 45 days: Vlandia vs Northern Empire [DefendAlly] score=-8.02 exhaustion=13.77/13.90 | weariness now Vlandia=15.9, Northern Empire=29.7.
+23:12:08.029 [INFO] (CallToArms) Vlandia leaves the war against Northern Empire now that Aserai has made peace.
+23:12:08.029 [INFO] (Treaty) Truce recorded until Winter 6, 1138 between Northern Empire and Aserai.
+23:12:08.029 [INFO] (Telemetry) [WAR-ENDED] endedBy=Dormant terms=white_peace aggressor=Aserai defender=Northern_Empire days=45 casusBelli=Conquest finalScore=0.0 exhaustion=13.5/13.5 fiefsTaken=0/0 calledBy=none
+23:12:08.029 [INFO] (Core) War closed after 45 days: Aserai vs Northern Empire [Conquest] score=0.00 exhaustion=13.50/13.50 | weariness now Northern Empire=29.7, Aserai=16.6.
+23:12:08.030 [INFO] (Peace) Northern Empire and Aserai made peace: white peace.
+23:12:08.030 [INFO] (AI) Aserai and Northern Empire let a dormant war lapse after 45 days and 0 casualties between them.
+23:12:13.358 [INFO] (Core) War opened: Sturgia -> Battania (CausedByKingdomDecision => Conquest, legitimacy 0.20).
+23:12:13.360 [INFO] (AI) Sturgia declared war on Battania (Conquest, legitimacy 0.20, value 64, cost 73 influence).
+23:12:18.700 [INFO] (Treaty) Truce recorded until Winter 8, 1138 between Southern Empire and Northern Empire.
+23:12:18.701 [INFO] (Telemetry) [WAR-ENDED] endedBy=PeaceTable terms=tributary_pact_at_500_per_period,_release_prisoners aggressor=Southern_Empire defender=Northern_Empire days=47 casusBelli=ReclaimAncestralLand finalScore=100.0 exhaustion=21.0/71.3 fiefsTaken=2/0 calledBy=none
+23:12:18.701 [INFO] (Core) War closed after 47 days: Southern Empire vs Northern Empire [ReclaimAncestralLand] score=100.00 exhaustion=20.95/71.32 | weariness now Southern Empire=10.5, Northern Empire=64.2.
+23:12:18.704 [INFO] (Treaty) Signed: TributaryPact(Southern Empire / Northern Empire, Active) tribute 500 from Northern Empire every 7 days
+23:12:18.704 [INFO] (Peace) Southern Empire and Northern Empire made peace: tributary pact at 500 per period; release prisoners.
+23:12:18.704 [INFO] (AI) Northern Empire bought peace from Southern Empire at exhaustion 71.3: tributary pact at 500 per period; release prisoners.
+23:12:18.705 [INFO] (Core) War opened: Aserai -> Western Empire (CausedByCallToWarAgreement => DefendAlly, legitimacy 1.00).
+23:12:18.706 [INFO] (CallToArms) Aserai answered Vlandia and declared war on Western Empire.
+23:12:18.706 [INFO] (Core) War opened: Vlandia -> Western Empire (CausedByKingdomDecision => ReclaimAncestralLand, legitimacy 0.70).
+23:12:18.707 [INFO] (AI) Vlandia declared war on Western Empire (ReclaimAncestralLand, legitimacy 0.70, value 78, cost 59 influence).
+23:12:18.710 [INFO] (Telemetry) [SNAPSHOT] date=Winter 8, 1137 kingdoms=8 atWar=7 wars=5 warsChosen=4 warsObligation=1 avgWarDays=18 longestWarDays=47 avgExhaustion=16.4 claims=55 trustRecords=56 fabrications=0 vanillaWarsRefused=5 hegemons=1 vassalLinks=1 avgHold=25.9 defianceMarks=3 tributePaid=12 tributeWithheld=23 topKingdom=Khuzait topDominance=1.86 greedy=0 annexationWars=0 vanillaPeaceRefused=381 vanillaAlliancesRefused=129 vanillaTradeRefused=118 vanillaCallToWarRefused=0 nonAggressionPact=2 truce=7 defensivePact=3 alliance=7 tributaryPact=2 vassalage=1
+23:12:34.713 [INFO] (Hegemony) Battania withheld its tribute from Northern Empire (hold 22.9).
+23:12:40.039 [INFO] (Core) War opened: Vlandia -> Khuzait (CausedByCallToWarAgreement => DefendAlly, legitimacy 1.00).
+23:12:40.040 [INFO] (CallToArms) Vlandia answered Southern Empire and declared war on Khuzait.
+23:12:40.040 [INFO] (Core) War opened: Sturgia -> Khuzait (CausedByCallToWarAgreement => DefendAlly, legitimacy 1.00).
+23:12:40.041 [INFO] (CallToArms) Sturgia answered Southern Empire and declared war on Khuzait.
+23:12:40.041 [INFO] (Core) War opened: Western Empire -> Khuzait (CausedByCallToWarAgreement => DefendAlly, legitimacy 1.00).
+23:12:40.043 [INFO] (CallToArms) Western Empire answered Southern Empire and declared war on Khuzait.
+23:12:40.043 [INFO] (Core) War opened: Southern Empire -> Khuzait (CausedByKingdomDecision => ReclaimAncestralLand, legitimacy 0.70).
+23:12:40.044 [INFO] (AI) Southern Empire declared war on Khuzait (ReclaimAncestralLand, legitimacy 0.70, value 82, cost 57 influence).
+23:12:52.271 [INFO] (Claims) Northern Empire now has a claim to retake Argoron from Khuzait.
+23:12:56.076 [INFO] (Telemetry) [SNAPSHOT] date=Winter 15, 1137 kingdoms=8 atWar=8 wars=9 warsChosen=5 warsObligation=4 avgWarDays=15 longestWarDays=54 avgExhaustion=12.0 claims=55 trustRecords=56 fabrications=0 vanillaWarsRefused=6 hegemons=1 vassalLinks=1 avgHold=18.9 defianceMarks=3 tributePaid=14 tributeWithheld=24 topKingdom=Khuzait topDominance=1.80 greedy=0 annexationWars=0 vanillaPeaceRefused=417 vanillaAlliancesRefused=146 vanillaTradeRefused=125 vanillaCallToWarRefused=0 nonAggressionPact=2 truce=7 defensivePact=3 alliance=7 tributaryPact=2 vassalage=1
+23:13:17.394 [INFO] (Hegemony) Battania withheld its tribute from Northern Empire (hold 14.9).
+23:13:29.320 [INFO] (Claims) Western Empire now has a claim to retake Tubilis Castle from Aserai.
+23:13:33.389 [INFO] (Treaty) Truce recorded until Spring 1, 1139 between Khuzait and Northern Empire.
+23:13:33.390 [INFO] (Telemetry) [WAR-ENDED] endedBy=PeaceTable terms=tributary_pact_at_500_per_period,_release_prisoners aggressor=Khuzait defender=Northern_Empire days=61 casusBelli=Conquest finalScore=91.2 exhaustion=24.0/89.9 fiefsTaken=2/0 calledBy=none
+23:13:33.390 [INFO] (Core) War closed after 61 days: Khuzait vs Northern Empire [Conquest] score=91.16 exhaustion=24.04/89.89 | weariness now Khuzait=12.0, Northern Empire=93.3.
+23:13:33.398 [INFO] (Treaty) Signed: TributaryPact(Khuzait / Northern Empire, Active) tribute 500 from Northern Empire every 7 days
+23:13:33.398 [INFO] (Peace) Khuzait and Northern Empire made peace: tributary pact at 500 per period; release prisoners.
+23:13:33.398 [INFO] (AI) Northern Empire bought peace from Khuzait at exhaustion 89.4: tributary pact at 500 per period; release prisoners.
+23:13:33.401 [INFO] (Telemetry) [SNAPSHOT] date=Spring 1, 1138 kingdoms=8 atWar=7 wars=8 warsChosen=4 warsObligation=4 avgWarDays=17 longestWarDays=54 avgExhaustion=11.6 claims=55 trustRecords=56 fabrications=0 vanillaWarsRefused=6 hegemons=1 vassalLinks=1 avgHold=11.9 defianceMarks=3 tributePaid=14 tributeWithheld=25 topKingdom=Khuzait topDominance=1.96 greedy=0 annexationWars=0 vanillaPeaceRefused=454 vanillaAlliancesRefused=164 vanillaTradeRefused=130 vanillaCallToWarRefused=0 nonAggressionPact=2 truce=8 defensivePact=3 alliance=7 tributaryPact=3 vassalage=1
+23:13:54.745 [INFO] (Hegemony) Battania withheld its tribute from Northern Empire (hold 7.9).
+23:13:54.745 [INFO] (Hegemony) Battania defied Northern Empire (mark 4 of 2, hold 7.9).
+23:14:00.595 [INFO] (Claims) Khuzait now has a claim to retake Onira from Southern Empire.
+23:14:10.746 [INFO] (Telemetry) [SNAPSHOT] date=Spring 8, 1138 kingdoms=8 atWar=7 wars=8 warsChosen=4 warsObligation=4 avgWarDays=24 longestWarDays=61 avgExhaustion=15.5 claims=55 trustRecords=56 fabrications=0 vanillaWarsRefused=6 hegemons=1 vassalLinks=1 avgHold=4.9 defianceMarks=4 tributePaid=17 tributeWithheld=26 topKingdom=Khuzait topDominance=2.02 greedy=0 annexationWars=0 vanillaPeaceRefused=497 vanillaAlliancesRefused=176 vanillaTradeRefused=141 vanillaCallToWarRefused=0 nonAggressionPact=2 truce=8 defensivePact=3 alliance=7 tributaryPact=3 vassalage=1
+23:14:16.080 [INFO] (Core) War opened: Khuzait -> Battania (CausedByKingdomDecision => Conquest, legitimacy 0.20).
+23:14:16.082 [INFO] (AI) Khuzait declared war on Battania (Conquest, legitimacy 0.20, value 67, cost 79 influence).
+23:14:26.744 [INFO] (Hegemony) Battania defied Northern Empire (mark 5 of 2, hold 3.9).
+23:14:26.745 [INFO] (Hegemony) Battania signed a DefensivePact with Vlandia in defiance of its patron Northern Empire.
+23:14:26.745 [INFO] (Treaty) Signed: DefensivePact(Battania / Vlandia, Active)
+23:14:26.745 [INFO] (AI) Battania signed a DefensivePact with Vlandia (mutual value 56).
+23:14:37.411 [INFO] (Hegemony) Battania withheld its tribute from Northern Empire (hold 4.4).
+23:14:46.082 [INFO] (Claims) Khuzait now has a claim to retake Odrysa Castle from Southern Empire.
+23:14:47.408 [INFO] (Claims) Western Empire now has a claim to retake Lageta from Vlandia.
+23:14:48.095 [INFO] (Telemetry) [SNAPSHOT] date=Spring 15, 1138 kingdoms=8 atWar=7 wars=9 warsChosen=5 warsObligation=4 avgWarDays=28 longestWarDays=68 avgExhaustion=17.6 claims=58 trustRecords=56 fabrications=0 vanillaWarsRefused=6 hegemons=1 vassalLinks=1 avgHold=5.7 defianceMarks=5 tributePaid=19 tributeWithheld=27 topKingdom=Khuzait topDominance=1.95 greedy=0 annexationWars=0 vanillaPeaceRefused=533 vanillaAlliancesRefused=189 vanillaTradeRefused=154 vanillaCallToWarRefused=0 nonAggressionPact=2 truce=8 defensivePact=4 alliance=7 tributaryPact=3 vassalage=1
+23:14:58.770 [INFO] (Treaty) Battania broke Vassalage with Northern Empire - Northern Empire now has a casus belli.
+23:14:58.770 [INFO] (Core) War opened: Battania -> Northern Empire (CausedByKingdomDecision => Conquest, legitimacy 0.20).
+23:14:58.771 [INFO] (Hegemony) Battania renounced Northern Empire after 31 days at breaking point. At war for independence: Battania.
+23:15:14.765 [INFO] (Treaty) Signed: TributaryPact(Aserai / Battania, Active) tribute 500 from Battania every 7 days
+23:15:14.765 [INFO] (AI) Aserai imposed a tributary pact on Battania.
+23:15:25.430 [INFO] (Treaty) Signed: Vassalage(Western Empire / Northern Empire, Active) tribute 500 from Northern Empire every 7 days
+23:15:25.430 [INFO] (Claims) Submission settled 1 broken-treaty claim(s) between Western Empire and Northern Empire.
+23:15:25.431 [INFO] (Hegemony) Northern Empire submitted to Western Empire as a vassal. threat +42.4 (cover 1.00)  reach +32.2  weariness +18.3  trust +2.6  pride -5.1  culture +0.0  dread +0.0  => 90.4 (submits at 55)
+23:15:25.431 [INFO] (Treaty) Signed: TributaryPact(Vlandia / Battania, Active) tribute 500 from Battania every 7 days
+23:15:25.431 [INFO] (AI) Vlandia imposed a tributary pact on Battania.
+23:15:25.435 [INFO] (Telemetry) [SNAPSHOT] date=Summer 1, 1138 kingdoms=8 atWar=8 wars=10 warsChosen=6 warsObligation=4 avgWarDays=32 longestWarDays=75 avgExhaustion=19.6 claims=56 trustRecords=56 fabrications=0 vanillaWarsRefused=6 hegemons=1 vassalLinks=1 avgHold=61.0 defianceMarks=0 tributePaid=22 tributeWithheld=27 topKingdom=Khuzait topDominance=1.93 greedy=0 annexationWars=0 vanillaPeaceRefused=579 vanillaAlliancesRefused=206 vanillaTradeRefused=160 vanillaCallToWarRefused=0 nonAggressionPact=2 truce=8 defensivePact=4 alliance=7 tributaryPact=5 vassalage=1
+23:15:52.072 [INFO] (Claims) Southern Empire now has a claim to retake Odrysa Castle from Khuzait.
+23:15:57.955 [INFO] (Claims) Western Empire now has a claim to retake Usanc Castle from Vlandia.
+23:16:02.765 [INFO] (Telemetry) [SNAPSHOT] date=Summer 8, 1138 kingdoms=8 atWar=8 wars=10 warsChosen=6 warsObligation=4 avgWarDays=39 longestWarDays=82 avgExhaustion=23.1 claims=57 trustRecords=56 fabrications=0 vanillaWarsRefused=6 hegemons=1 vassalLinks=1 avgHold=67.0 defianceMarks=0 tributePaid=26 tributeWithheld=27 topKingdom=Khuzait topDominance=1.86 greedy=0 annexationWars=0 vanillaPeaceRefused=624 vanillaAlliancesRefused=212 vanillaTradeRefused=166 vanillaCallToWarRefused=0 nonAggressionPact=2 truce=8 defensivePact=4 alliance=7 tributaryPact=5 vassalage=1
+23:16:40.090 [INFO] (Treaty) Signed: DefensivePact(Northern Empire / Western Empire, Active)
+23:16:40.091 [INFO] (AI) Northern Empire signed a DefensivePact with Western Empire (mutual value 61).
+23:16:40.091 [INFO] (Treaty) Truce recorded until Summer 15, 1139 between Khuzait and Vlandia.
+23:16:40.091 [INFO] (Telemetry) [WAR-ENDED] endedBy=Dormant terms=white_peace aggressor=Vlandia defender=Khuzait days=45 casusBelli=DefendAlly finalScore=0.0 exhaustion=13.6/13.5 fiefsTaken=0/0 calledBy=Southern_Empire
+23:16:40.091 [INFO] (Core) War closed after 45 days: Vlandia vs Khuzait [DefendAlly] score=0.00 exhaustion=13.57/13.54 | weariness now Khuzait=5.9, Vlandia=5.7.
+23:16:40.092 [INFO] (Peace) Khuzait and Vlandia made peace: white peace.
+23:16:40.092 [INFO] (AI) Vlandia and Khuzait let a dormant war lapse after 45 days and 109 casualties between them.
+23:16:40.094 [INFO] (Telemetry) [SNAPSHOT] date=Summer 15, 1138 kingdoms=8 atWar=8 wars=9 warsChosen=6 warsObligation=3 avgWarDays=46 longestWarDays=89 avgExhaustion=27.9 claims=55 trustRecords=56 fabrications=0 vanillaWarsRefused=6 hegemons=1 vassalLinks=1 avgHold=67.0 defianceMarks=0 tributePaid=32 tributeWithheld=27 topKingdom=Khuzait topDominance=1.74 greedy=0 annexationWars=0 vanillaPeaceRefused=686 vanillaAlliancesRefused=221 vanillaTradeRefused=181 vanillaCallToWarRefused=0 nonAggressionPact=2 truce=9 defensivePact=5 alliance=7 tributaryPact=5 vassalage=1
+23:16:45.430 [INFO] (Treaty) Truce recorded until Summer 16, 1139 between Western Empire and Khuzait.
+23:16:45.431 [INFO] (Telemetry) [WAR-ENDED] endedBy=Dormant terms=white_peace aggressor=Western_Empire defender=Khuzait days=46 casusBelli=DefendAlly finalScore=-4.2 exhaustion=14.0/13.8 fiefsTaken=0/0 calledBy=Southern_Empire
+23:16:45.431 [INFO] (Core) War closed after 46 days: Western Empire vs Khuzait [DefendAlly] score=-4.17 exhaustion=14.02/13.82 | weariness now Western Empire=0.0, Khuzait=5.8.
+23:16:45.432 [INFO] (Peace) Western Empire and Khuzait made peace: white peace.
+23:16:45.432 [INFO] (AI) Khuzait and Western Empire let a dormant war lapse after 46 days and 129 casualties between them.
+23:16:45.432 [INFO] (Treaty) Expired, honoured in full: NonAggressionPact(Vlandia / Southern Empire, Expired)
+23:16:56.092 [INFO] (Treaty) Truce recorded until Summer 18, 1139 between Battania and Western Empire.
+23:16:56.092 [INFO] (Telemetry) [WAR-ENDED] endedBy=PeaceTable terms=cede_Oristocorys_Castle,_release_prisoners aggressor=Western_Empire defender=Battania days=92 casusBelli=Conquest finalScore=-34.1 exhaustion=47.7/79.3 fiefsTaken=1/0 calledBy=none
+23:16:56.093 [INFO] (Core) War closed after 92 days: Western Empire vs Battania [Conquest] score=-34.10 exhaustion=47.73/79.28 | weariness now Battania=56.8, Western Empire=23.9.
+23:16:56.120 [INFO] (Peace) Battania and Western Empire made peace: cede Oristocorys Castle; release prisoners.
+23:16:56.120 [INFO] (AI) Battania imposed terms on Western Empire at exhaustion 79.3 (war score 34): cede Oristocorys Castle; release prisoners.
+23:17:00.018 [INFO] (Claims) Khuzait now has a claim to retake Odrysa Castle from Southern Empire.
+23:17:01.457 [INFO] (Treaty) Signed: DefensivePact(Southern Empire / Sturgia, Active)
+23:17:01.458 [INFO] (AI) Southern Empire signed a DefensivePact with Sturgia (mutual value 60).
+23:17:04.203 [INFO] (Claims) Western Empire now has a claim to retake Thractorae Castle from Vlandia.
+23:17:11.215 [INFO] (Claims) Western Empire now has a claim to retake Garontor Castle from Aserai.
+23:17:17.451 [INFO] (Telemetry) [SNAPSHOT] date=Autumn 1, 1138 kingdoms=8 atWar=8 wars=7 warsChosen=5 warsObligation=2 avgWarDays=48 longestWarDays=57 avgExhaustion=29.5 claims=53 trustRecords=56 fabrications=0 vanillaWarsRefused=6 hegemons=1 vassalLinks=1 avgHold=62.0 defianceMarks=0 tributePaid=38 tributeWithheld=27 topKingdom=Khuzait topDominance=1.79 greedy=0 annexationWars=0 vanillaPeaceRefused=730 vanillaAlliancesRefused=237 vanillaTradeRefused=195 vanillaCallToWarRefused=0 nonAggressionPact=1 truce=11 defensivePact=6 alliance=7 tributaryPact=5 vassalage=1
+23:17:28.112 [INFO] (Treaty) Signed: NonAggressionPact(Western Empire / Sturgia, Active)
+23:17:28.112 [INFO] (AI) Western Empire signed a NonAggressionPact with Sturgia (mutual value 48).
+23:17:33.446 [INFO] (Treaty) Expired, honoured in full: Truce(Aserai / Battania, Expired)
+23:17:54.782 [INFO] (Telemetry) [SNAPSHOT] date=Autumn 8, 1138 kingdoms=8 atWar=8 wars=7 warsChosen=5 warsObligation=2 avgWarDays=55 longestWarDays=64 avgExhaustion=33.0 claims=52 trustRecords=56 fabrications=0 vanillaWarsRefused=6 hegemons=1 vassalLinks=1 avgHold=55.0 defianceMarks=0 tributePaid=44 tributeWithheld=27 topKingdom=Vlandia topDominance=1.74 greedy=0 annexationWars=0 vanillaPeaceRefused=768 vanillaAlliancesRefused=245 vanillaTradeRefused=206 vanillaCallToWarRefused=0 nonAggressionPact=2 truce=10 defensivePact=6 alliance=7 tributaryPact=5 vassalage=1
+23:18:22.208 [INFO] (Claims) Western Empire now has a claim to retake Veron Castle from Vlandia.
+23:18:32.128 [INFO] (Telemetry) [SNAPSHOT] date=Autumn 15, 1138 kingdoms=8 atWar=8 wars=7 warsChosen=5 warsObligation=2 avgWarDays=62 longestWarDays=71 avgExhaustion=37.0 claims=55 trustRecords=56 fabrications=0 vanillaWarsRefused=6 hegemons=1 vassalLinks=1 avgHold=48.0 defianceMarks=0 tributePaid=50 tributeWithheld=27 topKingdom=Vlandia topDominance=1.74 greedy=0 annexationWars=0 vanillaPeaceRefused=804 vanillaAlliancesRefused=259 vanillaTradeRefused=222 vanillaCallToWarRefused=0 nonAggressionPact=2 truce=10 defensivePact=6 alliance=7 tributaryPact=5 vassalage=1
+23:18:39.226 [INFO] (Treaty) Truce recorded until Autumn 16, 1139 between Battania and Khuzait.
+23:18:39.227 [INFO] (Telemetry) [WAR-ENDED] endedBy=Dormant terms=white_peace aggressor=Khuzait defender=Battania days=49 casusBelli=Conquest finalScore=0.0 exhaustion=14.7/14.8 fiefsTaken=0/0 calledBy=none
+23:18:39.227 [INFO] (Core) War closed after 49 days: Khuzait vs Battania [Conquest] score=0.00 exhaustion=14.74/14.78 | weariness now Battania=38.7, Khuzait=3.8.
+23:18:39.228 [INFO] (Peace) Battania and Khuzait made peace: white peace.
+23:18:39.228 [INFO] (AI) Khuzait and Battania let a dormant war lapse after 49 days and 67 casualties between them.
+23:18:39.228 [INFO] (Treaty) Expired, honoured in full: Alliance(Vlandia / Aserai, Expired)
+23:18:44.552 [INFO] (Treaty) Truce recorded until Autumn 17, 1139 between Aserai and Western Empire.
+23:18:44.552 [INFO] (Telemetry) [WAR-ENDED] endedBy=PeaceTable terms=white_peace aggressor=Aserai defender=Western_Empire days=72 casusBelli=DefendAlly finalScore=7.3 exhaustion=37.9/63.2 fiefsTaken=2/0 calledBy=Vlandia
+23:18:44.552 [INFO] (Core) War closed after 72 days: Aserai vs Western Empire [DefendAlly] score=7.35 exhaustion=37.95/63.22 | weariness now Aserai=3.7, Western Empire=15.9.
+23:18:44.554 [INFO] (Peace) Aserai and Western Empire made peace: white peace.
+23:18:44.554 [INFO] (AI) Western Empire sued for peace with Aserai at exhaustion 63.2: white peace.
+23:18:49.896 [INFO] (Treaty) Truce recorded until Autumn 18, 1139 between Battania and Sturgia.
+23:18:49.896 [INFO] (Telemetry) [WAR-ENDED] endedBy=PeaceTable terms=tributary_pact_at_500_per_period,_release_prisoners aggressor=Sturgia defender=Battania days=74 casusBelli=Conquest finalScore=-87.7 exhaustion=45.3/71.1 fiefsTaken=0/0 calledBy=none
+23:18:49.897 [INFO] (Core) War closed after 74 days: Sturgia vs Battania [Conquest] score=-87.67 exhaustion=45.25/71.13 | weariness now Battania=72.7, Sturgia=22.6.
+23:18:49.898 [INFO] (Treaty) Signed: TributaryPact(Battania / Sturgia, Active) tribute 500 from Sturgia every 7 days
+23:18:49.898 [INFO] (Peace) Battania and Sturgia made peace: tributary pact at 500 per period; release prisoners.
+23:18:49.899 [INFO] (AI) Battania imposed terms on Sturgia at exhaustion 70.9 (war score 88): tributary pact at 500 per period; release prisoners.
+23:19:11.230 [INFO] (Treaty) Expired, honoured in full: Truce(Sturgia / Northern Empire, Expired)
+23:19:11.232 [INFO] (Telemetry) [SNAPSHOT] date=Winter 1, 1138 kingdoms=8 atWar=7 wars=4 warsChosen=3 warsObligation=1 avgWarDays=67 longestWarDays=77 avgExhaustion=38.4 claims=55 trustRecords=56 fabrications=0 vanillaWarsRefused=6 hegemons=1 vassalLinks=1 avgHold=47.0 defianceMarks=0 tributePaid=56 tributeWithheld=27 topKingdom=Vlandia topDominance=1.70 greedy=0 annexationWars=0 vanillaPeaceRefused=844 vanillaAlliancesRefused=265 vanillaTradeRefused=231 vanillaCallToWarRefused=0 nonAggressionPact=2 truce=12 defensivePact=6 alliance=6 tributaryPact=6 vassalage=1
+23:19:16.564 [INFO] (Treaty) Truce recorded until Winter 2, 1139 between Sturgia and Khuzait.
+23:19:16.565 [INFO] (Telemetry) [WAR-ENDED] endedBy=FollowerRelease terms=released_by_Southern_Empire aggressor=Sturgia defender=Khuzait days=74 casusBelli=DefendAlly finalScore=-2.4 exhaustion=34.8/29.9 fiefsTaken=0/0 calledBy=Southern_Empire
+23:19:16.565 [INFO] (Core) War closed after 74 days: Sturgia vs Khuzait [DefendAlly] score=-2.42 exhaustion=34.79/29.86 | weariness now Sturgia=20.5, Khuzait=3.3.
+23:19:16.567 [INFO] (CallToArms) Sturgia leaves the war against Khuzait now that Southern Empire has made peace.
+23:19:16.567 [INFO] (Treaty) Truce recorded until Winter 2, 1139 between Southern Empire and Khuzait.
+23:19:16.567 [INFO] (Telemetry) [WAR-ENDED] endedBy=PeaceTable terms=cede_Corenia_Castle,_release_prisoners aggressor=Southern_Empire defender=Khuzait days=74 casusBelli=ReclaimAncestralLand finalScore=38.6 exhaustion=40.3/62.0 fiefsTaken=3/1 calledBy=none
+23:19:16.567 [INFO] (Core) War closed after 74 days: Southern Empire vs Khuzait [ReclaimAncestralLand] score=38.59 exhaustion=40.33/62.04 | weariness now Southern Empire=22.3, Khuzait=34.3.
+23:19:16.595 [INFO] (Peace) Southern Empire and Khuzait made peace: cede Corenia Castle; release prisoners.
+23:19:16.596 [INFO] (AI) Khuzait bought peace from Southern Empire at exhaustion 62.0: cede Corenia Castle; release prisoners.
+23:19:21.900 [INFO] (Treaty) Truce recorded until Winter 3, 1139 between Vlandia and Western Empire.
+23:19:21.900 [INFO] (Telemetry) [WAR-ENDED] endedBy=PeaceTable terms=cede_Hertogea_Castle,_release_prisoners aggressor=Vlandia defender=Western_Empire days=79 casusBelli=ReclaimAncestralLand finalScore=49.3 exhaustion=38.1/66.4 fiefsTaken=4/0 calledBy=none
+23:19:21.900 [INFO] (Core) War closed after 79 days: Vlandia vs Western Empire [ReclaimAncestralLand] score=49.31 exhaustion=38.12/66.37 | weariness now Vlandia=22.2, Western Empire=47.0.
+23:19:21.932 [INFO] (Peace) Vlandia and Western Empire made peace: cede Hertogea Castle; release prisoners.
+23:19:21.932 [INFO] (AI) Western Empire bought peace from Vlandia at exhaustion 66.2: cede Hertogea Castle; release prisoners.
+23:19:27.236 [INFO] (Treaty) Expired, honoured in full: Truce(Southern Empire / Battania, Expired)
+23:19:27.236 [INFO] (Treaty) Expired, honoured in full: Truce(Vlandia / Battania, Expired)
+23:19:32.567 [INFO] (Core) War opened: Southern Empire -> Battania (CausedByKingdomDecision => Conquest, legitimacy 0.20).
+23:19:32.568 [INFO] (AI) Southern Empire declared war on Battania (Conquest, legitimacy 0.20, value 62, cost 87 influence).
+23:19:43.234 [INFO] (Treaty) Expired, honoured in full: Truce(Vlandia / Northern Empire, Expired)
+23:19:43.234 [INFO] (Treaty) Expired, honoured in full: Truce(Northern Empire / Aserai, Expired)
+23:19:48.574 [INFO] (Core) War opened: Vlandia -> Sturgia (CausedByKingdomDecision => ReclaimAncestralLand, legitimacy 0.70).
+23:19:48.575 [INFO] (AI) Vlandia declared war on Sturgia (ReclaimAncestralLand, legitimacy 0.70, value 72, cost 62 influence).
+23:19:48.575 [INFO] (Treaty) Expired, honoured in full: Truce(Southern Empire / Northern Empire, Expired)
+23:19:48.577 [INFO] (Telemetry) [SNAPSHOT] date=Winter 8, 1138 kingdoms=8 atWar=5 wars=3 warsChosen=3 warsObligation=0 avgWarDays=19 longestWarDays=54 avgExhaustion=7.9 claims=57 trustRecords=56 fabrications=0 vanillaWarsRefused=6 hegemons=1 vassalLinks=1 avgHold=47.0 defianceMarks=0 tributePaid=63 tributeWithheld=27 topKingdom=Vlandia topDominance=1.70 greedy=0 annexationWars=0 vanillaPeaceRefused=860 vanillaAlliancesRefused=281 vanillaTradeRefused=243 vanillaCallToWarRefused=0 nonAggressionPact=2 truce=10 defensivePact=6 alliance=6 tributaryPact=6 vassalage=1
+23:20:15.227 [INFO] (Core) War opened: Aserai -> Northern Empire (CausedByKingdomDecision => Conquest, legitimacy 0.20).
+23:20:15.228 [INFO] (AI) Aserai declared war on Northern Empire (Conquest, legitimacy 0.20, value 61, cost 73 influence).
+23:20:25.910 [INFO] (Treaty) Signed: TributaryPact(Vlandia / Western Empire, Active) tribute 500 from Western Empire every 7 days
+23:20:25.910 [INFO] (AI) Vlandia imposed a tributary pact on Western Empire.
+23:20:25.912 [INFO] (Telemetry) [SNAPSHOT] date=Winter 15, 1138 kingdoms=8 atWar=6 wars=4 warsChosen=4 warsObligation=0 avgWarDays=20 longestWarDays=61 avgExhaustion=8.3 claims=56 trustRecords=56 fabrications=0 vanillaWarsRefused=6 hegemons=1 vassalLinks=1 avgHold=47.0 defianceMarks=0 tributePaid=67 tributeWithheld=27 topKingdom=Vlandia topDominance=1.63 greedy=0 annexationWars=0 vanillaPeaceRefused=890 vanillaAlliancesRefused=287 vanillaTradeRefused=256 vanillaCallToWarRefused=0 nonAggressionPact=2 truce=10 defensivePact=6 alliance=6 tributaryPact=7 vassalage=1
+23:20:41.407 [INFO] (Claims) Sturgia now has a claim to retake Pendraic Castle from Vlandia.
+23:21:03.280 [INFO] (Treaty) Expired, honoured in full: Truce(Khuzait / Northern Empire, Expired)
+23:21:03.281 [INFO] (Telemetry) [SNAPSHOT] date=Spring 1, 1139 kingdoms=8 atWar=6 wars=4 warsChosen=4 warsObligation=0 avgWarDays=27 longestWarDays=68 avgExhaustion=11.7 claims=54 trustRecords=56 fabrications=0 vanillaWarsRefused=6 hegemons=1 vassalLinks=1 avgHold=47.0 defianceMarks=0 tributePaid=75 tributeWithheld=27 topKingdom=Khuzait topDominance=1.61 greedy=0 annexationWars=0 vanillaPeaceRefused=926 vanillaAlliancesRefused=302 vanillaTradeRefused=270 vanillaCallToWarRefused=0 nonAggressionPact=2 truce=9 defensivePact=6 alliance=6 tributaryPact=7 vassalage=1
+23:21:40.620 [INFO] (Telemetry) [SNAPSHOT] date=Spring 8, 1139 kingdoms=8 atWar=6 wars=4 warsChosen=4 warsObligation=0 avgWarDays=34 longestWarDays=75 avgExhaustion=15.0 claims=54 trustRecords=56 fabrications=0 vanillaWarsRefused=6 hegemons=1 vassalLinks=1 avgHold=47.0 defianceMarks=0 tributePaid=83 tributeWithheld=27 topKingdom=Khuzait topDominance=1.64 greedy=0 annexationWars=0 vanillaPeaceRefused=955 vanillaAlliancesRefused=319 vanillaTradeRefused=285 vanillaCallToWarRefused=0 nonAggressionPact=2 truce=9 defensivePact=6 alliance=6 tributaryPact=7 vassalage=1
+23:22:02.072 [INFO] (Claims) Sturgia now has a claim to retake Mazhadan Castle from Vlandia.
+23:23:12.795 [INFO] (Telemetry) [SNAPSHOT] date=Spring 15, 1139 kingdoms=8 atWar=6 wars=4 warsChosen=4 warsObligation=0 avgWarDays=41 longestWarDays=82 avgExhaustion=18.6 claims=51 trustRecords=56 fabrications=0 vanillaWarsRefused=6 hegemons=1 vassalLinks=1 avgHold=47.0 defianceMarks=0 tributePaid=87 tributeWithheld=27 topKingdom=Khuzait topDominance=1.66 greedy=0 annexationWars=0 vanillaPeaceRefused=992 vanillaAlliancesRefused=323 vanillaTradeRefused=296 vanillaCallToWarRefused=0 nonAggressionPact=2 truce=9 defensivePact=6 alliance=6 tributaryPact=7 vassalage=1
+23:26:49.377 [INFO] (Telemetry) [SNAPSHOT] date=Summer 1, 1139 kingdoms=8 atWar=6 wars=4 warsChosen=4 warsObligation=0 avgWarDays=48 longestWarDays=89 avgExhaustion=22.3 claims=49 trustRecords=56 fabrications=0 vanillaWarsRefused=6 hegemons=1 vassalLinks=1 avgHold=47.0 defianceMarks=0 tributePaid=95 tributeWithheld=27 topKingdom=Khuzait topDominance=1.68 greedy=0 annexationWars=0 vanillaPeaceRefused=1027 vanillaAlliancesRefused=332 vanillaTradeRefused=306 vanillaCallToWarRefused=0 nonAggressionPact=2 truce=9 defensivePact=6 alliance=6 tributaryPact=7 vassalage=1
+23:27:22.698 [INFO] (Treaty) Expired, honoured in full: DefensivePact(Aserai / Vlandia, Expired)
+23:27:28.032 [INFO] (Treaty) Expired, honoured in full: NonAggressionPact(Northern Empire / Western Empire, Expired)
+23:27:28.034 [INFO] (Telemetry) [SNAPSHOT] date=Summer 8, 1139 kingdoms=8 atWar=6 wars=4 warsChosen=4 warsObligation=0 avgWarDays=55 longestWarDays=96 avgExhaustion=25.2 claims=44 trustRecords=56 fabrications=0 vanillaWarsRefused=6 hegemons=1 vassalLinks=1 avgHold=47.0 defianceMarks=0 tributePaid=103 tributeWithheld=27 topKingdom=Khuzait topDominance=1.66 greedy=0 annexationWars=0 vanillaPeaceRefused=1067 vanillaAlliancesRefused=346 vanillaTradeRefused=313 vanillaCallToWarRefused=0 nonAggressionPact=1 truce=9 defensivePact=5 alliance=6 tributaryPact=7 vassalage=1
+23:28:55.739 [INFO] (SubModule) Game ended.

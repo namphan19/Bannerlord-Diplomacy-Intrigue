@@ -44,6 +44,22 @@ namespace DiplomacyIntrigue.Diplomacy
         /// </summary>
         public static Move Evaluate(ModState state, Kingdom kingdom)
         {
+            var move = EvaluateCore(state, kingdom);
+            if (kingdom != null) LastMoves[kingdom] = move;
+            return move;
+        }
+
+        /// <summary>
+        /// The move each kingdom made at its most recent weekly evaluation, for the weekly
+        /// telemetry. Session-scoped: it describes what the AI just did, not the campaign.
+        /// </summary>
+        private static readonly Dictionary<Kingdom, Move> LastMoves = new Dictionary<Kingdom, Move>();
+
+        public static string LastMove(Kingdom kingdom)
+            => kingdom != null && LastMoves.TryGetValue(kingdom, out var move) ? move.ToString() : "unevaluated";
+
+        private static Move EvaluateCore(ModState state, Kingdom kingdom)
+        {
             if (kingdom == null || kingdom.IsEliminated || kingdom.RulingClan == null) return Move.None;
 
             // Getting out of a losing war still comes first - nothing else matters while a
@@ -339,7 +355,8 @@ namespace DiplomacyIntrigue.Diplomacy
 
             var treaty = Hegemony.Submit(state, best, kingdom,
                 DiplomacyConstants.HoldOnVoluntarySubmission,
-                DiplomacyConstants.AiDefaultTributePerPeriod, out var reason);
+                DiplomacyConstants.AiDefaultTributePerPeriod, out var reason,
+                route: "voluntary", value: bestValue, detail: bestExplanation);
 
             if (treaty == null)
             {
@@ -376,7 +393,8 @@ namespace DiplomacyIntrigue.Diplomacy
                     {
                         var treaty = Hegemony.Submit(state, patron, candidate,
                             DiplomacyConstants.HoldOnVoluntarySubmission,
-                            DiplomacyConstants.AiDefaultTributePerPeriod, out var reason);
+                            DiplomacyConstants.AiDefaultTributePerPeriod, out var reason,
+                            route: "voluntary_to_player", value: value);
 
                         if (treaty == null)
                         {
@@ -445,6 +463,10 @@ namespace DiplomacyIntrigue.Diplomacy
             ChangeClanInfluenceAction.Apply(kingdom.RulingClan,
                 -DiplomacyConstants.TreatyInfluenceCost(bestType));
 
+            var pull = BalancingPull(state, kingdom, best, out var against);
+            Telemetry.Event("ai_pact_signed", "kingdom", kingdom, "partner", best, "type", bestType,
+                "mutualValue", bestValue, "balancingPull", pull * DiplomacyConstants.PactWeightBalancing,
+                "against", against, "ambition", Power.Ambition(kingdom), "partnerAmbition", Power.Ambition(best));
             Log.Info("AI", kingdom.Name + " signed a " + bestType + " with " + best.Name
                            + " (mutual value " + bestValue.ToString("0") + ").");
             Announce(kingdom.Name + " and " + best.Name + " sign a " + bestType + ".");
@@ -653,6 +675,7 @@ namespace DiplomacyIntrigue.Diplomacy
             Kingdom best = null;
             var bestValue = 0f;
             var bestAnnexation = false;
+            var bestTerms = new WarValueTerms();
             CasusBelliType bestCasus = CasusBelliType.Conquest;
 
             foreach (var target in Kingdom.All)
@@ -678,6 +701,7 @@ namespace DiplomacyIntrigue.Diplomacy
                 bestValue = terms.Total;
                 bestCasus = terms.Casus;
                 bestAnnexation = annexation;
+                bestTerms = terms;
             }
 
             if (best == null) return false;
@@ -707,6 +731,14 @@ namespace DiplomacyIntrigue.Diplomacy
             // Read back rather than assumed, for the reason run 04 gave: a refused declaration
             // must never be logged as a war.
             var opened = kingdom.IsAtWarWith(best);
+            Telemetry.Event("ai_war_declared", "kingdom", kingdom, "target", best, "opened", opened,
+                "annexation", bestAnnexation, "casusBelli", bestCasus, "legitimacy", legit,
+                "value", bestValue, "cost", cost, "sideRatio", bestTerms.Ratio, "ownRatio", bestTerms.OwnRatio,
+                "ourSupport", bestTerms.OurSupport, "theirSupport", bestTerms.TheirSupport,
+                "fromRatio", bestTerms.FromRatio, "fromLegitimacy", bestTerms.FromLegitimacy,
+                "fromProximity", bestTerms.FromProximity, "fromHunger", bestTerms.FromHunger,
+                "fromWeariness", bestTerms.FromWeariness, "fromAmbition", bestTerms.FromAmbition,
+                "fromAnnexation", bestTerms.FromAnnexation);
             Log.Info("AI", kingdom.Name + (opened ? " declared war on " : " tried and failed to declare war on ")
                            + best.Name
                            + (bestAnnexation ? " to annex its former vassal" : "")
