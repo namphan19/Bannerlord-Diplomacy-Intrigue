@@ -27,9 +27,17 @@ Branch **`feature/hegemony-structural-fixes`**, on top of `development`
 |---|---|---|---|
 | 1 | Winter 1136 → Summer 8, 1139 | [balance/run-06-part1.log](balance/run-06-part1.log) | GABS session from `di_phase1_full`; old telemetry only |
 | 2 | Summer 8, 1139 → Summer 1, 1140 | [balance/run-06-part2.log](balance/run-06-part2.log) | from `di_run06_mid`; old telemetry only |
-| 3 | Summer 1, 1140 → **running** | `Documents\...\DiplomacyIntrigue\Logs\diplomacy-intrigue-20260917-174501.log` + yearly reports in `Reports\` | the lead's unattended session from `di_run06_resume`, launcher-hosted, no GABS, no BirthAndDeath; full new telemetry |
+| 3 | Summer 1, 1140 → Winter 1153 and **still running** | [balance/run-06-part3-interim.log](balance/run-06-part3-interim.log) (copy taken at Winter 9, 1153; the live file is `Documents\...\Logs\diplomacy-intrigue-20260917-174501.log`) + yearly reports in `Reports\` | the lead's unattended session from `di_run06_resume` (that save now holds the lead's checkpoint from about Spring 1146), launcher-hosted, no GABS, no BirthAndDeath; full new telemetry |
 
-Observed so far and **not yet analysed** — treat as leads, not findings:
+**The interim balance analysis is [docs/balance/run-06.md](balance/run-06.md)** — acceptance numbers,
+seven ranked findings with evidence and candidate fixes, a mechanism checklist, and the steps to
+finish. Read it before touching any constant. Its headline: the saturated hegemony collapsed as
+predicted; two of Khuzait's vassals were eliminated because truces and the one-step cascade guard
+blocked their patron's defence; hegemony stayed small and lapsed at term; greed was never reached;
+total war returned in bursts (28.5% of weeks); trust saturated at 100; and a peace-table bug lets a
+winner be promised tribute a vassal cannot pay.
+
+Earlier notes from the live monitor, kept for context:
 - §3b's prediction held exactly: Khuzait revolted after 30 days at breaking point and four
   vassals rose with it; Northern Empire's seven-vassal sphere was gone within ten months.
 - New spheres formed around Western Empire, then Khuzait (which poached Northern Empire).
@@ -40,11 +48,9 @@ Observed so far and **not yet analysed** — treat as leads, not findings:
 - Greed has not triggered naturally: no kingdom has reached a quarter of the world's strength.
 
 **What the next person does:**
-1. When the lead stops part 3, copy its log (and any later ones) into `docs/balance/`, run the
-   analyser over parts 1-3 in order, and write `docs/balance/run-06.md` in the shape of run-04.md:
-   acceptance criteria, the hegemony timeline, whether greed/annexation/elimination occurred on
-   their own, and every constant that looks mistuned. Parts 1-2 have no `[KINGDOM]`/`[EVENT]`
-   records - the power and event sections cover part 3 only.
+1. When the lead stops part 3, finish [run-06.md](balance/run-06.md) using its §8 checklist:
+   replace the interim log, rerun the analyser, update the numbers, answer whether greed was ever
+   reached. Parts 1-2 have no `[KINGDOM]`/`[EVENT]` records.
 2. Decide the deferred review items with the lead (end of §3): trust as a grim trigger, the
    weariness gate that never binds, vassals of one patron at war with each other, a hegemon
    paying tribute to its own vassal.
