@@ -1,24 +1,66 @@
-# Status — 2026-09-16
+# Status — 2026-09-17
 
 Point-in-time state. [CLAUDE.md](../CLAUDE.md) holds the things that are always true; this
 file holds what changes. Update it when you finish a chunk of work.
 
 Module version 0.1.0. Save schema **v4**, definer base id **2749100**.
-Treaty save ids now run to **17** (`Hold`, defiance marks, the revolt clock).
-Last measured: **balance run 04**, 5.1 in-game years, zero errors —
-[docs/balance/run-04.md](balance/run-04.md).
+Save ids: `Treaty` 1-17, `ModState` 1-10, definer class ids to 9 (`KingdomPower`).
+Last completed measurement: **balance run 04** — [docs/balance/run-04.md](balance/run-04.md).
+**Run 06 is in progress** and is the first measurement of everything below.
 
-**Phase 1 is code complete, 1.1 through 1.11, and run 04 met every acceptance criterion.**
-Wars end (median 66 days, 12 of 15 through our peace table, nothing outside our systems),
-the world came off total war (73 % of weeks → 3.3 %), alliances hold, nobody was eliminated,
-zero errors over 5.1 in-game years.
+## Start here — handoff, 2026-09-17
 
-**And the same run found the pillar's real problem: hegemony forms far too easily.** Four
-kingdoms knelt in the first ninety seconds and one ended the run holding all seven others.
-Three defects behind it are listed under "What to do next"; none is a crash, all are Phase 1
-correctness and balance. A design review afterwards found the cause was mostly structural —
-a patron's duty to protect existed only as a penalty, never as something code could do — and
-the fixes are in "What to do next" §3, verified piecewise in game and **not yet in a run**.
+Branch **`feature/hegemony-structural-fixes`**, eight commits on top of `development`
+(`30f3c99`), ready to merge. It changes Phase 1 in four layers, each with its own section under
+"What to do next" and each verified piecewise in a live game but **not yet measured in a run**:
+
+| Layer | What changed | Section | Spec |
+|---|---|---|---|
+| 1. Hegemony structure | A patron is actually called to defend its vassal; submission reads the patron's ability to protect; withheld tribute is defiance; resentful vassals revolt together; poaching checks before it breaks | §3 | [design/04](design/04-hegemony.md) §10a |
+| 2. Strength read properly | Symmetric (log2) fear; the revolt line moves with the vassal's strength; the peace table cannot impose vassalage on a stronger loser; `diplomacy.strength` | §3b | design/04 §10a |
+| 3. Power (the lead's design) | Ambition, coalitions that deter and hold, greed and annexation through war, elimination handled, smoothed strength saved as `KingdomPower` | §3c | [design/06](design/06-power.md) |
+| 4. Telemetry for unattended runs | `[RUN]/[CONFIG]/[KINGDOM]/[LINK]/[WAR]/[EVENT]` records, yearly reports, multi-log analyser | §3d | — |
+
+**Run 06, what exists so far** (analyse with `python tools/analyse-log.py <logs in order>`):
+
+| Part | Campaign dates | Where | Notes |
+|---|---|---|---|
+| 1 | Winter 1136 → Summer 8, 1139 | [balance/run-06-part1.log](balance/run-06-part1.log) | GABS session from `di_phase1_full`; old telemetry only |
+| 2 | Summer 8, 1139 → Summer 1, 1140 | [balance/run-06-part2.log](balance/run-06-part2.log) | from `di_run06_mid`; old telemetry only |
+| 3 | Summer 1, 1140 → **running** | `Documents\...\DiplomacyIntrigue\Logs\diplomacy-intrigue-20260917-174501.log` + yearly reports in `Reports\` | the lead's unattended session from `di_run06_resume`, launcher-hosted, no GABS, no BirthAndDeath; full new telemetry |
+
+Observed so far and **not yet analysed** — treat as leads, not findings:
+- §3b's prediction held exactly: Khuzait revolted after 30 days at breaking point and four
+  vassals rose with it; Northern Empire's seven-vassal sphere was gone within ten months.
+- New spheres formed around Western Empire, then Khuzait (which poached Northern Empire).
+- A coalition answered Southern Empire against Khuzait, the strongest kingdom.
+- **Northern Empire was eliminated on Winter 5, 1140** — the first elimination in any run. Its
+  wars closed `endedBy=Eliminated` and its vassalage collapsed, with zero errors: the
+  `KingdomDestroyedEvent` path works in real play, not only when forced.
+- Greed has not triggered naturally: no kingdom has reached a quarter of the world's strength.
+
+**What the next person does:**
+1. When the lead stops part 3, copy its log (and any later ones) into `docs/balance/`, run the
+   analyser over parts 1-3 in order, and write `docs/balance/run-06.md` in the shape of run-04.md:
+   acceptance criteria, the hegemony timeline, whether greed/annexation/elimination occurred on
+   their own, and every constant that looks mistuned. Parts 1-2 have no `[KINGDOM]`/`[EVENT]`
+   records - the power and event sections cover part 3 only.
+2. Decide the deferred review items with the lead (end of §3): trust as a grim trigger, the
+   weariness gate that never binds, vassals of one patron at war with each other, a hegemon
+   paying tribute to its own vassal.
+3. Then Phase 2 (§4).
+
+**Traps found this session** (the always-true ones are in CLAUDE.md §1):
+- GABS's own `Lib.GAB` crashed the game on a cancelled connection. Unattended runs launch with
+  `pwsh ./scripts/play.ps1 -Without BirthAndDeath` and no GABS.
+- The test hero on these saves dies of old age by illness; `diplomacy.test_set_player_age 35`
+  cures it (already applied to `di_run06_resume`).
+- Only `di_phase1_full`, `di_run06_mid` and `di_run06_resume` are run 06 saves; never save over
+  `di_phase1_full`.
+- The Kingdom-screen UI (the UI team's `DiplomacyItemMixin`) does not show power, greed or the
+  new call-to-arms duty yet.
+
+---
 
 ---
 
@@ -65,10 +107,10 @@ Two things were added because of this, independent of the cause:
 | Phase | State |
 |---|---|
 | **0 — Foundation** | ✅ done, verified in a live campaign |
-| **1 — Diplomacy core (1.1–1.11)** | ✅ **code complete**, including submission and hegemony (1.9/1.10) and the vanilla takeover (1.11). Verified piecewise in live campaigns; the whole-pillar run is run 04 |
+| **1 — Diplomacy core (1.1–1.12)** | ✅ **code complete**, including submission and hegemony (1.9/1.10), the vanilla takeover (1.11) and power (1.12). Verified piecewise in live campaigns; run 04 accepted 1.1-1.11, run 06 is measuring the rework |
 | **2 — Court intrigue** | ⬜ spec written and reviewed, no code |
 | **3 — Espionage** | ⬜ spec written and reviewed, no code |
-| **4 — Integration, balance, release** | 🔄 runs 01-03 done and archived, run 04 is the Phase 1 acceptance run |
+| **4 — Integration, balance, release** | 🔄 runs 01-05 archived, run 04 was the Phase 1 acceptance run; run 06 measures 1.12 and the hegemony rework and is in progress |
 
 ### Phase 1, feature by feature
 
