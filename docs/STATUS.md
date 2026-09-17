@@ -10,7 +10,7 @@ Last completed measurement: **balance run 04** — [docs/balance/run-04.md](bala
 
 ## Start here — handoff, 2026-09-17
 
-Branch **`feature/hegemony-structural-fixes`**, eight commits on top of `development`
+Branch **`feature/hegemony-structural-fixes`**, on top of `development`
 (`30f3c99`), ready to merge. It changes Phase 1 in four layers, each with its own section under
 "What to do next" and each verified piecewise in a live game but **not yet measured in a run**:
 
