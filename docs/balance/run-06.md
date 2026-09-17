@@ -54,8 +54,9 @@ log when the run stops; pass logs oldest first).
    happened (Summer 1137), to the kingdom. Western Empire left the same day through defiance;
    Battania revolted alone ten months later. Northern Empire went from seven vassals to none.
 2. **Two kingdoms were eliminated by conquest** — the first eliminations in any run — and the war
-   ledger handled both with zero errors. **Both were vassals of Khuzait, and Khuzait was never
-   called to defend them** (§5 F3).
+   ledger handled both with zero errors. **Both were vassals of Khuzait.** For Battania the log shows its
+   patron's defence blocked on every attack it could have answered (§5 F3); for Northern Empire
+   the war predates the telemetry and cannot be checked.
 3. **Hegemony became small and short-lived.** After the collapse, at most two vassal links existed
    at once; every link formed was voluntary and **every one lapsed at its five-year term**. No
    poach, no revolt, no annexation in part 3.
