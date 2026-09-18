@@ -219,6 +219,7 @@ namespace DiplomacyIntrigue.Core
                 TreatyRegistry.ExpireAndReward(state);
                 TreatyRegistry.PayDueTribute(state);
                 TreatyRegistry.PayPeaceDividends(state);
+                TrustRegistry.DailyTick(state);
                 ClaimRegistry.ExpireStale(state);
                 ClaimRegistry.ResolveFabrications(state);
             }

@@ -58,11 +58,32 @@ Earlier notes from the live monitor, kept for context:
    (greed unreachable, hegemony quiet).
 3. Then Phase 2 (§4).
 
-**Branch `feature/run-06-fixes`** (2026-09-18, off development) carries the run-06 follow-ups
-that are not design decisions: F4 fixed (`IsDemandable` refuses tribute/vassalage demands
-`CanSign` could never honour — details in run-06.md F4) and the two analyser caveats from §7
-(`theirSupport` counted directly; mercenary clan moves separated from real defections).
-Builds clean; nothing in it has been verified in a live game yet.
+**Branch `feature/run-06-fixes`** (2026-09-18, off development) carries the run-06 follow-ups.
+F4 and the two analyser caveats from §7 were the non-decision part; the lead has since
+called the design questions, and they are implemented here too:
+
+- **F4** (fixed): `IsDemandable` refuses tribute/vassalage demands `CanSign` could never
+  honour — details in run-06.md F4. Analyser: `theirSupport` counted directly; mercenary
+  clan moves separated from real defections.
+- **F1** (lead: leave it): alliance embolden/deter unchanged, keep observing.
+- **F2** (implemented): trust now decays — `TrustRegistry.DailyTick` drifts every record
+  toward zero in peace (0.05/day), a positive change suspends decay for 30 days
+  (`TrustRecord.LastPositiveChange`, save id 5 — old saves decay normally), and a war
+  pulls the pair's record *down*, harder each day it runs (0.05 + 0.005·days). All
+  un-tuned.
+- **F3** (implemented): a neglected vassal may kneel to its attacker — `Hegemony.Defect`,
+  reached through `AiDiplomacy.TryDefectToAttacker` after the ordinary peace routes. The
+  old bond is broken **by the patron** (its breach, its name in every court), siblings
+  take the secession-contagion Hold hit, and the new patron is called into the vassal's
+  other defensive wars the same day. Gates: Hold under 40, defender in a war going
+  against it (score ≥ 20), patron not fighting that aggressor, `IsStrongEnoughToHold`,
+  `WouldTakeVassals`, and `CanSign` with the old link set aside — truce/cascade rules are
+  not bypassed, the vassal just has an exit when they bind. Player-led attackers are asked.
+- **F5** (implemented): `GreedStartsAtDominance` 2.0 → 1.25, so run 06's peak (~1.76)
+  yields greed 0.5 — annexation reachable only at the extreme. Un-tuned.
+
+Builds clean; none of this has been verified in a live game yet — the frozen clock means
+decay, defection and greed all need run 07 to say whether the numbers are right.
 
 **Traps found this session** (the always-true ones are in CLAUDE.md §1):
 - GABS's own `Lib.GAB` crashed the game on a cancelled connection. Unattended runs launch with

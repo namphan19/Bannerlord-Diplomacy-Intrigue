@@ -295,7 +295,7 @@ if events:
 
     section("HEGEMONY TIMELINE")
     wanted = {"vassalage_formed", "poach", "revolt", "annexation_breach", "vassalage_collapsed",
-              "vassalage_renewed", "kingdom_eliminated", "ai_war_declared"}
+              "vassalage_renewed", "kingdom_eliminated", "ai_war_declared", "defection"}
     for day, d in events:
         k = d.get("kind")
         if k not in wanted:
@@ -317,6 +317,8 @@ if events:
             print(f"  {date:<18} COLLAPSE {d.get('vassal')} / {d.get('patron')}")
         elif k == "vassalage_renewed":
             print(f"  {date:<18} RENEWED  {d.get('vassal')} -> {d.get('patron')} at hold {d.get('hold')}")
+        elif k == "defection":
+            print(f"  {date:<18} DEFECT   {d.get('vassal')} left {d.get('oldPatron')} for its attacker {d.get('newPatron')} (hold {d.get('hold')}, signed {d.get('signed')})")
         elif k == "kingdom_eliminated":
             print(f"  {date:<18} GONE     {d.get('kingdom')} ({d.get('warsClosed')} wars closed)")
 

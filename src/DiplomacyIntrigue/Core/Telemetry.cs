@@ -56,6 +56,11 @@ namespace DiplomacyIntrigue.Core
             /// the engine, which ends its wars without a peace.
             /// </summary>
             Eliminated = 4,
+            /// <summary>
+            /// A neglected vassal ended the war by kneeling to the kingdom attacking it -
+            /// the peace *is* the submission (run 06, the lead's F3 decision).
+            /// </summary>
+            Defection = 5,
         }
 
         /// <summary>

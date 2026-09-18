@@ -8,10 +8,12 @@ namespace DiplomacyIntrigue.Diplomacy
     /// The reputation ledger. Trust is the mod's answer to a question vanilla never asks:
     /// what does it cost, long-term, to be the kingdom that breaks its word?
     ///
-    /// Relation already covers short-term feeling and fades. Trust does not fade, so a
-    /// betrayal in year three is still remembered in year twenty - and the punishment is
-    /// not a modifier, it is that nobody will sign anything with you (see
-    /// <see cref="WillConsiderPacts"/>).
+    /// Relation already covers short-term feeling and fades. Trust is reputation: it
+    /// outlives the season, but since run 06 it is no longer a ratchet - it drifts toward
+    /// zero for any pair nobody is tending, and a war bleeds it faster the longer the war
+    /// runs (<see cref="DailyTick"/>). A betrayal is still remembered for years, just not
+    /// literally forever - and the punishment for treachery is still not a modifier, it is
+    /// that nobody will sign anything with you (see <see cref="WillConsiderPacts"/>).
     /// </summary>
     public static class TrustRegistry
     {
@@ -129,6 +131,55 @@ namespace DiplomacyIntrigue.Diplomacy
             // Deliberately not treated as a breach. Refusal has to be a real option, or an
             // alliance is a suicide pact - so it costs trust and nothing else.
             Adjust(state, caller, refuser, DiplomacyConstants.TrustCallToArmsRefused, "refused our call to arms");
+        }
+
+        // ----- Daily decay ----------------------------------------------------
+
+        /// <summary>
+        /// Fades every record a little, once a day - the lead's F2 decision after run 06,
+        /// where trust only ever grew and saturated near +100 across the map.
+        ///
+        /// Three rules:
+        ///
+        ///   - At peace a record drifts toward zero, from either side. A reputation not
+        ///     being maintained fades - and so does a grudge, which is the ledger's only
+        ///     way back from the bottom.
+        ///   - A positive change suspends all decay for
+        ///     <see cref="DiplomacyConstants.TrustDecayGraceDays"/> days, so a relationship
+        ///     still being tended never drains.
+        ///   - At war the record moves *down* instead - goodwill erodes, enmity deepens -
+        ///     and the bleed grows with each day the war has run.
+        ///
+        /// Silent on purpose: one log line per record per day would drown the log, and the
+        /// weekly snapshot's trustIn/trustOut is where the drift is meant to be read.
+        /// </summary>
+        public static void DailyTick(ModState state)
+        {
+            for (var i = 0; i < state.Trust.Count; i++)
+            {
+                var record = state.Trust[i];
+                if (record.Value == 0f) continue;
+                var from = record.From;
+                var to = record.To;
+                if (from == null || to == null) continue;
+
+                var daysSincePositive =
+                    (float)(CampaignTime.Now - record.LastPositiveChange).ToDays;
+                if (daysSincePositive < DiplomacyConstants.TrustDecayGraceDays) continue;
+
+                var war = state.OngoingWarBetween(from, to);
+                if (war != null)
+                {
+                    record.Add(-(DiplomacyConstants.TrustDecayWarPerDay
+                                 + war.DaysElapsed * DiplomacyConstants.TrustDecayWarRampPerDay));
+                    continue;
+                }
+
+                var value = record.Value;
+                record.Add(value > 0f
+                    ? -System.Math.Min(DiplomacyConstants.TrustDecayPerDay, value)
+                    : System.Math.Min(DiplomacyConstants.TrustDecayPerDay, -value));
+            }
         }
 
         private static void LogChange(Kingdom from, Kingdom to, float amount, float now, string reason)

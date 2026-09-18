@@ -313,6 +313,14 @@ namespace DiplomacyIntrigue.Diplomacy
         public const float HoldOnVoluntarySubmission = 60f;
 
         /// <summary>
+        /// Where a vassalage starts when a neglected vassal kneels to the kingdom attacking
+        /// it - more willing than conquest, less than a volunteer, so between
+        /// <see cref="HoldOnCoercedSubmission"/> and <see cref="HoldOnVoluntarySubmission"/>.
+        /// The lead's F3 decision after run 06. **Un-tuned.**
+        /// </summary>
+        public const float HoldOnDesperateSubmission = 45f;
+
+        /// <summary>
         /// Where a vassalage imposed at a peace table starts when the loser walked out of a
         /// vassalage to the same winner within <see cref="BrokenTreatyWindowYears"/> - a revolt
         /// crushed, or a vassal taken back by force from the rival it defected to.
@@ -409,7 +417,12 @@ namespace DiplomacyIntrigue.Diplomacy
         /// <summary>A mark older than this is forgotten.</summary>
         public const float DefianceMarkMemoryDays = 84f;
 
-        /// <summary>Hold lost by the patron's other vassals when one of them revolts.</summary>
+        /// <summary>
+        /// Hold lost by the patron's other vassals when one of them gets out - revolt, an
+        /// annexation begun against a sibling, or a defection to the attacker the patron
+        /// would not face (Hegemony.Defect). One number for "the rest watched a vassal
+        /// leave", whatever the door was.
+        /// </summary>
         public const float SecessionContagionHold = 10f;
 
         /// <summary>
@@ -545,9 +558,18 @@ namespace DiplomacyIntrigue.Diplomacy
 
         /// <summary>
         /// Smoothed dominance at which greed begins; it is full one even share above. With
-        /// eight kingdoms: from 25% of the world's strength, full at 37.5%.
+        /// eight kingdoms: from ~16% of the world's strength, full at ~28%.
+        ///
+        /// Lowered from 2.0 - the lead's F5 decision after run 06, where the threshold was
+        /// never reached: the highest smoothed dominance the run produced was ~1.76, so
+        /// greed never fired and the whole annexation branch stayed untested. At 1.25 a
+        /// dominance of 1.75 - what the run's peak hegemon actually held - yields greed
+        /// 0.5, exactly the line where a ruler stops wanting vassals. The branch is
+        /// reachable only at the extreme the old value was meant to mark, and unreachable
+        /// in an even eight-kingdom world where dominance sits near 1.
+        /// **Un-tuned beyond that arithmetic.** The next run is the first measurement.
         /// </summary>
-        public const float GreedStartsAtDominance = 2f;
+        public const float GreedStartsAtDominance = 1.25f;
 
         /// <summary>
         /// Greed at which a ruler takes no new vassals - no voluntary submission, no poaching,
@@ -623,6 +645,47 @@ namespace DiplomacyIntrigue.Diplomacy
         public const float TrustUnjustWarObserver = -10f;
         public const float TrustPeaceHeld = 8f;
         public const float TrustSpyNetworkExposed = -25f;
+
+        /// <summary>
+        /// Trust shed per day while the pair is at peace, drifting toward zero from either
+        /// side - the lead's F2 decision after run 06, where nothing ever took trust away:
+        /// a world that kept honouring treaties saturated near +100, so reputation had
+        /// become a ratchet and "would they sign with you" stopped being a question the
+        /// value answered.
+        ///
+        /// It runs both ways on purpose. A reputation nobody maintains fades, and so does a
+        /// grudge - which is also the ledger's first route back from the bottom, where a
+        /// betrayal used to be remembered at full strength forever.
+        /// **Un-tuned.** At 0.05 a saturated record takes ~5.5 in-game years to reach zero
+        /// unreinforced, and a -35 breach about as long to be forgiven.
+        /// </summary>
+        public const float TrustDecayPerDay = 0.05f;
+
+        /// <summary>
+        /// Days after a positive change during which no decay runs at all - the lead's F2
+        /// decision: a good act buys a stretch in which the relationship cannot fade. A pair
+        /// still doing right by each other therefore never decays; the drain only reaches
+        /// relationships nobody is tending.
+        /// **Un-tuned.**
+        /// </summary>
+        public const float TrustDecayGraceDays = 30f;
+
+        /// <summary>
+        /// Trust lost per day between two kingdoms at war, instead of the drift toward
+        /// zero. While a war runs the record moves *down*: goodwill erodes and enmity
+        /// deepens - the lead's F2 decision.
+        /// **Un-tuned.**
+        /// </summary>
+        public const float TrustDecayWarPerDay = 0.05f;
+
+        /// <summary>
+        /// Added to <see cref="TrustDecayWarPerDay"/> for every day the war has already run,
+        /// so the bleed worsens the longer the fighting lasts - the lead's F2 decision.
+        /// At day 76, the median run-06 war, the drain is 0.43/day - roughly 18 trust over
+        /// the whole war; a year-long one costs most of a century of goodwill.
+        /// **Un-tuned.**
+        /// </summary>
+        public const float TrustDecayWarRampPerDay = 0.005f;
 
         /// <summary>A war declared below this legitimacy offends every uninvolved court.</summary>
         public const float UnjustWarLegitimacyThreshold = 0.3f;

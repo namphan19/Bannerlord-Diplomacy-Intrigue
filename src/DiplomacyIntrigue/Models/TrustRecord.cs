@@ -10,9 +10,11 @@ namespace DiplomacyIntrigue.Models
     /// Vlandia" are different facts, and after a betrayal they are very different numbers.
     /// Symmetric trust would let the betrayer forgive themselves.
     ///
-    /// Trust does not decay. That is the point of it - relation already exists as the value
-    /// that fades within a season. Trust is reputation, and it follows a kingdom for the
-    /// rest of the campaign unless it is deliberately rebuilt by honouring agreements.
+    /// Trust decays toward zero with neglect - the lead's decision after run 06, where a
+    /// world that kept honouring treaties saturated near +100 and reputation had become a
+    /// ratchet. A relationship has to be maintained to be kept; a grudge fades too, which
+    /// is also the ledger's first route back from the bottom
+    /// (<see cref="Diplomacy.TrustRegistry.DailyTick"/>).
     /// </summary>
     public sealed class TrustRecord
     {
@@ -22,6 +24,16 @@ namespace DiplomacyIntrigue.Models
 
         /// <summary>Set whenever the value moves, so the UI can explain recent shifts.</summary>
         [SaveableProperty(4)] public CampaignTime LastChanged { get; private set; }
+
+        /// <summary>
+        /// The last time something *good* passed between the pair - the timestamp the decay
+        /// grace window reads (<see cref="Diplomacy.DiplomacyConstants.TrustDecayGraceDays"/>).
+        /// Kept separate from <see cref="LastChanged"/>, which moves on every change including
+        /// the decay itself and so could never say when the pair last did each other a good
+        /// turn. Loads as campaign-start on pre-F2 saves, which simply means those records
+        /// decay normally.
+        /// </summary>
+        [SaveableProperty(5)] public CampaignTime LastPositiveChange { get; private set; }
 
         internal TrustRecord() { }
 
@@ -40,6 +52,7 @@ namespace DiplomacyIntrigue.Models
             if (amount == 0f) return;
             Value = Clamp(Value + amount);
             LastChanged = CampaignTime.Now;
+            if (amount > 0f) LastPositiveChange = CampaignTime.Now;
         }
 
         private static float Clamp(float v)

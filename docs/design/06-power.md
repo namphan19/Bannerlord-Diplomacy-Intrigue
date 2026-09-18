@@ -87,8 +87,14 @@ The balancing pull itself now reads smoothed sphere strength.
 ## 5. Greed, dread, and annexation — smoothed
 
 ```
-greed = clamp(smoothedDominance - 2, 0, 1)             // from 25% of the world, full at 37.5%
+greed = clamp(smoothedDominance - 1.25, 0, 1)          // from ~16% of the world, full at ~28% (8 kingdoms)
 ```
+
+> Threshold lowered from 2.0 — the lead's F5 call after run 06, where the highest smoothed
+> dominance the run produced was ~1.76 and greed never fired at all, leaving the annexation
+> branch dead content. At 1.25 that same peak yields greed ~0.5, the `GreedRefusesVassals`
+> line: reachable only at the extreme, unreachable in an even world where dominance sits
+> near 1. **Un-tuned beyond that arithmetic; run 07 is the first measurement.**
 
 **The greedy ruler, from greed 0.5:**
 - takes no new vassals — no voluntary submission to an AI patron, no poaching, no vassalage on

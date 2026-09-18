@@ -483,6 +483,57 @@ namespace DiplomacyIntrigue.Diplomacy
         }
 
         /// <summary>
+        /// A neglected vassal throws itself on its attacker's mercy: the war ends as a
+        /// submission - the lead's F3 decision after run 06, where a patron barred from
+        /// defending (a truce with the aggressor, the one-step call-to-arms guard) simply
+        /// watched its vassal be eaten and paid nothing for it.
+        ///
+        /// The old bond is closed as broken **by the patron**, not by the vassal. Protection
+        /// was the patron's side of the bargain, so failing it is the patron's breach - and
+        /// <see cref="TreatyRegistry.Break"/> lands it on the patron's name in every court,
+        /// which is what "the lord's image suffers" means in a system with no other
+        /// reputation ledger. The patron's remaining vassals take the lesson exactly as
+        /// they take a revolt.
+        ///
+        /// The caller makes the peace first - signing requires it - then this closes the
+        /// old bond and signs the new one through <see cref="Submit"/>, so the new patron is
+        /// called into the vassal's other defensive wars the same day, which is the
+        /// protection the old one would not give.
+        /// </summary>
+        public static Treaty Defect(ModState state, Treaty vassalage, Kingdom newPatron, out string reason)
+        {
+            reason = null;
+            var vassal = vassalage?.SubordinateParty;
+            var patron = vassalage?.DominantParty;
+            if (vassalage == null || !vassalage.IsActive || vassal == null || patron == null)
+                return null;
+
+            var siblings = new List<Treaty>();
+            CollectVassalages(state, patron, siblings);
+
+            var hold = HoldOf(vassalage);
+            TreatyRegistry.Break(state, vassalage, patron);
+
+            var warned = 0;
+            for (var i = 0; i < siblings.Count; i++)
+            {
+                var sibling = siblings[i];
+                if (sibling == vassalage || !sibling.IsActive) continue;
+                sibling.SetHold(HoldOf(sibling) - DiplomacyConstants.SecessionContagionHold);
+                warned++;
+            }
+
+            var treaty = Submit(state, newPatron, vassal, DiplomacyConstants.HoldOnDesperateSubmission,
+                DiplomacyConstants.AiDefaultTributePerPeriod, out reason,
+                route: "defection", detail: "left an undefended patron");
+
+            Telemetry.Event("defection", "vassal", vassal, "oldPatron", patron,
+                "newPatron", newPatron, "hold", hold, "siblingsWarned", warned,
+                "signed", treaty != null);
+            return treaty;
+        }
+
+        /// <summary>
         /// At the end of its term a vassal decides rather than simply lapsing. High Hold and
         /// no standing defiance renews it in place; anything else is left to the registry's
         /// expiry sweep, which ends it as honoured.

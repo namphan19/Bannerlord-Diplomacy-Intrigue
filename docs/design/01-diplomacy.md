@@ -226,6 +226,16 @@ Trust gates alliances: below **−20** a kingdom will not sign anything but a tr
 This is the durable punishment for treachery — not a relation penalty that decays in a
 season, but a reputation that follows the player for the rest of the campaign.
 
+> **Departure (run 06, the lead's F2 call): trust now decays.** The table above was written
+> for a value that never moved on its own, and run 06 showed where that ends: every record
+> saturated near +100 and the −20 floor never bound again. Trust now drifts toward 0 at
+> 0.05/day for any pair nobody is tending - both directions, so a grudge fades too, which
+> is the ledger's only way back from the bottom. A positive change suspends the decay for
+> 30 days, and a war pulls the pair's record *down*, harder each day it runs
+> (0.05 + 0.005·days at war). "Follows you for the rest of the campaign" is still true at
+> these rates - a −35 breach takes ~8 in-game years to forgive - just not literally forever.
+> Constants un-tuned; run 07 is the first measurement.
+
 ### 4.2 Peace terms
 
 Peace is a package, not a yes/no. What the stronger side may demand is bounded by **war
