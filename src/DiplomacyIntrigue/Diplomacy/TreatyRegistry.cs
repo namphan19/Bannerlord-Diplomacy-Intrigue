@@ -28,8 +28,14 @@ namespace DiplomacyIntrigue.Diplomacy
         /// still in force would refuse on it; asking only after tearing it up would find out
         /// too late.
         /// </param>
+        /// <param name="atPeace">
+        /// Answer as though the war between the parties had just ended. The peace table asks
+        /// whether a treaty it is promising could actually be signed afterwards, while the war
+        /// is still formally open - asking without it gets "Make peace first.", which is the
+        /// step being planned rather than a real refusal.
+        /// </param>
         public static bool CanSign(ModState state, Kingdom a, Kingdom b, TreatyType type, out string reason,
-            Treaty replacing = null)
+            Treaty replacing = null, bool atPeace = false)
         {
             reason = null;
 
@@ -49,7 +55,7 @@ namespace DiplomacyIntrigue.Diplomacy
                 return true;
             }
 
-            if (atWar) { reason = "Make peace first."; return false; }
+            if (atWar && !atPeace) { reason = "Make peace first."; return false; }
 
             if (state.HasTreatyForbiddingWar(a, b) && type != TreatyType.Alliance
                 && type != TreatyType.DefensivePact && type != TreatyType.Vassalage

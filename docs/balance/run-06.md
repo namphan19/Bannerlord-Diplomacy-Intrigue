@@ -162,8 +162,14 @@ and cannot sign with outsiders on its own account` (17:46:29); also Sturgia, and
 can be signed. `Apply` makes the peace first, then `ImposeTribute` fails at
 `TreatyRegistry.CanSign` — **the winner signs a peace and receives nothing it was promised**.
 
-**Fix (not controversial, not yet applied).** In `IsDemandable`, refuse `ImposeTributaryPact`
-when `TreatyRegistry.CanSign(winner, loser, TributaryPact)` would refuse — one resolver.
+**Fix applied** on `feature/run-06-fixes` (2026-09-18, builds clean; not verified in game —
+the frozen clock cannot produce a war ending at a peace table). `IsDemandable` now refuses
+`ImposeTributaryPact` when `CanSign` would refuse, asked with a new `atPeace` parameter that
+skips only the "Make peace first" step — the war is still formally open when the table asks.
+The same check covers `ImposeVassalage`, which had the same gap for the conditions its own
+checks did not name (a loser already holding vassals, the trust floor, either side being a
+vassal forbidden to treat with outsiders); the patron and strength checks keep their better
+messages.
 
 ### F5 — Greed was never reached
 

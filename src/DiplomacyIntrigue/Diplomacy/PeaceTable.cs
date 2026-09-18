@@ -155,6 +155,24 @@ namespace DiplomacyIntrigue.Diplomacy
                 }
             }
 
+            // The demands that are treaties have to be signable once the war closes - asked
+            // here, before the peace, because signing happens after it. Run 06 F4: a loser
+            // already answering to another patron could not sign the tributary pact it was
+            // being charged for, and the winner made peace and collected nothing it was
+            // promised. CanSign does the asking so there is still only one resolver.
+            if (terms.ImposeTributaryPact
+                && !TreatyRegistry.CanSign(state, terms.Winner, terms.Loser,
+                    TreatyType.TributaryPact, out reason, atPeace: true))
+            {
+                return false;
+            }
+            if (terms.ImposeVassalage
+                && !TreatyRegistry.CanSign(state, terms.Winner, terms.Loser,
+                    TreatyType.Vassalage, out reason, atPeace: true))
+            {
+                return false;
+            }
+
             var budget = BudgetFor(war, terms.Winner);
             var cost = CostOf(terms);
             if (cost > budget)

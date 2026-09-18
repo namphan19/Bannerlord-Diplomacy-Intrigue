@@ -53,8 +53,16 @@ Earlier notes from the live monitor, kept for context:
    reached. Parts 1-2 have no `[KINGDOM]`/`[EVENT]` records.
 2. Decide the deferred review items with the lead (end of §3): trust as a grim trigger, the
    weariness gate that never binds, vassals of one patron at war with each other, a hegemon
-   paying tribute to its own vassal.
+   paying tribute to its own vassal. Plus run 06's own design questions: F1 (alliances embolden
+   as well as deter), F2 (trust saturating), F3 (protection blocked by truce/cascade), F5/F6
+   (greed unreachable, hegemony quiet).
 3. Then Phase 2 (§4).
+
+**Branch `feature/run-06-fixes`** (2026-09-18, off development) carries the run-06 follow-ups
+that are not design decisions: F4 fixed (`IsDemandable` refuses tribute/vassalage demands
+`CanSign` could never honour — details in run-06.md F4) and the two analyser caveats from §7
+(`theirSupport` counted directly; mercenary clan moves separated from real defections).
+Builds clean; nothing in it has been verified in a live game yet.
 
 **Traps found this session** (the always-true ones are in CLAUDE.md §1):
 - GABS's own `Lib.GAB` crashed the game on a cancelled connection. Unattended runs launch with
