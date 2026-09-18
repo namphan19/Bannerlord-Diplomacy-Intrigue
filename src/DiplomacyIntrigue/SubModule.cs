@@ -196,6 +196,7 @@ namespace DiplomacyIntrigue
                 starter.AddBehavior(new TreatyBehavior());
                 starter.AddBehavior(new CallToArmsBehavior());
                 starter.AddBehavior(new AiDiplomacyBehavior());
+                starter.AddBehavior(new TelemetryBehavior());
             }
         }
 

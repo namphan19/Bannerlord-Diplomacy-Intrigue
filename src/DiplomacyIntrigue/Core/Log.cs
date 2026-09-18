@@ -85,14 +85,19 @@ namespace DiplomacyIntrigue.Core
             catch { /* no UI yet */ }
         }
 
+        private const int KeepLogs = 60;
+
         private static void PruneOldLogs()
         {
             try
             {
                 var files = new DirectoryInfo(LogDirectory).GetFiles("diplomacy-intrigue-*.log");
-                if (files.Length <= 10) return;
+                // Sixty, not ten. A balance run restarted a few times - to recover a save, to
+                // redeploy - produces a log per session, and at ten the first half of run 06
+                // was two restarts from being deleted before anyone had copied it out.
+                if (files.Length <= KeepLogs) return;
                 Array.Sort(files, (a, b) => b.LastWriteTimeUtc.CompareTo(a.LastWriteTimeUtc));
-                for (var i = 10; i < files.Length; i++) files[i].Delete();
+                for (var i = KeepLogs; i < files.Length; i++) files[i].Delete();
             }
             catch { }
         }

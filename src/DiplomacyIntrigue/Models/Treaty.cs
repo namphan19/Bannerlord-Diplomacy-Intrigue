@@ -145,7 +145,17 @@ namespace DiplomacyIntrigue.Models
 
         internal void SetSubordinate(Kingdom subordinate) => SubordinateParty = subordinate;
 
-        internal void SetHold(float value) => Hold = value < 0f ? 0f : (value > 100f ? 100f : value);
+        /// <summary>
+        /// Floor of a Hold that has been set. Zero is how a link from a save that predates
+        /// the field reads (see <see cref="Hold"/>), so a link that has genuinely collapsed must
+        /// never be stored as exactly zero - or it reads back as the default of 40, drifts down
+        /// to zero again, and saws between "serving" and collapse forever. The target formula
+        /// can reach zero, so this was reachable rather than theoretical.
+        /// </summary>
+        internal const float MinimumSetHold = 0.1f;
+
+        internal void SetHold(float value)
+            => Hold = value < MinimumSetHold ? MinimumSetHold : (value > 100f ? 100f : value);
 
         internal void AddDefianceMark()
         {

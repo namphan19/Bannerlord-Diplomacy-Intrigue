@@ -142,6 +142,17 @@ namespace DiplomacyIntrigue.Diplomacy
                              + ". That bond would have to be broken before ours could be made.";
                     return false;
                 }
+
+                // Winning a war is not the same as being able to hold the loser afterwards.
+                // Every other route into vassalage asks this; the peace table did not, so a
+                // kingdom that won on points could take a vassal it was weaker than, and the
+                // link would begin with fear already working against it.
+                if (!Hegemony.IsStrongEnoughToHold(terms.Winner, terms.Loser))
+                {
+                    reason = terms.Winner.Name + " is no stronger than " + terms.Loser.Name
+                             + " and could not hold it as a vassal. Tribute or land is still on the table.";
+                    return false;
+                }
             }
 
             var budget = BudgetFor(war, terms.Winner);
@@ -342,14 +353,17 @@ namespace DiplomacyIntrigue.Diplomacy
         /// only definition the mod has - holding one.
         ///
         /// Hold starts low (<see cref="DiplomacyConstants.HoldOnCoercedSubmission"/>), because
-        /// submission at swordpoint is exactly the kind that comes apart.
+        /// submission at swordpoint is exactly the kind that comes apart - and lower still
+        /// for a vassal brought back after walking out on this same winner
+        /// (<see cref="Hegemony.StartingHoldWhenImposed"/>).
         /// </summary>
         private static void ImposeSubmission(ModState state, PeaceTerms terms)
         {
             if (!terms.ImposeVassalage) return;
 
+            var startingHold = Hegemony.StartingHoldWhenImposed(state, terms.Winner, terms.Loser);
             var treaty = Hegemony.Submit(state, terms.Winner, terms.Loser,
-                DiplomacyConstants.HoldOnCoercedSubmission, terms.TributePerPeriod, out var reason);
+                startingHold, terms.TributePerPeriod, out var reason, route: "imposed");
 
             if (treaty == null)
             {
@@ -359,7 +373,10 @@ namespace DiplomacyIntrigue.Diplomacy
 
             Log.Info("Hegemony", terms.Loser.Name + " submits to " + terms.Winner.Name
                                  + " as a vassal at hold "
-                                 + DiplomacyConstants.HoldOnCoercedSubmission.ToString("0")
+                                 + startingHold.ToString("0")
+                                 + (startingHold < DiplomacyConstants.HoldOnCoercedSubmission
+                                     ? " (brought back by force)"
+                                     : "")
                                  + ". " + terms.Winner.Name + " now holds "
                                  + Hegemony.VassalCount(state, terms.Winner) + " vassal(s).");
         }
@@ -399,7 +416,9 @@ namespace DiplomacyIntrigue.Diplomacy
                     + (hasClaim ? "" : "   (blocked: no territorial claim)"),
                 "  tributary pact    " + DiplomacyConstants.PeaceCostTributaryPact.ToString("0"),
                 "  submission        " + DiplomacyConstants.PeaceCostVassalage.ToString("0")
-                    + "   (they become our vassal)",
+                    + (Hegemony.IsStrongEnoughToHold(winner, loser)
+                        ? "   (they become our vassal)"
+                        : "   (blocked: we are no stronger than them)"),
                 "  release prisoners " + DiplomacyConstants.PeaceCostPrisoners.ToString("0"),
                 "  indemnity         " + DiplomacyConstants.PeaceCostPerThousandIndemnity.ToString("0") + " per 1000 denars",
                 "Their exhaustion is " + war.ExhaustionOf(loser).ToString("0.0")

@@ -213,6 +213,7 @@ namespace DiplomacyIntrigue.Core
             // sat unchanged through 20 simulated days and looked like a bug in the drift.
             for (var day = 0; day < days; day++)
             {
+                Power.DailySample(state);
                 WarExhaustion.DailyTick(state);
                 Hegemony.DailyTick(state);
                 TreatyRegistry.ExpireAndReward(state);
@@ -536,6 +537,7 @@ namespace DiplomacyIntrigue.Core
                 // permanently discouraged by wars it finished years ago.
                 for (var day = 0; day < 7; day++)
                 {
+                    Power.DailySample(state);
                     WarExhaustion.DailyTick(state);
                     ClaimRegistry.ExpireStale(state);
                     ClaimRegistry.ResolveFabrications(state);
@@ -596,6 +598,19 @@ namespace DiplomacyIntrigue.Core
                           + AiDiplomacy.PactValue(state, a, b).ToString("0.0"));
             sb.AppendLine(b.Name + " values an agreement with " + a.Name + " at "
                           + AiDiplomacy.PactValue(state, b, a).ToString("0.0"));
+
+            sb.AppendLine("Ambition, subtracted above: " + a.Name + " "
+                          + (Power.Ambition(a) * DiplomacyConstants.PactWeightAmbition).ToString("0.0")
+                          + ", " + b.Name + " "
+                          + (Power.Ambition(b) * DiplomacyConstants.PactWeightAmbition).ToString("0.0"));
+
+            var pull = AiDiplomacy.BalancingPull(state, a, b, out var against);
+            sb.AppendLine("Balancing pull, included above: "
+                          + (against == null
+                              ? "none - no sphere outweighs the two of them"
+                              : (pull * DiplomacyConstants.PactWeightBalancing).ToString("0.0")
+                                + " against " + against.Name + "'s sphere ("
+                                + Power.SmoothedSphere(state, against).ToString("0") + " smoothed strength)"));
             sb.AppendLine("Thresholds: non-aggression " + DiplomacyConstants.AiNonAggressionThreshold.ToString("0")
                           + ", defensive pact " + DiplomacyConstants.AiDefensivePactThreshold.ToString("0")
                           + ", alliance " + DiplomacyConstants.AiAllianceThreshold.ToString("0"));
@@ -767,20 +782,150 @@ namespace DiplomacyIntrigue.Core
                       .Append("  tribute ").Append(link.TributeAmount)
                       .Append("  until ").Append(link.ExpiresOn).AppendLine();
                     sb.Append("      ").AppendLine(explanation);
-                    sb.Append("      ").AppendLine(Describe(hold));
+                    sb.Append("      ").Append(Describe(state, link))
+                      .Append("   (revolts below ").Append(Hegemony.SecessionThreshold(state, link).ToString("0.0"))
+                      .AppendLine(")");
                 }
             }
 
             return sb.ToString();
         }
 
-        private static string Describe(float hold)
+        private static string Describe(ModState state, Models.Treaty link)
         {
+            var hold = Hegemony.HoldOf(link);
             if (hold >= DiplomacyConstants.HoldRenewThreshold) return "loyal - will renew willingly";
             if (hold >= DiplomacyConstants.HoldPassiveResistanceThreshold) return "serving, but will let the term lapse";
             if (hold >= DiplomacyConstants.HoldDefianceThreshold) return "resisting - refuses summons, withholds tribute";
-            if (hold >= DiplomacyConstants.HoldSecessionThreshold) return "defiant - will treat with outsiders";
+            if (!Hegemony.IsAtBreakingPoint(state, link)) return "defiant - will treat with outsiders";
             return "at breaking point - counting down to revolt";
+        }
+
+        /// <summary>
+        /// Every kingdom's strength as the diplomacy formulas read it: the engine's live
+        /// military figure, its share of the world, its fortifications, and the sphere it
+        /// belongs to. Written because the lead found, reading a save by hand, that the
+        /// hegemon of the whole map was nearly its weakest kingdom - a fact no command could
+        /// show.
+        /// Usage: diplomacy.strength
+        /// </summary>
+        /// <summary>
+        /// Sets a kingdom's smoothed strength, for testing greed and dread without waiting a
+        /// year of campaign for a kingdom to grow into them. It moves only the average: live
+        /// strength, the armies and every other system are untouched, and each daily sample
+        /// pulls the figure back toward the live one. Never use it in a save you mean to keep.
+        /// Usage: diplomacy.set_smoothed_strength Northern Empire | 60000
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("set_smoothed_strength", "diplomacy")]
+        public static string SetSmoothedStrength(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var parts = SplitOnPipe(args);
+            if (parts.Count < 2 || !float.TryParse(parts[1], System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out var value) || value < 0f)
+                return "Usage: diplomacy.set_smoothed_strength <kingdom> | <strength>";
+
+            var kingdom = FindKingdom(parts[0]);
+            if (kingdom == null) return "No kingdom matching \"" + parts[0] + "\".";
+
+            state.PowerRecords.RemoveAll(r => r.Kingdom == kingdom);
+            state.PowerRecords.Add(new KingdomPower(kingdom, value));
+
+            return kingdom.Name + " smoothed strength set to " + value.ToString("0")
+                   + ": smoothed dominance " + Power.SmoothedDominance(state, kingdom).ToString("0.00")
+                   + ", greed " + Power.Greed(state, kingdom).ToString("0.00") + ". Test only - do not save.";
+        }
+
+        /// <summary>
+        /// Sets the player hero's age and cures the old-age illness, for keeping a test
+        /// character alive through a long balance run. Written during run 06, when the test
+        /// save's 75-year-old hero with no heir was dying of old age - which ends the game and
+        /// stalls the run. The alternative, turning off the campaign's life and death cycle,
+        /// would have stopped every AI ruler dying too and changed what the run measures.
+        /// Touches nobody else.
+        ///
+        /// Age alone is not enough, as the first attempt found: the engine does not kill the
+        /// main hero outright but makes it ill (AgingCampaignBehavior, verified by IL in
+        /// v1.4.8), and an illness already under way drains hit points until death whatever
+        /// the age. Illness is <c>Campaign.MainHeroIllDays != -1</c>.
+        /// Usage: diplomacy.test_set_player_age 35
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_set_player_age", "diplomacy")]
+        public static string TestSetPlayerAge(List<string> args)
+        {
+            if (Campaign.Current == null || Hero.MainHero == null) return NoCampaign;
+            if (args == null || args.Count == 0 || !int.TryParse(args[0], out var years) || years < 18 || years > 100)
+                return "Usage: diplomacy.test_set_player_age <18-100>";
+
+            var wasIll = Hero.IsMainHeroIll;
+            Hero.MainHero.SetBirthDay(CampaignTime.YearsFromNow(-years));
+            Campaign.Current.MainHeroIllDays = -1;
+            Hero.MainHero.HitPoints = Hero.MainHero.MaxHitPoints;
+
+            return Hero.MainHero.Name + " is now " + Hero.MainHero.Age.ToString("0")
+                   + (wasIll ? ", cured of the illness" : "")
+                   + ", at full health. Test characters only.";
+        }
+
+        [CommandLineFunctionality.CommandLineArgumentFunction("strength", "diplomacy")]
+        public static string StrengthCommand(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var kingdoms = new List<Kingdom>();
+            var total = 0f;
+            foreach (var kingdom in Kingdom.All)
+            {
+                if (kingdom.IsEliminated) continue;
+                kingdoms.Add(kingdom);
+                total += kingdom.CurrentTotalStrength;
+            }
+            kingdoms.Sort((x, y) => y.CurrentTotalStrength.CompareTo(x.CurrentTotalStrength));
+
+            var sb = new StringBuilder();
+            sb.AppendLine("Live strength decides war now; smoothed (" + DiplomacyConstants.StrengthSmoothingDays.ToString("0")
+                          + "-day average) decides greed and coalitions.");
+            sb.AppendLine("rank  kingdom            strength   share  dom.  smoothed  s.dom  ambit  greed  fiefs  sphere");
+            for (var i = 0; i < kingdoms.Count; i++)
+            {
+                var k = kingdoms[i];
+                var fiefs = 0;
+                for (var s = 0; s < k.Settlements.Count; s++)
+                    if (k.Settlements[s].IsFortification) fiefs++;
+
+                string sphere;
+                var patron = Hegemony.PatronOf(state, k);
+                if (patron != null)
+                {
+                    sphere = "vassal of " + patron.Name + " (balance vs patron "
+                             + Power.Balance(k, patron).ToString("+0.00;-0.00") + ")";
+                }
+                else if (Hegemony.IsHegemon(state, k))
+                {
+                    sphere = "hegemon, " + Hegemony.VassalCount(state, k) + " vassal(s), sphere "
+                             + Hegemony.SphereStrength(state, k).ToString("0");
+                }
+                else
+                {
+                    sphere = "free";
+                }
+
+                sb.Append((i + 1).ToString().PadLeft(4)).Append("  ")
+                  .Append(k.Name.ToString().PadRight(18)).Append(' ')
+                  .Append(k.CurrentTotalStrength.ToString("0").PadLeft(8)).Append(' ')
+                  .Append((total <= 0f ? 0f : k.CurrentTotalStrength / total * 100f).ToString("0.0").PadLeft(6)).Append("% ")
+                  .Append(Power.Dominance(k).ToString("0.00").PadLeft(5)).Append(' ')
+                  .Append(Power.Smoothed(state, k).ToString("0").PadLeft(9)).Append(' ')
+                  .Append(Power.SmoothedDominance(state, k).ToString("0.00").PadLeft(6)).Append(' ')
+                  .Append(Power.Ambition(k).ToString("0.00").PadLeft(6)).Append(' ')
+                  .Append(Power.Greed(state, k).ToString("0.00").PadLeft(6)).Append(' ')
+                  .Append(fiefs.ToString().PadLeft(6)).Append("  ")
+                  .AppendLine(sphere);
+            }
+            return sb.ToString();
         }
 
         [CommandLineFunctionality.CommandLineArgumentFunction("report", "diplomacy")]

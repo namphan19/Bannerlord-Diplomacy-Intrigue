@@ -108,6 +108,19 @@ on unchanged, which is easy to miss because the reply looks like success. Verify
 clean save mid-session therefore means restarting the game — there is no quit-to-menu tool on
 the bridge.
 
+**GABS itself can crash the game.** On 2026-09-17 `games_start` returned `started_bridge_pending`
+(the first connect was cancelled during backoff), a `games_connect` followed, and ~20 seconds
+later the process died: `CLR20r3` with P4 = `Lib.GAB`, an `InvalidOperationException` in
+`TcpConnection.SendMessageAsync` - the bridge answering on a connection that had closed. Not the
+mod. After a pending start, wait for the game rather than connecting over it, and **never leave
+the GABS module loaded for an unattended run**: launch those with `scripts/play.ps1`.
+
+**The player hero dies of old age by illness, not outright.** `AgingCampaignBehavior` makes an old
+main hero ill (`Campaign.MainHeroIllDays != -1`), then drains hit points daily until
+`KillMainHeroWithIllness`; with no heir the campaign ends and a run stalls on the Game Over
+screen. Resetting the age alone does not cure an illness already under way - run 06 lost a
+session to exactly that. `diplomacy.test_set_player_age` resets both, for test saves only.
+
 **The game throttles hard when its window is unfocused** — roughly two in-game hours per real
 minute. A campaign day takes about an hour of real time in the background. This is why
 long-run verification cannot be done from a tool call.
@@ -142,7 +155,8 @@ The GABS MCP server drives the running game. The loop that works:
 3. `bannerlord.core.set_cheat_mode` true — needed before any `campaign.*` command
 4. Drive with `bannerlord.core.run_command`, read the mod log, `ui.take_screenshot` for UI
 
-Useful commands beyond `status`/`wars`/`treaties`: `diplomacy.hegemony` (every sphere, each
+Useful commands beyond `status`/`wars`/`treaties`: `diplomacy.strength` (every kingdom ranked
+by the strength the formulas read, with its sphere), `diplomacy.hegemony` (every sphere, each
 link's hold and the terms pulling it), `diplomacy.submission_value A | B`,
 `diplomacy.offer_peace <winner> | <loser> | vassalage, prisoners` (drives the real peace-table
 route rather than fabricating a treaty), `diplomacy.war_value`, `diplomacy.peace_allowance`.
@@ -165,7 +179,8 @@ suspect and say so.
 **Save data is frozen once shipped.** Never renumber or reuse a `SaveableProperty` id, never
 reuse a save-definer local id for a different type, never change the definer base id
 (`2749100`, block `2749100`–`2749199`). `Treaty` currently uses ids **1-17** (14 `Hold`, 15
-defiance marks, 16 last defiance, 17 the revolt clock), so the next free id there is **18**. Adding a new savable type means a class definition
+defiance marks, 16 last defiance, 17 the revolt clock), so the next free id there is **18**. `ModState` uses
+properties **1-10** (10 is `PowerRecords`), and the definer's class ids run to **9** (`KingdomPower`). Adding a new savable type means a class definition
 **and** a container definition in `ModSaveDefiner` — a missing container definition crashes
 on save, which is the single most common way to break a Bannerlord mod. Bump
 `ModState.CurrentSchemaVersion` only when the *meaning* of existing data changes; adding a

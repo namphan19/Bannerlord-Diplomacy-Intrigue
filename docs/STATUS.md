@@ -1,22 +1,72 @@
-# Status — 2026-09-16
+# Status — 2026-09-17
 
 Point-in-time state. [CLAUDE.md](../CLAUDE.md) holds the things that are always true; this
 file holds what changes. Update it when you finish a chunk of work.
 
 Module version 0.1.0. Save schema **v4**, definer base id **2749100**.
-Treaty save ids now run to **17** (`Hold`, defiance marks, the revolt clock).
-Last measured: **balance run 04**, 5.1 in-game years, zero errors —
-[docs/balance/run-04.md](balance/run-04.md).
+Save ids: `Treaty` 1-17, `ModState` 1-10, definer class ids to 9 (`KingdomPower`).
+Last completed measurement: **balance run 04** — [docs/balance/run-04.md](balance/run-04.md).
+**Run 06 is in progress** and is the first measurement of everything below.
 
-**Phase 1 is code complete, 1.1 through 1.11, and run 04 met every acceptance criterion.**
-Wars end (median 66 days, 12 of 15 through our peace table, nothing outside our systems),
-the world came off total war (73 % of weeks → 3.3 %), alliances hold, nobody was eliminated,
-zero errors over 5.1 in-game years.
+## Start here — handoff, 2026-09-17
 
-**And the same run found the pillar's real problem: hegemony forms far too easily.** Four
-kingdoms knelt in the first ninety seconds and one ended the run holding all seven others.
-Three defects behind it are listed under "What to do next"; none is a crash, all are Phase 1
-correctness and balance.
+Branch **`feature/hegemony-structural-fixes`**, on top of `development`
+(`30f3c99`), ready to merge. It changes Phase 1 in four layers, each with its own section under
+"What to do next" and each verified piecewise in a live game but **not yet measured in a run**:
+
+| Layer | What changed | Section | Spec |
+|---|---|---|---|
+| 1. Hegemony structure | A patron is actually called to defend its vassal; submission reads the patron's ability to protect; withheld tribute is defiance; resentful vassals revolt together; poaching checks before it breaks | §3 | [design/04](design/04-hegemony.md) §10a |
+| 2. Strength read properly | Symmetric (log2) fear; the revolt line moves with the vassal's strength; the peace table cannot impose vassalage on a stronger loser; `diplomacy.strength` | §3b | design/04 §10a |
+| 3. Power (the lead's design) | Ambition, coalitions that deter and hold, greed and annexation through war, elimination handled, smoothed strength saved as `KingdomPower` | §3c | [design/06](design/06-power.md) |
+| 4. Telemetry for unattended runs | `[RUN]/[CONFIG]/[KINGDOM]/[LINK]/[WAR]/[EVENT]` records, yearly reports, multi-log analyser | §3d | — |
+
+**Run 06, what exists so far** (analyse with `python tools/analyse-log.py <logs in order>`):
+
+| Part | Campaign dates | Where | Notes |
+|---|---|---|---|
+| 1 | Winter 1136 → Summer 8, 1139 | [balance/run-06-part1.log](balance/run-06-part1.log) | GABS session from `di_phase1_full`; old telemetry only |
+| 2 | Summer 8, 1139 → Summer 1, 1140 | [balance/run-06-part2.log](balance/run-06-part2.log) | from `di_run06_mid`; old telemetry only |
+| 3 | Summer 1, 1140 → Winter 1153 and **still running** | [balance/run-06-part3-interim.log](balance/run-06-part3-interim.log) (copy taken at Winter 9, 1153; the live file is `Documents\...\Logs\diplomacy-intrigue-20260917-174501.log`) + yearly reports in `Reports\` | the lead's unattended session from `di_run06_resume` (that save now holds the lead's checkpoint from about Spring 1146), launcher-hosted, no GABS, no BirthAndDeath; full new telemetry |
+
+**The interim balance analysis is [docs/balance/run-06.md](balance/run-06.md)** — acceptance numbers,
+seven ranked findings with evidence and candidate fixes, a mechanism checklist, and the steps to
+finish. Read it before touching any constant. Its headline: the saturated hegemony collapsed as
+predicted; two of Khuzait's vassals were eliminated because truces and the one-step cascade guard
+blocked their patron's defence; hegemony stayed small and lapsed at term; greed was never reached;
+total war returned in bursts (28.5% of weeks); trust saturated at 100; and a peace-table bug lets a
+winner be promised tribute a vassal cannot pay.
+
+Earlier notes from the live monitor, kept for context:
+- §3b's prediction held exactly: Khuzait revolted after 30 days at breaking point and four
+  vassals rose with it; Northern Empire's seven-vassal sphere was gone within ten months.
+- New spheres formed around Western Empire, then Khuzait (which poached Northern Empire).
+- A coalition answered Southern Empire against Khuzait, the strongest kingdom.
+- **Northern Empire was eliminated on Winter 5, 1140** — the first elimination in any run. Its
+  wars closed `endedBy=Eliminated` and its vassalage collapsed, with zero errors: the
+  `KingdomDestroyedEvent` path works in real play, not only when forced.
+- Greed has not triggered naturally: no kingdom has reached a quarter of the world's strength.
+
+**What the next person does:**
+1. When the lead stops part 3, finish [run-06.md](balance/run-06.md) using its §8 checklist:
+   replace the interim log, rerun the analyser, update the numbers, answer whether greed was ever
+   reached. Parts 1-2 have no `[KINGDOM]`/`[EVENT]` records.
+2. Decide the deferred review items with the lead (end of §3): trust as a grim trigger, the
+   weariness gate that never binds, vassals of one patron at war with each other, a hegemon
+   paying tribute to its own vassal.
+3. Then Phase 2 (§4).
+
+**Traps found this session** (the always-true ones are in CLAUDE.md §1):
+- GABS's own `Lib.GAB` crashed the game on a cancelled connection. Unattended runs launch with
+  `pwsh ./scripts/play.ps1 -Without BirthAndDeath` and no GABS.
+- The test hero on these saves dies of old age by illness; `diplomacy.test_set_player_age 35`
+  cures it (already applied to `di_run06_resume`).
+- Only `di_phase1_full`, `di_run06_mid` and `di_run06_resume` are run 06 saves; never save over
+  `di_phase1_full`.
+- The Kingdom-screen UI (the UI team's `DiplomacyItemMixin`) does not show power, greed or the
+  new call-to-arms duty yet.
+
+---
 
 ---
 
@@ -63,10 +113,10 @@ Two things were added because of this, independent of the cause:
 | Phase | State |
 |---|---|
 | **0 — Foundation** | ✅ done, verified in a live campaign |
-| **1 — Diplomacy core (1.1–1.11)** | ✅ **code complete**, including submission and hegemony (1.9/1.10) and the vanilla takeover (1.11). Verified piecewise in live campaigns; the whole-pillar run is run 04 |
+| **1 — Diplomacy core (1.1–1.12)** | ✅ **code complete**, including submission and hegemony (1.9/1.10), the vanilla takeover (1.11) and power (1.12). Verified piecewise in live campaigns; run 04 accepted 1.1-1.11, run 06 is measuring the rework |
 | **2 — Court intrigue** | ⬜ spec written and reviewed, no code |
 | **3 — Espionage** | ⬜ spec written and reviewed, no code |
-| **4 — Integration, balance, release** | 🔄 runs 01-03 done and archived, run 04 is the Phase 1 acceptance run |
+| **4 — Integration, balance, release** | 🔄 runs 01-05 archived, run 04 was the Phase 1 acceptance run; run 06 measures 1.12 and the hegemony rework and is in progress |
 
 ### Phase 1, feature by feature
 
@@ -86,6 +136,7 @@ the per-feature evidence tables.
 | 1.9 | Submission, Hold, defiance, revolt, collapse | `Diplomacy/Hegemony.cs` |
 | 1.10 | Rival poaching, cascade cap, hegemony UI | `Diplomacy/Hegemony.cs`, `Diplomacy/CallToArms.cs`, `UI/DiplomacyMenu.cs` |
 | 1.11 | Inter-kingdom diplomacy taken from vanilla | `GameModels/` (four models), `Diplomacy/VanillaDiplomacy.cs` |
+| 1.12 | Power: ambition, coalitions, greed, annexation, elimination | `Diplomacy/Power.cs`, `CallToArms.ExpectedSupport`, `Hegemony` — [design/06](design/06-power.md) |
 
 ---
 
@@ -292,7 +343,247 @@ save now holds the run-04 world: one hegemon, seven vassals, Hold 15.7–44.9. S
 there measures whether a *saturated* hegemony comes apart, which is a fair question but not
 the same one as whether it forms too easily — that needs an earlier save.
 
-### 2. Phase 2 — court intrigue
+**Measured since, in run 05** — the lead's own session from the launcher, archived in commit
+`29f8abc` as [run-05.log](balance/run-05.log) but not written up here until now. 52 snapshots,
+~4.3 in-game years, zero errors, starting from a save of the lead's own (Spring 1137, one
+vassal link) rather than `di_phase1_full`. It measured the §2 changes:
+
+- **The submission cap held.** Three submissions against run 04's nine, at 64.5, 61.9 and 63.8
+  against the bar of 55, with `threat` at +50.0, +50.0 and +41.0 — never above its new ceiling.
+- **`avgHold` ended at 52.3**, from 26.7 at the start, but the set of links changed underneath
+  it (1 → 4 → 3) and it sat at 23.1 halfway, so this is not the same links recovering.
+  Tribute was withheld **125** times.
+- **No poach and no revolt happened**, so neither of the paths §2 changed was exercised. The
+  "watch for" lines above are still unanswered.
+- Wars: 13 ended, 11 through the peace table, median 76 days, no week with every kingdom at
+  war.
+
+### 3. The design review of run 04: the hegemony's structure, fixed — unverified in a campaign
+
+Branch `feature/hegemony-structural-fixes`, 2026-09-16. The three changes in §2 each capped a
+number. A game-theory review of run 04 concluded that the collapse to one sphere was mostly
+**structural** rather than numerical: a bargain in which one side's duty did not exist in code,
+and no counterweight anywhere above the level of a single link. What changed, in the order the
+review ranked it:
+
+| # | Defect found by reading the code | Change | Where |
+|---|---|---|---|
+| 1 | **Protection was measured but never provided.** `CallToArms.Applies` refused every call from a vassal to its patron, and no AI code ever joined a vassal's war — so the Hold term `protection` could only ever read 0 or −20. The bargain had no enforceable patron side, and a sullen vassal was the rational equilibrium | A patron is called when its vassal is **attacked** (never into a war the vassal started), judged by the ally rules including the trust floor, and is called at signing into the wars its new vassal was already defending. A patron's refusal costs trust and Hold, never a mark | `CallToArms.cs` (`Applies`, `DefendNewVassal`), `Hegemony.Submit` |
+| 1b | `Protection` counted wars the patron could never be called into | Counts only wars where the vassal is the defender **and** no treaty stops the patron joining — the same rule as `Applies`. Found live: Battania showed −20 for a war with Aserai, a fellow vassal of the same patron | `Hegemony.Protection` |
+| 3 | **Submission never read the patron's strength.** Threat and pride are identical for every candidate patron, so the choice came down to reach, trust and culture — a cornered kingdom knelt to its nearest same-culture neighbour even when weaker | A patron no stronger than the candidate scores 0. The threat term is scaled by *cover*: the share of the attackers the patron may fight × how much of them it could match | `Hegemony.SubmissionValue` |
+| 5 | **Withholding tribute cost nothing** — no mark, no trust, no lever for the patron. Run 04: 193 withheld | Withholding earns a defiance mark, at most one per 28 days (`TributeWithheldMarkIntervalDays`). A vassal that keeps it up reaches two marks in about a month: no renewal, and its next refused summons breaks the link | `TreatyRegistry.PayDueTribute` |
+| 2a | **Nothing balanced against a rising sphere.** Every pact term reads the present | `PactValue` gains a balancing term: how far the strongest sphere neither party belongs to outweighs the two of them, weight 40 | `AiDiplomacy.BalancingPull`, `PactWeightBalancing` |
+| 2b | **Revolt was a lone act** against the patron plus half its other vassals, which is why run 04's rebels knelt again | When one vassal revolts, siblings under Hold 25 after the contagion rise with it. All rebels renounce before anyone declares, so the patron's call reaches only the loyal | `Hegemony.TryRevolt`, `RevoltJoinBelowHold` |
+| 8 | **`TryPoach` broke the old link before knowing the new one could be signed** — and the break's own −12 observer trust could be what made the signing fail, leaving the vassal free and nobody's | Checks `CanSign` first, with the old link set aside (`replacing:`). The old link now closes without charging the client: the poacher pays (trust, relation, casus belli, war), not both parties | `Hegemony.TryPoach`, `TreatyRegistry.CanSign` |
+| — | `HoldAfterFailedRevolt` was a constant nothing read | A vassalage imposed on a kingdom that walked out on the same winner inside two years starts at 20 | `Hegemony.StartingHoldWhenImposed`, `PeaceTable.ImposeSubmission` |
+| — | Run 04 could not say whether tribute ever arrived | `[SNAPSHOT]` carries `tributePaid=` and `tributeWithheld=`, cumulative per session | `Telemetry.cs` |
+
+No save data changed: every new behaviour reads existing fields.
+
+**Verified live on `di_phase1_full`, zero errors in the log.** Driven from the run-04 world
+through `diplomacy.break_treaty` and `campaign.declare_war`, never saved:
+
+```
+Southern Empire freed, declares on Khuzait (NE trusts Khuzait 97):
+  (CallToArms) Northern Empire answered Khuzait and declared war on Southern Empire.
+  (Core) War opened: Northern Empire -> Southern Empire (CausedByCallToWarAgreement => DefendAlly, legitimacy 1.00)
+  Khuzait   protection +20.0 ... => 49.8        (was +0.0 => 28.9)
+
+Western Empire freed, declares on Battania (NE trusts Battania -9):
+  (CallToArms) Northern Empire refused Battania - does not trust Battania (-9.0).
+  Battania  protection -20.0  trust +12.8 ... => 17.5
+
+Battania on load, at war only with Aserai (a fellow vassal):
+  protection +0.0 => 39.7                        (was -20.0 => 19.7 before fix 1b)
+
+diplomacy.submission_value Battania | Northern Empire
+  threat +0.0 (cover 0.00) ...                   (its attacker is NE's own vassal)
+diplomacy.submission_value Southern Empire | Northern Empire
+  Northern Empire is no stronger than Southern Empire and has no protection to offer => 0.0
+diplomacy.pact_value Western Empire | Southern Empire
+  Balancing pull, included above: 40.0 against Northern Empire's sphere (106389 strength)
+```
+
+A one-week `diplomacy.ai_week` on that world ran clean: Western Empire signed an alliance with
+Aserai and a non-aggression pact with Khuzait, both defiant vassals of NE. **That is not
+evidence for the balancing term** — `pact_value` shows it at 0 for both pairs, because the
+partner belongs to NE's sphere; shared threat carried them.
+
+**Not verified, and a tool call cannot verify it:** the joint revolt (needs Hold under 15 for
+30 days of real clock), the tribute marks (no payment fell due on the frozen date), the lower
+Hold on a re-imposed vassalage, a poach going through `CanSign(replacing:)`, and
+`DefendNewVassal` at the moment of submission — the run-04 world has no free kingdom that
+would kneel. The player's patron prompt text was built, not seen.
+
+**What run 06 should watch**, beyond §2's list: `answered <vassal> and declared war` and
+`leaves its vassal ... to fight alone` lines, whether `avgHold` still settles in the 15–36
+band, `tributePaid` against `tributeWithheld`, and whether a sphere ever loses more than one
+vassal at a time (`other vassal(s) rose with it`). The balancing weight and the join threshold
+are both un-tuned.
+
+**Deliberately left for after run 06**, so it can be measured against these changes rather
+than confounded with them — the other findings of the same review:
+
+- **Trust behaves as a grim trigger.** Non-decaying, broadcast to every observer on a breach,
+  repaid only bilaterally — and several breaches are forced by the system (revolt at Hold 15,
+  two automatic refusals below 40, tribute default). Two breaches put a kingdom below the pact
+  floor with every court, with no route back.
+- **Alliances do not deter.** `EvaluateWar` never reads the target's allies or patron.
+- **The weariness gate almost never binds.** A war ending at exhaustion 60–70 carries 30–35,
+  under the gate of 45.
+- **Vassals of one patron can be at war with each other** (Aserai / Battania in this save,
+  both NE's), and the patron has no way to impose peace between them.
+- **The same save holds a hegemon paying tribute to its own vassal**:
+  `TributaryPact(Khuzait / Northern Empire)`, 500 from NE, beside `Vassalage(NE / Khuzait)`.
+  Left over from an earlier peace; nothing stops the two coexisting.
+
+### 3b. Strength, read where it decides — unverified in a campaign
+
+Raised by the lead, who found reading the save by hand that the hegemon of the whole map was
+nearly its weakest kingdom. `diplomacy.strength` (new) on `di_phase1_full`:
+
+```
+rank  kingdom            strength   share  fiefs  sphere
+   1  Khuzait               28329   19.9%    31  vassal of Northern Empire (balance vs patron +1.00)
+   2  Vlandia               20486   14.4%    23  vassal of Northern Empire (balance vs patron +0.66)
+   3  Southern Empire       18487   13.0%    12  vassal of Northern Empire (balance vs patron +0.51)
+   4  Western Empire        17254   12.1%    13  vassal of Northern Empire (balance vs patron +0.42)
+   5  Aserai                16572   11.7%    13  vassal of Northern Empire (balance vs patron +0.36)
+   6  Sturgia               16016   11.3%    14  vassal of Northern Empire (balance vs patron +0.31)
+   7  Northern Empire       12938    9.1%     7  hegemon, 7 vassal(s), sphere 142130
+   8  Battania              12047    8.5%     7  vassal of Northern Empire (balance vs patron -0.10)
+```
+
+The strongest kingdom on the map, at 2.2× its patron's strength and 4.4× its fiefs, was a
+vassal. **How it happened, from run-04.log:** every one of Northern Empire's links came by
+voluntary submission or by poaching, never through the peace table, and neither route read
+the patron's strength. Khuzait knelt at 55.5 with `pride -50.0` — the valuation knew it was
+the strongest kingdom and let it kneel anyway, because pride compares against the strongest
+kingdom overall, not against the patron. §3 already closed that route; this section is what
+still let strength fail to matter once a link existed.
+
+Strength was already read in ten places before this branch (war gate and value, pact aggression, tribute demand, land hunger, the hopeless-call check, casualty exhaustion, Hold fear, rival pull, submission threat and pride). The problems were in **how** it was read:
+
+| Where | Defect | Change |
+|---|---|---|
+| Hold's `fear` term | `ratio − 1`, clamped ±1: twice the vassal's strength scored +25 but half of it only −12.5, and −25 needed a patron with no army. Northern Empire lost at most 13.6 to any vassal for being weaker than six of them | `Hegemony.PowerBalance` — log2 of the ratio, clamped ±1, so the scale is symmetric. One helper for the hegemony system's two-sided comparisons |
+| Revolt | Read resentment only. A vassal a fifth of its patron's size revolted at the same Hold as one twice its size: the weak marched to certain defeat, the strong sat under a patron they could have thrown off | The revolt line moves with strength: `15 + 15 × PowerBalance(vassal, patron)`, clamped 0..30. Twice the patron: revolts below 30. Half: never alone — its link still lapses at term, and it can rise with a stronger sibling. `SecessionCapabilityWeight`, un-tuned |
+| Peace table | Vassalage could be imposed by a winner weaker than the loser — the one route into vassalage that still asked nothing | `IsDemandable` refuses it; `DescribeAllowance` says why. All three routes now ask `Hegemony.IsStrongEnoughToHold` |
+| `Treaty.SetHold` | A Hold stored as exactly 0 read back as the load default of 40 (`HoldOf` treats 0 as "unset"), drifted to 0 and read 40 again — a sawtooth, reachable because the target can be 0 | Set Hold floors at 0.1 |
+
+The same world, before and after, nothing else changed:
+
+| Vassal | fear before → after | Hold target before → after | revolts below |
+|---|---|---|---|
+| Khuzait (2.19× NE) | −13.6 → **−25.0** | 28.9 → **17.5** | **30.0** — at 28.9, now counting down |
+| Vlandia | −9.2 → −16.6 | 33.6 → 26.2 | 24.9 |
+| Southern Empire | −7.5 → −12.9 | 32.8 → 27.5 | 22.7 |
+| Western Empire | −6.3 → −10.4 | 44.9 → 40.8 | 21.2 |
+| Aserai | −5.5 → −8.9 | 35.7 → 32.2 | 20.4 — at 15.7 it starts counting, but its target is 32.2 and it climbs out in about five days |
+| Sturgia | −4.8 → −7.7 | 36.6 → 33.7 | 19.6 |
+| Battania (0.93× NE) | +1.8 → +2.6 | 39.7 → 40.4 | 13.5 |
+
+The peace-table gate, live: with Aserai freed, `offer_peace Battania | Aserai | vassalage` is
+refused with *"Battania is no stronger than Aserai and could not hold it as a vassal"*; the
+reverse passes the strength check and stops at the existing one (Battania already has a
+patron). A one-week `ai_week` afterwards ran with zero errors and zero warnings.
+
+**Not verified:** a revolt actually firing on the moved line, which needs 30 days of real
+clock. The arithmetic, if nothing else in the world moved: Khuzait's target (17.5) sits under
+its line (30), so it counts down the full 30 days and revolts. By then every link has drifted
+to its target, and after §3's contagion of −10 Southern Empire (17.5), Aserai (22.2), Vlandia
+(16.2) and Sturgia (23.7) are under 25 and rise with it; Western Empire (30.8) and Battania
+(30.4) stay. Five of seven in one event. The world will move in 30 days, so this is a
+prediction to check in run 06, not a result.
+
+**What strength still does not mean, and why it was left:** `CurrentTotalStrength` is the
+engine's live military figure. It swings after every large battle, and it counts nothing a
+kingdom owns - Khuzait's 31 fiefs and Northern Empire's 7 weigh the same in it. A smoothed or
+economic measure (fiefs, prosperity) would describe power better, but a smoothed one needs saved
+state and an economic one is a new concept with its own balance. Not started; worth deciding
+after run 06 shows how much the swings matter.
+
+### 3d. Run 06 in progress, and the log it writes
+
+Run 06 started 2026-09-16 from `di_phase1_full` and has covered Winter 1136 to Summer 1140 so
+far, in two sessions archived as [run-06-part1.log](balance/run-06-part1.log) and
+[run-06-part2.log](balance/run-06-part2.log) (part 2 continues from the save part 1 ended on).
+It is resumed unattended from **`di_run06_resume`** (Summer 1, 1140; the test hero cured and aged
+35, cheat mode off), launched with `pwsh ./scripts/play.ps1 -Without BirthAndDeath` so the module
+set matches the first two parts, which ran under GABS without that module.
+
+What it showed before the telemetry was extended, from the monitor, not yet analysed:
+
+- The prediction in §3b held exactly: Khuzait revolted after 30 days at breaking point and
+  Southern Empire, Aserai, Vlandia and Sturgia rose with it; Western Empire left through defiance
+  the same day. Battania revolted alone ten months later. Northern Empire's sphere went from
+  seven vassals to none.
+- Western Empire rose first, taking Northern Empire as a vassal (value 90.4); Khuzait followed,
+  taking Battania (68.3, cover 0.97) and then poaching Northern Empire from Western Empire.
+- A coalition answered Southern Empire against Khuzait: Vlandia, Sturgia and Western Empire.
+
+**The log was rebuilt for runs nobody watches** (2026-09-17). Beside the prose it now writes:
+
+| Record | When | What |
+|---|---|---|
+| `[RUN]`, `[CONFIG]` | session launch | build time, settings, and **every constant** in `DiplomacyConstants` |
+| `[SNAPSHOT]` | weekly, and at launch | world totals, as before |
+| `[KINGDOM]` | weekly, per kingdom | live and smoothed strength, dominance, ambition, greed, towns/castles/villages, clans, ruler, influence, gold, weariness, wars, worst exhaustion, patron, vassals, pacts, tribute, trust in and out, last AI move |
+| `[LINK]` | weekly, per vassalage | hold, target and every term of it, marks, revolt line, days at breaking point |
+| `[WAR]` | weekly, per war | exhaustion, score, casualties, fiefs taken, called by |
+| `[EVENT]` | as it happens | `ai_war_declared` (every valuation term, sides, support), `ai_pact_signed` (balancing pull), `war_opened`, `vassalage_formed` (route, value), `poach`, `revolt`, `annexation_breach`, `vassalage_collapsed`/`renewed`, `defiance_mark`, `call_to_arms` (role, outcome, reason), `treaty_signed`/`broken`/`repudiated`/`dissolved`/`expired`, `kingdom_eliminated`, `fief_changed`, `clan_changed_kingdom`, `ruler_changed`, `ruler_died`, `player_died`, `yearly_report` |
+| report file | each campaign year | the full world, with the strength table and every sphere |
+
+Every record is `[KIND] day=<absolute day> date=<Season_D;_Year> key=value ...`, no spaces inside
+a value. Logs kept: 60, up from 10. Verified live on `di_run06_resume`: the header, the weekly
+records, `ai_pact_signed`, `treaty_signed`, `fief_changed` and `war_opened` wrote correctly with
+zero errors, and the analyser read them. `call_to_arms` and the hegemony events were not
+triggered in that check.
+
+`python tools/analyse-log.py <log> [<log> ...]` reads several logs, oldest first, and drops what a
+later log re-covers after a reload. New sections: RUN (flags constants that changed between
+sessions), POWER by year, TOP KINGDOM, AI MOVES, EVENTS, HEGEMONY TIMELINE, FIEFS, COALITIONS,
+ENGINE (rulers, clans, the player), VASSAL LINKS.
+
+### 3c. Power — the lead's design, built and verified piecewise, unverified in a run
+
+Spec: [design/06-power.md](design/06-power.md). The lead's decisions: strength breeds ambition,
+the strong provoke coalitions, a ruler grown too strong turns greedy and wants provinces rather
+than vassals, **annexation only through war**, and **a kingdom that loses all its land is gone**.
+How strength is measured was left to the implementation: **live** strength for what a kingdom can
+do now (ambition, revolt capability, allies), a **smoothed 84-day average** for what it is becoming
+(greed, dread, the balancing pull). New save data: `KingdomPower`, definer id 9, `ModState` 10.
+
+Found and fixed on the way, both real:
+
+- **Elimination would have frozen the conqueror.** The engine already destroys an AI kingdom on its
+  last settlement (verified by IL), but raises no peace event, and our ledger closed wars only on
+  that event. The war would have stayed open forever, counted as a chosen war. Wars now close with
+  `endedBy=Eliminated`.
+- **Coalitions could not work.** Allies judged a war hopeless against the caller plus one ally, so
+  against a strong enemy every ally refused in turn; and the war valuation ignored the target's
+  allies, so an alliance never deterred. Both read whole sides now (`CallToArms.ExpectedSupport`).
+- **An annexation was filed as a just war** — BrokenTreaty at 0.95 — on a revolt claim the patron
+  had forgiven by taking the vassal back. Submission now settles breach claims between the two; a
+  sweep at load settles the old ones (1 in `di_phase1_full`).
+
+**Verified live on `di_phase1_full`, zero errors, never saved:**
+
+| What | Evidence |
+|---|---|
+| Strength table | Khuzait dominance 1.59, ambition 0.40; every greed 0.00 — nobody dominant |
+| Greed and dread (smoothed strength set by the new test command) | NE at greed 0.54: every link `dread -13.4`, revolt lines up 8.1 |
+| Annexation by the real AI evaluation | `Northern Empire tore up its vassalage with Sturgia to annex it (greed 0.93); 6 other vassal(s) saw it happen` — war declared, vassals refusing the summons, one vassalage broken on its third mark |
+| Coalition carried by the balancing pull | Sturgia / Southern Empire defensive pact at 63.9, of which the pull was 40.0 — 23.9 without it, under the bar of 35 |
+| Sides in the war valuation | NE → Battania: alone 1.07, with expected support 17,254 vs 0 → 2.51 |
+| Elimination | Battania's seven fiefs given away; on the last: both its wars closed `endedBy=Eliminated`, the vassalage dissolved, two further AI weeks ran clean |
+| Old breach claim settled on load | `Settled 1 broken-treaty claim(s)`; `Northern Empire vs Sturgia: BrokenTreaty` gone |
+
+**Not verified:** anything that needs the clock or a genuinely dominant kingdom — greed arising on
+its own, dread-driven revolts, the second-war allowance in use, coalitions deterring over years.
+Run 06 is that measurement.
+
+### 4. Phase 2 — court intrigue
 
 Specced in `docs/design/02-intrigue.md`; order is 2.1 grievances → 2.2 loyalty → 2.3 blocs →
 2.4 legitimacy → 2.5 succession → 2.6 civil war → 2.7 UI. Phase 1 leaves hooks waiting for
@@ -336,8 +627,9 @@ hegemony) and **titles** (Emperor, Khagan), which sit on top of legitimacy at 2.
   has no notion of the target's willingness beyond that; a weak kingdom with high trust will
   submit readily. Worth revisiting when Phase 2 gives courts an opinion.
 - **A vassal's existing wars are untouched when it submits.** Signing vassalage does not end
-  the client's own wars, so a patron can inherit a war it did not choose. Deliberate for now;
-  decide when hegemony is specced.
+  the client's own wars. Since the run-04 review the patron is called into the ones the vassal
+  is *defending* (`CallToArms.DefendNewVassal`) and may refuse at the usual price; wars the
+  vassal started stay its own.
 - **`ConcessionLadder` yields castles before towns** via a two-pass flag that reads awkwardly
   (`townsFirst: false`). It works; it would read better as two explicit loops.
 
@@ -350,7 +642,9 @@ hegemony) and **titles** (Emperor, Khagan), which sit on top of legitimacy at 2.
 | `diplomacy.war_value A \| B` | The AI war valuation term by term, naming the gate that blocks. Written after guessing wrong twice |
 | `diplomacy.tick_days N` | N days of the **full** daily upkeep, real functions, clock unmoved |
 | `diplomacy.hegemony` | every sphere, each link's hold, and the terms pulling it |
+| `diplomacy.strength` | every kingdom ranked by the strength the formulas read, its share, fiefs, sphere, and balance against its patron |
 | `diplomacy.submission_value A \| B` | what submitting to B is worth to A, term by term |
 | `diplomacy.ai_week N` | N weeks of AI evaluation plus matching upkeep. Prints its own limitations past 4 weeks |
 | `diplomacy.report` | Telemetry snapshot to the log plus a full world report to file |
-| `tools/analyse-log.py` | Parses a run log into the acceptance numbers: war durations, alliance formation, permanent-war check, casus belli mix. `python tools/analyse-log.py <log>` |
+| `tools/analyse-log.py` | Parses one run, across any number of logs, into the acceptance numbers and the power, hegemony, fief, coalition and engine timelines. `python tools/analyse-log.py <log> [<log> ...]` |
+| `diplomacy.test_set_player_age N` | Test saves only: sets the player hero's age and cures an old-age illness, so a long run does not end on the Game Over screen |

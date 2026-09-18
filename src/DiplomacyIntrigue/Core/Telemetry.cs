@@ -25,6 +25,17 @@ namespace DiplomacyIntrigue.Core
         private const string SnapshotPrefix = "[SNAPSHOT]";
         private const string WarEndedPrefix = "[WAR-ENDED]";
 
+        // Written for runs nobody watches: the lead leaves the game running and the log is the
+        // whole dataset. Every record is one line, `[KIND] day=<absolute day> date=<Season_D_Year>`
+        // then key=value pairs with no spaces inside a value, so the analyser never has to read
+        // prose. The prose lines stay beside them for people.
+        private const string EventPrefix = "[EVENT]";
+        private const string KingdomPrefix = "[KINGDOM]";
+        private const string LinkPrefix = "[LINK]";
+        private const string WarPrefix = "[WAR]";
+        private const string RunPrefix = "[RUN]";
+        private const string ConfigPrefix = "[CONFIG]";
+
         /// <summary>How a war ended, from the point of view of whose code ended it.</summary>
         public enum PeaceCause
         {
@@ -40,6 +51,11 @@ namespace DiplomacyIntrigue.Core
             /// that was never really a war, and both end on white terms.
             /// </summary>
             Dormant = 3,
+            /// <summary>
+            /// One side no longer exists: conquered down to its last settlement and destroyed by
+            /// the engine, which ends its wars without a peace.
+            /// </summary>
+            Eliminated = 4,
         }
 
         /// <summary>
@@ -196,6 +212,32 @@ namespace DiplomacyIntrigue.Core
                     .Append((links.Count == 0 ? 0f : holdTotal / links.Count).ToString("0.0"));
                 line.Append(" defianceMarks=").Append(marks);
 
+                // Cumulative for the session. Run 04 could not say whether tribute ever
+                // arrived, because a payment that succeeded left no trace.
+                line.Append(" tributePaid=").Append(TreatyRegistry.TributePaidThisSession);
+                line.Append(" tributeWithheld=").Append(TreatyRegistry.TributeWithheldThisSession);
+
+                // Power (docs/design/06-power.md): who is on top, by how much, and whether it has
+                // turned greedy. Live dominance for the leader; greed reads the smoothed figure.
+                var topDominance = 0f;
+                var topName = "none";
+                var greedy = 0;
+                foreach (var kingdom in Kingdom.All)
+                {
+                    if (kingdom.IsEliminated) continue;
+                    var dominance = Power.Dominance(kingdom);
+                    if (dominance > topDominance)
+                    {
+                        topDominance = dominance;
+                        topName = kingdom.Name.ToString().Replace(' ', '_');
+                    }
+                    if (!AiDiplomacy.WouldTakeVassals(state, kingdom)) greedy++;
+                }
+                line.Append(" topKingdom=").Append(topName);
+                line.Append(" topDominance=").Append(topDominance.ToString("0.00"));
+                line.Append(" greedy=").Append(greedy);
+                line.Append(" annexationWars=").Append(Hegemony.AnnexationWarsThisSession);
+
                 line.Append(" vanillaPeaceRefused=").Append(VanillaDiplomacy.PeaceRefused);
                 line.Append(" vanillaAlliancesRefused=").Append(VanillaDiplomacy.AllianceRefused);
                 line.Append(" vanillaTradeRefused=").Append(VanillaDiplomacy.TradeAgreementRefused);
@@ -214,7 +256,274 @@ namespace DiplomacyIntrigue.Core
             {
                 Log.Error("Telemetry", "Snapshot failed.", ex);
             }
+
+            WriteWorldState(state);
         }
+
+        // ================= Structured records ==================================
+
+        /// <summary>
+        /// One structured event line: <c>[EVENT] day= date= kind= key=value...</c>. Pairs are
+        /// passed flat - name, value, name, value. Never throws: telemetry must not be able to
+        /// break the decision it is recording.
+        /// </summary>
+        public static void Event(string kind, params object[] pairs)
+        {
+            try
+            {
+                if (!Settings.Current.EnableTelemetry) return;
+
+                var line = new StringBuilder(EventPrefix);
+                AppendWhen(line);
+                line.Append(" kind=").Append(kind);
+                for (var i = 0; i + 1 < pairs.Length; i += 2)
+                    line.Append(' ').Append(pairs[i]).Append('=').Append(Value(pairs[i + 1]));
+                Log.Info("Telemetry", line.ToString());
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Telemetry", "Event record '" + kind + "' failed.", ex);
+            }
+        }
+
+        /// <summary>
+        /// The state of every kingdom, every vassal link and every war, one line each. Written
+        /// with the weekly snapshot, so a run can be replayed week by week from the file alone:
+        /// who was how strong, who held whom and why, what each war had cost.
+        /// </summary>
+        public static void WriteWorldState(ModState state)
+        {
+            if (state == null) return;
+
+            try
+            {
+                foreach (var kingdom in Kingdom.All)
+                {
+                    if (kingdom.IsEliminated) continue;
+                    Log.Info("Telemetry", KingdomLine(state, kingdom));
+                }
+
+                var links = new List<Treaty>();
+                Hegemony.CollectLinks(state, links);
+                for (var i = 0; i < links.Count; i++) Log.Info("Telemetry", LinkLine(state, links[i]));
+
+                for (var i = 0; i < state.Wars.Count; i++)
+                {
+                    var war = state.Wars[i];
+                    if (!war.IsOngoing) continue;
+                    Log.Info("Telemetry", WarLine(war));
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Telemetry", "World state record failed.", ex);
+            }
+        }
+
+        private static string KingdomLine(ModState state, Kingdom k)
+        {
+            int towns = 0, castles = 0, villages = 0;
+            var settlements = k.Settlements;
+            for (var i = 0; i < settlements.Count; i++)
+            {
+                var s = settlements[i];
+                if (s.IsTown) towns++;
+                else if (s.IsCastle) castles++;
+                else if (s.IsVillage) villages++;
+            }
+
+            int alliances = 0, defensive = 0, nonAggression = 0, truces = 0, paysTribute = 0, receivesTribute = 0;
+            foreach (var t in state.ActiveTreatiesOf(k))
+            {
+                switch (t.Type)
+                {
+                    case TreatyType.Alliance: alliances++; break;
+                    case TreatyType.DefensivePact: defensive++; break;
+                    case TreatyType.NonAggressionPact: nonAggression++; break;
+                    case TreatyType.Truce: truces++; break;
+                }
+                if (t.TributeAmount > 0)
+                {
+                    if (t.TributePayer == k) paysTribute++;
+                    else receivesTribute++;
+                }
+            }
+
+            int chosen = 0, obligation = 0;
+            var worstExhaustion = 0f;
+            foreach (var war in state.OngoingWarsOf(k))
+            {
+                if (war.IsObligationWar) obligation++; else chosen++;
+                var e = war.ExhaustionOf(k);
+                if (e > worstExhaustion) worstExhaustion = e;
+            }
+
+            float trustIn = 0f, trustOut = 0f;
+            var others = 0;
+            foreach (var other in Kingdom.All)
+            {
+                if (other == k || other.IsEliminated) continue;
+                trustIn += TrustRegistry.Get(state, other, k);
+                trustOut += TrustRegistry.Get(state, k, other);
+                others++;
+            }
+
+            var line = new StringBuilder(KingdomPrefix);
+            AppendWhen(line);
+            Pair(line, "kingdom", k);
+            Pair(line, "strength", Power.Strength(k));
+            Pair(line, "smoothed", Power.Smoothed(state, k));
+            Pair(line, "dominance", Power.Dominance(k));
+            Pair(line, "smoothedDominance", Power.SmoothedDominance(state, k));
+            Pair(line, "ambition", Power.Ambition(k));
+            Pair(line, "greed", Power.Greed(state, k));
+            Pair(line, "towns", towns);
+            Pair(line, "castles", castles);
+            Pair(line, "villages", villages);
+            Pair(line, "clans", k.Clans.Count);
+            Pair(line, "ruler", k.Leader);
+            Pair(line, "rulerInfluence", k.RulingClan == null ? 0f : k.RulingClan.Influence);
+            Pair(line, "rulerGold", k.Leader == null ? 0 : k.Leader.Gold);
+            Pair(line, "weariness", state.WearinessOf(k));
+            Pair(line, "warsChosen", chosen);
+            Pair(line, "warsObligation", obligation);
+            Pair(line, "worstExhaustion", worstExhaustion);
+            Pair(line, "patron", Hegemony.PatronOf(state, k));
+            Pair(line, "vassals", Hegemony.VassalCount(state, k));
+            Pair(line, "alliances", alliances);
+            Pair(line, "defensivePacts", defensive);
+            Pair(line, "nonAggressionPacts", nonAggression);
+            Pair(line, "truces", truces);
+            Pair(line, "paysTribute", paysTribute);
+            Pair(line, "receivesTribute", receivesTribute);
+            Pair(line, "trustIn", others == 0 ? 0f : trustIn / others);
+            Pair(line, "trustOut", others == 0 ? 0f : trustOut / others);
+            Pair(line, "lastMove", AiDiplomacy.LastMove(k));
+            return line.ToString();
+        }
+
+        private static string LinkLine(ModState state, Treaty link)
+        {
+            var terms = Hegemony.HoldTermsOf(state, link);
+            var critical = link.CriticalSince == CampaignTime.Never
+                ? 0f
+                : (float)(CampaignTime.Now - link.CriticalSince).ToDays;
+
+            var line = new StringBuilder(LinkPrefix);
+            AppendWhen(line);
+            Pair(line, "patron", link.DominantParty);
+            Pair(line, "vassal", link.SubordinateParty);
+            Pair(line, "hold", Hegemony.HoldOf(link));
+            Pair(line, "target", terms.Target);
+            Pair(line, "fear", terms.Fear);
+            Pair(line, "protection", terms.Protection);
+            Pair(line, "trust", terms.Trust);
+            Pair(line, "tribute", -terms.Tribute);
+            Pair(line, "wars", -terms.Wars);
+            Pair(line, "rival", -terms.Rival);
+            Pair(line, "culture", -terms.Culture);
+            Pair(line, "dread", -terms.Dread);
+            Pair(line, "marks", link.DefianceMarks);
+            Pair(line, "revoltLine", Hegemony.SecessionThreshold(state, link));
+            Pair(line, "criticalDays", critical);
+            Pair(line, "tributeAmount", link.TributeAmount);
+            Pair(line, "signedDay", (int)link.SignedOn.ToDays);
+            Pair(line, "expiresDay", (int)link.ExpiresOn.ToDays);
+            return line.ToString();
+        }
+
+        private static string WarLine(WarRecord war)
+        {
+            var line = new StringBuilder(WarPrefix);
+            AppendWhen(line);
+            Pair(line, "aggressor", war.Aggressor);
+            Pair(line, "defender", war.Defender);
+            Pair(line, "days", war.DaysElapsed);
+            Pair(line, "casusBelli", war.Justification);
+            Pair(line, "aggressorExhaustion", war.AggressorExhaustion);
+            Pair(line, "defenderExhaustion", war.DefenderExhaustion);
+            Pair(line, "score", war.WarScore);
+            Pair(line, "aggressorCasualties", war.AggressorCasualties);
+            Pair(line, "defenderCasualties", war.DefenderCasualties);
+            Pair(line, "fiefsTakenByAggressor", war.FiefsTakenByAggressor);
+            Pair(line, "fiefsTakenByDefender", war.FiefsTakenByDefender);
+            Pair(line, "calledBy", war.CalledBy);
+            return line.ToString();
+        }
+
+        /// <summary>
+        /// What this session is running: the build, the settings, and every constant in
+        /// DiplomacyConstants. Written once when a session launches, so a log can always say
+        /// which numbers produced it - the question every balance run ends up asking.
+        /// </summary>
+        public static void WriteRunHeader(ModState state)
+        {
+            try
+            {
+                if (!Settings.Current.EnableTelemetry) return;
+
+                var assembly = typeof(Telemetry).Assembly;
+                var built = "unknown";
+                try { built = File.GetLastWriteTime(assembly.Location).ToString("yyyy-MM-dd_HH:mm:ss"); }
+                catch { /* the build time is a courtesy */ }
+
+                var names = new List<string>();
+                foreach (var kingdom in Kingdom.All)
+                    if (!kingdom.IsEliminated) names.Add(Value(kingdom));
+
+                var line = new StringBuilder(RunPrefix);
+                AppendWhen(line);
+                Pair(line, "mod", SubModule.ModuleVersion);
+                Pair(line, "built", built);
+                Pair(line, "schema", state == null ? 0 : state.SchemaVersion);
+                Pair(line, "aggressiveness", Settings.Current.AiAggressiveness);
+                Pair(line, "exhaustionRate", Settings.Current.WarExhaustionRate);
+                Pair(line, "player", Hero.MainHero);
+                Pair(line, "playerKingdom", Clan.PlayerClan?.Kingdom);
+                Pair(line, "kingdoms", string.Join(",", names.ToArray()));
+                Log.Info("Telemetry", line.ToString());
+
+                var fields = typeof(DiplomacyConstants).GetFields(
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                for (var i = 0; i < fields.Length; i++)
+                {
+                    if (!fields[i].IsLiteral) continue;
+                    Log.Info("Telemetry", ConfigPrefix + " " + fields[i].Name + "=" + Value(fields[i].GetValue(null)));
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Telemetry", "Run header failed.", ex);
+            }
+        }
+
+        private static void AppendWhen(StringBuilder line)
+        {
+            line.Append(" day=").Append((int)CampaignTime.Now.ToDays);
+            line.Append(" date=").Append(Value(CampaignTime.Now.ToString()));
+        }
+
+        private static void Pair(StringBuilder line, string key, object value)
+            => line.Append(' ').Append(key).Append('=').Append(Value(value));
+
+        /// <summary>One token: invariant numbers, names with underscores, never a space or an equals sign.</summary>
+        private static string Value(object value)
+        {
+            switch (value)
+            {
+                case null: return "none";
+                case Kingdom kingdom: return Sanitise(kingdom);
+                case Hero hero: return Token(hero.Name?.ToString());
+                case Clan clan: return Token(clan.Name?.ToString());
+                case float f: return f.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+                case double d: return d.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture);
+                case bool b: return b ? "true" : "false";
+                default: return Token(value.ToString());
+            }
+        }
+
+        private static string Token(string text)
+            => string.IsNullOrEmpty(text) ? "none" : text.Replace(' ', '_').Replace('=', ':').Replace(',', ';');
 
         /// <summary>
         /// One line per war that ends, carrying the duration. This is the raw material for
@@ -224,7 +533,9 @@ namespace DiplomacyIntrigue.Core
         {
             try
             {
-                Log.Info("Telemetry", WarEndedPrefix
+                var when = new StringBuilder();
+                AppendWhen(when);
+                Log.Info("Telemetry", WarEndedPrefix + when
                                       + " endedBy=" + PendingPeaceCause
                                       + " terms=" + (PendingPeaceTerms == null
                                           ? "unknown"
@@ -259,7 +570,7 @@ namespace DiplomacyIntrigue.Core
             Directory.CreateDirectory(directory);
 
             var path = Path.Combine(directory,
-                "report-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".txt");
+                "report-" + DateTime.Now.ToString("yyyyMMdd-HHmmss") + "-" + Token(CampaignTime.Now.ToString()) + ".txt");
 
             var sb = new StringBuilder();
             sb.AppendLine("Diplomacy & Intrigue " + SubModule.ModuleVersion + " report");
@@ -329,6 +640,13 @@ namespace DiplomacyIntrigue.Core
             sb.AppendLine("== War weariness ==");
             if (state.Weariness.Count == 0) sb.AppendLine("  (none)");
             for (var i = 0; i < state.Weariness.Count; i++) sb.AppendLine("  " + state.Weariness[i]);
+            sb.AppendLine();
+
+            // The same text the console commands print, so a report and a live session agree.
+            sb.AppendLine("== Power ==");
+            sb.AppendLine(DebugCommands.StrengthCommand(null));
+            sb.AppendLine("== Hegemony ==");
+            sb.AppendLine(DebugCommands.HegemonyCommand(null));
 
             File.WriteAllText(path, sb.ToString(), Encoding.UTF8);
             Log.Info("Telemetry", "Report written to " + path);

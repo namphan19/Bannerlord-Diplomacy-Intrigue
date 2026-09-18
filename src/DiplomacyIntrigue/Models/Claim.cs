@@ -63,6 +63,9 @@ namespace DiplomacyIntrigue.Models
         public bool AllowsFiefDemands
             => Type == CasusBelliType.Conquest || Type == CasusBelliType.ReclaimAncestralLand;
 
+        /// <summary>Ends the claim now, for a grievance that has been answered.</summary>
+        internal void Settle() => ExpiresOn = CampaignTime.Now;
+
         internal void ExtendTo(CampaignTime expiresOn)
         {
             // A fresh triggering event renews an existing claim rather than stacking a

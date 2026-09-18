@@ -27,6 +27,7 @@ namespace DiplomacyIntrigue.Core
             AddClassDefinition(typeof(Claim), 6);
             AddClassDefinition(typeof(FabricationAttempt), 7);
             AddClassDefinition(typeof(TrustRecord), 8);
+            AddClassDefinition(typeof(KingdomPower), 9);
         }
 
         protected override void DefineEnumTypes()
@@ -48,6 +49,7 @@ namespace DiplomacyIntrigue.Core
             ConstructContainerDefinition(typeof(List<Claim>));
             ConstructContainerDefinition(typeof(List<FabricationAttempt>));
             ConstructContainerDefinition(typeof(List<TrustRecord>));
+            ConstructContainerDefinition(typeof(List<KingdomPower>));
         }
     }
 }

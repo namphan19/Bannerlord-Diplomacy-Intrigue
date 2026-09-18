@@ -160,6 +160,10 @@ so refusal is always available:
 
 - **Refusing an alliance** costs trust and nothing else.
 - **Refusing as a vassal** is defiance, and it is counted (see below).
+- **As a patron, you are called when your vassal is attacked** — and when a kingdom submits
+  to you, into the wars it was already defending. You are never called into a war your vassal
+  started. Refusing costs trust with the vassal, and its Hold on you slips every day the war
+  goes unanswered.
 - A kingdom dragged into someone else's war is **released from it** when that someone makes
   peace. You will not be left fighting a war whose cause has ended.
 
@@ -179,12 +183,16 @@ hegemon stops being one.
 
 Three routes:
 
-1. **At the peace table**, at war score 90 — submission is the top rung of the ladder.
+1. **At the peace table**, at war score 90 — submission is the top rung of the ladder. You
+   have to be the stronger of the two: a war won on points does not make you able to hold them.
 2. **Voluntarily**, when a cornered kingdom decides a protector is better than the war it is
-   losing. It weighs the strength of everyone at war with it, how close you are, how worn
-   down it is, and whether it trusts you, against its own pride and the insult of serving a
-   foreign culture. It kneels at 55.
-3. **By poaching** a rival hegemon's neglected vassal — which means war with that rival.
+   losing. It only asks a kingdom stronger than itself, and it counts the danger **you could
+   actually take off its hands** — not an enemy you are bound by treaty not to fight, and not
+   more than you could match. It also weighs how close you are, how worn down it is, and
+   whether it trusts you, against its own pride and the insult of serving a foreign culture.
+   It kneels at 55.
+3. **By poaching** a rival hegemon's neglected vassal — which means war with that rival. The
+   price is yours, not the vassal's.
 
 ### Hold: the strength of the bond
 
@@ -198,10 +206,17 @@ a vassal does depends on where Hold sits:
 | **40–69** | serves: answers summons, pays tribute |
 | **30–39** | **passive resistance** — withholds tribute, refuses summons |
 | **15–29** | **diplomatic defiance** — signs treaties with outsiders behind your back, and will listen to a rival patron |
-| **below 15** | thirty days here and it **revolts**: a war of independence, and every other vassal of yours takes −10 Hold for having watched |
+| **below 15** | thirty days here and it **revolts**: a war of independence, and every other vassal of yours takes −10 Hold for having watched — any left below 25 **rise with it** |
 
-Refusing a summons or treating with outsiders earns a **defiance mark**. Two marks and the
-vassalage will not renew when its term runs out.
+The revolt line is 15 only for a vassal as strong as you. It rises to **30** for a vassal twice
+your strength — a kingdom that could beat you does not wait long — and falls to **0** for one
+half your size, which will not revolt alone however much it resents you. `diplomacy.strength`
+shows where every kingdom stands. Fear works the same way in both directions: being twice your
+vassal's strength holds it by +25, being half of it costs you −25.
+
+Refusing a summons, treating with outsiders, or withholding tribute earns a **defiance mark**
+(withholding at most once every four weeks). Two marks and the vassalage will not renew when
+its term runs out, and the next refused summons breaks it.
 
 ### If you are the vassal
 
@@ -212,7 +227,26 @@ enough and independence is a war you choose.
 
 ---
 
-## 7. Common questions
+## 7. Power: ambition, coalitions, greed
+
+Every kingdom's strength is measured against the whole world, not only against its neighbours.
+Ctrl+D → Other kingdoms shows what anyone watching its armies could see: *"holds 27% of Calradia's
+strength; growing greedy"*.
+
+- **Strength breeds ambition.** A kingdom well above its even share wants war more, and one holding
+  a quarter of Calradia's strength will run two wars at once.
+- **The strong make the weak stand together.** Kingdoms outweighed by a sphere find each other's
+  pacts worth more, and an alliance now **deters**: a court choosing whom to attack weighs the
+  allies who would answer, not the target alone — and an ally no longer abandons you because your
+  enemy is strong, only because *both sides together* are hopeless.
+- **Too much strength turns to greed.** A ruler holding a quarter or more of the world's strength,
+  sustained over about a year, stops accepting vassals and starts wanting provinces. It may tear up
+  a vassal's oath and conquer it. Its vassals see it coming: their Hold falls, and they are willing
+  to revolt at worse odds. **This applies to you**: grow too strong and your vassals will fear you.
+- **Conquest ends kingdoms.** A kingdom that loses its last town or castle is gone; its wars end
+  with it, and anyone fighting only because it called them in is released.
+
+## 8. Common questions
 
 **Why can't I declare war on anyone?**
 Check the Diplomacy tab: a treaty may forbid it, or you may already be a vassal, or your
@@ -232,7 +266,12 @@ and paid double for the privilege — and you now have a grievance the whole map
 
 **My vassal stopped paying.**
 Its Hold has fallen below 40. Protect it, ease its tribute, or frighten it — or watch the
-number keep falling until it treats with your rivals at 30 and revolts at 15.
+number keep falling until it treats with your rivals at 30 and revolts at 15. Each month it
+keeps the money is a defiance mark, so a vassal that goes on withholding will not renew.
+
+**Several of my vassals revolted at once.**
+One of them reached breaking point, and the others were already close. A revolt is news
+every vassal hears; the ones below 25 after hearing it join rather than wait their turn.
 
 ---
 

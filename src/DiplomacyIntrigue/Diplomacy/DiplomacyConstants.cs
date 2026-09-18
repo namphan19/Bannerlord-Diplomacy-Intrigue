@@ -312,7 +312,14 @@ namespace DiplomacyIntrigue.Diplomacy
         /// <summary>Where a voluntary submission starts. A volunteer is a far steadier vassal.</summary>
         public const float HoldOnVoluntarySubmission = 60f;
 
-        /// <summary>Where a re-imposed vassalage restarts after a revolt is crushed.</summary>
+        /// <summary>
+        /// Where a vassalage imposed at a peace table starts when the loser walked out of a
+        /// vassalage to the same winner within <see cref="BrokenTreatyWindowYears"/> - a revolt
+        /// crushed, or a vassal taken back by force from the rival it defected to.
+        ///
+        /// This constant existed for a long time with nothing reading it, so the behaviour it
+        /// describes did not exist either. Wired in PeaceTable.ImposeSubmission.
+        /// </summary>
         public const float HoldAfterFailedRevolt = 20f;
 
         /// <summary>Hold for a link loaded from a save that predates the field.</summary>
@@ -330,7 +337,17 @@ namespace DiplomacyIntrigue.Diplomacy
         // Terms of the Hold target. The lead's source document (§16) as a weighted sum of
         // quantities the mod already tracks.
         public const float HoldBase = 40f;
-        /// <summary>Fear: the patron's strength advantage, clamped to +/-1.</summary>
+
+        /// <summary>
+        /// Fear: the balance of strength between patron and vassal, on a log scale clamped to
+        /// +/-1 (Hegemony.PowerBalance) - so twice as strong reads +25 and half as strong -25.
+        ///
+        /// It was `ratio - 1` until the review of the run-04 world, which is lopsided: twice
+        /// the vassal's strength earned the full +25, but half of it cost only -12.5, and the
+        /// floor of -25 was reachable only by a patron with no army at all. That world was the
+        /// case it hid: Northern Empire, weaker than six of its seven vassals, lost at most
+        /// 13.6 Hold to any of them for it, and trust (+15) paid most of that back.
+        /// </summary>
         public const float HoldStrengthWeight = 25f;
         /// <summary>Protection: wars of the vassal's the patron has joined, against those it ignored.</summary>
         public const float HoldProtectionWeight = 20f;
@@ -358,8 +375,30 @@ namespace DiplomacyIntrigue.Diplomacy
         /// <summary>Below this a vassal will treat with outsiders despite the terms.</summary>
         public const float HoldDefianceThreshold = 30f;
 
-        /// <summary>Below this, sustained, a vassal fights for its independence.</summary>
+        /// <summary>
+        /// Below this, sustained, a vassal fights for its independence - for a vassal exactly
+        /// as strong as its patron. The line moves with the balance of strength; see
+        /// <see cref="SecessionCapabilityWeight"/>.
+        /// </summary>
         public const float HoldSecessionThreshold = 15f;
+
+        /// <summary>
+        /// How far the secession line moves with the vassal's strength against its patron's:
+        /// up to 30 for a vassal twice the patron's strength, down to 0 - never alone - for one
+        /// half as strong (Hegemony.SecessionThreshold).
+        ///
+        /// A revolt is a war, and the decision to start one used to read resentment only. A
+        /// vassal a fifth of its patron's size revolted at exactly the same Hold as one twice
+        /// its size - so the weak ones marched to certain defeat, and the strong ones sat
+        /// sullen under a patron they could have thrown off. Run 04's world ended with
+        /// Northern Empire, weaker than six of its seven vassals, holding every one of them.
+        /// Resentment is the motive; strength is whether acting on it is anything but
+        /// suicide. Both have to be there. A weak vassal alone is not trapped: its link still
+        /// lapses at the end of its term, and it can rise with a stronger sibling.
+        ///
+        /// **Un-tuned.** 15 keeps the band symmetric around the old fixed line.
+        /// </summary>
+        public const float SecessionCapabilityWeight = 15f;
 
         /// <summary>How long Hold must stay under the secession threshold before the revolt.</summary>
         public const float SecessionDaysBelowThreshold = 30f;
@@ -370,8 +409,35 @@ namespace DiplomacyIntrigue.Diplomacy
         /// <summary>A mark older than this is forgotten.</summary>
         public const float DefianceMarkMemoryDays = 84f;
 
-        /// <summary>Hold lost by the patron's other vassals when one of them wins its freedom.</summary>
+        /// <summary>Hold lost by the patron's other vassals when one of them revolts.</summary>
         public const float SecessionContagionHold = 10f;
+
+        /// <summary>
+        /// A vassal whose Hold is below this once the contagion has landed joins a revolt that
+        /// has just broken out, rather than waiting out its own thirty days.
+        ///
+        /// Added after the design review of run 04, which found a saturated hegemony with no
+        /// way out: revolt was a decision each vassal took alone, against a patron that then
+        /// called half its other vassals onto the rebel. Seven resentful vassals revolting
+        /// one at a time lose seven times; the classic answer is that the first mover is the
+        /// signal the others were waiting for. Below this line they were already defiant
+        /// (treating with outsiders at 30), so joining is the next step, not a new one.
+        ///
+        /// **Un-tuned.** At 25, a sibling needs to have been under 35 before the news arrived.
+        /// </summary>
+        public const float RevoltJoinBelowHold = 25f;
+
+        /// <summary>
+        /// Least days between two defiance marks earned by withholding tribute.
+        ///
+        /// Withholding used to cost the vassal nothing at all: no mark, no trust, and the
+        /// patron had no lever - so below Hold 40 keeping the money was simply free, and run
+        /// 04 logged 193 withheld payments. It is defiance and now counts as such, but a
+        /// payment falls due every 7 days and a mark every week would turn one sullen season
+        /// into a broken treaty. Four weeks means a vassal that keeps withholding reaches two
+        /// marks in about a month and will not renew at its term. **Un-tuned.**
+        /// </summary>
+        public const float TributeWithheldMarkIntervalDays = 28f;
 
         /// <summary>Trust the poacher loses with the patron whose vassal it took.</summary>
         public const float PoachingTrustCost = -30f;
@@ -412,6 +478,13 @@ namespace DiplomacyIntrigue.Diplomacy
         /// cornered kingdom also has to be within reach of the patron, worn down, or already
         /// trust it. Re-scored against run 04's nine submissions, three still happen.
         ///
+        /// **Since scaled by the patron's cover** (Hegemony.SubmissionValue): the term is how
+        /// much danger the patron can actually take off the candidate's hands, not how much
+        /// danger there is. Before that, the valuation had no term that depended on the
+        /// patron's strength at all, so a cornered kingdom knelt to its nearest same-culture
+        /// neighbour whether or not that neighbour could protect it. That re-scoring of run 04
+        /// predates the change and no longer applies.
+        ///
         /// **Un-tuned beyond that arithmetic.** Run 05 is the measurement.
         /// </summary>
         public const float SubmissionThreatWeight = 25f;
@@ -426,6 +499,90 @@ namespace DiplomacyIntrigue.Diplomacy
         /// Lower than the general bar: a patron that marches a dying vassal loses it.
         /// </summary>
         public const float VassalExcusedAboveExhaustion = 50f;
+
+        // ---- Power: ambition, greed, and what they provoke (docs/design/06-power.md) --------
+        //
+        // The lead's design, 2026-09-16: strength makes a ruler hungry for war, the rest of the
+        // map bands together against whoever is strongest, and a ruler grown too strong stops
+        // wanting vassals and starts wanting provinces - which its vassals can see coming.
+        // Every value below is un-tuned; run 06 is the first measurement.
+
+        /// <summary>
+        /// Days of the smoothed-strength average: the fraction of the gap closed each day is
+        /// one over this. One in-game year (84 days).
+        ///
+        /// Longer than a war, which is the point: run 04's wars had a median of 63 days and
+        /// run 05's 76, so the losses and recruiting of a single war move the average by about
+        /// half rather than all the way. Greed and dread should describe a reign, not a campaign.
+        /// </summary>
+        public const float StrengthSmoothingDays = 84f;
+
+        /// <summary>
+        /// Dominance at which ambition is full. With eight kingdoms: 31% of the world's
+        /// strength. Ambition is zero at an even split and rises linearly to here.
+        /// </summary>
+        public const float AmbitionFullAtDominance = 2.5f;
+
+        /// <summary>
+        /// War value added by full ambition. Under the war threshold of 18, so ambition alone
+        /// never starts a war - the rule every term of the valuation follows since run 03.
+        /// </summary>
+        public const float WarValueAmbition = 15f;
+
+        /// <summary>
+        /// Pact value an ambitious ruler loses: a realm hungry for war has little use for a
+        /// promise not to make one.
+        /// </summary>
+        public const float PactWeightAmbition = 20f;
+
+        /// <summary>
+        /// Live dominance at which a kingdom's own evaluation allows a second war of its choosing
+        /// at once. With eight kingdoms: a quarter of the world's strength. Below it the
+        /// restraint of <see cref="AiMaxConcurrentChosenWars"/> stands, for the reason run 02
+        /// gave it.
+        /// </summary>
+        public const float AiDominanceForSecondWar = 2f;
+
+        /// <summary>
+        /// Smoothed dominance at which greed begins; it is full one even share above. With
+        /// eight kingdoms: from 25% of the world's strength, full at 37.5%.
+        /// </summary>
+        public const float GreedStartsAtDominance = 2f;
+
+        /// <summary>
+        /// Greed at which a ruler takes no new vassals - no voluntary submission, no poaching,
+        /// no vassalage at its peace table - and may make war on the ones it has.
+        /// </summary>
+        public const float GreedRefusesVassals = 0.5f;
+
+        /// <summary>
+        /// War value a greedy patron adds, at full greed, for turning on its own vassal: the
+        /// vassal is near, weaker by construction, and already half-owned.
+        /// </summary>
+        public const float AnnexGreedWeight = 20f;
+
+        /// <summary>
+        /// War value taken off for tearing up the vassalage to do it. With the greed weight,
+        /// annexation is 5 points less attractive than an ordinary war at the greed threshold
+        /// and 5 more at full greed. The trust, the casus belli handed over and the influence
+        /// of a Conquest war are charged on top, by the machinery that always charges them.
+        /// </summary>
+        public const float AnnexBreachPenalty = 15f;
+
+        /// <summary>
+        /// Hold a vassal loses to dread, at its patron's full greed. On a different axis from
+        /// fear on purpose: fear reads the patron against this vassal, dread reads the patron
+        /// against the world. A patron twice its vassal's strength at full greed nets zero -
+        /// strong enough to hold them, too strong to be trusted with them.
+        /// </summary>
+        public const float HoldDreadWeight = 25f;
+
+        /// <summary>
+        /// How far the revolt line rises, at the patron's full greed. A vassal that expects to
+        /// be swallowed has less to lose by fighting at poor odds - so capability matters less
+        /// when the alternative is extinction.
+        /// </summary>
+        public const float SecessionDreadWeight = 15f;
 
         // ---- Call to arms ----------------------------------------------------
 
@@ -522,6 +679,27 @@ namespace DiplomacyIntrigue.Diplomacy
         public const float PactWeightTrust = 30f;
         public const float PactWeightAggression = 50f;
         public const float PactWeightRelation = 25f;
+
+        /// <summary>
+        /// Weight on the balancing pull: how far the strongest sphere neither party belongs to
+        /// outweighs the two of them together, clamped to 0..1.
+        ///
+        /// Added after the design review of run 04, where one sphere swallowed the map and
+        /// nothing pushed back. Every other pact term reads the present - wars already being
+        /// fought, borders, trust - so a rising power was never a reason to stand together
+        /// until it was already at somebody's gates. Balancing against the dominant power is
+        /// the oldest counterweight in the book and the one this evaluation lacked.
+        ///
+        /// It is zero across a balanced map (at campaign start no kingdom outweighs two
+        /// others) and only bites once one sphere is more than any pair of outsiders combined.
+        /// **Un-tuned**: 40 lets it carry two neighbours to a non-aggression pact on its own
+        /// when a sphere is twice their weight, and not to a defensive pact. That breaks the
+        /// "no single term clears the bar" rule the war and submission valuations follow, and
+        /// knowingly: the pact valuation never followed it (shared threat is worth 60), a
+        /// non-aggression pact is the cheapest commitment on the board, and two realms
+        /// facing a power twice their combined size have reason enough.
+        /// </summary>
+        public const float PactWeightBalancing = 40f;
 
         /// <summary>
         /// Mutual value needed before each treaty type is worth signing.
