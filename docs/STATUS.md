@@ -1,4 +1,4 @@
-# Status — 2026-09-17
+# Status — 2026-09-19
 
 Point-in-time state. [CLAUDE.md](../CLAUDE.md) holds the things that are always true; this
 file holds what changes. Update it when you finish a chunk of work.
@@ -82,8 +82,23 @@ called the design questions, and they are implemented here too:
 - **F5** (implemented): `GreedStartsAtDominance` 2.0 → 1.25, so run 06's peak (~1.76)
   yields greed 0.5 — annexation reachable only at the extreme. Un-tuned.
 
-Builds clean; none of this has been verified in a live game yet — the frozen clock means
-decay, defection and greed all need run 07 to say whether the numbers are right.
+**Live check 2026-09-19** (~2 in-game years on `di_run06_resume` via GABS — full write-up:
+[docs/balance/live-2026-09-19.md](balance/live-2026-09-19.md)):
+
+- F2 decay verified to the decimal, peace and war-ramped; it also caught a real bug —
+  decay on a *negative* record stamped the grace clock through `Add` and froze itself.
+  Fixed via `TrustRecord.Decay` (commit `8251c3b`), re-verified.
+- F5 verified reachable: Vlandia held greed 0.38-0.48 all session.
+- F1, call-to-arms, peace table, dormant lapse, vanilla takeover, save-compat all observed
+  working.
+- **F3's gap reproduced live**: SE ate four defensive wars while its patron was
+  treaty-bound to every attacker — `protection` read 0.0 for two years, Hold never neared
+  40, defection could never fire, and the patron later fought *alongside* the vassal's
+  predator then declared on the ex-vassal itself. "Legal neglect" is invisible to the
+  formula — open design call, options in the session doc.
+- All seven peace endings were white peace; the concession ladder has still never paid
+  through the table (winner exhausted by the time the loser listens). Open question there
+  too.
 
 **Traps found this session** (the always-true ones are in CLAUDE.md §1):
 - GABS's own `Lib.GAB` crashed the game on a cancelled connection. Unattended runs launch with
@@ -94,6 +109,10 @@ decay, defection and greed all need run 07 to say whether the numbers are right.
   `di_phase1_full`.
 - The Kingdom-screen UI (the UI team's `DiplomacyItemMixin`) does not show power, greed or the
   new call-to-arms duty yet.
+- A GABS session at 4x re-pauses itself whenever an encounter opens on the player party —
+  the ready-blocker is not clickable through the bridge. Park the hero inside a settlement
+  (`bannerlord_party_enter_settlement`) to run unattended; ~3 in-game days per real minute.
+  `bannerlord_core_get_time_speed` + `check_blockers` diagnose a silent pause.
 
 ---
 
