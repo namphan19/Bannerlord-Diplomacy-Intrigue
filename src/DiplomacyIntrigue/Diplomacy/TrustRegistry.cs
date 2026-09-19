@@ -170,13 +170,13 @@ namespace DiplomacyIntrigue.Diplomacy
                 var war = state.OngoingWarBetween(from, to);
                 if (war != null)
                 {
-                    record.Add(-(DiplomacyConstants.TrustDecayWarPerDay
-                                 + war.DaysElapsed * DiplomacyConstants.TrustDecayWarRampPerDay));
+                    record.Decay(-(DiplomacyConstants.TrustDecayWarPerDay
+                                   + war.DaysElapsed * DiplomacyConstants.TrustDecayWarRampPerDay));
                     continue;
                 }
 
                 var value = record.Value;
-                record.Add(value > 0f
+                record.Decay(value > 0f
                     ? -System.Math.Min(DiplomacyConstants.TrustDecayPerDay, value)
                     : System.Math.Min(DiplomacyConstants.TrustDecayPerDay, -value));
             }

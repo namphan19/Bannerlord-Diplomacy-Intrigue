@@ -55,6 +55,20 @@ namespace DiplomacyIntrigue.Models
             if (amount > 0f) LastPositiveChange = CampaignTime.Now;
         }
 
+        /// <summary>
+        /// Upkeep only, for <see cref="Diplomacy.TrustRegistry.DailyTick"/>. A decay step on
+        /// a negative record is a *positive* amount - routed through <see cref="Add"/> it
+        /// would stamp <see cref="LastPositiveChange"/> and suspend its own decay inside the
+        /// grace window, which is exactly what a live test showed: a -51 grudge moved once
+        /// and then froze. Decay is not a good turn, so it must not feed the grace clock.
+        /// </summary>
+        internal void Decay(float amount)
+        {
+            if (amount == 0f) return;
+            Value = Clamp(Value + amount);
+            LastChanged = CampaignTime.Now;
+        }
+
         private static float Clamp(float v)
             => v < Diplomacy.DiplomacyConstants.TrustMin ? Diplomacy.DiplomacyConstants.TrustMin
                 : (v > Diplomacy.DiplomacyConstants.TrustMax ? Diplomacy.DiplomacyConstants.TrustMax : v);
