@@ -151,6 +151,16 @@ All constants un-tuned. `diplomacy.tick_days` runs the decay too, but cannot mov
 `CampaignTime.Now`, so within it nothing ages into or out of the grace window - same
 frozen-clock caveat as treaties.
 
+**Live check (2026-09-19, `di_run06_resume` via GABS, `tick_days 10`).** Peacetime drift
+exact (-0.5 on every record) and the war ramp exact (Vlandia-Southern Empire -1.9 at 28
+days elapsed, Sturgia-Western Empire -0.9 at 8, the two 19-day wars -1.45). It also caught
+a real bug: `Northern Empire -> Battania` sat at -51.0 and never moved - the +0.05 decay
+step on a negative record went through `TrustRecord.Add`, which stamped
+`LastPositiveChange` and froze the record inside its own grace window. Decay now runs
+through `TrustRecord.Decay`, which never feeds the grace clock; the record then moved
+-51.0 -> -50.5 as designed. Still unverified: the grace window doing its job (needs a real
+clock), decay over months, and whether 0.05/day is the right rate.
+
 ### F3 — A patron's protection is blocked exactly when a vassal is dying
 
 **Evidence.** Battania (Khuzait's vassal) was attacked four times before its elimination on
@@ -236,7 +246,9 @@ annexation branch is dead content.
 smoothed 1.76 - yields greed ~0.5, exactly the `GreedRefusesVassals` line: the annexation
 branch becomes reachable only at the extreme the old value was meant to mark, and stays
 unreachable in an even eight-kingdom world where dominance sits near 1. Un-tuned beyond that
-arithmetic; whether balancing still caps everyone below it is a run-07 question.
+arithmetic; whether balancing still caps everyone below it is a run-07 question. Live check
+(2026-09-19, `di_run06_resume`, `diplomacy.strength`): Vlandia smoothed dominance 1.63 reads
+greed 0.38 - the branch is live, where at 2.0 the column would have been all zeros.
 
 ### F6 — Hegemony is small, voluntary, and ends by lapsing
 
