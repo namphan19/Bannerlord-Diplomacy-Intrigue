@@ -295,7 +295,7 @@ if events:
 
     section("HEGEMONY TIMELINE")
     wanted = {"vassalage_formed", "poach", "revolt", "annexation_breach", "vassalage_collapsed",
-              "vassalage_renewed", "kingdom_eliminated", "ai_war_declared"}
+              "vassalage_renewed", "kingdom_eliminated", "ai_war_declared", "defection"}
     for day, d in events:
         k = d.get("kind")
         if k not in wanted:
@@ -317,6 +317,8 @@ if events:
             print(f"  {date:<18} COLLAPSE {d.get('vassal')} / {d.get('patron')}")
         elif k == "vassalage_renewed":
             print(f"  {date:<18} RENEWED  {d.get('vassal')} -> {d.get('patron')} at hold {d.get('hold')}")
+        elif k == "defection":
+            print(f"  {date:<18} DEFECT   {d.get('vassal')} left {d.get('oldPatron')} for its attacker {d.get('newPatron')} (hold {d.get('hold')}, signed {d.get('signed')})")
         elif k == "kingdom_eliminated":
             print(f"  {date:<18} GONE     {d.get('kingdom')} ({d.get('warsClosed')} wars closed)")
 
@@ -348,8 +350,10 @@ if events:
                   f" mutual {d.get('mutualValue')} pull {d.get('balancingPull')} against {d.get('against')}")
     declared = [d for _, d in events if d.get("kind") == "ai_war_declared"]
     if declared:
-        deterred = sum(1 for d in declared if f(d.get("sideRatio")) < f(d.get("ownRatio")))
-        print(f"  AI wars declared: {len(declared)}; where the target's allies lowered the odds: {deterred}")
+        supported_targets = sum(1 for d in declared if f(d.get("theirSupport")) > 0)
+        supported_attackers = sum(1 for d in declared if f(d.get("ourSupport")) > 0)
+        print(f"  AI wars declared: {len(declared)}; targets with expected support: {supported_targets}"
+              f"; aggressors with expected support: {supported_attackers}")
 
     section("ENGINE  (rulers, clans, the player)")
     for kind in ("ruler_died", "ruler_changed", "player_died"):
@@ -358,10 +362,20 @@ if events:
         for d in rows[:12]:
             print(f"    {d.get('date','?'):<18} {d.get('kingdom')} {d.get('hero', d.get('ruler'))} {d.get('detail','')}")
     defect = collections.Counter()
+    by_detail = collections.Counter()
     for _, d in events:
         if d.get("kind") == "clan_changed_kingdom":
-            defect[(d.get("from"), d.get("to"))] += 1
-    print(f"  clans changing kingdom: {sum(defect.values())}")
+            detail = d.get("detail", "?")
+            by_detail[detail] += 1
+            # Not a political move: mercenary contracts, and a clan leaving because it or its
+            # kingdom was destroyed (ChangeKingdomActionDetail, v1.4.8).
+            if detail not in ("JoinAsMercenary", "LeaveAsMercenary",
+                              "LeaveByClanDestruction", "LeaveByKingdomDestruction"):
+                defect[(d.get("from"), d.get("to"))] += 1
+    total = sum(by_detail.values())
+    print(f"  clans changing kingdom: {total}"
+          + ("  (" + ", ".join(f"{k}={v}" for k, v in by_detail.most_common()) + ")" if total else ""))
+    print(f"  real moves only (excl. mercenary, clan/kingdom destruction): {sum(defect.values())}")
     for (a, b), n in defect.most_common(12):
         print(f"    {a} -> {b}: {n}")
 

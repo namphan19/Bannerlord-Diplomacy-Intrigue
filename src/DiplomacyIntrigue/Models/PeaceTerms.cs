@@ -40,6 +40,17 @@ namespace DiplomacyIntrigue.Models
         /// </summary>
         public bool ImposeVassalage { get; set; }
 
+        /// <summary>
+        /// The loser keeps its throne and frees every kingdom that answers to it. Demandable
+        /// only of a hegemon, and the only thing a hegemon has to give that is neither its
+        /// territory nor itself - it cannot submit while it still holds vassals.
+        ///
+        /// Nobody inherits the sphere: the freed kingdoms become independent, not the winner's.
+        /// They also stay in their own wars, which is what gives them a reason to kneel to
+        /// somebody later. See docs/design/04-hegemony.md §12.4.3.
+        /// </summary>
+        public bool DissolveHegemony { get; set; }
+
         /// <summary>Fiefs passing from loser to winner. Requires a territorial claim.</summary>
         public List<Settlement> FiefsCeded { get; } = new List<Settlement>();
 
@@ -52,7 +63,7 @@ namespace DiplomacyIntrigue.Models
         /// <summary>Nothing changes hands. Always available to both sides.</summary>
         public bool IsWhitePeace
             => IndemnityGold <= 0 && !ReleasePrisoners && !ImposeTributaryPact
-               && !ImposeVassalage && FiefsCeded.Count == 0;
+               && !ImposeVassalage && !DissolveHegemony && FiefsCeded.Count == 0;
 
         public override string ToString()
         {
@@ -69,6 +80,7 @@ namespace DiplomacyIntrigue.Models
                                           + (TributePerPeriod > 0
                                               ? " paying " + TributePerPeriod + " per period"
                                               : ""));
+            if (DissolveHegemony) parts.Add("release every vassal");
             if (ImposeTributaryPact) parts.Add("tributary pact at " + TributePerPeriod + " per period");
             if (IndemnityGold > 0) parts.Add("indemnity of " + IndemnityGold);
             if (ReleasePrisoners) parts.Add("release prisoners");

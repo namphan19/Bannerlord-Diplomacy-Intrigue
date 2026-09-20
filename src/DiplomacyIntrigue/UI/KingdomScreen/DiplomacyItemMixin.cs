@@ -304,9 +304,10 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         private static string TrustHint(Kingdom holder, Kingdom other, float value)
         {
             return "What " + holder.Name + " makes of " + other.Name + "'s word: "
-                   + value.ToString("0") + ". Trust never decays: it is reputation, not feeling."
-                   + " Below " + DiplomacyConstants.TrustFloorForPacts.ToString("0")
-                   + " they will sign nothing but a truce.";
+                   + value.ToString("0") + ". Trust is reputation, not feeling: it fades only if"
+                   + " nobody tends it - goodwill within two years, a grudge far more slowly - and"
+                   + " a war drives it down. Below " + DiplomacyConstants.TrustFloorForPacts.ToString("0")
+                   + " they will sign nothing but a truce or the terms that end a war.";
         }
 
         private static string ClaimHint(Kingdom holder, Kingdom other, Claim best)

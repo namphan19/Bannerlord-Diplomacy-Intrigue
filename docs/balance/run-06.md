@@ -111,6 +111,10 @@ it does that, but it also *emboldens*.
 offensive support for the aggressor; or discount an ally's strength by its distance to the target;
 or keep the gate on sides but compute the strength *term* on own strength. Test one at a time.
 
+**Lead's call (2026-09-18): leave it, keep observing.** No change made. The mechanism does both
+things the finding says - it deters attacks on the networked and emboldens the networked - and
+whether that nets out as a problem needs another run's evidence more than it needs a guess.
+
 ### F2 — Trust saturates at 100
 
 **Evidence.** Mean `trustIn` across kingdoms, by year: 71 (1140) → 86 (1142) → 93 (1145) → 97
@@ -127,6 +131,64 @@ nobody is doing anything to prevent.
 
 **Candidate fixes.** Pay nothing for an expiring truce; decay trust toward 0 slowly; make the
 honour dividend shrink as trust rises. Decide together with the grim-trigger item.
+
+**Lead's call (2026-09-18): decay it, three rules.** Implemented on `feature/run-06-fixes`
+(builds clean; unverified in game - the frozen clock can run `TrustRegistry.DailyTick` but
+cannot age a timestamp, so the grace window and war ramp need a real campaign):
+
+- `TrustRegistry.DailyTick` runs in the daily upkeep. At peace a record drifts toward zero
+  at 0.05/day, from either side - reputation and grudges both fade if nobody tends them.
+  The toward-zero direction also answers the grim-trigger item: the ledger now has a route
+  back from the bottom.
+- A positive change suspends decay for 30 days, read off a new
+  `TrustRecord.LastPositiveChange` (save id 5; pre-F2 saves load it as campaign-start,
+  which simply means their records decay normally). `LastChanged` could not serve - it
+  moves on the decay itself.
+- At war the record moves *down* instead, 0.05 + 0.005 per day the war has run - roughly
+  18 trust over a median run-06 war, most of a century of goodwill over a year-long one.
+
+All constants un-tuned. `diplomacy.tick_days` runs the decay too, but cannot move
+`CampaignTime.Now`, so within it nothing ages into or out of the grace window - same
+frozen-clock caveat as treaties.
+
+**Live check (2026-09-19, `di_run06_resume` via GABS, `tick_days 10`).** Peacetime drift
+exact (-0.5 on every record) and the war ramp exact (Vlandia-Southern Empire -1.9 at 28
+days elapsed, Sturgia-Western Empire -0.9 at 8, the two 19-day wars -1.45). It also caught
+a real bug: `Northern Empire -> Battania` sat at -51.0 and never moved - the +0.05 decay
+step on a negative record went through `TrustRecord.Add`, which stamped
+`LastPositiveChange` and froze the record inside its own grace window. Decay now runs
+through `TrustRecord.Decay`, which never feeds the grace clock; the record then moved
+-51.0 -> -50.5 as designed. Still unverified: the grace window doing its job (needs a real
+clock), decay over months, and whether 0.05/day is the right rate.
+
+**Review follow-up (2026-09-19): the rates above were wrong by the length of a year.** The
+constant comments converted with 365-day years; a Bannerlord year is 84 days, so 0.05/day
+took ~24 years to empty a saturated record, not ~5.5, and the live session's "~74-95 after
+two years" was that slowness, not plausibility. The lead re-set the target and asked for
+the rest to be scaled from it:
+
+- Goodwill drifts at **0.6/day**: +100 to 0 in ~167 days, just under two years.
+- Grudges drift at **0.15/day**, a quarter as fast (the lead's choice over symmetric decay,
+  which would have lifted a -35 breach back over the pact floor in ~25 days). -35 is back
+  over -20 in ~100 days, fully forgiven in ~2.8 years; -100 takes ~8.
+- War bleeds **0.6 + 0.01 per day of war** - no lower than peacetime drift, or a friendly
+  pair would keep more goodwill by fighting. A median war (76 days) costs ~74; a full year
+  of war ~85. Chosen over a straight x12 of the old ramp, which cost ~216 per median war.
+  **Floored at -35** (`TrustWarFloor`), added after the evening live check found Vlandia and
+  Southern Empire pinned at -100 by day ~94 - at the grudge rate ~6 years under the pact floor,
+  a long war priced like six betrayals. -35 is one broken treaty's cost to its victim: a war,
+  however long, leaves the sides ~100 days under the pact floor after the peace and ~2.8 years
+  from zero, and only a breach goes deeper. (-20, the pact floor itself, was the lead's first
+  pick and was dropped because one grudge tick after the peace would have cleared it.)
+- Grace stays at 30 days: it measures how often a tended pair does each other a good turn,
+  not how fast trust drains.
+- A pair at war with no record, or with a record peace had drifted to exactly 0, used to
+  be skipped; it now bleeds like any other (a missing record is read as 0 everywhere else).
+
+The faster war bleed exposed a latent rule: `CanSign`'s trust floor also applied to the
+terms that *end* a war, so a neutral pair ~27 days into a war could no longer be made to
+pay tribute or kneel at the peace table. The lead exempted those terms, as the truce always
+was - see F4's follow-up. Nothing in this paragraph has been run in game.
 
 ### F3 — A patron's protection is blocked exactly when a vassal is dying
 
@@ -152,6 +214,49 @@ before part 3's telemetry, so whether Khuzait was ever called cannot be checked 
 to attack a protected kingdom); let the defender's obligations answer an obligation joiner, with
 the cascade guard keyed per war rather than global.
 
+**Lead's call (2026-09-18): neither.** The truce and the cascade guard stay - they are what stop
+the cascade failures the mod exists to remove. Instead the *vassal* gets the exit, and the
+*patron* gets the bill. Implemented on `feature/run-06-fixes` (builds clean; unverified in game):
+
+- `AiDiplomacy.TryDefectToAttacker`, weekly, after the ordinary peace routes: a vassal whose
+  Hold is under 40, defending in a war it is losing by 20+ war score, whose patron is **not at
+  war with the aggressor** - whatever the reason - may submit to that aggressor. The submission
+  is the peace (`MakePeaceAction`, cause `Defection`), the old bond is broken **by the patron**
+  through `TreatyRegistry.Break` (its -35 with the vassal, -12 in every court, the BrokenTreaty
+  casus belli) and the patron's other vassals take the secession-contagion Hold hit.
+- The new bond is signed through the same `Hegemony.Submit` every route uses, at a new
+  `HoldOnDesperateSubmission` (45, between coerced 35 and voluntary 60) - so the new patron is
+  called into the vassal's *other* defensive wars the same day, which is the protection the old
+  one never gave.
+- Attacker-side gates are the same ones every route into vassalage passes:
+  `IsStrongEnoughToHold`, `WouldTakeVassals`, `CanSign` with the old link set aside (the
+  poaching route's `replacing` mechanism). Nothing is bypassed - a well-held vassal stays,
+  and the patron's banked Hold is exactly how much time it has to join late.
+- A player-led attacker is asked, not told, mirroring voluntary submission.
+
+Not verified in game: needs a live war against a neglected vassal; the analyser now prints
+`defection` events in the hegemony timeline.
+
+**Review follow-up (2026-09-19).** Four corrections to the route above, none run in game:
+
+- The old bond now goes through `Hegemony.Renounce`, not `TreatyRegistry.Break` alone: any
+  pact between vassal and old patron is repudiated with it - the run-04 revolt bug, which
+  would also have vetoed the casus belli the breach hands the vassal.
+- **No vassal of a vassal, anywhere.** `CanSign` refused a hegemon submitting but not a
+  vassal *taking* one, so this route could hand a vassal to an attacker that was itself a
+  vassal (and the peace table could do the same for a defiant vassal that won). `CanSign`
+  now refuses both halves. Chains already in a save are cut at session launch - the lower
+  link, dissolved with no penalty (`Hegemony.DissolveChains`, event
+  `vassal_chain_dissolved`), the lead's call.
+- The gates live in one place, `AiDiplomacy.CanDefectTo`, and the player's Accept asks them
+  again: the inquiry stays open while the campaign moves, and the first version made peace
+  even when the war or the old bond was already gone. Both inquiry callbacks now catch.
+- The losing-war gate reads its own `DefectionLosingScore` (20, unchanged) rather than the
+  peace table's `PeaceWhitePeaceOnlyBelow`, so tuning one no longer moves the other.
+- A refused offer - defection or voluntary submission - is not repeated for 42 days
+  (`PlayerOfferRefusalCooldownDays`, stamped on `TrustRecord.LastOfferRefused`, save id 6);
+  before this the weekly evaluation re-asked every week at -5 trust a time.
+
 ### F4 — Bug: the peace table accepts tribute a vassal cannot pay
 
 **Evidence.** Three warnings, e.g. `Could not impose the tributary pact: Battania answers to Khuzait
@@ -162,8 +267,21 @@ and cannot sign with outsiders on its own account` (17:46:29); also Sturgia, and
 can be signed. `Apply` makes the peace first, then `ImposeTribute` fails at
 `TreatyRegistry.CanSign` — **the winner signs a peace and receives nothing it was promised**.
 
-**Fix (not controversial, not yet applied).** In `IsDemandable`, refuse `ImposeTributaryPact`
-when `TreatyRegistry.CanSign(winner, loser, TributaryPact)` would refuse — one resolver.
+**Fix applied** on `feature/run-06-fixes` (2026-09-18, builds clean; not verified in game —
+the frozen clock cannot produce a war ending at a peace table). `IsDemandable` now refuses
+`ImposeTributaryPact` when `CanSign` would refuse, asked with a new `atPeace` parameter that
+skips only the "Make peace first" step — the war is still formally open when the table asks.
+The same check covers `ImposeVassalage`, which had the same gap for the conditions its own
+checks did not name (a loser already holding vassals, the trust floor, either side being a
+vassal forbidden to treat with outsiders); the patron and strength checks keep their better
+messages.
+
+**Review follow-up (2026-09-19).** The parameter is now `settlesWar`, and it also lifts the
+trust floor: a term that ends a war is exempt from it, as the truce always was (the lead's
+call). The floor had always voided imposed terms silently after the peace; with F2's war
+bleed it would have bound after about a month of any war, leaving the table unable to impose
+a treaty at all. Tribute and vassalage imposed at the table, and a defection's vassalage, all
+sign with it. Voluntary treaties still face the floor.
 
 ### F5 — Greed was never reached
 
@@ -178,6 +296,15 @@ Two eliminations lowered the number of kingdoms, which raises the share needed f
 **Open question.** Is `GreedStartsAtDominance = 2` reachable in normal play, or is balancing
 keeping everyone below it by design? Letting this run continue answers it. If not reachable, the
 annexation branch is dead content.
+
+**Lead's call (2026-09-18): lower it.** `GreedStartsAtDominance` 2.0 -> **1.25**, implemented on
+`feature/run-06-fixes` (builds clean; unverified). Chosen so this run's peak - Khuzait's
+smoothed 1.76 - yields greed ~0.5, exactly the `GreedRefusesVassals` line: the annexation
+branch becomes reachable only at the extreme the old value was meant to mark, and stays
+unreachable in an even eight-kingdom world where dominance sits near 1. Un-tuned beyond that
+arithmetic; whether balancing still caps everyone below it is a run-07 question. Live check
+(2026-09-19, `di_run06_resume`, `diplomacy.strength`): Vlandia smoothed dominance 1.63 reads
+greed 0.38 - the branch is live, where at 2.0 the column would have been all zeros.
 
 ### F6 — Hegemony is small, voluntary, and ends by lapsing
 
@@ -236,10 +363,13 @@ not caused by this branch.
 
 1. When the lead stops the run, copy the final log over `run-06-part3-interim.log` (or add it),
    rerun the analyser, and update §3-§6 with the final numbers. Answer F5 (did Vlandia reach greed?).
-2. Fix F4 (small, uncontroversial) and the two analyser caveats in §7.
-3. Put F1, F2 and F3 to the lead with the candidate fixes; they are design decisions, and F2
-   belongs with the deferred trust/grim-trigger item in STATUS §3.
+2. ~~Fix F4 (small, uncontroversial) and the two analyser caveats in §7.~~ Done - `188af40`.
+3. ~~Put F1, F2 and F3 to the lead with the candidate fixes.~~ Done (2026-09-18): F1 left as is,
+   F2 trust decay implemented, F3 vassal-defection implemented, F5 threshold lowered to 1.25 -
+   all on `feature/run-06-fixes`, all unverified in game.
 4. Change one thing per run. Run 06 changed four layers at once; its numbers describe the
-   combination, not any single fix.
+   combination, not any single fix. Run 07 carries four more (F2 decay, F3 defection, F5 greed
+   threshold, F4 demand legality) - the same caveat applies, though three of the four only bind
+   at edges the last run already reached.
 5. For a clean read on formation (not collapse), start run 07 from a fresh 1084 campaign rather
    than a run-04 descendant.

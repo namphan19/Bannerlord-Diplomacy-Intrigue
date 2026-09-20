@@ -72,7 +72,9 @@ namespace DiplomacyIntrigue.Diplomacy
                 var fief = terms.FiefsCeded[i];
                 cost += fief.IsTown ? DiplomacyConstants.PeaceCostTown : DiplomacyConstants.PeaceCostCastle;
             }
-            if (terms.ImposeVassalage) cost += DiplomacyConstants.PeaceCostVassalage;
+            // One price for both faces of the top rung - see PeaceCostSubjugation. They cannot
+            // both be set: a hegemon has no independence left to give, a free kingdom no sphere.
+            if (terms.ImposeVassalage || terms.DissolveHegemony) cost += DiplomacyConstants.PeaceCostSubjugation;
             if (terms.ImposeTributaryPact) cost += DiplomacyConstants.PeaceCostTributaryPact;
             if (terms.ReleasePrisoners) cost += DiplomacyConstants.PeaceCostPrisoners;
             cost += terms.IndemnityGold / 1000f * DiplomacyConstants.PeaceCostPerThousandIndemnity;
@@ -87,6 +89,139 @@ namespace DiplomacyIntrigue.Diplomacy
         {
             var score = war.ScoreFor(winner);
             return score <= DiplomacyConstants.PeaceWhitePeaceOnlyBelow ? 0f : score;
+        }
+
+        /// <summary>The subjugation package: the top rung plus the prisoners it always carries.</summary>
+        public static float SubjugationCost
+            => DiplomacyConstants.PeaceCostSubjugation + DiplomacyConstants.PeaceCostPrisoners;
+
+        /// <summary>
+        /// The least a winner will settle for, in concession points.
+        ///
+        /// Two rules, in order:
+        ///
+        /// 1. **Subjugation is a cliff.** If this war can actually produce it, the winner wants
+        ///    exactly that and nothing cheaper. A victory that can take the loser's standing
+        ///    does not settle for the tribute half the score would have bought. The lead's call
+        ///    (design/04 §12.9), and it also removes an asymmetry: the loser walking the ladder
+        ///    up and the winner walking it down now stop on the same rung, so the outcome no
+        ///    longer depends on which side reached the table first.
+        /// 2. Otherwise half the war score, capped by **the dearest package this war could
+        ///    actually produce**.
+        ///
+        /// That cap used to be the constant cost of the top rung, and it was wrong. Run 07,
+        /// Spring 1099: Khuzait beat Sturgia to a war score of **225.6** and took a white
+        /// peace. Sturgia already answered to Vlandia, so `CanSign` barred both subjugation and
+        /// tribute; the demand stayed pinned at 95 with nothing on the table able to reach it,
+        /// and the war only ended when the *winner* tired past
+        /// <see cref="DiplomacyConstants.ExhaustionAcceptWhitePeaceWhenWinning"/>. A ceiling has
+        /// to describe what is reachable, not what the ladder would cost in the abstract.
+        ///
+        /// One function rather than the expression inlined at each site: the console's
+        /// allowance readout, the player's menu and the AI read the same figure, which is the
+        /// rule the whole peace table follows.
+        /// </summary>
+        public static float MinimumAcceptable(ModState state, WarRecord war, Kingdom winner)
+        {
+            var budget = BudgetFor(war, winner);
+            if (budget <= 0f) return 0f;
+
+            var ceiling = DearestDemandable(state, war, winner);
+            if (ceiling >= SubjugationCost) return SubjugationCost;
+
+            var wanted = budget * DiplomacyConstants.PeaceWinnerMinimumShare;
+            return wanted > ceiling ? ceiling : wanted;
+        }
+
+        /// <summary>
+        /// The cost of the dearest package <see cref="IsDemandable"/> would actually allow in
+        /// this war. Asked through the real resolver rather than re-deriving the rules, so a
+        /// rung the table would refuse cannot inflate what the winner holds out for.
+        ///
+        /// Prisoners are the floor: they are always available and always affordable.
+        /// </summary>
+        private static float DearestDemandable(ModState state, WarRecord war, Kingdom winner)
+        {
+            var loser = war.Other(winner);
+            if (loser == null) return DiplomacyConstants.PeaceCostPrisoners;
+
+            var best = DiplomacyConstants.PeaceCostPrisoners;
+
+            var subjugation = new PeaceTerms(winner, loser) { ReleasePrisoners = true };
+            if (Hegemony.IsHegemon(state, loser)) subjugation.DissolveHegemony = true;
+            else
+            {
+                subjugation.ImposeVassalage = true;
+                subjugation.TributePerPeriod = DiplomacyConstants.AiDefaultTributePerPeriod;
+            }
+            if (IsDemandable(state, war, subjugation, out _)) return CostOf(subjugation);
+
+            var tribute = new PeaceTerms(winner, loser)
+            {
+                ReleasePrisoners = true,
+                ImposeTributaryPact = true,
+                TributePerPeriod = DiplomacyConstants.AiDefaultTributePerPeriod,
+            };
+            if (IsDemandable(state, war, tribute, out _)) best = Max(best, CostOf(tribute));
+
+            var settlements = loser.Settlements;
+            for (var i = 0; i < settlements.Count; i++)
+            {
+                var fief = settlements[i];
+                if (!fief.IsFortification) continue;
+                var land = new PeaceTerms(winner, loser) { ReleasePrisoners = true };
+                land.FiefsCeded.Add(fief);
+                if (IsDemandable(state, war, land, out _)) best = Max(best, CostOf(land));
+            }
+
+            var indemnity = new PeaceTerms(winner, loser)
+            {
+                ReleasePrisoners = true,
+                IndemnityGold = LargestIndemnity(war, winner, loser),
+            };
+            if (indemnity.IndemnityGold > 0 && IsDemandable(state, war, indemnity, out _))
+                best = Max(best, CostOf(indemnity));
+
+            return best;
+        }
+
+        private static float Max(float a, float b) => a > b ? a : b;
+
+        /// <summary>
+        /// The largest indemnity this war could actually charge, in denars, rounded down to
+        /// whole thousands. Zero when there is nothing worth taking.
+        ///
+        /// Sized from the **war score**, not from the treasury. It used to offer half the
+        /// ruler's gold, which run 07 showed was never once demandable: half of Sturgia's
+        /// 740,000 denars priced at <see cref="DiplomacyConstants.PeaceCostPerThousandIndemnity"/>
+        /// came to roughly 2,950 concession points against a budget of 187. **Zero of the 100
+        /// settlements in that run involved an indemnity.** The rung existed and could never be
+        /// reached.
+        ///
+        /// Capped at the tributary pact's cost so that money stays a mid-ladder option. Without
+        /// that cap an indemnity sized to the whole budget would be the dearest thing available
+        /// in almost every war and would crowd out both land and tribute.
+        ///
+        /// **The price itself is still suspect.** At 8 points per 1,000 denars a 60-point
+        /// indemnity is 7,500 denars, which is real on the ladder and trivial to a ruler
+        /// holding several hundred thousand. Making it bite is a balance decision, not a fix,
+        /// and it is left for the lead.
+        /// </summary>
+        public static int LargestIndemnity(WarRecord war, Kingdom winner, Kingdom loser)
+        {
+            var leader = loser?.Leader;
+            if (leader == null || leader.Gold <= 0) return 0;
+
+            var budget = BudgetFor(war, winner);
+            var points = budget - DiplomacyConstants.PeaceCostPrisoners;
+            if (points > DiplomacyConstants.PeaceCostTributaryPact)
+                points = DiplomacyConstants.PeaceCostTributaryPact;
+            if (points <= 0f) return 0;
+
+            var byScore = (int)(points / DiplomacyConstants.PeaceCostPerThousandIndemnity * 1000f);
+            var byPurse = leader.Gold / 2;
+            var gold = byScore < byPurse ? byScore : byPurse;
+            return gold / 1000 * 1000;
         }
 
         /// <summary>
@@ -153,6 +288,33 @@ namespace DiplomacyIntrigue.Diplomacy
                              + " and could not hold it as a vassal. Tribute or land is still on the table.";
                     return false;
                 }
+            }
+
+            // Only a hegemon has a sphere to give up. Asked against the treaties rather than
+            // any stored status, because that is the only place hegemony exists (design/04 §5.1).
+            if (terms.DissolveHegemony && !Hegemony.IsHegemon(state, terms.Loser))
+            {
+                reason = terms.Loser.Name + " holds no vassals, so there is no sphere to break up.";
+                return false;
+            }
+
+            // The demands that are treaties have to be signable once the war closes - asked
+            // here, before the peace, because signing happens after it. Run 06 F4: a loser
+            // already answering to another patron could not sign the tributary pact it was
+            // being charged for, and the winner made peace and collected nothing it was
+            // promised. CanSign does the asking so there is still only one resolver - as a
+            // settlement term, so the trust floor does not apply (see CanSign's settlesWar).
+            if (terms.ImposeTributaryPact
+                && !TreatyRegistry.CanSign(state, terms.Winner, terms.Loser,
+                    TreatyType.TributaryPact, out reason, settlesWar: true))
+            {
+                return false;
+            }
+            if (terms.ImposeVassalage
+                && !TreatyRegistry.CanSign(state, terms.Winner, terms.Loser,
+                    TreatyType.Vassalage, out reason, settlesWar: true))
+            {
+                return false;
             }
 
             var budget = BudgetFor(war, terms.Winner);
@@ -224,7 +386,7 @@ namespace DiplomacyIntrigue.Diplomacy
         ///
         /// Three ways a winner signs: it earned nothing (a stalemate has nothing to collect),
         /// it is worn out itself, or the package is worth at least
-        /// <see cref="DiplomacyConstants.PeaceWinnerMinimumShare"/> of what the war earned.
+        /// <see cref="MinimumAcceptable"/>.
         /// </summary>
         public static bool WinnerWouldAccept(ModState state, WarRecord war, PeaceTerms terms, out string reason)
         {
@@ -242,11 +404,12 @@ namespace DiplomacyIntrigue.Diplomacy
             if (exhaustion >= DiplomacyConstants.ExhaustionAcceptWhitePeaceWhenWinning) return true;
 
             var cost = CostOf(terms);
-            var wanted = budget * DiplomacyConstants.PeaceWinnerMinimumShare;
+            var wanted = MinimumAcceptable(state, war, winner);
             if (cost >= wanted) return true;
 
             reason = winner.Name + " is winning and will not settle for that: the package is worth "
                      + cost.ToString("0") + " against a war score of " + budget.ToString("0")
+                     + ", so they want at least " + wanted.ToString("0")
                      + ", and they are only at exhaustion " + exhaustion.ToString("0.0")
                      + " of the " + DiplomacyConstants.ExhaustionAcceptWhitePeaceWhenWinning.ToString("0")
                      + " that would make them stop caring.";
@@ -291,6 +454,7 @@ namespace DiplomacyIntrigue.Diplomacy
             PayIndemnity(terms);
             ReleaseHeroes(terms);
             ImposeTribute(state, terms);
+            DissolveSphere(state, terms);
             ImposeSubmission(state, terms);
 
             Log.Info("Peace", winner.Name + " and " + loser.Name + " made peace: " + summary + ".");
@@ -349,6 +513,43 @@ namespace DiplomacyIntrigue.Diplomacy
         }
 
         /// <summary>
+        /// The beaten hegemon is made to free every kingdom that answers to it.
+        ///
+        /// **Dissolved, not broken.** The patron is not choosing this; the peace is imposing
+        /// it. Closing the links as breaches would hand each freed vassal a grievance against
+        /// a patron for an act it was compelled to, and cost it trust it did not spend - so
+        /// `ClaimRegistry` is deliberately never reached here.
+        ///
+        /// The freed kingdoms **keep their own wars**. Each was called into them under its own
+        /// `WarRecord`, and leaving those open is the point rather than an oversight: a cluster
+        /// of newly independent kingdoms still at war with the strongest power on the map is
+        /// exactly what the submission routes feed on. Nobody inherits the sphere at the table;
+        /// a winner that wants these kingdoms has to earn each one separately, through the same
+        /// valuation everybody else uses.
+        /// </summary>
+        private static void DissolveSphere(ModState state, PeaceTerms terms)
+        {
+            if (!terms.DissolveHegemony) return;
+
+            var patron = terms.Loser;
+            var links = new List<Treaty>();
+            Hegemony.CollectVassalages(state, patron, links);
+            if (links.Count == 0) return;
+
+            for (var i = 0; i < links.Count; i++)
+            {
+                var vassal = links[i].SubordinateParty;
+                TreatyRegistry.Dissolve(state, links[i]);
+                Telemetry.Event("hegemony_dissolved_at_table", "patron", patron,
+                    "vassal", vassal, "winner", terms.Winner);
+            }
+
+            Log.Info("Hegemony", patron.Name + " was made to release " + links.Count
+                                 + " vassal(s) at the peace table with " + terms.Winner.Name
+                                 + ". They are independent, and keep their own wars.");
+        }
+
+        /// <summary>
         /// The top rung: the loser becomes a vassal, and the winner becomes a hegemon by the
         /// only definition the mod has - holding one.
         ///
@@ -363,7 +564,7 @@ namespace DiplomacyIntrigue.Diplomacy
 
             var startingHold = Hegemony.StartingHoldWhenImposed(state, terms.Winner, terms.Loser);
             var treaty = Hegemony.Submit(state, terms.Winner, terms.Loser,
-                startingHold, terms.TributePerPeriod, out var reason, route: "imposed");
+                startingHold, terms.TributePerPeriod, out var reason, route: "imposed", settlesWar: true);
 
             if (treaty == null)
             {
@@ -387,7 +588,7 @@ namespace DiplomacyIntrigue.Diplomacy
 
             var treaty = TreatyRegistry.Sign(state, terms.Winner, terms.Loser,
                 TreatyType.TributaryPact, out var reason,
-                tributePayer: terms.Loser, tributeAmount: terms.TributePerPeriod);
+                tributePayer: terms.Loser, tributeAmount: terms.TributePerPeriod, settlesWar: true);
 
             if (treaty == null)
                 Log.Warn("Peace", "Could not impose the tributary pact: " + reason);
@@ -409,18 +610,25 @@ namespace DiplomacyIntrigue.Diplomacy
 
             var lines = new List<string>
             {
-                "War score " + war.ScoreFor(winner).ToString("0.0") + " gives a budget of " + budget.ToString("0") + ".",
+                "War score " + war.ScoreFor(winner).ToString("0.0") + " gives a budget of " + budget.ToString("0")
+                    + ", and we will not settle for less than "
+                    + MinimumAcceptable(state, war, winner).ToString("0")
+                    + " (dearest reachable: " + DearestDemandable(state, war, winner).ToString("0") + ").",
                 "  town              " + DiplomacyConstants.PeaceCostTown.ToString("0")
                     + (hasClaim ? "" : "   (blocked: no territorial claim)"),
                 "  castle            " + DiplomacyConstants.PeaceCostCastle.ToString("0")
                     + (hasClaim ? "" : "   (blocked: no territorial claim)"),
                 "  tributary pact    " + DiplomacyConstants.PeaceCostTributaryPact.ToString("0"),
-                "  submission        " + DiplomacyConstants.PeaceCostVassalage.ToString("0")
-                    + (Hegemony.IsStrongEnoughToHold(winner, loser)
-                        ? "   (they become our vassal)"
-                        : "   (blocked: we are no stronger than them)"),
+                "  subjugation       " + DiplomacyConstants.PeaceCostSubjugation.ToString("0")
+                    + (Hegemony.IsHegemon(state, loser)
+                        ? "   (they free every vassal)"
+                        : Hegemony.IsStrongEnoughToHold(winner, loser)
+                            ? "   (they become our vassal)"
+                            : "   (blocked: we are no stronger than them)"),
                 "  release prisoners " + DiplomacyConstants.PeaceCostPrisoners.ToString("0"),
-                "  indemnity         " + DiplomacyConstants.PeaceCostPerThousandIndemnity.ToString("0") + " per 1000 denars",
+                "  indemnity         " + DiplomacyConstants.PeaceCostPerThousandIndemnity.ToString("0")
+                    + " per 1000 denars, at most "
+                    + LargestIndemnity(war, winner, loser).ToString("0") + " here",
                 "Their exhaustion is " + war.ExhaustionOf(loser).ToString("0.0")
                     + "; they start listening at " + (DiplomacyConstants.ExhaustionSeekPeace
                         - (-war.ScoreFor(loser)) / 2f).ToString("0.0") + "."

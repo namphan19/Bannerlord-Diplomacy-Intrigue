@@ -128,12 +128,10 @@ namespace DiplomacyIntrigue.Diplomacy
         public const float WearinessMax = 100f;
 
         // ---- War score ------------------------------------------------------
-        // Range -100..100, positive means the war's aggressor is ahead.
+        // Unbounded, positive means the war's aggressor is ahead. See WarRecord.AddWarScore
+        // and design/04 §12.4.1 for why the ceiling moved to the demand side.
         // Exhaustion says how tired a side is; war score says who is winning.
         // Peace *willingness* reads exhaustion, peace *terms* read war score.
-
-        public const float WarScoreMin = -100f;
-        public const float WarScoreMax = 100f;
 
         /// <summary>Scales the casualty differential of a field battle into war score.</summary>
         public const float WarScoreBattleFactor = 6f;
@@ -296,21 +294,55 @@ namespace DiplomacyIntrigue.Diplomacy
         // active vassalage. Several coexist by construction. See docs/design/04-hegemony.md.
 
         /// <summary>
-        /// War score a victor needs before it can demand submission - the top rung of the
-        /// concession ladder, above a tributary pact at 60.
+        /// The top rung of the concession ladder: the loser gives up its political standing.
+        /// Which standing depends on what it has, and the two are mutually exclusive:
         ///
-        /// Measured rather than guessed: run 03 produced two wars ending at war score
-        /// **exactly 100** (`Battania / Northern Empire`, `Khuzait / Sturgia`), both of which
-        /// settled for a tributary pact because this rung did not exist yet. Roughly 0.3
-        /// such wars a year, so a hegemony forms about every three years.
+        ///   - a **free kingdom** gives up its independence and becomes a vassal;
+        ///   - a **hegemon** cannot do that (CanSign keeps hegemony flat) and instead gives up
+        ///     its sphere - "keep your throne, your vassals are free".
+        ///
+        /// One price for both, the lead's call on 2026-09-20 (design/04 §12.9). They were 90
+        /// and 75 as separate rungs; since no war can ever offer both, a single constant is
+        /// one resolver for one concept rather than two numbers to keep in step.
+        ///
+        /// With <see cref="PeaceCostPrisoners"/> bundled into the package this makes the rung
+        /// cost **75**, which is also the war score at which it becomes the winner's demand -
+        /// see <see cref="PeaceTable.MinimumAcceptable"/>. That is a cliff, not a slope, and
+        /// it is deliberate: above it a victory asks for the loser's standing rather than
+        /// settling for the tribute that half the score would have bought.
+        ///
+        /// **Un-tuned at this value.** Run 07 settled 13 of its 18 tributary pacts at a score
+        /// of 75 or more, so this threshold is expected to convert most of them into
+        /// subjugations and leave tribute a narrow band between 65 and 75. That was the
+        /// lead's intent and it is the main thing the next run has to check.
         /// </summary>
-        public const float PeaceCostVassalage = 90f;
+        public const float PeaceCostSubjugation = 70f;
 
         /// <summary>Where an imposed vassalage starts: submission at swordpoint holds poorly.</summary>
         public const float HoldOnCoercedSubmission = 35f;
 
         /// <summary>Where a voluntary submission starts. A volunteer is a far steadier vassal.</summary>
         public const float HoldOnVoluntarySubmission = 60f;
+
+        /// <summary>
+        /// Where a vassalage starts when a neglected vassal kneels to the kingdom attacking
+        /// it - more willing than conquest, less than a volunteer, so between
+        /// <see cref="HoldOnCoercedSubmission"/> and <see cref="HoldOnVoluntarySubmission"/>.
+        /// The lead's F3 decision after run 06. **Un-tuned.**
+        /// </summary>
+        public const float HoldOnDesperateSubmission = 45f;
+
+        /// <summary>
+        /// How far a vassal must be losing a war it was attacked in - war score against it,
+        /// at or beyond this - before it will defect to the attacker (run 06, F3). A vassal
+        /// holding its own has no need to kneel to the enemy.
+        ///
+        /// Its own constant since the run-06 review: the first version borrowed
+        /// <see cref="PeaceWhitePeaceOnlyBelow"/>, a peace-table budget line that happens to
+        /// share the value, so tuning when the table starts paying would have silently moved
+        /// when vassals defect. Same 20 today, same inclusive boundary. **Un-tuned.**
+        /// </summary>
+        public const float DefectionLosingScore = 20f;
 
         /// <summary>
         /// Where a vassalage imposed at a peace table starts when the loser walked out of a
@@ -409,8 +441,27 @@ namespace DiplomacyIntrigue.Diplomacy
         /// <summary>A mark older than this is forgotten.</summary>
         public const float DefianceMarkMemoryDays = 84f;
 
-        /// <summary>Hold lost by the patron's other vassals when one of them revolts.</summary>
+        /// <summary>
+        /// Hold lost by the patron's other vassals when one of them gets out - revolt, an
+        /// annexation begun against a sibling, or a defection to the attacker the patron
+        /// would not face (Hegemony.Defect). One number for "the rest watched a vassal
+        /// leave", whatever the door was.
+        /// </summary>
         public const float SecessionContagionHold = 10f;
+
+        /// <summary>
+        /// Hold a vassal loses when its patron orders it to stop fighting a kingdom that has
+        /// just knelt to that same patron. It gave up a war - often one it was winning - and
+        /// got nothing for it.
+        ///
+        /// **Un-tuned.** A little above <see cref="SecessionContagionHold"/> because this one
+        /// is a direct grievance rather than a bad example set by somebody else.
+        ///
+        /// It is the brake on the whole hegemony spiral (design/04 §12.4.5): every vassal a
+        /// hegemon takes in this way is paid for out of the loyalty it already holds, so a
+        /// sphere funds its own expansion and cannot grow for free.
+        /// </summary>
+        public const float HoldLostToImposedPeace = 12f;
 
         /// <summary>
         /// A vassal whose Hold is below this once the contagion has landed joins a revolt that
@@ -457,8 +508,28 @@ namespace DiplomacyIntrigue.Diplomacy
         /// <summary>Years of grace between ex-vassals when a hegemon is destroyed.</summary>
         public const int HegemonyCollapseGraceYears = 2;
 
-        /// <summary>Value at which a cornered kingdom offers its submission.</summary>
-        public const float AiSubmissionThreshold = 55f;
+        /// <summary>
+        /// Value at which a cornered kingdom offers its submission.
+        ///
+        /// 55 until 2026-09-20. Run 07's two submissions cleared it at 58.4 and 58.9 - about
+        /// four points of margin - so the lead lowered it to 50 to admit the band just below
+        /// them. Nothing is known about how many cases sit in 50-55: `SubmissionValue` is only
+        /// logged when a link actually forms, so the near-misses have never been recorded.
+        /// That blind spot is why the weekly `[SUBMIT]` telemetry exists.
+        ///
+        /// Read by all three routes that create a link outside the peace table - voluntary
+        /// submission, kneeling to an attacker, and `Hegemony.TryPoach`.
+        /// </summary>
+        public const float AiSubmissionThreshold = 50f;
+
+        /// <summary>
+        /// Days a kingdom the player turned down waits before offering to kneel to the
+        /// player's realm again - voluntary submission and defection alike, the lead's call
+        /// of 2026-09-19. Without it the weekly evaluation put the same offer back on screen
+        /// every week, charging <see cref="TrustOfferRefused"/> each time.
+        /// **Un-tuned.**
+        /// </summary>
+        public const float PlayerOfferRefusalCooldownDays = 42f;
 
         // Weights of the submission valuation (design 04 §3.2).
 
@@ -493,6 +564,23 @@ namespace DiplomacyIntrigue.Diplomacy
         public const float SubmissionTrustWeight = 20f;
         public const float SubmissionPrideWeight = 50f;
         public const float SubmissionCultureWeight = 20f;
+
+        /// <summary>
+        /// Charged when the patron being knelt to is one of the kingdoms currently at war with
+        /// the candidate. Kneeling to the army burning your villages is a worse bargain than
+        /// the same oath sworn to a bystander, even though it buys more peace.
+        ///
+        /// **Un-tuned.** It is how the design's "a patron outside the war is preferred" is
+        /// expressed (docs/design/04-hegemony.md §12.4.4). Written as a charge on the enemy
+        /// rather than a bonus to the outsider so that the routes which existed before - the
+        /// voluntary submission and the poaching valuation, neither of which can involve a
+        /// patron at war - keep the numbers they were measured with.
+        ///
+        /// Deliberately a weight and not a veto: absolute precedence would let a worthless
+        /// bystander outrank an ideal patron, and the whole reason this branch exists is that
+        /// a surrounded kingdom's bystanders are worth almost nothing to it.
+        /// </summary>
+        public const float SubmissionToEnemyPenalty = 10f;
 
         /// <summary>
         /// A vassal past this exhaustion is excused from a call to arms even by its patron.
@@ -545,9 +633,18 @@ namespace DiplomacyIntrigue.Diplomacy
 
         /// <summary>
         /// Smoothed dominance at which greed begins; it is full one even share above. With
-        /// eight kingdoms: from 25% of the world's strength, full at 37.5%.
+        /// eight kingdoms: from ~16% of the world's strength, full at ~28%.
+        ///
+        /// Lowered from 2.0 - the lead's F5 decision after run 06, where the threshold was
+        /// never reached: the highest smoothed dominance the run produced was ~1.76, so
+        /// greed never fired and the whole annexation branch stayed untested. At 1.25 a
+        /// dominance of 1.75 - what the run's peak hegemon actually held - yields greed
+        /// 0.5, exactly the line where a ruler stops wanting vassals. The branch is
+        /// reachable only at the extreme the old value was meant to mark, and unreachable
+        /// in an even eight-kingdom world where dominance sits near 1.
+        /// **Un-tuned beyond that arithmetic.** The next run is the first measurement.
         /// </summary>
-        public const float GreedStartsAtDominance = 2f;
+        public const float GreedStartsAtDominance = 1.25f;
 
         /// <summary>
         /// Greed at which a ruler takes no new vassals - no voluntary submission, no poaching,
@@ -624,6 +721,101 @@ namespace DiplomacyIntrigue.Diplomacy
         public const float TrustPeaceHeld = 8f;
         public const float TrustSpyNetworkExposed = -25f;
 
+        // Every figure below is in campaign days, and a Bannerlord year is 84 of them
+        // (4 seasons x 21). The first version of these comments converted with 365-day
+        // years and claimed ~5.5 years for a rate that actually took ~24.
+
+        /// <summary>
+        /// Goodwill shed per day while the pair is at peace, drifting toward zero - the
+        /// lead's F2 decision after run 06, where nothing ever took trust away: a world that
+        /// kept honouring treaties saturated near +100, so reputation had become a ratchet
+        /// and "would they sign with you" stopped being a question the value answered.
+        ///
+        /// 0.6 is the lead's call of 2026-09-19: a saturated +100 reaches zero in ~167 days,
+        /// just under two years, so a relationship has to be kept up to be kept. It replaced
+        /// 0.05, which took ~24 years and left run 06's saturation effectively in place.
+        /// **Un-tuned** beyond that target.
+        /// </summary>
+        public const float TrustGoodwillDecayPerDay = 0.6f;
+
+        /// <summary>
+        /// The same drift from below: how fast a grudge fades at peace. A grudge has to fade
+        /// too - it is the ledger's only route back from the bottom - but a quarter as fast
+        /// as goodwill, the lead's call of 2026-09-19.
+        ///
+        /// Symmetric decay was the alternative and lost because it erased the punishment for
+        /// treachery: at 0.6/day a -35 breach climbs back over the pact floor
+        /// (<see cref="TrustFloorForPacts"/>) in ~25 days. At 0.15 that takes ~100 days
+        /// (~1.2 years), full forgiveness of a -35 takes ~2.8 years, and -100 takes ~8.
+        /// **Un-tuned.**
+        /// </summary>
+        public const float TrustGrudgeDecayPerDay = 0.15f;
+
+        /// <summary>
+        /// Days after a positive change during which no decay runs at all - the lead's F2
+        /// decision: a good act buys a stretch in which the relationship cannot fade.
+        ///
+        /// Not scaled with the decay rates when they rose twelvefold: the window is measured
+        /// against how often a tended relationship produces a good act, not against how fast
+        /// it drains. At 30 days it protects ~18 points of goodwill per good act.
+        /// **Un-tuned.**
+        /// </summary>
+        public const float TrustDecayGraceDays = 30f;
+
+        /// <summary>
+        /// Trust lost per day between two kingdoms at war, instead of the drift toward
+        /// zero. While a war runs the record moves *down*: goodwill erodes and enmity
+        /// deepens - the lead's F2 decision.
+        ///
+        /// Equal to <see cref="TrustGoodwillDecayPerDay"/> and no lower: below it, a pair
+        /// with goodwill would keep more of it by fighting than by ignoring each other. The
+        /// consequence is that a neutral pair reaches the pact floor after ~28 days of war,
+        /// which is why the terms that end a war are exempt from the floor
+        /// (<see cref="TreatyRegistry.CanSign"/>, <c>settlesWar</c>). The bleed stops at
+        /// <see cref="TrustWarFloor"/>.
+        /// **Un-tuned.**
+        /// </summary>
+        public const float TrustDecayWarPerDay = 0.6f;
+
+        /// <summary>
+        /// Added to <see cref="TrustDecayWarPerDay"/> for every day the war has already run,
+        /// so the bleed worsens the longer the fighting lasts - the lead's F2 decision.
+        /// At day 76, the median run-06 war, the drain is 1.36/day and the war has cost ~74
+        /// trust in all, uncapped; a war of a full year (84 days) ~85. A +100 pair comes out of
+        /// a median war at about +26; anything lower stops at <see cref="TrustWarFloor"/>.
+        /// Chosen by the lead over a straight x12 scaling of the old 0.005, which would have
+        /// cost ~216 over a median war - the whole range, twice.
+        /// **Un-tuned.**
+        /// </summary>
+        public const float TrustDecayWarRampPerDay = 0.01f;
+
+        /// <summary>
+        /// How far a war alone can drag trust down. Below this only a breach reaches - the
+        /// lead's call of 2026-09-19, after a live check found an uncapped war bleed pinning
+        /// Vlandia and Southern Empire at -100 by day ~94, which at the grudge rate kept them
+        /// under the pact floor for ~6 years: a long war priced like six betrayals.
+        ///
+        /// Equal to <see cref="TrustTreatyBrokenVictim"/> on purpose: however long a war runs,
+        /// it leaves the two sides no worse off than one broken treaty would, so betrayal stays
+        /// the most expensive thing a court can do to another. A neutral pair reaches it in ~43
+        /// days, a +100 pair in ~115. After the peace it is ~100 days (~1.2 years) back over the
+        /// pact floor and ~2.8 years to zero at <see cref="TrustGrudgeDecayPerDay"/>.
+        ///
+        /// -20 was considered - the pact floor itself - and lost because one grudge tick after
+        /// the peace would have cleared it, so a war would have left no lasting mark at all.
+        ///
+        /// Only stops the bleed - a record already below it, from a breach, is neither pushed
+        /// further by the war nor lifted to it.
+        /// </summary>
+        public const float TrustWarFloor = -35f;
+
+        /// <summary>
+        /// What a kingdom thinks of the player's realm after the player turns down its offer
+        /// to kneel - voluntary submission or defection alike. The one trust change the AI
+        /// can never trigger, because only a player patron is asked rather than told.
+        /// </summary>
+        public const float TrustOfferRefused = -5f;
+
         /// <summary>A war declared below this legitimacy offends every uninvolved court.</summary>
         public const float UnjustWarLegitimacyThreshold = 0.3f;
 
@@ -631,9 +823,12 @@ namespace DiplomacyIntrigue.Diplomacy
         public const int PeaceDividendYears = 2;
 
         /// <summary>
-        /// Below this, a kingdom will sign nothing but a truce with us. This is the lasting
+        /// Below this, a kingdom will sign nothing but a truce with us - or the terms that end
+        /// a war, which have to stay possible like the truce itself. This is the lasting
         /// punishment for treachery: not a relation penalty that fades in a season, but a
-        /// reputation that follows you for the rest of the campaign.
+        /// reputation that outlasts it. Since run 06 it is not permanent: a -35 breach from
+        /// neutral holds the victim under this line for ~100 days
+        /// (<see cref="TrustGrudgeDecayPerDay"/>).
         /// </summary>
         public const float TrustFloorForPacts = -20f;
 

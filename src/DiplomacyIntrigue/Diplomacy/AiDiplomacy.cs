@@ -36,6 +36,8 @@ namespace DiplomacyIntrigue.Diplomacy
             Submitted = 5,
             /// <summary>Took a neglected vassal off a rival patron.</summary>
             PoachedVassal = 6,
+            /// <summary>A neglected vassal knelt to the kingdom attacking it.</summary>
+            Defected = 7,
         }
 
         /// <summary>
@@ -65,6 +67,10 @@ namespace DiplomacyIntrigue.Diplomacy
             // Getting out of a losing war still comes first - nothing else matters while a
             // realm is being ground down.
             if (TrySeekPeace(state, kingdom)) return Move.SoughtPeace;
+
+            // A vassal abandoned to its attacker defects to it - ahead of voluntary
+            // submission, which it cannot take while it still has a patron.
+            if (TryDefectToAttacker(state, kingdom)) return Move.Defected;
 
             // War before pacts, reversed from the original order. Vanilla no longer starts
             // wars, so if this evaluation prefers a cheap non-aggression pact whenever one
@@ -235,7 +241,12 @@ namespace DiplomacyIntrigue.Diplomacy
 
         /// <summary>
         /// Packages we would offer to end a war, cheapest first. Prisoners cost nothing
-        /// strategically; land costs the most and comes last.
+        /// strategically; submission costs everything and comes last, after the land.
+        ///
+        /// The order carries both directions of the table: the loser walks it forward and takes
+        /// the first package the winner signs, the winner walks it backward and takes the
+        /// dearest the loser will bear. So "cheapest first" is also "what a winner asks for
+        /// last", and a rung in the wrong place breaks the direction nobody was reading.
         /// </summary>
         private static IEnumerable<PeaceTerms> ConcessionLadder(ModState state, WarRecord war,
             Kingdom winner, Kingdom loser)
@@ -243,17 +254,19 @@ namespace DiplomacyIntrigue.Diplomacy
             var prisoners = new PeaceTerms(winner, loser) { ReleasePrisoners = true };
             yield return prisoners;
 
-            var leader = loser.Leader;
-            if (leader != null && leader.Gold > 0)
-            {
-                var affordable = leader.Gold / 2;
-                if (affordable >= 1000)
-                    yield return new PeaceTerms(winner, loser)
-                    {
-                        ReleasePrisoners = true,
-                        IndemnityGold = affordable / 1000 * 1000,
-                    };
-            }
+            // Money, sized by what the war earned rather than by what the treasury holds. This
+            // offered half the ruler's gold until 2026-09-20 and was therefore never once
+            // demandable: run 07 settled 100 wars with **zero** indemnities, because half of a
+            // late-game treasury prices out at thousands of concession points against a budget
+            // that never passed 226. PeaceTable owns the sizing so the ladder and the
+            // allowance readout quote the same figure.
+            var indemnity = PeaceTable.LargestIndemnity(war, winner, loser);
+            if (indemnity >= 1000)
+                yield return new PeaceTerms(winner, loser)
+                {
+                    ReleasePrisoners = true,
+                    IndemnityGold = indemnity,
+                };
 
             yield return new PeaceTerms(winner, loser)
             {
@@ -262,25 +275,43 @@ namespace DiplomacyIntrigue.Diplomacy
                 TributePerPeriod = DiplomacyConstants.AiDefaultTributePerPeriod,
             };
 
-            // Submission: the dearest thing on the ladder at 90, and the only rung that
-            // changes what the loser *is* rather than what it owns. Offered ahead of land
-            // because a realm intact under a patron will usually prefer that to being
-            // carved up - and because it is what makes the winner a hegemon. Not by a greedy
-            // winner, which wants the land itself.
-            if (WouldTakeVassals(state, winner))
+            // Land, and only what they could take anyway. A castle before a town.
+            foreach (var fief in CedeCandidates(loser, townsFirst: false))
+            {
+                var terms = new PeaceTerms(winner, loser) { ReleasePrisoners = true };
+                terms.FiefsCeded.Add(fief);
+                yield return terms;
+            }
+
+            // Subjugation last: the dearest rung, and the only one that changes what the loser
+            // *is* rather than what it owns. One rung with two faces, at one price
+            // (DiplomacyConstants.PeaceCostSubjugation) - a hegemon gives up its sphere because
+            // it cannot give up its independence, everybody else gives up the independence.
+            //
+            // Last in the list is first in the reverse walk, which is the direction a winner
+            // collecting takes. Until 2026-09-20 submission sat ahead of the fiefs under a
+            // comment claiming it was "offered ahead of land"; that was true only of the
+            // loser's direction, and the loser could not reach it anyway. Since the demand is
+            // now a cliff at this rung's cost (PeaceTable.MinimumAcceptable), both directions
+            // stop here on the same score and the ordering no longer decides the outcome.
+            if (Hegemony.IsHegemon(state, loser))
+            {
+                yield return new PeaceTerms(winner, loser)
+                {
+                    ReleasePrisoners = true,
+                    DissolveHegemony = true,
+                };
+            }
+            else if (WouldTakeVassals(state, winner))
+            {
+                // Not offered by a greedy winner, which wants the land itself. A greedy winner
+                // facing a hegemon still takes the sphere apart: that costs it nothing to hold.
                 yield return new PeaceTerms(winner, loser)
                 {
                     ReleasePrisoners = true,
                     ImposeVassalage = true,
                     TributePerPeriod = DiplomacyConstants.AiDefaultTributePerPeriod,
                 };
-
-            // Land last, and only what they could take anyway. A castle before a town.
-            foreach (var fief in CedeCandidates(loser, townsFirst: false))
-            {
-                var terms = new PeaceTerms(winner, loser) { ReleasePrisoners = true };
-                terms.FiefsCeded.Add(fief);
-                yield return terms;
             }
         }
 
@@ -318,14 +349,29 @@ namespace DiplomacyIntrigue.Diplomacy
             Kingdom best = null;
             var bestValue = 0f;
             string bestExplanation = null;
+            var bestSettlesWar = false;
 
             foreach (var patron in Kingdom.All)
             {
                 if (patron == kingdom || patron.IsEliminated) continue;
-                if (patron.IsAtWarWith(kingdom)) continue;
-                if (Hegemony.VassalageOf(state, patron) != null) continue;
 
-                if (!TreatyRegistry.CanSign(state, patron, kingdom, TreatyType.Vassalage, out _)) continue;
+                // Kneeling to one of our own attackers is allowed, and for a kingdom whose
+                // every neighbour is already fighting it, it is the only door left open
+                // (design/04 §12.4.4). The oath *is* the peace, so it signs as a settlement
+                // and CanSign's war bar and trust floor step aside exactly as they do for a
+                // term agreed at the peace table.
+                var settlesWar = patron.IsAtWarWith(kingdom);
+
+                // CanSign also refuses a patron that is itself a vassal - hegemony is flat. It
+                // is what makes the design's "kneel to the hegemon, never to its vassal" hold
+                // without a rule of its own: an attacker that answers to somebody else simply
+                // cannot take this, and the candidate looks past it to the hegemon.
+                if (!TreatyRegistry.CanSign(state, patron, kingdom, TreatyType.Vassalage, out _,
+                        settlesWar: settlesWar)) continue;
+
+                // A player who turned us down recently is not asked again yet; we look elsewhere.
+                if (patron.Leader == Hero.MainHero
+                    && TrustRegistry.RefusedOfferRecently(state, kingdom, patron)) continue;
 
                 // A greedy AI ruler no longer wants vassals. A player patron is still asked -
                 // taking a vassal is their decision, and the candidate's own dread of a greedy
@@ -338,6 +384,7 @@ namespace DiplomacyIntrigue.Diplomacy
                 best = patron;
                 bestValue = value;
                 bestExplanation = explanation;
+                bestSettlesWar = settlesWar;
             }
 
             if (best == null) return false;
@@ -349,37 +396,79 @@ namespace DiplomacyIntrigue.Diplomacy
             // should get to refuse it.
             if (best.Leader == Hero.MainHero)
             {
-                AskPlayerToAcceptSubmission(state, kingdom, best, bestValue);
+                AskPlayerToAcceptSubmission(state, kingdom, best, bestValue, bestSettlesWar);
                 return true;
             }
 
+            // The oath ends the war it settles, and it has to end first: Hegemony.Submit calls
+            // the new patron into the wars its vassal is defending the same day, and without
+            // this one of those would be the war against the patron itself.
+            if (bestSettlesWar) SettleBySubmission(kingdom, best);
+
             var treaty = Hegemony.Submit(state, best, kingdom,
-                DiplomacyConstants.HoldOnVoluntarySubmission,
+                bestSettlesWar
+                    ? DiplomacyConstants.HoldOnDesperateSubmission
+                    : DiplomacyConstants.HoldOnVoluntarySubmission,
                 DiplomacyConstants.AiDefaultTributePerPeriod, out var reason,
-                route: "voluntary", value: bestValue, detail: bestExplanation);
+                route: bestSettlesWar ? "submitted_to_attacker" : "voluntary",
+                value: bestValue, detail: bestExplanation, settlesWar: bestSettlesWar);
 
             if (treaty == null)
             {
-                Log.Debug("AI", kingdom.Name + " could not submit to " + best.Name + ": " + reason);
+                // The peace is already made if it was going to be - CanSign agreed a moment
+                // ago, so landing here means the two checks have drifted apart.
+                Log.Warn("Hegemony", kingdom.Name + " could not submit to " + best.Name + ": " + reason);
                 return false;
             }
 
-            Log.Info("Hegemony", kingdom.Name + " submitted to " + best.Name
-                                 + " as a vassal. " + bestExplanation);
-            Announce(kingdom.Name + " submits to " + best.Name + " in exchange for protection.");
+            if (bestSettlesWar)
+            {
+                Log.Info("Hegemony", kingdom.Name + " had no patron to appeal to and knelt to its"
+                                     + " attacker " + best.Name + ". " + bestExplanation);
+                Announce(kingdom.Name + " kneels to " + best.Name + " to end the war.");
+            }
+            else
+            {
+                Log.Info("Hegemony", kingdom.Name + " submitted to " + best.Name
+                                     + " as a vassal. " + bestExplanation);
+                Announce(kingdom.Name + " submits to " + best.Name + " in exchange for protection.");
+            }
             return true;
+        }
+
+        /// <summary>
+        /// Ends the war the oath settles, tagged so a balance run can tell this ending from an
+        /// ordinary one at the peace table. Nothing is conceded here beyond the submission
+        /// itself - the vassalage *is* the term.
+        /// </summary>
+        private static void SettleBySubmission(Kingdom candidate, Kingdom patron)
+        {
+            var previousCause = Telemetry.NotePeaceCause(Telemetry.PeaceCause.Submission, "vassalage");
+            try
+            {
+                MakePeaceAction.Apply(patron, candidate);
+            }
+            finally
+            {
+                Telemetry.RestorePeaceCause(previousCause);
+            }
         }
 
         /// <summary>
         /// Puts a submission offer in front of the player. Accepting makes them a hegemon.
         /// </summary>
         private static void AskPlayerToAcceptSubmission(ModState state, Kingdom candidate,
-            Kingdom patron, float value)
+            Kingdom patron, float value, bool settlesWar)
         {
             var body = candidate.Name + " asks to become our vassal: tribute of "
                        + DiplomacyConstants.AiDefaultTributePerPeriod + " per period, troops in our wars, "
                        + "and their foreign policy answers to us." + System.Environment.NewLine
                        + System.Environment.NewLine
+                       + (settlesWar
+                           ? "They are asking the kingdom that is beating them. Accepting ends our"
+                             + " war with them at once, on no other terms." + System.Environment.NewLine
+                             + System.Environment.NewLine
+                           : "")
                        + "In exchange we are expected to defend them. A patron who does not"
                        + " loses the vassal, and a vassal that resents us will eventually revolt.";
 
@@ -391,30 +480,286 @@ namespace DiplomacyIntrigue.Diplomacy
                     true, true, "Accept", "Refuse",
                     () =>
                     {
-                        var treaty = Hegemony.Submit(state, patron, candidate,
-                            DiplomacyConstants.HoldOnVoluntarySubmission,
-                            DiplomacyConstants.AiDefaultTributePerPeriod, out var reason,
-                            route: "voluntary_to_player", value: value);
-
-                        if (treaty == null)
+                        // Runs from the UI, outside the try below - a throw here would take the
+                        // game down with it.
+                        try
                         {
-                            Log.Notify("Could not accept the submission: " + reason, Colors.Red);
-                            return;
-                        }
+                            // Re-asked rather than trusted: an inquiry sits open while the rest
+                            // of the week's evaluation runs, so by now the war may be over, the
+                            // candidate may have knelt elsewhere or a new treaty may forbid
+                            // this. The defection inquiry learned that the expensive way.
+                            var stillAtWar = patron.IsAtWarWith(candidate);
+                            if (!TreatyRegistry.CanSign(state, patron, candidate,
+                                    TreatyType.Vassalage, out var blocked, settlesWar: stillAtWar))
+                            {
+                                Log.Notify("Could not accept the submission: " + blocked, Colors.Red);
+                                return;
+                            }
 
-                        Log.Notify(candidate.Name + " is now our vassal.", Colors.Green);
-                        Log.Info("Hegemony", candidate.Name + " submitted to the player's kingdom "
-                                             + patron.Name + " (value " + value.ToString("0") + ").");
+                            if (stillAtWar) SettleBySubmission(candidate, patron);
+
+                            var treaty = Hegemony.Submit(state, patron, candidate,
+                                stillAtWar
+                                    ? DiplomacyConstants.HoldOnDesperateSubmission
+                                    : DiplomacyConstants.HoldOnVoluntarySubmission,
+                                DiplomacyConstants.AiDefaultTributePerPeriod, out var reason,
+                                route: stillAtWar ? "submitted_to_attacker_player" : "voluntary_to_player",
+                                value: value, settlesWar: stillAtWar);
+
+                            if (treaty == null)
+                            {
+                                Log.Notify("Could not accept the submission: " + reason, Colors.Red);
+                                return;
+                            }
+
+                            Log.Notify(candidate.Name + " is now our vassal.", Colors.Green);
+                            Log.Info("Hegemony", candidate.Name + " submitted to the player's kingdom "
+                                                 + patron.Name + " (value " + value.ToString("0")
+                                                 + (stillAtWar ? ", ending our war" : "") + ").");
+                        }
+                        catch (System.Exception ex)
+                        {
+                            Log.Error("Hegemony", "Accepting the submission failed.", ex);
+                        }
                     },
                     () =>
                     {
-                        Log.Info("Hegemony", "The player refused " + candidate.Name + "'s submission.");
-                        TrustRegistry.Adjust(state, candidate, patron, -5f, "refused our submission");
+                        try
+                        {
+                            Log.Info("Hegemony", "The player refused " + candidate.Name + "'s submission.");
+                            TrustRegistry.OnOfferRefused(state, candidate, patron, "refused our submission");
+                        }
+                        catch (System.Exception ex)
+                        {
+                            Log.Error("Hegemony", "Refusing the submission failed.", ex);
+                        }
                     }), true);
             }
             catch (System.Exception ex)
             {
                 Log.Error("Hegemony", "Could not show the submission offer.", ex);
+            }
+        }
+
+        // ================= 1c. Defect to the attacker =========================
+
+        /// <summary>
+        /// A vassal left to fight alone kneels to the kingdom attacking it - the lead's F3
+        /// answer to run 06, where a patron barred from defending (a truce with the
+        /// aggressor, the one-step call-to-arms guard) simply watched its vassal be eaten
+        /// and paid nothing for it.
+        ///
+        /// Runs after the ordinary peace routes on purpose: a vassal that can buy its way
+        /// out of the war does that first; this is the exit for one whose patron will not
+        /// come. The patron's *absence* is the precondition - a patron at war with the
+        /// aggressor is defending, whatever the war is going like, and there is nothing to
+        /// defect from.
+        /// </summary>
+        private static bool TryDefectToAttacker(ModState state, Kingdom kingdom)
+        {
+            var link = Hegemony.VassalageOf(state, kingdom);
+            if (link == null) return false;
+            var patron = link.DominantParty;
+            if (patron == null || patron.IsEliminated) return false;
+
+            // Only a link already slipping comes apart this way. The neglect that qualifies
+            // is the same neglect Hold measures: a patron ignoring the war pulls the
+            // protection term to -1 and Hold drifts down past this line on its own, so the
+            // gate needs no bookkeeping of its own - and it hands the patron a grace of
+            // however much Hold it had banked to join late and keep its vassal.
+            if (Hegemony.HoldOf(link) >= DiplomacyConstants.HoldPassiveResistanceThreshold) return false;
+
+            WarRecord worst = null;
+            Kingdom aggressor = null;
+            var worstScore = 0f;
+            foreach (var war in state.OngoingWarsOf(kingdom))
+            {
+                // Neglect means a war the vassal was *attacked* in - the same scope the
+                // patron's protection duty has (Hegemony.Protection). A war the vassal
+                // started itself is not the patron's to answer, so losing one is no grounds.
+                if (war.Defender != kingdom) continue;
+
+                var candidate = war.Aggressor;
+                if (candidate == null || candidate.IsEliminated || candidate == patron) continue;
+                if (patron.IsAtWarWith(candidate)) continue;
+
+                // A player who turned this vassal down recently is not asked again yet, so
+                // that war is no way out for now.
+                if (candidate.Leader == Hero.MainHero
+                    && TrustRegistry.RefusedOfferRecently(state, kingdom, candidate)) continue;
+
+                // And only when the war is actually going against it: a vassal holding its
+                // own has no need to kneel to the enemy.
+                var score = war.ScoreFor(kingdom);
+                if (-score < DiplomacyConstants.DefectionLosingScore) continue;
+                if (worst != null && score >= worstScore) continue;
+
+                worst = war;
+                aggressor = candidate;
+                worstScore = score;
+            }
+
+            if (worst == null) return false;
+            if (!CanDefectTo(state, kingdom, link, aggressor, out _)) return false;
+
+            // As with voluntary submission, a player is asked rather than told.
+            if (aggressor.Leader == Hero.MainHero)
+            {
+                AskPlayerToAcceptDefection(state, kingdom, link, patron, aggressor);
+                return true;
+            }
+
+            ExecuteDefection(state, kingdom, link, patron, aggressor);
+            return true;
+        }
+
+        /// <summary>
+        /// Whether <paramref name="aggressor"/> could take <paramref name="vassal"/> off its
+        /// patron right now. The attacker's side of the table: a vassal is worth taking only
+        /// if it can be held, a greedy attacker wants the land itself rather than a client on
+        /// it, and the bond has to be one the two could actually sign - the same gates every
+        /// other route into vassalage passes, with the old link set aside the way the
+        /// poaching route sets it aside.
+        ///
+        /// Asked when the vassal decides and again when a player accepts. An inquiry stays
+        /// open while the rest of the week's evaluation runs, so by the time the player
+        /// answers the war may be over, the old bond gone or the patron in the field; the
+        /// first version of the accept path made peace regardless.
+        /// </summary>
+        private static bool CanDefectTo(ModState state, Kingdom vassal, Treaty link, Kingdom aggressor,
+            out string reason)
+        {
+            reason = null;
+            var patron = link?.DominantParty;
+            if (link == null || !link.IsActive || link.SubordinateParty != vassal || patron == null)
+            {
+                reason = vassal.Name + " no longer answers to the patron it was leaving.";
+                return false;
+            }
+            if (aggressor == null || aggressor.IsEliminated || vassal.IsEliminated)
+            {
+                reason = "One of the kingdoms no longer exists.";
+                return false;
+            }
+            if (!aggressor.IsAtWarWith(vassal))
+            {
+                reason = "The war it offered to end is already over.";
+                return false;
+            }
+            if (patron.IsAtWarWith(aggressor))
+            {
+                reason = patron.Name + " has come to " + vassal.Name + "'s defence.";
+                return false;
+            }
+            if (!Hegemony.IsStrongEnoughToHold(aggressor, vassal))
+            {
+                reason = aggressor.Name + " is not strong enough to hold " + vassal.Name + ".";
+                return false;
+            }
+            if (aggressor.Leader != Hero.MainHero && !WouldTakeVassals(state, aggressor))
+            {
+                reason = aggressor.Name + " wants land, not vassals.";
+                return false;
+            }
+            return TreatyRegistry.CanSign(state, aggressor, vassal, TreatyType.Vassalage, out reason,
+                replacing: link, settlesWar: true);
+        }
+
+        /// <summary>
+        /// Ends the war as a submission: peace first - the same order the peace table uses -
+        /// then the old bond broken at the patron's expense and the new one signed
+        /// (<see cref="Hegemony.Defect"/>).
+        /// </summary>
+        private static void ExecuteDefection(ModState state, Kingdom vassal, Treaty link,
+            Kingdom patron, Kingdom aggressor)
+        {
+            var previousCause = Telemetry.NotePeaceCause(Telemetry.PeaceCause.Defection, "vassalage");
+            try
+            {
+                MakePeaceAction.Apply(aggressor, vassal);
+            }
+            finally
+            {
+                Telemetry.RestorePeaceCause(previousCause);
+            }
+
+            var treaty = Hegemony.Defect(state, link, aggressor, out var reason);
+            if (treaty == null)
+            {
+                // The war is over and the old bond is gone either way - CanSign said the new
+                // one would sign, so reaching this means the two checks drifted apart.
+                Log.Warn("Hegemony", vassal.Name + " left " + patron.Name + " for " + aggressor.Name
+                                     + " but the new vassalage could not be signed: " + reason);
+                return;
+            }
+
+            Log.Info("Hegemony", vassal.Name + " abandoned " + patron.Name
+                                 + ", which would not defend it, and submitted to its attacker "
+                                 + aggressor.Name + ".");
+            Announce(vassal.Name + " abandons " + patron.Name + " and kneels to " + aggressor.Name + ".");
+        }
+
+        /// <summary>
+        /// The same offer, put to the player when theirs is the attacking kingdom. As with
+        /// submission, accepting a vassal is a decision with consequences, so the player
+        /// gets to refuse it.
+        /// </summary>
+        private static void AskPlayerToAcceptDefection(ModState state, Kingdom vassal, Treaty link,
+            Kingdom patron, Kingdom aggressor)
+        {
+            var body = vassal.Name + ", a vassal of " + patron.Name + ", offers to end the war"
+                       + " by submitting to us: tribute of " + DiplomacyConstants.AiDefaultTributePerPeriod
+                       + " per period, troops in our wars, and their foreign policy answers to us."
+                       + System.Environment.NewLine + System.Environment.NewLine
+                       + "In exchange we are expected to defend them - the duty " + patron.Name
+                       + " just failed, and every court will name it the oathbreaker here."
+                       + " Refusing means the war goes on.";
+
+            try
+            {
+                InformationManager.ShowInquiry(new InquiryData(
+                    "Offer of submission",
+                    body,
+                    true, true, "Accept", "Refuse",
+                    () =>
+                    {
+                        // Runs from the UI, outside the try below - a throw here would take the
+                        // game down with it.
+                        try
+                        {
+                            if (!CanDefectTo(state, vassal, link, aggressor, out var lapsed))
+                            {
+                                Log.Notify("The offer has lapsed: " + lapsed, Colors.Red);
+                                Log.Info("Hegemony", vassal.Name + "'s offer to defect lapsed before the"
+                                                     + " player answered: " + lapsed);
+                                return;
+                            }
+
+                            ExecuteDefection(state, vassal, link, patron, aggressor);
+                            if (Hegemony.PatronOf(state, vassal) == aggressor)
+                                Log.Notify(vassal.Name + " is now our vassal.", Colors.Green);
+                        }
+                        catch (System.Exception ex)
+                        {
+                            Log.Error("Hegemony", "Accepting the defection failed.", ex);
+                        }
+                    },
+                    () =>
+                    {
+                        try
+                        {
+                            Log.Info("Hegemony", "The player refused " + vassal.Name + "'s defection.");
+                            TrustRegistry.OnOfferRefused(state, vassal, aggressor, "refused our submission");
+                        }
+                        catch (System.Exception ex)
+                        {
+                            Log.Error("Hegemony", "Refusing the defection failed.", ex);
+                        }
+                    }), true);
+            }
+            catch (System.Exception ex)
+            {
+                Log.Error("Hegemony", "Could not show the defection offer.", ex);
             }
         }
 
@@ -513,13 +858,21 @@ namespace DiplomacyIntrigue.Diplomacy
             against = null;
             if (state == null || us == null || them == null) return 0f;
 
-            // Smoothed: whether a power is worth banding against is a judgment about what it
-            // has become, not about where its armies happen to be this week (Power.cs).
-            var pair = Power.Smoothed(state, us) + Power.Smoothed(state, them);
-            if (pair <= 0f) return 0f;
-
             var ourHead = Hegemony.SphereHead(state, us);
             var theirHead = Hegemony.SphereHead(state, them);
+
+            // Smoothed: whether a power is worth banding against is a judgment about what it
+            // has become, not about where its armies happen to be this week (Power.cs).
+            //
+            // Both sides read the same measure. This counted two bare kingdoms while the threat
+            // below was already a whole sphere, so a hegemon weighing a rival left its own
+            // vassals off its own side and overstated the pull - two answers to "how strong is
+            // this side", which is the bug rather than the symptom (CLAUDE.md §3). Two vassals
+            // of one patron share a head, and it is counted once.
+            var pair = ourHead == theirHead
+                ? Power.SmoothedSphere(state, ourHead)
+                : Power.SmoothedSphere(state, ourHead) + Power.SmoothedSphere(state, theirHead);
+            if (pair <= 0f) return 0f;
 
             var strongest = 0f;
             foreach (var head in Kingdom.All)

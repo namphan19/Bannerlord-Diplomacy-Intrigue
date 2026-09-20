@@ -28,8 +28,25 @@ namespace DiplomacyIntrigue.Diplomacy
         /// still in force would refuse on it; asking only after tearing it up would find out
         /// too late.
         /// </param>
+        /// <param name="settlesWar">
+        /// The treaty is a term of the settlement that ends the war between the parties - a
+        /// tribute or vassalage imposed at the peace table, or a vassal defecting to its
+        /// attacker. Two things follow.
+        ///
+        /// The war being still open is not a refusal: the peace table asks whether what it is
+        /// promising could be signed afterwards, while the war is formally running, and "Make
+        /// peace first." is the step being planned.
+        ///
+        /// The trust floor does not apply, for the reason the truce is exempt: ending a war
+        /// has to stay possible however the parties feel about each other, and a loser does
+        /// not need to trust a winner to be made to kneel. This was always latent - the floor
+        /// silently voided imposed terms after the peace - but since run 06 a war drags a
+        /// neutral pair under the floor in about a month
+        /// (<see cref="DiplomacyConstants.TrustDecayWarPerDay"/>), so without the exemption
+        /// the peace table could almost never impose a treaty at all.
+        /// </param>
         public static bool CanSign(ModState state, Kingdom a, Kingdom b, TreatyType type, out string reason,
-            Treaty replacing = null)
+            Treaty replacing = null, bool settlesWar = false)
         {
             reason = null;
 
@@ -49,7 +66,7 @@ namespace DiplomacyIntrigue.Diplomacy
                 return true;
             }
 
-            if (atWar) { reason = "Make peace first."; return false; }
+            if (atWar && !settlesWar) { reason = "Make peace first."; return false; }
 
             if (state.HasTreatyForbiddingWar(a, b) && type != TreatyType.Alliance
                 && type != TreatyType.DefensivePact && type != TreatyType.Vassalage
@@ -59,12 +76,12 @@ namespace DiplomacyIntrigue.Diplomacy
                 return false;
             }
 
-            if (!TrustRegistry.WillConsiderPacts(state, b, a))
+            if (!settlesWar && !TrustRegistry.WillConsiderPacts(state, b, a))
             {
                 reason = b.Name + " does not trust " + a.Name + " enough to sign anything but a truce.";
                 return false;
             }
-            if (!TrustRegistry.WillConsiderPacts(state, a, b))
+            if (!settlesWar && !TrustRegistry.WillConsiderPacts(state, a, b))
             {
                 reason = a.Name + " does not trust " + b.Name + " enough to sign anything but a truce.";
                 return false;
@@ -98,6 +115,19 @@ namespace DiplomacyIntrigue.Diplomacy
             if (type == TreatyType.Vassalage && Hegemony.IsHegemon(state, b))
             {
                 reason = b.Name + " holds vassals of its own and cannot itself submit.";
+                return false;
+            }
+
+            // The other half of the same rule: a vassal cannot take one. Only the half above
+            // was here, so every route that did not check the patron itself could build a
+            // chain - the peace table let a defiant vassal impose vassalage on a kingdom it
+            // beat, and the run-06 defection route could hand a vassal to an attacker that was
+            // itself a vassal. Asked here so that no route has to remember it.
+            var patronsOwnLink = type == TreatyType.Vassalage ? Hegemony.VassalageOf(state, a) : null;
+            if (patronsOwnLink != null)
+            {
+                reason = a.Name + " answers to " + patronsOwnLink.DominantParty.Name
+                         + " and cannot take vassals of its own.";
                 return false;
             }
 
@@ -144,9 +174,9 @@ namespace DiplomacyIntrigue.Diplomacy
         /// <see cref="CanSign"/> would refuse.
         /// </summary>
         public static Treaty Sign(ModState state, Kingdom a, Kingdom b, TreatyType type,
-            out string reason, Kingdom tributePayer = null, int tributeAmount = 0)
+            out string reason, Kingdom tributePayer = null, int tributeAmount = 0, bool settlesWar = false)
         {
-            if (!CanSign(state, a, b, type, out reason)) return null;
+            if (!CanSign(state, a, b, type, out reason, settlesWar: settlesWar)) return null;
 
             var expiry = CampaignTime.YearsFromNow(DiplomacyConstants.TreatyDurationYears(type));
             var treaty = new Treaty(state.TakeNextTreatyId(), type, a, b, CampaignTime.Now, expiry);

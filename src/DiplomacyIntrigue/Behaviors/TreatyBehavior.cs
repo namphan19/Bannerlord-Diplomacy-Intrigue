@@ -42,6 +42,7 @@ namespace DiplomacyIntrigue.Behaviors
                 TreatyRegistry.ExpireAndReward(state);
                 TreatyRegistry.PayDueTribute(state);
                 TreatyRegistry.PayPeaceDividends(state);
+                TrustRegistry.DailyTick(state);
             }
             catch (Exception ex)
             {

@@ -153,6 +153,10 @@ namespace DiplomacyIntrigue.Behaviors
             {
                 BackfillOngoingWars();
 
+                var unchained = Hegemony.DissolveChains(_state);
+                if (unchained > 0)
+                    Log.Info("Hegemony", "Released " + unchained + " vassal(s) held by a kingdom that is itself a vassal.");
+
                 var settled = Hegemony.SettleBreachesPredatingOaths(_state);
                 if (settled > 0)
                     Log.Info("Claims", "Settled " + settled + " broken-treaty claim(s) that a later submission had already answered.");

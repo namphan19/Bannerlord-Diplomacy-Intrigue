@@ -400,7 +400,8 @@ namespace DiplomacyIntrigue.Diplomacy
 
         /// <summary>
         /// Breaks a vassalage and everything else standing between the two parties, charged to
-        /// <paramref name="breaker"/> - the vassal in a revolt, the patron in an annexation.
+        /// <paramref name="breaker"/> - the vassal in a revolt, the patron in an annexation or
+        /// a defection.
         ///
         /// Run 04 found a revolt refused by a DefensivePact the vassal still held with the
         /// very patron it was renouncing: the war veto reads every live treaty, and breaking
@@ -466,20 +467,134 @@ namespace DiplomacyIntrigue.Diplomacy
             Renounce(state, link, patron);
             AnnexationWarsThisSession++;
 
-            var warned = 0;
-            for (var i = 0; i < siblings.Count; i++)
-            {
-                var sibling = siblings[i];
-                if (sibling == link || !sibling.IsActive) continue;
-                sibling.SetHold(HoldOf(sibling) - DiplomacyConstants.SecessionContagionHold);
-                warned++;
-            }
+            var warned = WarnSiblings(siblings, link);
 
             Telemetry.Event("annexation_breach", "patron", patron, "vassal", vassal,
                 "greed", Power.Greed(state, patron), "siblingsWarned", warned);
             Log.Info("Hegemony", patron.Name + " tore up its vassalage with " + vassal.Name
                                  + " to annex it (greed " + Power.Greed(state, patron).ToString("0.00") + ")"
                                  + (warned > 0 ? "; " + warned + " other vassal(s) saw it happen." : "."));
+        }
+
+        /// <summary>
+        /// The rest of a patron's vassals watching one of them leave by a door the patron
+        /// opened - an annexation or a defection. Each loses the same Hold it would watching a
+        /// revolt. Takes the list collected *before* the departure, so the one that left is
+        /// still in it and is skipped by reference. Returns how many took the lesson.
+        /// </summary>
+        /// <summary>
+        /// The patron orders peace between a kingdom just sworn to it and any of its other
+        /// vassals still at war with that kingdom, and pays for the order in Hold.
+        ///
+        /// The lead's call (design/04 §12.4.5): the war belonged to the sphere rather than to
+        /// that vassal privately, so the patron may end it. Always a white peace - a vassal
+        /// cannot be made to hand its winnings to a sibling.
+        ///
+        /// The sibling loses Hold whether or not it was ahead. Scaling the loss by the war
+        /// score was the obvious alternative and lost: it would mean reading the war record at
+        /// the exact moment the peace closes it, for a second decimal on a number that already
+        /// carries eight terms. What matters is the shape - every vassal a hegemon gains this
+        /// way is paid for out of the loyalty it already holds, so a sphere funds its own
+        /// expansion and the spiral brakes from the inside instead of needing a cap bolted on.
+        /// </summary>
+        private static void ReconcileWithSiblings(ModState state, Kingdom patron, Kingdom vassal,
+            Treaty signed)
+        {
+            var siblings = new List<Treaty>();
+            CollectVassalages(state, patron, siblings);
+
+            for (var i = 0; i < siblings.Count; i++)
+            {
+                var sibling = siblings[i];
+                if (sibling == signed || !sibling.IsActive) continue;
+
+                var other = sibling.SubordinateParty;
+                if (other == null || other.IsEliminated || !other.IsAtWarWith(vassal)) continue;
+
+                var previousCause = Telemetry.NotePeaceCause(
+                    Telemetry.PeaceCause.OverlordImposed, "ordered by " + patron.Name);
+                try
+                {
+                    MakePeaceAction.Apply(other, vassal);
+                }
+                finally
+                {
+                    Telemetry.RestorePeaceCause(previousCause);
+                }
+
+                sibling.SetHold(HoldOf(sibling) - DiplomacyConstants.HoldLostToImposedPeace);
+
+                Telemetry.Event("overlord_imposed_peace", "patron", patron, "aggrieved", other,
+                    "newVassal", vassal, "hold", HoldOf(sibling));
+                Log.Info("Hegemony", patron.Name + " ordered " + other.Name + " to stop fighting "
+                                     + vassal.Name + ", which has just sworn to it. " + other.Name
+                                     + " gave up the war with nothing to show, and holds "
+                                     + patron.Name + " the worse for it.");
+            }
+        }
+
+        private static int WarnSiblings(List<Treaty> siblings, Treaty departed)
+        {
+            var warned = 0;
+            for (var i = 0; i < siblings.Count; i++)
+            {
+                var sibling = siblings[i];
+                if (sibling == departed || !sibling.IsActive) continue;
+                sibling.SetHold(HoldOf(sibling) - DiplomacyConstants.SecessionContagionHold);
+                warned++;
+            }
+            return warned;
+        }
+
+        /// <summary>
+        /// A neglected vassal throws itself on its attacker's mercy: the war ends as a
+        /// submission - the lead's F3 decision after run 06, where a patron barred from
+        /// defending (a truce with the aggressor, the one-step call-to-arms guard) simply
+        /// watched its vassal be eaten and paid nothing for it.
+        ///
+        /// The old bond is closed as broken **by the patron**, not by the vassal. Protection
+        /// was the patron's side of the bargain, so failing it is the patron's breach - and
+        /// <see cref="TreatyRegistry.Break"/> lands it on the patron's name in every court,
+        /// which is what "the lord's image suffers" means in a system with no other
+        /// reputation ledger. The patron's remaining vassals take the lesson exactly as
+        /// they take a revolt.
+        ///
+        /// The whole relationship goes, not only the oath (<see cref="Renounce"/>): the first
+        /// version broke the vassalage alone and left any pact between the two in force -
+        /// the run-04 revolt bug again, and here that pact would also veto the casus belli
+        /// the breach has just handed the vassal.
+        ///
+        /// The caller makes the peace first - signing requires it - then this closes the
+        /// old bond and signs the new one through <see cref="Submit"/>, so the new patron is
+        /// called into the vassal's other defensive wars the same day, which is the
+        /// protection the old one would not give.
+        /// </summary>
+        public static Treaty Defect(ModState state, Treaty vassalage, Kingdom newPatron, out string reason)
+        {
+            reason = null;
+            var vassal = vassalage?.SubordinateParty;
+            var patron = vassalage?.DominantParty;
+            if (vassalage == null || !vassalage.IsActive || vassal == null || patron == null)
+            {
+                reason = "The vassalage it was leaving is no longer in force.";
+                return null;
+            }
+
+            var siblings = new List<Treaty>();
+            CollectVassalages(state, patron, siblings);
+
+            var hold = HoldOf(vassalage);
+            Renounce(state, vassalage, patron);
+            var warned = WarnSiblings(siblings, vassalage);
+
+            var treaty = Submit(state, newPatron, vassal, DiplomacyConstants.HoldOnDesperateSubmission,
+                DiplomacyConstants.AiDefaultTributePerPeriod, out reason,
+                route: "defection", detail: "left an undefended patron", settlesWar: true);
+
+            Telemetry.Event("defection", "vassal", vassal, "oldPatron", patron,
+                "newPatron", newPatron, "hold", hold, "siblingsWarned", warned,
+                "signed", treaty != null);
+            return treaty;
         }
 
         /// <summary>
@@ -631,6 +746,8 @@ namespace DiplomacyIntrigue.Diplomacy
             // of the candidate's attackers cannot be called against it (CallToArms.Applies),
             // so that share of the threat is not something submitting would solve.
             var threat = 0f;
+            var fromPatron = 0f;
+            var otherThreat = 0f;
             var coverable = 0f;
             foreach (var other in Kingdom.All)
             {
@@ -639,19 +756,33 @@ namespace DiplomacyIntrigue.Diplomacy
 
                 var strength = other.CurrentTotalStrength;
                 threat += strength;
-                if (other != patron
-                    && (patron.IsAtWarWith(other) || !state.HasTreatyForbiddingWar(patron, other)))
+
+                // A patron that is itself one of the attackers is a different kind of answer:
+                // its war does not get *covered*, it gets *ended* - the submission is the peace
+                // (design/04 §12.4.4). Running it through cover would be asking how much of
+                // itself the patron could fight, which is why the most surrounded kingdoms used
+                // to get the least from kneeling.
+                if (other == patron) { fromPatron += strength; continue; }
+
+                otherThreat += strength;
+                if (patron.IsAtWarWith(other) || !state.HasTreatyForbiddingWar(patron, other))
                     coverable += strength;
             }
 
-            // Cover, 0..1: the share of the threat the patron may fight, times how much of it
-            // the patron could match on its own. Submitting to a patron that cannot face the
+            // Cover, 0..1: of the danger that is not the patron itself, the share it may fight
+            // times how much of it it could match. Submitting to a patron that cannot face the
             // enemy trades independence for nothing.
-            var cover = threat <= 0f
+            var cover = otherThreat <= 0f
                 ? 0f
-                : Clamp(patronStrength / threat, 0f, 1f) * (coverable / threat);
+                : Clamp(patronStrength / otherThreat, 0f, 1f) * (coverable / otherThreat);
 
-            var threatTerm = Clamp(threat / ownStrength, 0f, 2f) * cover * DiplomacyConstants.SubmissionThreatWeight;
+            // What the oath actually relieves: the patron's own war outright, plus the share of
+            // the rest it can cover. This reduces to the old cover-only figure exactly whenever
+            // the patron is not one of the attackers, so every route that worked before keeps
+            // the numbers it was measured with.
+            var relief = threat <= 0f ? 0f : (fromPatron + cover * otherThreat) / threat;
+
+            var threatTerm = Clamp(threat / ownStrength, 0f, 2f) * relief * DiplomacyConstants.SubmissionThreatWeight;
             var reachTerm = AiDiplomacy.Proximity(patron, candidate) * DiplomacyConstants.SubmissionReachWeight;
             var wearyTerm = state.WearinessOf(candidate) / 100f * DiplomacyConstants.SubmissionWearinessWeight;
             var trustTerm = TrustRegistry.Get(state, candidate, patron) / 100f * DiplomacyConstants.SubmissionTrustWeight;
@@ -669,13 +800,17 @@ namespace DiplomacyIntrigue.Diplomacy
             // be annexed. The same dread a sitting vassal feels (Hold), read before signing.
             var dreadTerm = Power.Greed(state, patron) * DiplomacyConstants.HoldDreadWeight;
 
-            var value = threatTerm + reachTerm + wearyTerm + trustTerm - prideTerm - cultureTerm - dreadTerm;
+            // Preferring a bystander to an enemy, priced rather than ranked - see the constant.
+            var enemyTerm = fromPatron > 0f ? DiplomacyConstants.SubmissionToEnemyPenalty : 0f;
 
-            explanation = "threat " + Signed(threatTerm) + " (cover " + cover.ToString("0.00") + ")"
+            var value = threatTerm + reachTerm + wearyTerm + trustTerm
+                        - prideTerm - cultureTerm - dreadTerm - enemyTerm;
+
+            explanation = "threat " + Signed(threatTerm) + " (relief " + relief.ToString("0.00") + ")"
                           + "  reach " + Signed(reachTerm)
                           + "  weariness " + Signed(wearyTerm) + "  trust " + Signed(trustTerm)
                           + "  pride " + Signed(-prideTerm) + "  culture " + Signed(-cultureTerm)
-                          + "  dread " + Signed(-dreadTerm)
+                          + "  dread " + Signed(-dreadTerm) + "  enemy " + Signed(-enemyTerm)
                           + "  => " + value.ToString("0.0")
                           + " (submits at " + DiplomacyConstants.AiSubmissionThreshold.ToString("0") + ")";
 
@@ -692,13 +827,19 @@ namespace DiplomacyIntrigue.Diplomacy
         /// </summary>
         public static Treaty Submit(ModState state, Kingdom patron, Kingdom vassal, float startingHold,
             int tributePerPeriod, out string reason, string route = "unknown", float value = -1f,
-            string detail = null)
+            string detail = null, bool settlesWar = false)
         {
             var treaty = TreatyRegistry.Sign(state, patron, vassal, TreatyType.Vassalage, out reason,
-                tributePayer: vassal, tributeAmount: tributePerPeriod);
+                tributePayer: vassal, tributeAmount: tributePerPeriod, settlesWar: settlesWar);
             if (treaty == null) return null;
 
             treaty.SetHold(startingHold);
+
+            // Its new siblings are not its enemies. Without this a kingdom that kneels to a
+            // hegemon while still at war with one of that hegemon's vassals arrives inside the
+            // sphere still fighting it - and DefendNewVassal below would call the patron in
+            // against its own vassal.
+            ReconcileWithSiblings(state, patron, vassal, treaty);
 
             Telemetry.Event("vassalage_formed", "patron", patron, "vassal", vassal, "route", route,
                 "startHold", startingHold, "value", value, "tribute", tributePerPeriod,
@@ -713,6 +854,55 @@ namespace DiplomacyIntrigue.Diplomacy
 
             CallToArms.DefendNewVassal(state, treaty);
             return treaty;
+        }
+
+        /// <summary>
+        /// Frees the bottom kingdom of every chain of vassalage a save carries - a link whose
+        /// patron is itself somebody's vassal. Run once when a session launches.
+        ///
+        /// Chains were never meant to exist (hegemony is flat, design 04 §1.2) but only half
+        /// the rule was enforced until run 06's review: <see cref="TreatyRegistry.CanSign"/>
+        /// stopped a hegemon from submitting, not a vassal from taking a vassal, so a defiant
+        /// vassal winning at the peace table could build one. The lower link is the one cut -
+        /// the lead's call of 2026-09-19 - because it is the one the rule forbids: the middle
+        /// kingdom's own oath was legal when it was sworn.
+        ///
+        /// Dissolved rather than broken: the fault is the mod's missing check, not either
+        /// party's, so nobody is charged trust or handed a casus belli. The links to cut are
+        /// all chosen before any is cut, so a deeper chain comes apart the same way whatever
+        /// order the treaties are stored in.
+        /// </summary>
+        public static int DissolveChains(ModState state)
+        {
+            var links = new List<Treaty>();
+            CollectLinks(state, links);
+
+            var toCut = new List<Treaty>();
+            var overlords = new List<Kingdom>();
+            for (var i = 0; i < links.Count; i++)
+            {
+                var overlord = PatronOf(state, links[i].DominantParty);
+                if (overlord == null) continue;
+                toCut.Add(links[i]);
+                overlords.Add(overlord);
+            }
+
+            for (var i = 0; i < toCut.Count; i++)
+            {
+                var link = toCut[i];
+                var vassal = link.SubordinateParty;
+                var middle = link.DominantParty;
+                var overlord = overlords[i];
+
+                TreatyRegistry.Dissolve(state, link);
+                Telemetry.Event("vassal_chain_dissolved", "vassal", vassal, "patron", middle,
+                    "overlord", overlord);
+                Log.Warn("Hegemony", vassal.Name + " was the vassal of " + middle.Name
+                                     + ", itself a vassal of " + overlord.Name
+                                     + ". Chains of vassalage are not allowed; " + vassal.Name
+                                     + " is released without penalty.");
+            }
+            return toCut.Count;
         }
 
         /// <summary>
