@@ -6,6 +6,7 @@ using DiplomacyIntrigue.Core;
 using DiplomacyIntrigue.Diplomacy;
 using DiplomacyIntrigue.Models;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Election;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
@@ -333,16 +334,101 @@ namespace DiplomacyIntrigue.UI
 
             if (isRuler)
             {
+                var ourLink = Hegemony.VassalageOf(state, us);
                 if (atWar)
                 {
                     elements.Add(Element("peace", "Negotiate peace",
                         "See what this war has earned and offer terms."));
+
+                    // Kneeling is the other way out: a free kingdom submits outright, a
+                    // vassal's version is a defection (design/04 §12.4.4 and F3).
+                    if (ourLink == null)
+                    {
+                        var can = AiDiplomacy.CanSubmitTo(state, us, them, out var why, out _);
+                        elements.Add(new InquiryElement("submit", "Kneel to them", null, can,
+                            can
+                                ? "The oath is the peace: the war ends and we answer to them."
+                                : why));
+                    }
+                    else
+                    {
+                        var can = AiDiplomacy.CanDefectToAttacker(state, us, them, out var why, out _);
+                        elements.Add(new InquiryElement("defect", "Beg their mercy", null, can,
+                            can
+                                ? "End this war as their vassal - " + ourLink.DominantParty.Name
+                                  + ", which would not defend us, is named the oathbreaker."
+                                : why));
+                    }
                 }
                 else
                 {
+                    var block = TreatyEnforcement.WhyWarBlocked(state, us, them);
+                    elements.Add(new InquiryElement("war", "Declare war", null,
+                        block == TreatyEnforcement.Block.None,
+                        block == TreatyEnforcement.Block.None
+                            ? "Puts the question to the court, which votes on it - the same"
+                              + " proposal the Decisions tab offers."
+                            : TreatyEnforcement.Explain(state, us, them, block) + "."));
+
                     AddPactOption(state, us, them, TreatyType.NonAggressionPact, elements);
                     AddPactOption(state, us, them, TreatyType.DefensivePact, elements);
                     AddPactOption(state, us, them, TreatyType.Alliance, elements);
+
+                    var canTribute = AiDiplomacy.CanDemandTribute(state, us, them, out var whyTribute);
+                    elements.Add(new InquiryElement("tribute", "Demand tribute", null, canTribute,
+                        canTribute
+                            ? DiplomacyConstants.AiDefaultTributePerPeriod
+                              + " per period. Coercion, not negotiation: the claim makes the"
+                              + " pretext and our strength makes the argument."
+                            : whyTribute));
+
+                    if (ourLink == null)
+                    {
+                        var can = AiDiplomacy.CanSubmitTo(state, us, them, out var why, out _);
+                        elements.Add(new InquiryElement("submit", "Kneel to them", null, can,
+                            can
+                                ? "Their oath for our foreign policy: tribute, troops in their"
+                                  + " wars, protection owed to us."
+                                : why));
+                    }
+
+                    // Courting somebody else's neglected vassal means war with its patron.
+                    var theirLink = Hegemony.VassalageOf(state, them);
+                    if (theirLink != null && theirLink.DominantParty != us)
+                    {
+                        var can = Hegemony.CanPoach(state, us, theirLink, out var value, out var why);
+                        elements.Add(new InquiryElement("court",
+                            "Court them away from " + theirLink.DominantParty.Name, null, can,
+                            can
+                                ? "They would kneel to us (valued at " + value.ToString("0")
+                                  + "). Taking them means war with " + theirLink.DominantParty.Name + "."
+                                : why));
+                    }
+
+                    // A greedy patron may tear up a vassal's oath and take its lands.
+                    if (Hegemony.CouldAnnex(state, us, them))
+                        elements.Add(Element("annex", "Tear up their oath and make war",
+                            "The full price of a breach, then conquest - the same move a greedy"
+                            + " AI patron makes."));
+                }
+
+                // Independence is the one foreign-policy act a vassal keeps for itself,
+                // so it shows on the patron's row in war or in peace.
+                if (ourLink != null && ourLink.DominantParty == them)
+                {
+                    var breaking = Hegemony.IsAtBreakingPoint(state, ourLink);
+                    elements.Add(new InquiryElement("secede", "Declare independence", null, breaking,
+                        breaking
+                            ? "Hold " + Hegemony.HoldOf(ourLink).ToString("0") + ", below the"
+                              + " breaking point of "
+                              + Hegemony.SecessionThreshold(state, ourLink).ToString("0")
+                              + " - a war of independence, and their other resentful vassals"
+                              + " may rise with us."
+                            : "Hold " + Hegemony.HoldOf(ourLink).ToString("0")
+                              + " - above the breaking point of "
+                              + Hegemony.SecessionThreshold(state, ourLink).ToString("0")
+                              + ". Renouncing the oath is always possible; rebellion needs a"
+                              + " realm already breaking."));
                 }
 
                 var breakable = FirstBreakableTreaty(state, us, them);
@@ -366,6 +452,13 @@ namespace DiplomacyIntrigue.UI
                 {
                     case "report": ShowText(them.Name.ToString(), Summary(state, us, them)); return;
                     case "peace": ShowPeace(state, us, them); return;
+                    case "war": DeclareWar(state, us, them); return;
+                    case "tribute": DemandTribute(state, us, them); return;
+                    case "submit": OfferSubmission(state, us, them); return;
+                    case "defect": DefectToAttacker(state, us, them); return;
+                    case "court": CourtVassal(state, us, them); return;
+                    case "annex": AnnexVassal(state, us, them); return;
+                    case "secede": SecedeFromPatron(state, us, them); return;
                     case "break": BreakTreaty(state, us, them); return;
                     case "fabricate": ShowFabricationTargets(state, us, them); return;
                 }
@@ -465,6 +558,280 @@ namespace DiplomacyIntrigue.UI
 
             TaleWorlds.CampaignSystem.Actions.ChangeClanInfluenceAction.Apply(us.RulingClan, -cost);
             Notify(us.Name + " and " + them.Name + " sign a " + type + ".", Colors.Green);
+        }
+
+        /// <summary>
+        /// Declaring war the way the vanilla button did before this mod took the strip over:
+        /// a DeclareWarDecision is proposed by the player's clan and the realm votes on it.
+        /// The mod's enforcement gates apply to the decision itself, exactly as they do to
+        /// the Decisions tab - a treaty in the way greys the button out with its reason.
+        /// </summary>
+        internal static void DeclareWar(ModState state, Kingdom us, Kingdom them)
+        {
+            var block = TreatyEnforcement.WhyWarBlocked(state, us, them);
+            if (block != TreatyEnforcement.Block.None)
+            {
+                Notify("Cannot declare war: " + TreatyEnforcement.Explain(state, us, them, block) + ".");
+                return;
+            }
+
+            var decision = new DeclareWarDecision(Clan.PlayerClan, them);
+            if (!decision.IsAllowed())
+            {
+                Notify("The court will not entertain a war against " + them.Name + " right now.");
+                return;
+            }
+
+            // ignoreInfluenceCost stays false: proposing costs what the Decisions tab charges.
+            us.AddDecision(decision, false);
+            Notify("The court is asked to declare war on " + them.Name + ".", Colors.Green);
+        }
+
+        /// <summary>
+        /// We kneel: the player's own kingdom offers its oath to the selected one. The gates
+        /// are the AI's - <see cref="AiDiplomacy.CanSubmitTo"/> - and kneeling to an attacker
+        /// signs as the peace that ends the war, the same desperate door an AI cornered the
+        /// same way would take.
+        /// </summary>
+        internal static void OfferSubmission(ModState state, Kingdom us, Kingdom them)
+        {
+            if (!AiDiplomacy.CanSubmitTo(state, us, them, out var reason, out var settlesWar))
+            {
+                Notify("We cannot kneel to " + them.Name + ": " + reason);
+                return;
+            }
+
+            var value = Hegemony.SubmissionValue(state, us, them, out var explanation);
+            var body = "We offer " + them.Name + " our oath: tribute of "
+                       + DiplomacyConstants.AiDefaultTributePerPeriod + " per period, troops in"
+                       + " their wars, and our foreign policy answers to them."
+                       + Environment.NewLine + Environment.NewLine
+                       + (settlesWar
+                           ? "The oath is the peace - our war with them ends the day it is sworn."
+                             + Environment.NewLine + Environment.NewLine
+                           : "")
+                       + "In exchange they owe us protection; a patron that does not defend its"
+                       + " vassals loses them. What the move is worth to a court in our position: "
+                       + value.ToString("0") + " (" + explanation + ").";
+
+            Confirm("Submission to " + them.Name, body, "Kneel", () =>
+            {
+                // Re-asked rather than trusted: the inquiry can sit open through a whole
+                // day of drift, so the world may have moved since the button was clicked.
+                if (!AiDiplomacy.CanSubmitTo(state, us, them, out var blocked,
+                        out var stillSettlesWar))
+                {
+                    Notify("Could not submit: " + blocked);
+                    return;
+                }
+
+                if (stillSettlesWar) AiDiplomacy.SettleBySubmission(us, them);
+
+                var treaty = Hegemony.Submit(state, them, us,
+                    stillSettlesWar
+                        ? DiplomacyConstants.HoldOnDesperateSubmission
+                        : DiplomacyConstants.HoldOnVoluntarySubmission,
+                    DiplomacyConstants.AiDefaultTributePerPeriod, out var failed,
+                    route: stillSettlesWar ? "player_submitted_to_attacker" : "player_voluntary",
+                    value: value, detail: explanation, settlesWar: stillSettlesWar);
+
+                if (treaty == null)
+                {
+                    Notify("Could not submit: " + failed);
+                    return;
+                }
+
+                Notify("We now answer to " + them.Name + ".", Colors.Green);
+            });
+        }
+
+        /// <summary>
+        /// The demand of tribute the AI runs weekly, handed to the player for the pair they
+        /// picked: claim, overwhelming strength, the target's trust - and the target's
+        /// consent lives in those gates, exactly as it does for the AI.
+        /// </summary>
+        internal static void DemandTribute(ModState state, Kingdom us, Kingdom them)
+        {
+            if (!AiDiplomacy.CanDemandTribute(state, us, them, out var reason))
+            {
+                Notify("Cannot demand tribute: " + reason);
+                return;
+            }
+
+            var treaty = TreatyRegistry.Sign(state, us, them, TreatyType.TributaryPact,
+                out var failed, tributePayer: them,
+                tributeAmount: DiplomacyConstants.AiDefaultTributePerPeriod);
+            if (treaty == null)
+            {
+                Notify("Refused: " + failed);
+                return;
+            }
+
+            Notify(them.Name + " agrees to pay us "
+                   + DiplomacyConstants.AiDefaultTributePerPeriod + " per period.", Colors.Green);
+        }
+
+        /// <summary>
+        /// The neglected-vassal's exit run in reverse: our patron will not defend us, so we
+        /// kneel to the kingdom attacking us and it is named the oathbreaker for failing its
+        /// duty. Same gates and same execution as the AI's defection.
+        /// </summary>
+        internal static void DefectToAttacker(ModState state, Kingdom us, Kingdom them)
+        {
+            if (!AiDiplomacy.CanDefectToAttacker(state, us, them, out var reason, out var link))
+            {
+                Notify("Cannot defect: " + reason);
+                return;
+            }
+
+            var patron = link.DominantParty;
+            Confirm("Kneel to " + them.Name,
+                "We abandon " + patron.Name + ", which will not defend us, and submit to our"
+                + " attacker: the war ends as our submission, and " + patron.Name
+                + " is named the oathbreaker in every court for failing its duty."
+                + Environment.NewLine + Environment.NewLine
+                + "Tribute of " + DiplomacyConstants.AiDefaultTributePerPeriod
+                + " per period, and our foreign policy answers to " + them.Name + ".",
+                "Kneel", () =>
+                {
+                    if (!AiDiplomacy.CanDefectToAttacker(state, us, them, out var lapsed,
+                            out var current))
+                    {
+                        Notify("The offer has lapsed: " + lapsed);
+                        return;
+                    }
+
+                    AiDiplomacy.ExecuteDefection(state, us, current, current.DominantParty, them);
+                    if (Hegemony.PatronOf(state, us) == them)
+                        Notify("We now answer to " + them.Name + ".", Colors.Green);
+                });
+        }
+
+        /// <summary>
+        /// Courting a rival's neglected vassal, offered to the player for the link they
+        /// selected. The consequences are the poacher's side of the same move the AI makes:
+        /// the old bond repudiated, the patron's trust and a casus belli against us, and war
+        /// with the patron unless we are already in one.
+        /// </summary>
+        internal static void CourtVassal(ModState state, Kingdom us, Kingdom them)
+        {
+            var link = Hegemony.VassalageOf(state, them);
+            if (!Hegemony.CanPoach(state, us, link, out var value, out var reason))
+            {
+                Notify("Cannot court them: " + reason);
+                return;
+            }
+
+            var patron = link.DominantParty;
+            var body = them.Name + " answers to " + patron.Name + " at hold "
+                       + Hegemony.HoldOf(link).ToString("0")
+                       + ", and would kneel to us (valued at " + value.ToString("0") + ")."
+                       + Environment.NewLine + Environment.NewLine
+                       + "Taking them repudiates their oath at no charge to them - the blame is"
+                       + " ours: " + (-DiplomacyConstants.PoachingTrustCost).ToString("0")
+                       + " trust with " + patron.Name + ", a broken-treaty claim against us, and"
+                       + (us.IsAtWarWith(patron)
+                           ? " we are already at war with them."
+                           : " war with " + patron.Name + " the moment the oath moves.");
+
+            Confirm("Court " + them.Name, body, "Court them", () =>
+            {
+                if (!Hegemony.CanPoach(state, us, link, out var currentValue, out var lapsed))
+                {
+                    Notify("The moment has passed: " + lapsed);
+                    return;
+                }
+
+                // ExecutePoach announces a success itself; only a failure needs telling.
+                if (!Hegemony.ExecutePoach(state, us, link, currentValue))
+                    Notify("The courtship failed - see the Diplomacy & Intrigue log.");
+            });
+        }
+
+        /// <summary>
+        /// The greedy patron's move, offered to a player whose kingdom has grown hungry for
+        /// provinces rather than vassals: tear up the vassal's oath at the full price of a
+        /// breach, then conquer it. Same gate (<see cref="Hegemony.CouldAnnex"/>), same cost
+        /// formula and same execution as the AI's annexation war.
+        /// </summary>
+        internal static void AnnexVassal(ModState state, Kingdom us, Kingdom them)
+        {
+            if (!Hegemony.CouldAnnex(state, us, them))
+            {
+                Notify("Cannot turn on " + them.Name + ".");
+                return;
+            }
+
+            var terms = AiDiplomacy.EvaluateWar(state, us, them, asAnnexation: true);
+            var cost = AiDiplomacy.WarDeclarationCost(state, us,
+                CasusBelli.Legitimacy(terms.Casus));
+
+            Confirm("Turn on " + them.Name,
+                "We tear up " + them.Name + "'s oath and take their lands ourselves: the full"
+                + " price of a breach in every court, every vassal we hold takes the lesson"
+                + " in hold, and war opens at once."
+                + Environment.NewLine + Environment.NewLine
+                + "Declaring costs " + cost + " influence.",
+                "To war", () =>
+                {
+                    if (!Hegemony.CouldAnnex(state, us, them))
+                    {
+                        Notify("The moment has passed - the oath no longer stands between us.");
+                        return;
+                    }
+
+                    var opened = AiDiplomacy.ExecuteWarDeclaration(state, us, them, terms,
+                        annexation: true, value: terms.Total);
+                    Notify(opened
+                        ? "We tear up the oath and march on " + them.Name + "."
+                        : "The declaration was refused - see the log.", opened ? Colors.Green : Colors.Red);
+                });
+        }
+
+        /// <summary>
+        /// The secession the daily tick asks about, pulled early by the player whose kingdom
+        /// is the resentful vassal: the realm is already at breaking point, so the button is
+        /// the same trigger the question fires - <see cref="Hegemony.Secede"/> runs the
+        /// identical revolt an AI vassal would have run.
+        /// </summary>
+        internal static void SecedeFromPatron(ModState state, Kingdom us, Kingdom them)
+        {
+            var link = Hegemony.VassalageOf(state, us);
+            if (link == null || link.DominantParty != them)
+            {
+                Notify("We do not answer to " + them.Name + ".");
+                return;
+            }
+
+            if (!Hegemony.IsAtBreakingPoint(state, link))
+            {
+                Notify("The realm is not breaking - hold " + Hegemony.HoldOf(link).ToString("0")
+                       + " against a secession line of "
+                       + Hegemony.SecessionThreshold(state, link).ToString("0")
+                       + ". Renouncing the oath is always possible; rebellion is not.");
+                return;
+            }
+
+            Confirm("Secede from " + them.Name,
+                "We renounce our oath to " + them.Name + " and fight for our independence:"
+                + " every court counts the breach, their loyal vassals answer their call to"
+                + " arms, and their resentful ones may rise with us."
+                + Environment.NewLine + Environment.NewLine
+                + "The war of independence opens at once.",
+                "Secede", () =>
+                {
+                    // Re-asked rather than trusted: the bond may have moved while the
+                    // inquiry sat open.
+                    var current = Hegemony.VassalageOf(state, us);
+                    if (current == null || current.DominantParty != them
+                        || !Hegemony.IsAtBreakingPoint(state, current))
+                    {
+                        Notify("The moment has passed - the bond no longer stands as it did.");
+                        return;
+                    }
+
+                    Hegemony.Secede(state, current);
+                });
         }
 
         internal static void ShowPeace(ModState state, Kingdom us, Kingdom them)
@@ -844,6 +1211,38 @@ namespace DiplomacyIntrigue.UI
             catch (Exception ex)
             {
                 Log.Error("UI", "Could not show the diplomacy report.", ex);
+            }
+        }
+
+        /// <summary>
+        /// A yes/no question for the acts a misclick would make expensive: the terms go in
+        /// the body, and the act only happens if the answer is yes. The callback is wrapped
+        /// the same way <see cref="Show"/> wraps its choices - nothing thrown from an
+        /// inquiry may reach the engine.
+        /// </summary>
+        private static void Confirm(string title, string body, string yesText, Action onYes)
+        {
+            try
+            {
+                InformationManager.ShowInquiry(new InquiryData(
+                    title, body, true, true, yesText, "Back",
+                    () =>
+                    {
+                        try
+                        {
+                            onYes();
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error("UI", "Diplomacy action failed.", ex);
+                            Notify("Something went wrong - see the Diplomacy & Intrigue log.");
+                        }
+                    },
+                    () => { }), true);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("UI", "Could not show the confirmation.", ex);
             }
         }
 

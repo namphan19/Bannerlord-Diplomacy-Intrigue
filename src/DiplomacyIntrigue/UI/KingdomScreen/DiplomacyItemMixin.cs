@@ -273,6 +273,26 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                     new BasicTooltipViewModel(() => claimHint2)));
             }
 
+            // Each side's share of the world's strength - the number every court reads, so
+            // it is shown plainly rather than saved for espionage. The tooltip carries the
+            // rest of what Power describes: ambition and greed are public knowledge.
+            var living = 0;
+            foreach (var kingdom in Kingdom.All)
+                if (!kingdom.IsEliminated) living++;
+            if (living > 0)
+            {
+                var share1 = (int)(Power.Dominance(faction1) / living * 100f);
+                var share2 = (int)(Power.Dominance(faction2) / living * 100f);
+                var powerHint1 = PowerHint(state, faction1);
+                var powerHint2 = PowerHint(state, faction2);
+                rows.Add(new KingdomWarComparableStatVM(
+                    share1, share2,
+                    new TextObject("Power"),
+                    ColourOf(faction1), ColourOf(faction2), 100,
+                    new BasicTooltipViewModel(() => powerHint1),
+                    new BasicTooltipViewModel(() => powerHint2)));
+            }
+
             for (var i = 0; i < rows.Count; i++)
                 stats.Insert(Math.Min(i, stats.Count), rows[i]);
         }
@@ -321,6 +341,18 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             return text + ".";
         }
 
+        /// <summary>
+        /// What the map can see of this kingdom's power: the description Power itself writes
+        /// (share, ambition, greed), plus the numbers behind it. Design 06: a ruler's
+        /// ambition and greed are visible to anyone watching its armies.
+        /// </summary>
+        private static string PowerHint(ModState state, Kingdom kingdom)
+        {
+            return kingdom.Name + " " + Power.Describe(state, kingdom)
+                   + ". Ambition " + Power.Ambition(kingdom).ToString("0.00")
+                   + ", greed " + Power.Greed(state, kingdom).ToString("0.00") + ".";
+        }
+
         // ----- buttons ---------------------------------------------------------
         // The strip these sit in is narrow: every explanation must fit its own
         // column (~220px, about 32 characters) or it bleeds into the neighbour's.
@@ -330,6 +362,8 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         private void BuildActions(ModState state, Kingdom us, Kingdom them, WarRecord war,
             ICollection<DiplomacyActionVM> into)
         {
+            var ourLink = Hegemony.VassalageOf(state, us);
+
             if (war != null)
             {
                 var allowance = PeaceTable.DescribeAllowance(state, war, us);
@@ -339,12 +373,127 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                     0, true,
                     "Opens the peace table: what this war has earned, and what they will sign. " + allowance,
                     () => DiplomacyMenu.ShowPeace(state, us, them)));
+
+                // Kneeling is the other way out: a free kingdom submits outright, a vassal's
+                // version is a defection to its attacker.
+                if (ourLink == null)
+                {
+                    var can = AiDiplomacy.CanSubmitTo(state, us, them, out var why, out _);
+                    into.Add(new DiplomacyActionVM("Kneel to them",
+                        can ? "Ends this war as our submission." : "Cannot (see hint).",
+                        0, can,
+                        can
+                            ? "The oath is the peace: the war ends, we keep our ruler and lands,"
+                              + " and they owe us protection. Tribute "
+                              + DiplomacyConstants.AiDefaultTributePerPeriod + " per period."
+                            : why,
+                        () => DiplomacyMenu.OfferSubmission(state, us, them)));
+                }
+                else
+                {
+                    var can = AiDiplomacy.CanDefectToAttacker(state, us, them, out var why, out _);
+                    into.Add(new DiplomacyActionVM("Beg their mercy",
+                        can ? "Ends this war as our defection." : "Cannot (see hint).",
+                        0, can,
+                        can
+                            ? "We abandon " + ourLink.DominantParty.Name + ", which would not"
+                              + " defend us, and kneel to our attacker - they are named the"
+                              + " oathbreaker in every court."
+                            : why,
+                        () => DiplomacyMenu.DefectToAttacker(state, us, them)));
+                }
             }
             else
             {
+                var block = TreatyEnforcement.WhyWarBlocked(state, us, them);
+                into.Add(new DiplomacyActionVM("Declare war",
+                    block == TreatyEnforcement.Block.None
+                        ? "Puts it to the court's vote."
+                        : "Blocked (see hint).",
+                    0, block == TreatyEnforcement.Block.None,
+                    block == TreatyEnforcement.Block.None
+                        ? "Proposes a war decision the realm votes on - the same thing the"
+                          + " Decisions tab offers. Our treaties are why it may be blocked."
+                        : TreatyEnforcement.Explain(state, us, them, block) + ".",
+                    () => DiplomacyMenu.DeclareWar(state, us, them)));
+
                 AddPact(state, us, them, TreatyType.NonAggressionPact, "non-aggression pact", into);
                 AddPact(state, us, them, TreatyType.DefensivePact, "defensive pact", into);
                 AddPact(state, us, them, TreatyType.Alliance, "alliance", into);
+
+                var canTribute = AiDiplomacy.CanDemandTribute(state, us, them, out var whyTribute);
+                into.Add(new DiplomacyActionVM("Demand tribute",
+                    canTribute
+                        ? DiplomacyConstants.AiDefaultTributePerPeriod + " per period."
+                        : "Cannot (see hint).",
+                    0, canTribute,
+                    canTribute
+                        ? "Coercion, not negotiation: our claim makes the pretext and our"
+                          + " strength makes the argument - the same demand the AI makes."
+                        : whyTribute,
+                    () => DiplomacyMenu.DemandTribute(state, us, them)));
+
+                if (ourLink == null)
+                {
+                    var can = AiDiplomacy.CanSubmitTo(state, us, them, out var why, out _);
+                    into.Add(new DiplomacyActionVM("Kneel to them",
+                        can ? "We become their vassal." : "Cannot (see hint).",
+                        0, can,
+                        can
+                            ? "Their oath for our foreign policy: tribute "
+                              + DiplomacyConstants.AiDefaultTributePerPeriod
+                              + " per period, troops in their wars, protection owed to us."
+                            : why,
+                        () => DiplomacyMenu.OfferSubmission(state, us, them)));
+                }
+
+                // Courting somebody else's neglected vassal means war with its patron.
+                var theirLink = Hegemony.VassalageOf(state, them);
+                if (theirLink != null && theirLink.DominantParty != us)
+                {
+                    var can = Hegemony.CanPoach(state, us, theirLink, out var value, out var why);
+                    into.Add(new DiplomacyActionVM("Court them",
+                        can ? "Valued at " + value.ToString("0") + "." : "Cannot (see hint).",
+                        0, can,
+                        can
+                            ? "They leave " + theirLink.DominantParty.Name + " and kneel to us -"
+                              + " which means war with " + theirLink.DominantParty.Name + "."
+                            : why,
+                        () => DiplomacyMenu.CourtVassal(state, us, them)));
+                }
+
+                // A greedy patron may tear up a vassal's oath and take its lands.
+                if (Hegemony.CouldAnnex(state, us, them))
+                {
+                    into.Add(new DiplomacyActionVM("Tear up their oath",
+                        "Breach, then conquest.", 0, true,
+                        "We break " + them.Name + "'s oath at the full price and take their"
+                        + " lands - the move a greedy patron makes. Every other vassal we"
+                        + " hold takes the lesson in hold.",
+                        () => DiplomacyMenu.AnnexVassal(state, us, them)));
+                }
+            }
+
+            // Independence is the one foreign-policy act a vassal keeps for itself,
+            // so it shows on the patron's row in war or in peace.
+            if (ourLink != null && ourLink.DominantParty == them)
+            {
+                var breaking = Hegemony.IsAtBreakingPoint(state, ourLink);
+                into.Add(new DiplomacyActionVM("Declare independence",
+                    breaking ? "A war of independence." : "Not breaking yet (see hint).",
+                    0, breaking,
+                    breaking
+                        ? "Hold " + Hegemony.HoldOf(ourLink).ToString("0")
+                          + ", below the breaking point of "
+                          + Hegemony.SecessionThreshold(state, ourLink).ToString("0")
+                          + ". We renounce the oath and fight - their other resentful vassals"
+                          + " may rise with us."
+                        : "Hold " + Hegemony.HoldOf(ourLink).ToString("0")
+                          + " against a secession line of "
+                          + Hegemony.SecessionThreshold(state, ourLink).ToString("0")
+                          + ". Renouncing the oath is always possible; a war of independence"
+                          + " needs a realm already breaking.",
+                    () => DiplomacyMenu.SecedeFromPatron(state, us, them)));
             }
 
             var breakable = DiplomacyMenu.FirstBreakableTreaty(state, us, them);

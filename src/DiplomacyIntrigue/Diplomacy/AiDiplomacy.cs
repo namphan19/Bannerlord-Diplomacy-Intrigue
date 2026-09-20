@@ -353,30 +353,7 @@ namespace DiplomacyIntrigue.Diplomacy
 
             foreach (var patron in Kingdom.All)
             {
-                if (patron == kingdom || patron.IsEliminated) continue;
-
-                // Kneeling to one of our own attackers is allowed, and for a kingdom whose
-                // every neighbour is already fighting it, it is the only door left open
-                // (design/04 §12.4.4). The oath *is* the peace, so it signs as a settlement
-                // and CanSign's war bar and trust floor step aside exactly as they do for a
-                // term agreed at the peace table.
-                var settlesWar = patron.IsAtWarWith(kingdom);
-
-                // CanSign also refuses a patron that is itself a vassal - hegemony is flat. It
-                // is what makes the design's "kneel to the hegemon, never to its vassal" hold
-                // without a rule of its own: an attacker that answers to somebody else simply
-                // cannot take this, and the candidate looks past it to the hegemon.
-                if (!TreatyRegistry.CanSign(state, patron, kingdom, TreatyType.Vassalage, out _,
-                        settlesWar: settlesWar)) continue;
-
-                // A player who turned us down recently is not asked again yet; we look elsewhere.
-                if (patron.Leader == Hero.MainHero
-                    && TrustRegistry.RefusedOfferRecently(state, kingdom, patron)) continue;
-
-                // A greedy AI ruler no longer wants vassals. A player patron is still asked -
-                // taking a vassal is their decision, and the candidate's own dread of a greedy
-                // patron is already in its valuation.
-                if (patron.Leader != Hero.MainHero && !WouldTakeVassals(state, patron)) continue;
+                if (!CanSubmitTo(state, kingdom, patron, out _, out var settlesWar)) continue;
 
                 var value = Hegemony.SubmissionValue(state, kingdom, patron, out var explanation);
                 if (value <= bestValue) continue;
@@ -437,11 +414,83 @@ namespace DiplomacyIntrigue.Diplomacy
         }
 
         /// <summary>
+        /// Whether <paramref name="candidate"/> could kneel to <paramref name="patron"/> right
+        /// now: every structural gate a submission has to pass, without the valuation. The AI
+        /// asks it of every kingdom and keeps the best-scoring survivor; the UI asks it of the
+        /// one the player picked, and gets the reason when the answer is no.
+        ///
+        /// Kneeling to one of our own attackers is allowed, and for a kingdom whose every
+        /// neighbour is already fighting it, it is the only door left open
+        /// (design/04 §12.4.4). The oath *is* the peace, so it signs as a settlement
+        /// (<paramref name="settlesWar"/>) and CanSign's war bar and trust floor step aside
+        /// exactly as they do for a term agreed at the peace table.
+        /// </summary>
+        public static bool CanSubmitTo(ModState state, Kingdom candidate, Kingdom patron,
+            out string reason, out bool settlesWar)
+        {
+            reason = null;
+            settlesWar = false;
+
+            if (candidate == null || patron == null || candidate == patron
+                || candidate.IsEliminated || patron.IsEliminated)
+            {
+                reason = "Two living, different kingdoms are required.";
+                return false;
+            }
+            if (Hegemony.VassalageOf(state, candidate) != null)
+            {
+                reason = candidate.Name + " already answers to a patron.";
+                return false;
+            }
+            if (Hegemony.IsHegemon(state, candidate))
+            {
+                reason = candidate.Name + " holds vassals of its own and cannot kneel.";
+                return false;
+            }
+            // Checked here rather than left to the valuation returning zero, so the player
+            // is told *why* instead of being shown a barren number.
+            if (!Hegemony.IsStrongEnoughToHold(patron, candidate))
+            {
+                reason = patron.Name + " is no stronger than " + candidate.Name
+                         + " and has no protection to offer.";
+                return false;
+            }
+
+            settlesWar = patron.IsAtWarWith(candidate);
+
+            // CanSign also refuses a patron that is itself a vassal - hegemony is flat. It
+            // is what makes the design's "kneel to the hegemon, never to its vassal" hold
+            // without a rule of its own: an attacker that answers to somebody else simply
+            // cannot take this, and the candidate looks past it to the hegemon.
+            if (!TreatyRegistry.CanSign(state, patron, candidate, TreatyType.Vassalage, out reason,
+                    settlesWar: settlesWar)) return false;
+
+            // A player who turned us down recently is not asked again yet; we look elsewhere.
+            if (patron.Leader == Hero.MainHero
+                && TrustRegistry.RefusedOfferRecently(state, candidate, patron))
+            {
+                reason = patron.Name + " refused " + candidate.Name + "'s oath too recently to be asked again.";
+                return false;
+            }
+
+            // A greedy AI ruler no longer wants vassals. A player patron is still asked -
+            // taking a vassal is their decision, and the candidate's own dread of a greedy
+            // patron is already in its valuation.
+            if (patron.Leader != Hero.MainHero && !WouldTakeVassals(state, patron))
+            {
+                reason = patron.Name + " wants land, not vassals.";
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// Ends the war the oath settles, tagged so a balance run can tell this ending from an
         /// ordinary one at the peace table. Nothing is conceded here beyond the submission
         /// itself - the vassalage *is* the term.
         /// </summary>
-        private static void SettleBySubmission(Kingdom candidate, Kingdom patron)
+        internal static void SettleBySubmission(Kingdom candidate, Kingdom patron)
         {
             var previousCause = Telemetry.NotePeaceCause(Telemetry.PeaceCause.Submission, "vassalage");
             try
@@ -574,24 +623,10 @@ namespace DiplomacyIntrigue.Diplomacy
             var worstScore = 0f;
             foreach (var war in state.OngoingWarsOf(kingdom))
             {
-                // Neglect means a war the vassal was *attacked* in - the same scope the
-                // patron's protection duty has (Hegemony.Protection). A war the vassal
-                // started itself is not the patron's to answer, so losing one is no grounds.
-                if (war.Defender != kingdom) continue;
+                if (!DefectionOptionQualifies(state, kingdom, patron, war,
+                        out var candidate, out _)) continue;
 
-                var candidate = war.Aggressor;
-                if (candidate == null || candidate.IsEliminated || candidate == patron) continue;
-                if (patron.IsAtWarWith(candidate)) continue;
-
-                // A player who turned this vassal down recently is not asked again yet, so
-                // that war is no way out for now.
-                if (candidate.Leader == Hero.MainHero
-                    && TrustRegistry.RefusedOfferRecently(state, kingdom, candidate)) continue;
-
-                // And only when the war is actually going against it: a vassal holding its
-                // own has no need to kneel to the enemy.
                 var score = war.ScoreFor(kingdom);
-                if (-score < DiplomacyConstants.DefectionLosingScore) continue;
                 if (worst != null && score >= worstScore) continue;
 
                 worst = war;
@@ -614,6 +649,98 @@ namespace DiplomacyIntrigue.Diplomacy
         }
 
         /// <summary>
+        /// Whether this war gives <paramref name="vassal"/> grounds to kneel to its
+        /// aggressor. The per-war gates of the defection scan, shared with the UI so the
+        /// button greys out for exactly the reason the AI would not take it.
+        ///
+        /// Neglect means a war the vassal was *attacked* in - the same scope the patron's
+        /// protection duty has (Hegemony.Protection). A war the vassal started itself is not
+        /// the patron's to answer, so losing one is no grounds.
+        /// </summary>
+        private static bool DefectionOptionQualifies(ModState state, Kingdom vassal, Kingdom patron,
+            WarRecord war, out Kingdom candidate, out string reason)
+        {
+            candidate = war?.Aggressor;
+            reason = null;
+
+            if (war == null || war.Defender != vassal)
+            {
+                candidate = null;
+                reason = vassal.Name + " is not defending a war against them.";
+                return false;
+            }
+            if (candidate == null || candidate.IsEliminated || candidate == patron)
+            {
+                candidate = null;
+                reason = "The attacker cannot take us.";
+                return false;
+            }
+            if (patron.IsAtWarWith(candidate))
+            {
+                reason = patron.Name + " has come to our defence - there is nothing to defect from.";
+                return false;
+            }
+
+            // A player who turned this vassal down recently is not asked again yet, so
+            // that war is no way out for now.
+            if (candidate.Leader == Hero.MainHero
+                && TrustRegistry.RefusedOfferRecently(state, vassal, candidate))
+            {
+                reason = candidate.Name + " refused our submission too recently to be asked again.";
+                return false;
+            }
+
+            // And only when the war is actually going against it: a vassal holding its
+            // own has no need to kneel to the enemy.
+            if (-war.ScoreFor(vassal) < DiplomacyConstants.DefectionLosingScore)
+            {
+                reason = "the war is not going badly enough to justify it (score "
+                         + war.ScoreFor(vassal).ToString("0") + ", needs -"
+                         + DiplomacyConstants.DefectionLosingScore.ToString("0") + ").";
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Whether a vassal that <paramref name="aggressor"/> is beating could defect to it
+        /// right now - the defection decision asked of one chosen pair instead of the whole
+        /// map. The vassal's side of the table: a slipping bond, a defensive war being lost,
+        /// a patron not fighting it - then <see cref="CanDefectTo"/> asks the attacker's side.
+        /// </summary>
+        public static bool CanDefectToAttacker(ModState state, Kingdom vassal, Kingdom aggressor,
+            out string reason, out Treaty link)
+        {
+            link = Hegemony.VassalageOf(state, vassal);
+            reason = null;
+
+            if (link == null || !link.IsActive)
+            {
+                reason = vassal == null ? "No vassal was named." : vassal.Name + " has no patron to abandon.";
+                return false;
+            }
+            var patron = link.DominantParty;
+            if (patron == null || patron.IsEliminated)
+            {
+                reason = "The patron no longer exists.";
+                return false;
+            }
+            if (Hegemony.HoldOf(link) >= DiplomacyConstants.HoldPassiveResistanceThreshold)
+            {
+                reason = patron.Name + " still holds our loyalty (hold " + Hegemony.HoldOf(link).ToString("0")
+                         + "; defection needs it under "
+                         + DiplomacyConstants.HoldPassiveResistanceThreshold.ToString("0") + ").";
+                return false;
+            }
+
+            var war = state.OngoingWarBetween(vassal, aggressor);
+            if (!DefectionOptionQualifies(state, vassal, patron, war, out _, out reason)) return false;
+
+            return CanDefectTo(state, vassal, link, aggressor, out reason);
+        }
+
+        /// <summary>
         /// Whether <paramref name="aggressor"/> could take <paramref name="vassal"/> off its
         /// patron right now. The attacker's side of the table: a vassal is worth taking only
         /// if it can be held, a greedy attacker wants the land itself rather than a client on
@@ -626,7 +753,7 @@ namespace DiplomacyIntrigue.Diplomacy
         /// answers the war may be over, the old bond gone or the patron in the field; the
         /// first version of the accept path made peace regardless.
         /// </summary>
-        private static bool CanDefectTo(ModState state, Kingdom vassal, Treaty link, Kingdom aggressor,
+        public static bool CanDefectTo(ModState state, Kingdom vassal, Treaty link, Kingdom aggressor,
             out string reason)
         {
             reason = null;
@@ -670,7 +797,7 @@ namespace DiplomacyIntrigue.Diplomacy
         /// then the old bond broken at the patron's expense and the new one signed
         /// (<see cref="Hegemony.Defect"/>).
         /// </summary>
-        private static void ExecuteDefection(ModState state, Kingdom vassal, Treaty link,
+        internal static void ExecuteDefection(ModState state, Kingdom vassal, Treaty link,
             Kingdom patron, Kingdom aggressor)
         {
             var previousCause = Telemetry.NotePeaceCause(Telemetry.PeaceCause.Defection, "vassalage");
@@ -952,21 +1079,9 @@ namespace DiplomacyIntrigue.Diplomacy
         /// </summary>
         private static bool TryDemandTribute(ModState state, Kingdom kingdom)
         {
-            if (WorstExhaustion(state, kingdom) > DiplomacyConstants.AiMaxExhaustionToExpand) return false;
-
             foreach (var target in Kingdom.All)
             {
-                if (target == kingdom || target.IsEliminated) continue;
-                if (kingdom.IsAtWarWith(target)) continue;
-                if (!ClaimRegistry.HasTerritorialClaim(state, kingdom, target)) continue;
-                if (TreatyRegistry.PatronOf(state, target) != null) continue;
-
-                var theirs = target.CurrentTotalStrength;
-                if (theirs <= 0f) continue;
-                if (kingdom.CurrentTotalStrength / theirs < DiplomacyConstants.AiTributeDemandStrengthRatio) continue;
-
-                // They submit only if the alternative looks worse than paying.
-                if (TrustRegistry.Get(state, target, kingdom) < DiplomacyConstants.TrustFloorForPacts) continue;
+                if (!CanDemandTribute(state, kingdom, target, out _)) continue;
 
                 var treaty = TreatyRegistry.Sign(state, kingdom, target, TreatyType.TributaryPact,
                     out var reason, tributePayer: target,
@@ -984,6 +1099,75 @@ namespace DiplomacyIntrigue.Diplomacy
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Whether <paramref name="kingdom"/> could impose tributary status on
+        /// <paramref name="target"/> right now. The demand is coercion, not negotiation: a
+        /// claim gives it a pretext, overwhelming strength makes refusal suicidal, and the
+        /// target's trust in us is what the AI consults instead of an answer. The same gate
+        /// the weekly scan runs, asked of the one pair the player picked.
+        /// </summary>
+        public static bool CanDemandTribute(ModState state, Kingdom kingdom, Kingdom target,
+            out string reason)
+        {
+            reason = null;
+            if (kingdom == null || target == null || kingdom == target
+                || kingdom.IsEliminated || target.IsEliminated)
+            {
+                reason = "Two living, different kingdoms are required.";
+                return false;
+            }
+            if (kingdom.IsAtWarWith(target))
+            {
+                reason = "The war with " + target.Name + " is the demand - end it at the peace table.";
+                return false;
+            }
+            if (WorstExhaustion(state, kingdom) > DiplomacyConstants.AiMaxExhaustionToExpand)
+            {
+                reason = kingdom.Name + " is too exhausted to press anyone (exhaustion "
+                         + WorstExhaustion(state, kingdom).ToString("0") + ").";
+                return false;
+            }
+            if (!ClaimRegistry.HasTerritorialClaim(state, kingdom, target))
+            {
+                reason = kingdom.Name + " holds no territorial claim on " + target.Name
+                         + " - without one the demand is bare extortion.";
+                return false;
+            }
+            if (TreatyRegistry.PatronOf(state, target) != null)
+            {
+                reason = target.Name + " already answers to another kingdom.";
+                return false;
+            }
+
+            var theirs = target.CurrentTotalStrength;
+            if (theirs <= 0f
+                || kingdom.CurrentTotalStrength / theirs < DiplomacyConstants.AiTributeDemandStrengthRatio)
+            {
+                reason = kingdom.Name + " is not strong enough to cow " + target.Name
+                         + " (needs x" + DiplomacyConstants.AiTributeDemandStrengthRatio.ToString("0.0")
+                         + " their strength).";
+                return false;
+            }
+
+            // They submit only if the alternative looks worse than paying.
+            if (TrustRegistry.Get(state, target, kingdom) < DiplomacyConstants.TrustFloorForPacts)
+            {
+                reason = target.Name + " does not trust " + kingdom.Name
+                         + " enough to accept terms (trust "
+                         + TrustRegistry.Get(state, target, kingdom).ToString("0") + ").";
+                return false;
+            }
+
+            // The pact itself still has to be signable - an existing tribute between us, or a
+            // patron's claim on either side's foreign policy, refuses here. Checked inside the
+            // gate rather than left to Sign, so the player's button carries the real reason
+            // and the AI's scan skips the same target it would have failed on.
+            if (!TreatyRegistry.CanSign(state, kingdom, target, TreatyType.TributaryPact,
+                    out reason)) return false;
+
+            return true;
         }
 
         // ================= 4. War, as a last resort =============================
@@ -1023,13 +1207,10 @@ namespace DiplomacyIntrigue.Diplomacy
         {
             if (!CanTakeOnAnotherWar(state, kingdom)) return false;
 
-            var weariness = state.WearinessOf(kingdom);
-
             Kingdom best = null;
             var bestValue = 0f;
             var bestAnnexation = false;
             var bestTerms = new WarValueTerms();
-            CasusBelliType bestCasus = CasusBelliType.Conquest;
 
             foreach (var target in Kingdom.All)
             {
@@ -1052,7 +1233,6 @@ namespace DiplomacyIntrigue.Diplomacy
                 if (terms.Total <= bestValue) continue;
                 best = target;
                 bestValue = terms.Total;
-                bestCasus = terms.Casus;
                 bestAnnexation = annexation;
                 bestTerms = terms;
             }
@@ -1060,21 +1240,43 @@ namespace DiplomacyIntrigue.Diplomacy
             if (best == null) return false;
             if (bestValue < DiplomacyConstants.AiWarThreshold) return false;
 
-            // Naked aggression costs double, and weariness adds to the bill.
-            var legit = CasusBelli.Legitimacy(bestCasus);
-            var cost = (int)(DiplomacyConstants.WarDeclarationBaseInfluence * (2f - legit)
-                             * (1f + weariness / 100f));
+            return ExecuteWarDeclaration(state, kingdom, best, bestTerms, bestAnnexation, bestValue);
+        }
+
+        /// <summary>
+        /// What declaring this war costs the ruling clan: naked aggression pays double,
+        /// legitimacy discounts it, and weariness inflates the bill. One formula, shared by
+        /// the decision, its diagnostic and the player's buttons.
+        /// </summary>
+        public static int WarDeclarationCost(ModState state, Kingdom kingdom, float legitimacy)
+            => (int)(DiplomacyConstants.WarDeclarationBaseInfluence * (2f - legitimacy)
+                     * (1f + (state == null ? 0f : state.WearinessOf(kingdom)) / 100f));
+
+        /// <summary>
+        /// Pays the influence, tears up the oath first when the war is an annexation (or the
+        /// declaration would be vetoed), and declares through the same sanctioned call every
+        /// war in this mod goes through. Returns whether the war actually opened - a refused
+        /// declaration must never be logged as one that happened (run 04).
+        ///
+        /// Shared with the player's annexation action so a greedy player-patron pays the same
+        /// price and walks the same path the AI does.
+        /// </summary>
+        internal static bool ExecuteWarDeclaration(ModState state, Kingdom kingdom, Kingdom target,
+            WarValueTerms terms, bool annexation, float value)
+        {
+            var legit = CasusBelli.Legitimacy(terms.Casus);
+            var cost = WarDeclarationCost(state, kingdom, legit);
             if (!CanAffordInfluence(kingdom, cost)) return false;
 
             ChangeClanInfluenceAction.Apply(kingdom.RulingClan, -cost);
 
             // The oath goes first, with the full price of a breach, or the war would be vetoed.
-            if (bestAnnexation) Hegemony.TurnOnVassal(state, kingdom, best);
+            if (annexation) Hegemony.TurnOnVassal(state, kingdom, target);
 
             TreatyEnforcement.BeginSanctionedWar();
             try
             {
-                DeclareWarAction.ApplyByKingdomDecision(kingdom, best);
+                DeclareWarAction.ApplyByKingdomDecision(kingdom, target);
             }
             finally
             {
@@ -1083,25 +1285,25 @@ namespace DiplomacyIntrigue.Diplomacy
 
             // Read back rather than assumed, for the reason run 04 gave: a refused declaration
             // must never be logged as a war.
-            var opened = kingdom.IsAtWarWith(best);
-            Telemetry.Event("ai_war_declared", "kingdom", kingdom, "target", best, "opened", opened,
-                "annexation", bestAnnexation, "casusBelli", bestCasus, "legitimacy", legit,
-                "value", bestValue, "cost", cost, "sideRatio", bestTerms.Ratio, "ownRatio", bestTerms.OwnRatio,
-                "ourSupport", bestTerms.OurSupport, "theirSupport", bestTerms.TheirSupport,
-                "fromRatio", bestTerms.FromRatio, "fromLegitimacy", bestTerms.FromLegitimacy,
-                "fromProximity", bestTerms.FromProximity, "fromHunger", bestTerms.FromHunger,
-                "fromWeariness", bestTerms.FromWeariness, "fromAmbition", bestTerms.FromAmbition,
-                "fromAnnexation", bestTerms.FromAnnexation);
+            var opened = kingdom.IsAtWarWith(target);
+            Telemetry.Event("ai_war_declared", "kingdom", kingdom, "target", target, "opened", opened,
+                "annexation", annexation, "casusBelli", terms.Casus, "legitimacy", legit,
+                "value", value, "cost", cost, "sideRatio", terms.Ratio, "ownRatio", terms.OwnRatio,
+                "ourSupport", terms.OurSupport, "theirSupport", terms.TheirSupport,
+                "fromRatio", terms.FromRatio, "fromLegitimacy", terms.FromLegitimacy,
+                "fromProximity", terms.FromProximity, "fromHunger", terms.FromHunger,
+                "fromWeariness", terms.FromWeariness, "fromAmbition", terms.FromAmbition,
+                "fromAnnexation", terms.FromAnnexation);
             Log.Info("AI", kingdom.Name + (opened ? " declared war on " : " tried and failed to declare war on ")
-                           + best.Name
-                           + (bestAnnexation ? " to annex its former vassal" : "")
-                           + " (" + bestCasus + ", legitimacy " + legit.ToString("0.00")
-                           + ", value " + bestValue.ToString("0") + ", cost " + cost + " influence).");
+                           + target.Name
+                           + (annexation ? " to annex its former vassal" : "")
+                           + " (" + terms.Casus + ", legitimacy " + legit.ToString("0.00")
+                           + ", value " + value.ToString("0") + ", cost " + cost + " influence).");
             if (opened)
-                Announce(bestAnnexation
-                    ? kingdom.Name + " turns on its vassal " + best.Name + " to annex it."
-                    : kingdom.Name + " declares war on " + best.Name + ".");
-            return true;
+                Announce(annexation
+                    ? kingdom.Name + " turns on its vassal " + target.Name + " to annex it."
+                    : kingdom.Name + " declares war on " + target.Name + ".");
+            return opened;
         }
 
         /// <summary>
@@ -1333,8 +1535,7 @@ namespace DiplomacyIntrigue.Diplomacy
                           + " (needs " + DiplomacyConstants.AiWarThreshold.ToString("0") + ")"
                           + (terms.Total < DiplomacyConstants.AiWarThreshold ? "   BLOCKED" : ""));
 
-            var cost = (int)(DiplomacyConstants.WarDeclarationBaseInfluence * (2f - terms.Legitimacy)
-                             * (1f + weariness / 100f));
+            var cost = WarDeclarationCost(state, us, terms.Legitimacy);
             var available = us.RulingClan == null ? 0f : us.RulingClan.Influence;
             sb.AppendLine("  influence cost: " + cost + ", available " + available.ToString("0")
                           + (available < cost ? "   BLOCKED" : ""));

@@ -78,6 +78,10 @@ of you for starting it.
 multiplied by `2 − legitimacy`: a war of reclamation costs about 52, naked conquest about 72,
 and both get more expensive if your realm is already weary of fighting.
 
+The **Declare war** button on the Diplomacy tab proposes the decision your court then votes
+on — the same proposal the Decisions tab offers, shown here so the treaties in the way can
+say so. A pact between you greys it out and names itself.
+
 Legitimacy also decides whether your allies answer your call, and what a defensive pact
 obliges them to do. A pact never drags anyone into a war of conquest.
 
@@ -115,6 +119,11 @@ at and what it needs to see — those are their real numbers, not a hint.
 
 **A treaty that forbids war actually prevents it.** If a pact stands between you, the
 declare-war option greys out and tells you which agreement is in the way.
+
+**Tribute can also be demanded without a war.** The **Demand tribute** button is coercion,
+not negotiation: you need a territorial claim for the pretext, at least twice their strength
+for the argument, and enough of their trust that paying looks better than fighting. Those are
+the same conditions an AI kingdom checks before making the demand of you.
 
 ### Breaking one
 
@@ -203,7 +212,18 @@ Three routes:
    whether it trusts you, against its own pride and the insult of serving a foreign culture.
    It kneels at 55.
 3. **By poaching** a rival hegemon's neglected vassal — which means war with that rival. The
-   price is yours, not the vassal's.
+   price is yours, not the vassal's. The **Court them** button appears on a resentful vassal's
+   row and says what the move would cost before anything is torn up.
+
+And the door swings both ways: **Kneel to them** offers your own kingdom's oath to a stronger
+power, in peace or as the peace itself when a war is going badly. The gates are the ones an
+AI candidate faces — they must be stronger than you, able to sign, and willing to hold a
+vassal — plus what the oath buys: tribute out, foreign policy surrendered, protection owed
+to you.
+
+A patron grown greedy has one more move: **Tear up their oath** repudiates a vassal at the
+full price of a breach and opens a war of annexation, the same way a greedy AI patron turns
+on its own. Every other vassal you hold takes the lesson in Hold.
 
 ### Hold: the strength of the bond
 
@@ -233,16 +253,25 @@ its term runs out, and the next refused summons breaks it.
 
 You pay tribute every 7 days and you owe troops. You cannot declare war on your own account,
 and you cannot declare war on your patron as a routine decision — but you can defy them, and
-everything above is available to you exactly as it is to an AI vassal. Let Hold fall far
-enough and independence is a war you choose.
+everything above is available to you exactly as it is to an AI vassal.
+
+Independence is the one foreign-policy act that stays yours. Once Hold sits below the
+breaking point, **Declare independence** appears on your patron's row: renouncing the oath
+and fighting the war of independence is the same revolt an AI vassal runs — and their other
+resentful vassals may rise with you. If you let the collapse run instead, the mod asks you
+before it acts. Below breaking point the exit is still there, as the ordinary Renounce —
+which breaks the oath at breach price without a war. And when a patron will not defend you,
+**Beg their mercy** lets you kneel to the kingdom attacking you; your patron,
+not you, is named the oathbreaker.
 
 ---
 
 ## 7. Power: ambition, coalitions, greed
 
 Every kingdom's strength is measured against the whole world, not only against its neighbours.
-Ctrl+D → Other kingdoms shows what anyone watching its armies could see: *"holds 27% of Calradia's
-strength; growing greedy"*.
+The **Power** bar on the Diplomacy tab shows each side's share of Calradia's strength, and its
+hover carries the rest — ambition and greed are public knowledge. Ctrl+D → Other kingdoms shows
+the same in words: *"holds 27% of Calradia's strength; growing greedy"*.
 
 - **Strength breeds ambition.** A kingdom well above its even share wants war more, and one holding
   a quarter of Calradia's strength will run two wars at once.
