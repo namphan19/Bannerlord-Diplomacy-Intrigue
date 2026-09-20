@@ -129,10 +129,15 @@ The mod never blocks a deliberate betrayal. It only prices it.
 One value per direction: what you think of them is a different number from what they think of
 you, and a betrayal splits the two apart permanently.
 
-**Trust does not decay.** Relation covers feelings that fade; trust is reputation, and it
-follows a kingdom for the rest of the campaign. Below **−20** a court will sign nothing with
-you but a truce — and a truce is never refused, because stopping a war has to stay possible
-however badly everyone has behaved.
+**Trust fades slowly, and only if nobody tends it.** Relation covers feelings that pass in a
+season; trust is reputation. Goodwill left alone drains to nothing in about two years, a
+grudge about four times as slowly — a broken treaty can shut a court's door to you for
+months — and every day at war drives the number down, faster the longer the war runs, though
+war alone never takes it below −35, the cost of one betrayal: deeper than that is earned only
+by betraying.
+Any good turn between two courts holds the fading off for a month. Below **−20** a court
+will sign nothing with you but a truce or the terms that end a war — those are never
+refused, because stopping a war has to stay possible however badly everyone has behaved.
 
 ---
 
@@ -143,10 +148,15 @@ exactly what the war has earned you:
 
 - **War score below ~17** — nothing has been earned. White peace only.
 - **Around 45** — a castle, or tribute and prisoners.
-- **Around 90** — two towns, or their submission as a vassal.
+- **75 or more** — their submission as a vassal. If they already hold vassals of their own they
+  cannot kneel, so you may instead make them release every one of them.
 
 Each demand costs points from that budget, and the package has to fit. You can always ask for
 less. You cannot ask for land without a territorial claim, however well the war has gone.
+
+Above 75 the AI stops accepting anything smaller: a victory that can take a kingdom's standing
+asks for it, rather than settling for tribute. Between about 65 and 75 tribute is still what a
+win is worth.
 
 Then the other side decides whether to sign, and that is exhaustion, not score. A realm at
 Fresh will refuse a white peace even while losing.
@@ -183,8 +193,9 @@ hegemon stops being one.
 
 Three routes:
 
-1. **At the peace table**, at war score 90 — submission is the top rung of the ladder. You
+1. **At the peace table**, at war score 75 — submission is the top rung of the ladder. You
    have to be the stronger of the two: a war won on points does not make you able to hold them.
+   War score has no ceiling, so a crushing win can exceed 100.
 2. **Voluntarily**, when a cornered kingdom decides a protector is better than the war it is
    losing. It only asks a kingdom stronger than itself, and it counts the danger **you could
    actually take off its hands** — not an enemy you are bound by treaty not to fight, and not

@@ -217,7 +217,7 @@ namespace DiplomacyIntrigue.UI
                 sb.AppendLine("Nobody on this map holds a vassal.");
                 sb.AppendLine();
                 sb.AppendLine("Submission is imposed at a peace table once a war has earned "
-                              + DiplomacyConstants.PeaceCostVassalage.ToString("0")
+                              + PeaceTable.SubjugationCost.ToString("0")
                               + " points of war score, or offered by a kingdom that cannot survive"
                               + " alone. One vassal is all it takes to be a hegemon.");
             }
@@ -500,12 +500,24 @@ namespace DiplomacyIntrigue.UI
                         "Costs " + DiplomacyConstants.PeaceCostTributaryPact.ToString("0")
                         + " of a budget of " + budget.ToString("0") + "."));
 
-                if (budget >= DiplomacyConstants.PeaceCostVassalage)
-                    elements.Add(Element("vassalage", "Demand their submission",
-                        "Costs " + DiplomacyConstants.PeaceCostVassalage.ToString("0")
-                        + " of a budget of " + budget.ToString("0")
-                        + ". They keep their ruler and their lands, and owe us troops, tribute"
-                        + " and their foreign policy - and we owe them protection."));
+                // One rung with two faces at one price. Which face depends on what the loser has
+                // left to give: a hegemon cannot be made a vassal while it still holds vassals
+                // (hegemony is flat), so against one the demand is its sphere instead.
+                if (budget >= PeaceTable.SubjugationCost)
+                {
+                    if (Hegemony.IsHegemon(state, them))
+                        elements.Add(Element("dissolve", "Demand they release their vassals",
+                            "Costs " + DiplomacyConstants.PeaceCostSubjugation.ToString("0")
+                            + " of a budget of " + budget.ToString("0")
+                            + ". They keep their throne; every kingdom sworn to them goes free."
+                            + " We inherit none of them, and they stay in their own wars."));
+                    else
+                        elements.Add(Element("vassalage", "Demand their submission",
+                            "Costs " + DiplomacyConstants.PeaceCostSubjugation.ToString("0")
+                            + " of a budget of " + budget.ToString("0")
+                            + ". They keep their ruler and their lands, and owe us troops, tribute"
+                            + " and their foreign policy - and we owe them protection."));
+                }
 
                 if (ClaimRegistry.HasTerritorialClaim(state, us, them))
                     elements.Add(Element("land", "Demand land", "Choose a fief to annex."));
@@ -539,6 +551,9 @@ namespace DiplomacyIntrigue.UI
                         terms.ImposeVassalage = true;
                         terms.TributePerPeriod = DiplomacyConstants.AiDefaultTributePerPeriod;
                         break;
+                    case "dissolve":
+                        terms.DissolveHegemony = true;
+                        break;
                     case "land":
                         ShowLandTargets(state, war, us, them);
                         return;
@@ -558,7 +573,10 @@ namespace DiplomacyIntrigue.UI
         private static void ShowSueForPeace(ModState state, WarRecord war, Kingdom us, Kingdom them)
         {
             var budget = PeaceTable.BudgetFor(war, them);
-            var wanted = budget * DiplomacyConstants.PeaceWinnerMinimumShare;
+            // Read from the peace table, not recomputed here. The rule is no longer a simple
+            // share: it is a cliff at the subjugation rung, capped by what this particular war
+            // could actually produce, so an inlined copy would quote a figure the AI does not use.
+            var wanted = PeaceTable.MinimumAcceptable(state, war, them);
 
             var elements = new List<InquiryElement>
             {
@@ -567,8 +585,8 @@ namespace DiplomacyIntrigue.UI
                     + ". They want at least " + wanted.ToString("0") + ".")
             };
 
-            var gold = us.Leader?.Gold ?? 0;
-            var affordable = gold / 2 / 1000 * 1000;
+            // Sized by what the war earned, the same way the AI ladder sizes it.
+            var affordable = PeaceTable.LargestIndemnity(war, them, us);
             if (affordable >= 1000)
                 elements.Add(Element("gold", "Pay an indemnity of " + affordable + " denars",
                     "Worth " + (affordable / 1000f * DiplomacyConstants.PeaceCostPerThousandIndemnity)
@@ -578,12 +596,22 @@ namespace DiplomacyIntrigue.UI
                 "Worth " + DiplomacyConstants.PeaceCostTributaryPact.ToString("0")
                 + ". A tributary pays for peace and keeps everything else."));
 
-            if (budget >= DiplomacyConstants.PeaceCostVassalage)
-                elements.Add(Element("submit", "Submit as their vassal",
-                    "Worth " + DiplomacyConstants.PeaceCostVassalage.ToString("0")
-                    + ", the most this war can be worth to them. We keep our ruler, our lands"
-                    + " and our court, and owe troops, tribute and our foreign policy - and"
-                    + " they owe us protection. A patron who fails to protect loses the vassal."));
+            // The top rung, in whichever form we still have to give. While we hold vassals we
+            // cannot submit at all, so for a hegemon the sphere is the offer.
+            if (budget >= PeaceTable.SubjugationCost)
+            {
+                if (Hegemony.IsHegemon(state, us))
+                    elements.Add(Element("dissolve", "Release our vassals",
+                        "Worth " + DiplomacyConstants.PeaceCostSubjugation.ToString("0")
+                        + ". We keep our throne, our lands and our court; every kingdom sworn to us"
+                        + " becomes independent. They do not pass to " + them.Name + "."));
+                else
+                    elements.Add(Element("submit", "Submit as their vassal",
+                        "Worth " + DiplomacyConstants.PeaceCostSubjugation.ToString("0")
+                        + ", the most this war can be worth to them. We keep our ruler, our lands"
+                        + " and our court, and owe troops, tribute and our foreign policy - and"
+                        + " they owe us protection. A patron who fails to protect loses the vassal."));
+            }
 
             if (ClaimRegistry.HasTerritorialClaim(state, them, us))
                 elements.Add(Element("land", "Cede a holding", "Choose what to give up."));
@@ -609,6 +637,9 @@ namespace DiplomacyIntrigue.UI
                         case "tribute":
                             terms.ImposeTributaryPact = true;
                             terms.TributePerPeriod = DiplomacyConstants.AiDefaultTributePerPeriod;
+                            break;
+                        case "dissolve":
+                            terms.DissolveHegemony = true;
                             break;
                         case "submit":
                             terms.ImposeVassalage = true;

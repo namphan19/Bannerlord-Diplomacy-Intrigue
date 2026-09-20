@@ -207,22 +207,7 @@ namespace DiplomacyIntrigue.Core
             if (days < 1 || days > 400)
                 return "Pick between 1 and 400 days.";
 
-            // Everything the campaign's own daily handlers call, in the same order. This
-            // command used to drive only exhaustion and claims, which made it silently
-            // useless for anything living in the treaty upkeep - the hold on a vassalage
-            // sat unchanged through 20 simulated days and looked like a bug in the drift.
-            for (var day = 0; day < days; day++)
-            {
-                Power.DailySample(state);
-                WarExhaustion.DailyTick(state);
-                Hegemony.DailyTick(state);
-                TreatyRegistry.ExpireAndReward(state);
-                TreatyRegistry.PayDueTribute(state);
-                TreatyRegistry.PayPeaceDividends(state);
-                TrustRegistry.DailyTick(state);
-                ClaimRegistry.ExpireStale(state);
-                ClaimRegistry.ResolveFabrications(state);
-            }
+            for (var day = 0; day < days; day++) RunDailyUpkeep(state);
 
             var sb = new StringBuilder();
             sb.AppendLine("Ran " + days + " day(s) of upkeep. Campaign time unchanged.");
@@ -418,7 +403,7 @@ namespace DiplomacyIntrigue.Core
             if (parts.Count < 2)
                 return "Usage: diplomacy.offer_peace <winner> | <loser> | <terms>" + Environment.NewLine
                        + "  terms: white, prisoners, indemnity=5000, tribute=800, fief=<name>,"
-                       + " vassalage";
+                       + " vassalage, dissolve";
 
             var winner = FindKingdom(parts[0]);
             var loser = FindKingdom(parts[1]);
@@ -459,6 +444,12 @@ namespace DiplomacyIntrigue.Core
                 if (string.Equals(token, "prisoners", StringComparison.OrdinalIgnoreCase))
                 {
                     terms.ReleasePrisoners = true;
+                    continue;
+                }
+                if (string.Equals(token, "dissolve", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(token, "break_sphere", StringComparison.OrdinalIgnoreCase))
+                {
+                    terms.DissolveHegemony = true;
                     continue;
                 }
                 if (string.Equals(token, "vassalage", StringComparison.OrdinalIgnoreCase)
@@ -506,6 +497,31 @@ namespace DiplomacyIntrigue.Core
             return true;
         }
 
+        /// <summary>
+        /// One day of everything the campaign's own daily handlers call (TreatyBehavior,
+        /// CoreBehavior, WarExhaustionBehavior, ClaimsBehavior) - shared by tick_days and
+        /// ai_week so the two cannot drift apart again.
+        ///
+        /// Each used to carry its own partial list. tick_days drove only exhaustion and
+        /// claims, and a vassalage's Hold sat unchanged through 20 simulated days looking
+        /// like a bug in the drift; ai_week kept a partial list until the run-06 review, so
+        /// under it Hold never moved, treaties never paid their dividends and trust never
+        /// decayed. The order follows the handlers, but the engine does not promise the
+        /// order handlers fire in (CLAUDE.md §1), so nothing here may depend on it.
+        /// </summary>
+        private static void RunDailyUpkeep(ModState state)
+        {
+            Power.DailySample(state);
+            WarExhaustion.DailyTick(state);
+            Hegemony.DailyTick(state);
+            TreatyRegistry.ExpireAndReward(state);
+            TreatyRegistry.PayDueTribute(state);
+            TreatyRegistry.PayPeaceDividends(state);
+            TrustRegistry.DailyTick(state);
+            ClaimRegistry.ExpireStale(state);
+            ClaimRegistry.ResolveFabrications(state);
+        }
+
         private static readonly char[] CommaSeparator = { ',' };
         private static readonly char[] EqualsSeparator = { '=' };
 
@@ -536,14 +552,7 @@ namespace DiplomacyIntrigue.Core
                 // A week is seven days. Without this the upkeep never runs, so weariness
                 // never decays and claims never expire, and every kingdom stays
                 // permanently discouraged by wars it finished years ago.
-                for (var day = 0; day < 7; day++)
-                {
-                    Power.DailySample(state);
-                    WarExhaustion.DailyTick(state);
-                    ClaimRegistry.ExpireStale(state);
-                    ClaimRegistry.ResolveFabrications(state);
-                    TreatyRegistry.PayDueTribute(state);
-                }
+                for (var day = 0; day < 7; day++) RunDailyUpkeep(state);
 
                 foreach (var kingdom in Kingdom.All)
                 {
@@ -737,8 +746,16 @@ namespace DiplomacyIntrigue.Core
                 ? "would submit"
                 : "would not submit"));
 
-            if (!TreatyRegistry.CanSign(state, patron, candidate, Models.TreatyType.Vassalage, out var why))
+            // settlesWar exactly as AiDiplomacy.TrySubmit passes it. Without this the command
+            // answered "Make peace first" for every patron that is one of the candidate's
+            // attackers - which is the whole of the route added in design/04 §12.4.4, so the
+            // one diagnostic pointed at the new branch reported it as impossible.
+            var settlesWar = patron.IsAtWarWith(candidate);
+            if (!TreatyRegistry.CanSign(state, patron, candidate, Models.TreatyType.Vassalage,
+                    out var why, settlesWar: settlesWar))
                 sb.AppendLine("  but it could not be signed: " + why);
+            else if (settlesWar)
+                sb.AppendLine("  signing it would end their war.");
 
             return sb.ToString();
         }
@@ -754,7 +771,7 @@ namespace DiplomacyIntrigue.Core
             if (links.Count == 0)
                 return "Nobody holds a vassal. There are no hegemons - submission is imposed at"
                        + " a peace table above war score "
-                       + DiplomacyConstants.PeaceCostVassalage.ToString("0")
+                       + Diplomacy.PeaceTable.SubjugationCost.ToString("0")
                        + ", or offered voluntarily at submission value "
                        + DiplomacyConstants.AiSubmissionThreshold.ToString("0") + ".";
 
@@ -868,6 +885,47 @@ namespace DiplomacyIntrigue.Core
             return Hero.MainHero.Name + " is now " + Hero.MainHero.Age.ToString("0")
                    + (wasIll ? ", cured of the illness" : "")
                    + ", at full health. Test characters only.";
+        }
+
+        /// <summary>
+        /// Raises the campaign's fast-forward multiplier, so an unattended balance run covers
+        /// in-game years in a sitting rather than a day.
+        ///
+        /// The game's own ceiling is <c>UnstoppableFastForward</c>, which the bridge can already
+        /// select; what it cannot reach is <see cref="Campaign.SpeedUpMultiplier"/>, the factor
+        /// that mode is multiplied by. There is no vanilla console command for it (checked:
+        /// neither <c>campaign.set_speed_up_multiplier</c> nor <c>campaign.set_campaign_speed</c>
+        /// exists in v1.4.8), and no GABP tool exposes it.
+        ///
+        /// **Test only, and it distorts what it measures.** Everything the campaign does per
+        /// tick still happens, but the wall-clock budget per tick shrinks, so a machine that
+        /// cannot keep up drops frames rather than slowing the clock - battles resolve on the
+        /// map at a different rate from a played game. Use it to reach a world state, not to
+        /// measure how fast one arrives. Capped at 50 so a typo cannot wedge the session.
+        /// Usage: diplomacy.test_set_speed 10
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_set_speed", "diplomacy")]
+        public static string TestSetSpeed(List<string> args)
+        {
+            if (Campaign.Current == null) return NoCampaign;
+
+            var before = Campaign.Current.SpeedUpMultiplier;
+            if (args == null || args.Count == 0)
+                return "Current speed-up multiplier: " + before.ToString("0.##")
+                       + ", time control mode: " + Campaign.Current.TimeControlMode
+                       + ". Usage: diplomacy.test_set_speed <1-50>";
+
+            if (!float.TryParse(args[0], out var multiplier) || multiplier < 1f || multiplier > 50f)
+                return "Usage: diplomacy.test_set_speed <1-50>";
+
+            Campaign.Current.SpeedUpMultiplier = multiplier;
+            Campaign.Current.TimeControlMode = CampaignTimeControlMode.UnstoppableFastForward;
+
+            return "Speed-up multiplier " + before.ToString("0.##") + " -> "
+                   + Campaign.Current.SpeedUpMultiplier.ToString("0.##")
+                   + ", mode " + Campaign.Current.TimeControlMode
+                   + ". Test sessions only - this changes how much wall clock a tick gets,"
+                   + " not what the tick does.";
         }
 
         [CommandLineFunctionality.CommandLineArgumentFunction("strength", "diplomacy")]

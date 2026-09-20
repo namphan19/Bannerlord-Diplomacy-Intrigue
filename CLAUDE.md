@@ -79,7 +79,9 @@ would be a second source of truth for something already derivable, which is the 
 `diplomacy.tick_days` used to run exhaustion and claims but not the treaty upkeep, so a
 vassalage `Hold` sat unchanged through 20 simulated days and looked like a broken drift - the
 campaign's own daily handler had been calling it correctly all along. It now runs the full
-daily set. If a value looks frozen under a debug command, check the command before the system.
+daily set, and `ai_week` - which kept its own partial list until the run-06 review - shares
+it (`DebugCommands.RunDailyUpkeep`). If a value looks frozen under a debug command, check the
+command before the system.
 
 **Launch through `games_start`, not by hand.** A manually launched game writes no bridge
 record GABS recognises, so the bridge never connects even though the game is running fine.
@@ -121,9 +123,28 @@ main hero ill (`Campaign.MainHeroIllDays != -1`), then drains hit points daily u
 screen. Resetting the age alone does not cure an illness already under way - run 06 lost a
 session to exactly that. `diplomacy.test_set_player_age` resets both, for test saves only.
 
-**The game throttles hard when its window is unfocused** — roughly two in-game hours per real
-minute. A campaign day takes about an hour of real time in the background. This is why
-long-run verification cannot be done from a tool call.
+**A long run is reachable from a tool call, but only through `Campaign.SpeedUpMultiplier`.**
+`bannerlord.core.set_time_speed` picks the *mode* and tops out at `UnstoppableFastForward`; the
+factor that mode is multiplied by is a separate property, it defaults to **4**, and no vanilla
+console command sets it (`campaign.set_speed_up_multiplier` and `campaign.set_campaign_speed`
+both do not exist in v1.4.8). `diplomacy.test_set_speed <1-50>` sets it. Measured 2026-09-20 on
+`di_review_0919_b`, from consecutive weekly `[SNAPSHOT]` timestamps:
+
+| Multiplier | In-game days per real minute | One in-game year |
+|---|---|---|
+| 4 (default) | 3.0 | ~28 min |
+| 50 | 33 | ~2.5 min |
+
+It buys wall clock per tick, not a different tick: everything the campaign does still happens,
+so a machine that cannot keep up drops frames rather than slowing the clock. Use it to *reach* a
+world state, not to measure how fast one arrives.
+
+An earlier version of this entry said the game throttles to roughly two in-game hours per real
+minute when its window is unfocused, and that long-run verification therefore could not be done
+from a tool call. The second half is simply wrong, and the first half did not reproduce: at
+multiplier 4 the rate was 3.0 days/minute both before and after the window was brought to the
+foreground, identical to the decimal. Focus may still matter — the measurement window was short
+and the foreground may not have been held — but it is not the lever that was being looked for.
 
 ## 2. Build, deploy, verify
 
@@ -160,6 +181,11 @@ by the strength the formulas read, with its sphere), `diplomacy.hegemony` (every
 link's hold and the terms pulling it), `diplomacy.submission_value A | B`,
 `diplomacy.offer_peace <winner> | <loser> | vassalage, prisoners` (drives the real peace-table
 route rather than fabricating a treaty), `diplomacy.war_value`, `diplomacy.peace_allowance`.
+Test-only levers for reaching a state: `diplomacy.test_set_speed <1-50>` (see §1),
+`diplomacy.test_set_player_age`, `diplomacy.sign_treaty`. Note that `sign_treaty` with
+`Vassalage` calls `TreatyRegistry.Sign` **directly** — it skips `Hegemony.Submit`, so the link
+it makes has no starting Hold, no call to arms and no sibling reconciliation. It is a treaty
+row, not a submission, and it cannot be used to test anything downstream of `Submit`.
 
 Saves used for testing: `di_phase1_full` (richest state), `di_treaty_test`, `di_phase0_test`.
 
@@ -179,7 +205,8 @@ suspect and say so.
 **Save data is frozen once shipped.** Never renumber or reuse a `SaveableProperty` id, never
 reuse a save-definer local id for a different type, never change the definer base id
 (`2749100`, block `2749100`–`2749199`). `Treaty` currently uses ids **1-17** (14 `Hold`, 15
-defiance marks, 16 last defiance, 17 the revolt clock), so the next free id there is **18**. `ModState` uses
+defiance marks, 16 last defiance, 17 the revolt clock), so the next free id there is **18**. `TrustRecord` uses **1-6** (5 `LastPositiveChange`, 6
+`LastOfferRefused`), next free **7**. `ModState` uses
 properties **1-10** (10 is `PowerRecords`), and the definer's class ids run to **9** (`KingdomPower`). Adding a new savable type means a class definition
 **and** a container definition in `ModSaveDefiner` — a missing container definition crashes
 on save, which is the single most common way to break a Bannerlord mod. Bump

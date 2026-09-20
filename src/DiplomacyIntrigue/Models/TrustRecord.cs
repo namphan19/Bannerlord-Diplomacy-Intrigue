@@ -30,10 +30,22 @@ namespace DiplomacyIntrigue.Models
         /// grace window reads (<see cref="Diplomacy.DiplomacyConstants.TrustDecayGraceDays"/>).
         /// Kept separate from <see cref="LastChanged"/>, which moves on every change including
         /// the decay itself and so could never say when the pair last did each other a good
-        /// turn. Loads as campaign-start on pre-F2 saves, which simply means those records
-        /// decay normally.
+        /// turn. Loads as <c>CampaignTime.Zero</c> on pre-F2 saves - long before any campaign
+        /// began - which simply means those records decay normally.
         /// </summary>
         [SaveableProperty(5)] public CampaignTime LastPositiveChange { get; private set; }
+
+        /// <summary>
+        /// When <see cref="To"/> - always the player's realm - last turned down an offer from
+        /// <see cref="From"/> to kneel to it, read by the re-offer cooldown
+        /// (<see cref="Diplomacy.DiplomacyConstants.PlayerOfferRefusalCooldownDays"/>).
+        ///
+        /// Kept here rather than in a list of its own because the refusal already lands on
+        /// this record as a trust change; a separate saved type would need its own definer
+        /// entries for one timestamp. Loads as <c>CampaignTime.Zero</c> on older saves, so no
+        /// cooldown is running - at worst one offer repeated after loading.
+        /// </summary>
+        [SaveableProperty(6)] public CampaignTime LastOfferRefused { get; private set; }
 
         internal TrustRecord() { }
 
@@ -68,6 +80,8 @@ namespace DiplomacyIntrigue.Models
             Value = Clamp(Value + amount);
             LastChanged = CampaignTime.Now;
         }
+
+        internal void MarkOfferRefused() => LastOfferRefused = CampaignTime.Now;
 
         private static float Clamp(float v)
             => v < Diplomacy.DiplomacyConstants.TrustMin ? Diplomacy.DiplomacyConstants.TrustMin

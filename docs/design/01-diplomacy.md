@@ -224,17 +224,29 @@ trusts Battania" and the reverse are different facts.
 
 Trust gates alliances: below **−20** a kingdom will not sign anything but a truce with you.
 This is the durable punishment for treachery — not a relation penalty that decays in a
-season, but a reputation that follows the player for the rest of the campaign.
+season, but a reputation that outlasts it (since run 06 not forever; see below).
 
 > **Departure (run 06, the lead's F2 call): trust now decays.** The table above was written
 > for a value that never moved on its own, and run 06 showed where that ends: every record
-> saturated near +100 and the −20 floor never bound again. Trust now drifts toward 0 at
-> 0.05/day for any pair nobody is tending - both directions, so a grudge fades too, which
-> is the ledger's only way back from the bottom. A positive change suspends the decay for
-> 30 days, and a war pulls the pair's record *down*, harder each day it runs
-> (0.05 + 0.005·days at war). "Follows you for the rest of the campaign" is still true at
-> these rates - a −35 breach takes ~8 in-game years to forgive - just not literally forever.
+> saturated near +100 and the −20 floor never bound again. Trust now drifts toward 0 for
+> any pair nobody is tending: goodwill at 0.6/day (+100 empties in ~167 days, just under
+> two 84-day years - the lead's target), grudges a quarter as fast at 0.15/day, so a grudge
+> fades too - the ledger's only way back from the bottom - but treachery still outlasts a
+> season: a −35 breach from neutral keeps the victim under the −20 floor for ~100 days and takes ~2.8
+> years to forgive. A positive change suspends the decay for 30 days, and a war pulls the
+> pair's record *down*, harder each day it runs (0.6 + 0.01·days at war: ~74 over a median
+> 76-day war) - but **never below −35** (`TrustWarFloor`, the lead's call after the evening live
+> check, where an uncapped bleed pinned a pair at −100 for what would have been ~6 years under
+> the floor). −35 is what one broken treaty costs its victim: however long the war, it leaves
+> the sides no worse off than a betrayal would, ~100 days under the pact floor once peace is
+> made. Only a breach goes deeper. "Follows you for the rest of the campaign" is no longer true.
 > Constants un-tuned; run 07 is the first measurement.
+>
+> **The floor does not bind the terms that end a war** (the lead's call, 2026-09-19): tribute
+> or vassalage imposed at the peace table, and a vassal's defection to its attacker, sign
+> whatever the parties think of each other - the reason the truce was always exempt. At the
+> rates above a war puts a neutral pair under the floor in ~27 days, so without this the
+> table could almost never impose a treaty.
 
 ### 4.2 Peace terms
 

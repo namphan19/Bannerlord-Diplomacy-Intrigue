@@ -114,10 +114,11 @@ Two decisions worth recording:
 
 **1.4 Diplomatic trust** ✅ **implemented** — one value per **ordered** kingdom pair, because
 "Vlandia trusts Battania" and the reverse are different facts and diverge sharply after a
-betrayal. Trust does not decay: relation already covers feeling that fades, so trust is
-reputation that follows a kingdom for the rest of the campaign. Below −20 nobody will sign
-anything but a truce, and a truce is never refused - stopping a war has to stay possible
-however badly the parties behaved.
+betrayal. Relation already covers feeling that fades; trust is reputation. It did not decay
+at all until run 06 showed it saturating - since then it drifts toward zero if untended
+(goodwill in ~2 years, grudges ~4x slower) and falls during a war (design 01 §4.1). Below −20
+nobody will sign anything but a truce or the terms that end a war, and those are never
+refused - stopping a war has to stay possible however badly the parties behaved.
 Code: `Diplomacy/TrustRegistry.cs`, `Models/TrustRecord.cs`.
 
 **Verified in a live campaign:**
@@ -289,8 +290,10 @@ one kingdom rises over others. Spec and the selection from the lead's source doc
 
 A hegemon is **derived, never declared**: any kingdom holding one active vassalage is one,
 several coexist by construction, and there is no title state to keep in sync. Three routes in
-- imposed at a peace table at war score 90, offered voluntarily by a cornered kingdom at
-submission value 55, or poached off a rival patron - and one new number, `Hold`, per link.
+- imposed at a peace table at war score 75, offered voluntarily by a cornered kingdom at
+submission value 50, or poached off a rival patron - and one new number, `Hold`, per link.
+A cornered kingdom may also kneel to the kingdom attacking it. Thresholds as of 2026-09-20; see
+[design/04 §13](design/04-hegemony.md#13-one-subjugation-rung-and-a-cliff-2026-09-20-after-run-07).
 
 | Piece | Code |
 |---|---|

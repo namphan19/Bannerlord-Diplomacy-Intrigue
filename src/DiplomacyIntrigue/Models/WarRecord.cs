@@ -103,7 +103,14 @@ namespace DiplomacyIntrigue.Models
                 DefenderExhaustion = Clamp(DefenderExhaustion + amount, 0f, 100f);
         }
 
-        internal void AddWarScore(float delta) => WarScore = Clamp(WarScore + delta, -100f, 100f);
+        // Unbounded, by the lead's call (design/04 §12.4.1): the effort a kingdom can pour into
+        // a war has no ceiling, so the number measuring it has none either. The bound lives on
+        // the demand side instead - PeaceTable.MinimumAcceptable caps what a victory can be
+        // spent on, because what a kingdom can give away is finite even when what it earned is
+        // not. Clamped to +/-100 until 2026-09-20, which made peace-table vassalage arithmetically
+        // unreachable: a winner wants half the score, so it could never want more than 50, and
+        // tribute at 65 always settled first.
+        internal void AddWarScore(float delta) => WarScore += delta;
 
         internal void AddCasualties(Kingdom sufferer, int count)
         {

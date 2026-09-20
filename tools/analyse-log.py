@@ -367,12 +367,15 @@ if events:
         if d.get("kind") == "clan_changed_kingdom":
             detail = d.get("detail", "?")
             by_detail[detail] += 1
-            if detail not in ("JoinAsMercenary", "LeaveAsMercenary", "LeaveByKingdomDestruction"):
+            # Not a political move: mercenary contracts, and a clan leaving because it or its
+            # kingdom was destroyed (ChangeKingdomActionDetail, v1.4.8).
+            if detail not in ("JoinAsMercenary", "LeaveAsMercenary",
+                              "LeaveByClanDestruction", "LeaveByKingdomDestruction"):
                 defect[(d.get("from"), d.get("to"))] += 1
     total = sum(by_detail.values())
     print(f"  clans changing kingdom: {total}"
           + ("  (" + ", ".join(f"{k}={v}" for k, v in by_detail.most_common()) + ")" if total else ""))
-    print(f"  real moves only (excl. mercenary/destruction): {sum(defect.values())}")
+    print(f"  real moves only (excl. mercenary, clan/kingdom destruction): {sum(defect.values())}")
     for (a, b), n in defect.most_common(12):
         print(f"    {a} -> {b}: {n}")
 

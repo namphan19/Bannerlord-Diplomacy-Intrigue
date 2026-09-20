@@ -32,6 +32,7 @@ namespace DiplomacyIntrigue.Core
         private const string EventPrefix = "[EVENT]";
         private const string KingdomPrefix = "[KINGDOM]";
         private const string LinkPrefix = "[LINK]";
+        private const string SubmitPrefix = "[SUBMIT]";
         private const string WarPrefix = "[WAR]";
         private const string RunPrefix = "[RUN]";
         private const string ConfigPrefix = "[CONFIG]";
@@ -61,6 +62,19 @@ namespace DiplomacyIntrigue.Core
             /// the peace *is* the submission (run 06, the lead's F3 decision).
             /// </summary>
             Defection = 5,
+            /// <summary>
+            /// A kingdom with no patron ended the war by kneeling to one of the kingdoms
+            /// attacking it - the peace *is* the submission, as with Defection, but there was
+            /// no bond to walk out of (design/04 §12.4.4). Kept apart from Defection so a
+            /// balance run can tell "changed sides" from "ran out of options".
+            /// </summary>
+            Submission = 6,
+            /// <summary>
+            /// A hegemon ordered two of its own vassals to stop fighting each other, because
+            /// one of them had just sworn to it while the war was still running
+            /// (design/04 §12.4.5). Always white, and always at the patron's cost in Hold.
+            /// </summary>
+            OverlordImposed = 7,
         }
 
         /// <summary>
@@ -312,6 +326,13 @@ namespace DiplomacyIntrigue.Core
                 Hegemony.CollectLinks(state, links);
                 for (var i = 0; i < links.Count; i++) Log.Info("Telemetry", LinkLine(state, links[i]));
 
+                foreach (var kingdom in Kingdom.All)
+                {
+                    if (kingdom.IsEliminated) continue;
+                    var line = SubmitLine(state, kingdom);
+                    if (line != null) Log.Info("Telemetry", line);
+                }
+
                 for (var i = 0; i < state.Wars.Count; i++)
                 {
                     var war = state.Wars[i];
@@ -404,6 +425,65 @@ namespace DiplomacyIntrigue.Core
             Pair(line, "trustIn", others == 0 ? 0f : trustIn / others);
             Pair(line, "trustOut", others == 0 ? 0f : trustOut / others);
             Pair(line, "lastMove", AiDiplomacy.LastMove(k));
+            return line.ToString();
+        }
+
+        /// <summary>
+        /// The best submission this kingdom could offer anyone this week, and to whom.
+        ///
+        /// Exists to close a blind spot the threshold could not be tuned without.
+        /// `SubmissionValue` was only ever written to the log when a link actually formed, so
+        /// every run recorded its successes and nothing else: after run 07 the project knew two
+        /// submissions had cleared 55 at 58.4 and 58.9, and knew nothing at all about how many
+        /// had come close. Lowering the bar was therefore a guess about an unmeasured
+        /// distribution. This records the near-misses.
+        ///
+        /// Null for a kingdom that cannot submit at all - one that already answers to somebody,
+        /// or that holds vassals of its own - because there is no decision there to observe.
+        ///
+        /// **`wouldSubmit` reports the value, not the act.** It says the offer cleared the bar;
+        /// it does not say the kingdom took it. The AI makes at most one move a week and
+        /// seeking peace outranks submitting, so a kingdom with a qualifying offer can spend
+        /// its week on something else. Seen in the first smoke test of this record: Northern
+        /// Empire held a 51.2 offer in Winter 1085 (`wouldSubmit=true`) and no link formed,
+        /// because its move that week was `SoughtPeace`. The gates that `TrySubmit` adds on
+        /// top - the patron's willingness to take vassals, a refused player offer - are also
+        /// not applied here, deliberately: the point is to see the value distribution, and
+        /// `[KINGDOM] lastMove` beside it says what the kingdom actually did.
+        /// </summary>
+        private static string SubmitLine(ModState state, Kingdom candidate)
+        {
+            if (Hegemony.VassalageOf(state, candidate) != null) return null;
+            if (Hegemony.IsHegemon(state, candidate)) return null;
+
+            Kingdom best = null;
+            var bestValue = float.NegativeInfinity;
+            var considered = 0;
+
+            foreach (var patron in Kingdom.All)
+            {
+                if (patron == candidate || patron.IsEliminated) continue;
+                if (!TreatyRegistry.CanSign(state, patron, candidate, TreatyType.Vassalage, out _,
+                        settlesWar: patron.IsAtWarWith(candidate))) continue;
+
+                considered++;
+                var value = Hegemony.SubmissionValue(state, candidate, patron, out _);
+                if (value <= bestValue) continue;
+                best = patron;
+                bestValue = value;
+            }
+
+            if (best == null) return null;
+
+            var line = new StringBuilder(SubmitPrefix);
+            AppendWhen(line);
+            Pair(line, "candidate", candidate);
+            Pair(line, "bestPatron", best);
+            Pair(line, "value", bestValue);
+            Pair(line, "threshold", DiplomacyConstants.AiSubmissionThreshold);
+            Pair(line, "wouldSubmit", bestValue >= DiplomacyConstants.AiSubmissionThreshold);
+            Pair(line, "atWarWithBest", best.IsAtWarWith(candidate));
+            Pair(line, "patronsConsidered", considered);
             return line.ToString();
         }
 
