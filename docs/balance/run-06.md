@@ -161,6 +161,35 @@ through `TrustRecord.Decay`, which never feeds the grace clock; the record then 
 -51.0 -> -50.5 as designed. Still unverified: the grace window doing its job (needs a real
 clock), decay over months, and whether 0.05/day is the right rate.
 
+**Review follow-up (2026-09-19): the rates above were wrong by the length of a year.** The
+constant comments converted with 365-day years; a Bannerlord year is 84 days, so 0.05/day
+took ~24 years to empty a saturated record, not ~5.5, and the live session's "~74-95 after
+two years" was that slowness, not plausibility. The lead re-set the target and asked for
+the rest to be scaled from it:
+
+- Goodwill drifts at **0.6/day**: +100 to 0 in ~167 days, just under two years.
+- Grudges drift at **0.15/day**, a quarter as fast (the lead's choice over symmetric decay,
+  which would have lifted a -35 breach back over the pact floor in ~25 days). -35 is back
+  over -20 in ~100 days, fully forgiven in ~2.8 years; -100 takes ~8.
+- War bleeds **0.6 + 0.01 per day of war** - no lower than peacetime drift, or a friendly
+  pair would keep more goodwill by fighting. A median war (76 days) costs ~74; a full year
+  of war ~85. Chosen over a straight x12 of the old ramp, which cost ~216 per median war.
+  **Floored at -35** (`TrustWarFloor`), added after the evening live check found Vlandia and
+  Southern Empire pinned at -100 by day ~94 - at the grudge rate ~6 years under the pact floor,
+  a long war priced like six betrayals. -35 is one broken treaty's cost to its victim: a war,
+  however long, leaves the sides ~100 days under the pact floor after the peace and ~2.8 years
+  from zero, and only a breach goes deeper. (-20, the pact floor itself, was the lead's first
+  pick and was dropped because one grudge tick after the peace would have cleared it.)
+- Grace stays at 30 days: it measures how often a tended pair does each other a good turn,
+  not how fast trust drains.
+- A pair at war with no record, or with a record peace had drifted to exactly 0, used to
+  be skipped; it now bleeds like any other (a missing record is read as 0 everywhere else).
+
+The faster war bleed exposed a latent rule: `CanSign`'s trust floor also applied to the
+terms that *end* a war, so a neutral pair ~27 days into a war could no longer be made to
+pay tribute or kneel at the peace table. The lead exempted those terms, as the truce always
+was - see F4's follow-up. Nothing in this paragraph has been run in game.
+
 ### F3 — A patron's protection is blocked exactly when a vassal is dying
 
 **Evidence.** Battania (Khuzait's vassal) was attacked four times before its elimination on
@@ -208,6 +237,26 @@ the cascade failures the mod exists to remove. Instead the *vassal* gets the exi
 Not verified in game: needs a live war against a neglected vassal; the analyser now prints
 `defection` events in the hegemony timeline.
 
+**Review follow-up (2026-09-19).** Four corrections to the route above, none run in game:
+
+- The old bond now goes through `Hegemony.Renounce`, not `TreatyRegistry.Break` alone: any
+  pact between vassal and old patron is repudiated with it - the run-04 revolt bug, which
+  would also have vetoed the casus belli the breach hands the vassal.
+- **No vassal of a vassal, anywhere.** `CanSign` refused a hegemon submitting but not a
+  vassal *taking* one, so this route could hand a vassal to an attacker that was itself a
+  vassal (and the peace table could do the same for a defiant vassal that won). `CanSign`
+  now refuses both halves. Chains already in a save are cut at session launch - the lower
+  link, dissolved with no penalty (`Hegemony.DissolveChains`, event
+  `vassal_chain_dissolved`), the lead's call.
+- The gates live in one place, `AiDiplomacy.CanDefectTo`, and the player's Accept asks them
+  again: the inquiry stays open while the campaign moves, and the first version made peace
+  even when the war or the old bond was already gone. Both inquiry callbacks now catch.
+- The losing-war gate reads its own `DefectionLosingScore` (20, unchanged) rather than the
+  peace table's `PeaceWhitePeaceOnlyBelow`, so tuning one no longer moves the other.
+- A refused offer - defection or voluntary submission - is not repeated for 42 days
+  (`PlayerOfferRefusalCooldownDays`, stamped on `TrustRecord.LastOfferRefused`, save id 6);
+  before this the weekly evaluation re-asked every week at -5 trust a time.
+
 ### F4 — Bug: the peace table accepts tribute a vassal cannot pay
 
 **Evidence.** Three warnings, e.g. `Could not impose the tributary pact: Battania answers to Khuzait
@@ -226,6 +275,13 @@ The same check covers `ImposeVassalage`, which had the same gap for the conditio
 checks did not name (a loser already holding vassals, the trust floor, either side being a
 vassal forbidden to treat with outsiders); the patron and strength checks keep their better
 messages.
+
+**Review follow-up (2026-09-19).** The parameter is now `settlesWar`, and it also lifts the
+trust floor: a term that ends a war is exempt from it, as the truce always was (the lead's
+call). The floor had always voided imposed terms silently after the peace; with F2's war
+bleed it would have bound after about a month of any war, leaving the table unable to impose
+a treaty at all. Tribute and vassalage imposed at the table, and a defection's vassalage, all
+sign with it. Voluntary treaties still face the floor.
 
 ### F5 — Greed was never reached
 

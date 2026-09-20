@@ -1,118 +1,126 @@
-# Status — 2026-09-19
+# Status — 2026-09-20
 
 Point-in-time state. [CLAUDE.md](../CLAUDE.md) holds the things that are always true; this
 file holds what changes. Update it when you finish a chunk of work.
 
 Module version 0.1.0. Save schema **v4**, definer base id **2749100**.
 Save ids: `Treaty` 1-17, `ModState` 1-10, definer class ids to 9 (`KingdomPower`).
-Last completed measurement: **balance run 04** — [docs/balance/run-04.md](balance/run-04.md).
-**Run 06 is in progress** and is the first measurement of everything below.
+Last completed measurement: **balance run 07** — [docs/balance/run-07.md](balance/run-07.md).
 
-## Start here — handoff, 2026-09-17
+## Start here — handoff, 2026-09-20
 
-Branch **`feature/hegemony-structural-fixes`**, on top of `development`
-(`30f3c99`), ready to merge. It changes Phase 1 in four layers, each with its own section under
-"What to do next" and each verified piecewise in a live game but **not yet measured in a run**:
+Branch **`feature/run-06-fixes`**, off `development`, committed and pushed on 2026-09-20 (see
+`git log`). It carries three layers of work, and the third has only been smoke-tested:
 
-| Layer | What changed | Section | Spec |
+| Layer | What it is | Where | Run in a game? |
 |---|---|---|---|
-| 1. Hegemony structure | A patron is actually called to defend its vassal; submission reads the patron's ability to protect; withheld tribute is defiance; resentful vassals revolt together; poaching checks before it breaks | §3 | [design/04](design/04-hegemony.md) §10a |
-| 2. Strength read properly | Symmetric (log2) fear; the revolt line moves with the vassal's strength; the peace table cannot impose vassalage on a stronger loser; `diplomacy.strength` | §3b | design/04 §10a |
-| 3. Power (the lead's design) | Ambition, coalitions that deter and hold, greed and annexation through war, elimination handled, smoothed strength saved as `KingdomPower` | §3c | [design/06](design/06-power.md) |
-| 4. Telemetry for unattended runs | `[RUN]/[CONFIG]/[KINGDOM]/[LINK]/[WAR]/[EVENT]` records, yearly reports, multi-log analyser | §3d | — |
+| Run-06 follow-ups | F2 trust decay, F3 defection, F4, F5 greed, plus the branch review fixes | [balance/run-06.md](balance/run-06.md) | yes — live checks of 2026-09-19 |
+| **§12** — the vassalage design | unbounded war score, the dissolution rung, submission to an attacker, sibling reconciliation | [design/04 §12](design/04-hegemony.md#12-the-vassalage-drought-and-the-design-that-answers-it-2026-09-20) | **yes — run 07** |
+| **§13** — one subjugation rung and a cliff | merged rung at 70, demand is a cliff at 75, reachable ceiling, indemnity fix, threshold 50, `[SUBMIT]` telemetry | [design/04 §13](design/04-hegemony.md#13-one-subjugation-rung-and-a-cliff-2026-09-20-after-run-07) | **smoke-tested only** — 2 years, 0 errors; not a measured run |
 
-**Run 06, what exists so far** (analyse with `python tools/analyse-log.py <logs in order>`):
+### The headline: the drought is over
 
-| Part | Campaign dates | Where | Notes |
-|---|---|---|---|
-| 1 | Winter 1136 → Summer 8, 1139 | [balance/run-06-part1.log](balance/run-06-part1.log) | GABS session from `di_phase1_full`; old telemetry only |
-| 2 | Summer 8, 1139 → Summer 1, 1140 | [balance/run-06-part2.log](balance/run-06-part2.log) | from `di_run06_mid`; old telemetry only |
-| 3 | Summer 1, 1140 → Winter 1153 and **still running** | [balance/run-06-part3-interim.log](balance/run-06-part3-interim.log) (copy taken at Winter 9, 1153; the live file is `Documents\...\Logs\diplomacy-intrigue-20260917-174501.log`) + yearly reports in `Reports\` | the lead's unattended session from `di_run06_resume` (that save now holds the lead's checkpoint from about Spring 1146), launcher-hosted, no GABS, no BirthAndDeath; full new telemetry |
+Before this work, [vassalage-absence-2026-09-19.md](balance/vassalage-absence-2026-09-19.md)
+recorded **zero vassal links in ~6 in-game years**, and zero peace-table vassalage in the entire
+history of the project.
 
-**The interim balance analysis is [docs/balance/run-06.md](balance/run-06.md)** — acceptance numbers,
-seven ranked findings with evidence and candidate fixes, a mechanism checklist, and the steps to
-finish. Read it before touching any constant. Its headline: the saturated hegemony collapsed as
-predicted; two of Khuzait's vassals were eliminated because truces and the one-step cascade guard
-blocked their patron's defence; hegemony stayed small and lapsed at term; greed was never reached;
-total war returned in bursts (28.5% of weeks); trust saturated at 100; and a peace-table bug lets a
-winner be promised tribute a vassal cannot pay.
+**Run 07** — a fresh campaign from Summer 1, 1084 to Spring 1, 1105, **20.8 in-game years, 100
+wars, 0 errors, 0 warnings** — produced **seven links through all four routes**:
 
-Earlier notes from the live monitor, kept for context:
-- §3b's prediction held exactly: Khuzait revolted after 30 days at breaking point and four
-  vassals rose with it; Northern Empire's seven-vassal sphere was gone within ten months.
-- New spheres formed around Western Empire, then Khuzait (which poached Northern Empire).
-- A coalition answered Southern Empire against Khuzait, the strongest kingdom.
-- **Northern Empire was eliminated on Winter 5, 1140** — the first elimination in any run. Its
-  wars closed `endedBy=Eliminated` and its vassalage collapsed, with zero errors: the
-  `KingdomDestroyedEvent` path works in real play, not only when forced.
-- Greed has not triggered naturally: no kingdom has reached a quarter of the world's strength.
+| Route | Count | Start Hold |
+|---|---|---|
+| `imposed` (peace table) | 3 | 35 |
+| `submitted_to_attacker` | 2 | 45 |
+| `voluntary` | 1 | 60 |
+| `defection` (F3) | 1 | 45 |
 
-**What the next person does:**
-1. When the lead stops part 3, finish [run-06.md](balance/run-06.md) using its §8 checklist:
-   replace the interim log, rerun the analyser, update the numbers, answer whether greed was ever
-   reached. Parts 1-2 have no `[KINGDOM]`/`[EVENT]` records.
-2. Decide the deferred review items with the lead (end of §3): trust as a grim trigger, the
-   weariness gate that never binds, vassals of one patron at war with each other, a hegemon
-   paying tribute to its own vassal. Plus run 06's own design questions: F1 (alliances embolden
-   as well as deter), F2 (trust saturating), F3 (protection blocked by truce/cascade), F5/F6
-   (greed unreachable, hegemony quiet).
-3. Then Phase 2 (§4).
+It also ran, for the first time ever: **F3 defection end to end**, a **full vassal lifecycle**
+(kneel → Hold erosion → defiance marks → revolt → independence → choose a new patron → defect),
+and a **hegemon losing its vassal by erosion alone** — which is what §12.4.6 predicted would
+happen without any dissolve-on-defeat rule.
 
-**Branch `feature/run-06-fixes`** (2026-09-18, off development) carries the run-06 follow-ups.
-F4 and the two analyser caveats from §7 were the non-decision part; the lead has since
-called the design questions, and they are implemented here too:
+The §12.4.1 band table was predicted from arithmetic and then **measured**: tribute below war
+score 130, subjugation above it, with a settlement at 122.4 sitting 3.8 points inside the
+boundary.
 
-- **F4** (fixed): `IsDemandable` refuses tribute/vassalage demands `CanSign` could never
-  honour — details in run-06.md F4. Analyser: `theirSupport` counted directly; mercenary
-  clan moves separated from real defections.
-- **F1** (lead: leave it): alliance embolden/deter unchanged, keep observing.
-- **F2** (implemented): trust now decays — `TrustRegistry.DailyTick` drifts every record
-  toward zero in peace (0.05/day), a positive change suspends decay for 30 days
-  (`TrustRecord.LastPositiveChange`, save id 5 — old saves decay normally), and a war
-  pulls the pair's record *down*, harder each day it runs (0.05 + 0.005·days). All
-  un-tuned.
-- **F3** (implemented): a neglected vassal may kneel to its attacker — `Hegemony.Defect`,
-  reached through `AiDiplomacy.TryDefectToAttacker` after the ordinary peace routes. The
-  old bond is broken **by the patron** (its breach, its name in every court), siblings
-  take the secession-contagion Hold hit, and the new patron is called into the vassal's
-  other defensive wars the same day. Gates: Hold under 40, defender in a war going
-  against it (score ≥ 20), patron not fighting that aggressor, `IsStrongEnoughToHold`,
-  `WouldTakeVassals`, and `CanSign` with the old link set aside — truce/cascade rules are
-  not bypassed, the vassal just has an exit when they bind. Player-led attackers are asked.
-- **F5** (implemented): `GreedStartsAtDominance` 2.0 → 1.25, so run 06's peak (~1.76)
-  yields greed 0.5 — annexation reachable only at the extreme. Un-tuned.
+### What §13 changed, and why it is the risk
 
-**Live check 2026-09-19** (~2 in-game years on `di_run06_resume` via GABS — full write-up:
-[docs/balance/live-2026-09-19.md](balance/live-2026-09-19.md)):
+The lead's calls after reading run 07. All of it builds clean and passes LoadProbe, and a
+**two-year smoke test ran with 0 errors** (see design/04 §13.7). That test showed the code runs; it
+answered none of the questions that make it a measured run.
 
-- F2 decay verified to the decimal, peace and war-ramped; it also caught a real bug —
-  decay on a *negative* record stamped the grace clock through `Add` and froze itself.
-  Fixed via `TrustRecord.Decay` (commit `8251c3b`), re-verified.
-- F5 verified reachable: Vlandia held greed 0.38-0.48 all session.
-- F1, call-to-arms, peace table, dormant lapse, vanilla takeover, save-compat all observed
-  working.
-- **F3's gap reproduced live**: SE ate four defensive wars while its patron was
-  treaty-bound to every attacker — `protection` read 0.0 for two years, Hold never neared
-  40, defection could never fire, and the patron later fought *alongside* the vassal's
-  predator then declared on the ex-vassal itself. "Legal neglect" is invisible to the
-  formula — open design call, options in the session doc.
-- All seven peace endings were white peace; the concession ladder has still never paid
-  through the table (winner exhausted by the time the loser listens). Open question there
-  too.
+- **The two top rungs merged** into `PeaceCostSubjugation = 70` (package 75). A free kingdom
+  gives up independence, a hegemon gives up its sphere; the two can never both apply.
+- **The demand is a cliff at 75.** Above that score the winner asks for the loser's standing
+  rather than the tribute half the score would have bought. This also closed the open 12b
+  question — a cliff is symmetric, so which side reaches the table first no longer decides
+  whether a kingdom loses its independence.
+- **The ceiling now describes what is reachable** (`DearestDemandable`). The old constant
+  ceiling was wrong and run 07 proved it: a **225.6-point victory ended in a white peace**
+  because the loser already had a patron, so nothing on the table could reach the demand.
+- **The indemnity rung was dead** — 0 of 100 settlements used it — and is now sized from the war
+  score instead of the treasury.
+- **`AiSubmissionThreshold` 55 → 50**, and a new weekly **`[SUBMIT]`** record so the next run has
+  the near-miss distribution this decision was made without.
 
-**Traps found this session** (the always-true ones are in CLAUDE.md §1):
-- GABS's own `Lib.GAB` crashed the game on a cancelled connection. Unattended runs launch with
-  `pwsh ./scripts/play.ps1 -Without BirthAndDeath` and no GABS.
-- The test hero on these saves dies of old age by illness; `diplomacy.test_set_player_age 35`
-  cures it (already applied to `di_run06_resume`).
-- Only `di_phase1_full`, `di_run06_mid` and `di_run06_resume` are run 06 saves; never save over
-  `di_phase1_full`.
-- The Kingdom-screen UI (the UI team's `DiplomacyItemMixin`) does not show power, greed or the
-  new call-to-arms duty yet.
-- A GABS session at 4x re-pauses itself whenever an encounter opens on the player party —
-  the ready-blocker is not clickable through the bridge. Park the hero inside a settlement
-  (`bannerlord_party_enter_settlement`) to run unattended; ~3 in-game days per real minute.
-  `bannerlord_core_get_time_speed` + `check_blockers` diagnose a silent pause.
+**The risk to watch:** run 07 settled 18 tributary pacts and 13 of them were at score 75 or
+more. The cliff is expected to convert most of those into subjugations, which multiplies the
+rate of imposed links several times over. The lead deliberately left
+`IsStrongEnoughToHold` without a strength margin, so each extra link is another chance to create
+one that is doomed at signing — run 07 §7.1 has the example (patron 1.2% stronger, Hold target 0
+from day one).
+
+### What to do next
+
+1. **Deploy and run 08** from `di_fresh_1084`. The five questions it has to answer are in
+   [design/04 §13.7](design/04-hegemony.md#137-what-the-next-run-must-answer).
+2. Decide the strength margin (§13.6) once run 08 shows how often the doomed-link case appears.
+3. Decide whether the indemnity *price* should bite (§13.4) — 8 points per 1,000 denars makes a
+   60-point indemnity 7,500 denars, trivial against a late-game treasury.
+4. Open a pull request into `development` once run 08 has answered §13.7.
+
+### Saves
+
+| Save | State |
+|---|---|
+| `di_fresh_1084` | **Summer 1, 1084, pristine start, hero parked in Myzea.** The run-08 baseline |
+| `di_run07_1104` | Winter 1104, end of run 07: 7 kingdoms, 2 hegemons |
+| `di_hegemony_1166` | Vlandia with 2 vassals, from the evolved save. The only state holding a sphere built at the peace table |
+| `di_review_0919_b` | Winter 15, 1162 — the old evolved world, pre-§12 |
+| `di_run06_resume`, `di_review_0919` | run 06 checkpoints |
+
+Never save over `di_phase1_full`.
+
+### Session notes, 2026-09-20
+
+**Corrections made to earlier claims.** All three are recorded where they were wrong, not
+quietly fixed:
+
+- CLAUDE.md said long-run verification could not be done from a tool call, and that the game
+  throttles to ~2 in-game hours per real minute when unfocused. Both wrong. The lever is
+  `Campaign.SpeedUpMultiplier` (default 4, no vanilla console command sets it);
+  `diplomacy.test_set_speed <1-50>` now does. Measured: **3.0 in-game days per real minute at
+  multiplier 4, 33 at 50.** Foregrounding the window changed nothing.
+- CLAUDE.md said bridge menu navigation past the root needs a human. `ui/click_widget` drives
+  the whole of character creation; only the intro video needs a key sent from outside.
+- It was claimed mid-session that war score bleeds heavily between a war's peak and its
+  settlement. Measured across run 07 the mean drop is **6.5 points**; the one 23-point case was
+  an outlier generalised too early.
+
+**Traps** (the always-true ones are in CLAUDE.md §1):
+- **GABS crashed the game again** — `CLR20r3`, P4 = `Lib.GAB` — on the `started_bridge_pending`
+  path. A restart that returned `started_connected` was stable for two hours.
+- **Parking the hero is not optional.** Crossing the map to a town, the party was stopped by
+  bandits **twice**; each halts the clock until something clears it.
+- `diplomacy.sign_treaty` with `Vassalage` calls `TreatyRegistry.Sign` **directly** — it skips
+  `Hegemony.Submit`, so no starting Hold, no call to arms, no sibling reconciliation. It is a
+  treaty row, not a submission, and cannot test anything downstream of `Submit`.
+- Two diagnostics were lying and are fixed: `diplomacy.submission_value` called `CanSign`
+  without `settlesWar` (so it reported the entire attacker route as impossible), and
+  `diplomacy.offer_peace` had no term for the dissolution rung.
+
+**New tools:** `diplomacy.test_set_speed`, `tools/peak-scores.py` (reconstructs peak war score
+per war from `[WAR]` telemetry), the `[SUBMIT]` weekly record.
 
 ---
 
@@ -164,7 +172,7 @@ Two things were added because of this, independent of the cause:
 | **1 — Diplomacy core (1.1–1.12)** | ✅ **code complete**, including submission and hegemony (1.9/1.10), the vanilla takeover (1.11) and power (1.12). Verified piecewise in live campaigns; run 04 accepted 1.1-1.11, run 06 is measuring the rework |
 | **2 — Court intrigue** | ⬜ spec written and reviewed, no code |
 | **3 — Espionage** | ⬜ spec written and reviewed, no code |
-| **4 — Integration, balance, release** | 🔄 runs 01-05 archived, run 04 was the Phase 1 acceptance run; run 06 measures 1.12 and the hegemony rework and is in progress |
+| **4 — Integration, balance, release** | 🔄 runs 01-06 archived; run 04 was the Phase 1 acceptance run. **Run 07** (2026-09-20) measured the §12 vassalage work on a fresh campaign and is the current reference — [balance/run-07.md](balance/run-07.md) |
 
 ### Phase 1, feature by feature
 
@@ -284,7 +292,10 @@ produced.
    actually changing hands, that may no longer hold — and a kingdom being destroyed is fine,
    the map collapsing to two is not.
 
-## What to do next
+## History — how each run changed the design
+
+Kept because the reasoning is load-bearing: several constants only make sense next to the run
+that produced them. **For what to do now, read the handoff at the top of this file.**
 
 ### Before run 04: the unbounded term in the war valuation, capped
 
