@@ -1,0 +1,9 @@
+<Prefab>
+  <Window>
+    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed"
+        HeightSizePolicy="CoverChildren" SuggestedWidth="150"
+        VerticalAlignment="Center" MarginRight="10"
+        Brush="ArmyManagement.Army.Tuple.Name"
+        IsVisible="@DiHasRowSummary" Text="@DiRowSummary" />
+  </Window>
+</Prefab>

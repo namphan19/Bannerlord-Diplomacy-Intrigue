@@ -41,7 +41,10 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
     {
         private string _rowSummary = string.Empty;
         private string _headline = string.Empty;
+        private string _pactValueText = string.Empty;
+        private bool _showPacts;
         private MBBindingList<DiplomacyActionVM> _actions = new MBBindingList<DiplomacyActionVM>();
+        private MBBindingList<DiPactRungVM> _pactRungs = new MBBindingList<DiPactRungVM>();
 
         protected DiplomacyItemMixinBase(T vm) : base(vm)
         {
@@ -98,6 +101,47 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             }
         }
 
+        /// <summary>
+        /// "What their court would sign": the one number their court decides on, and the
+        /// three rungs it is weighed against. Shown only at peace, only to the ruler -
+        /// the same gate as the action strip, since proposing is a foreign-policy act.
+        /// </summary>
+        [DataSourceProperty]
+        public string DiPactValueText
+        {
+            get => _pactValueText;
+            set
+            {
+                if (value == _pactValueText) return;
+                _pactValueText = value;
+                ViewModel?.OnPropertyChangedWithValue(value, nameof(DiPactValueText));
+            }
+        }
+
+        [DataSourceProperty]
+        public bool DiShowPacts
+        {
+            get => _showPacts;
+            set
+            {
+                if (value == _showPacts) return;
+                _showPacts = value;
+                ViewModel?.OnPropertyChangedWithValue(value, nameof(DiShowPacts));
+            }
+        }
+
+        [DataSourceProperty]
+        public MBBindingList<DiPactRungVM> DiPactRungs
+        {
+            get => _pactRungs;
+            set
+            {
+                if (value == _pactRungs) return;
+                _pactRungs = value;
+                ViewModel?.OnPropertyChangedWithValue(value, nameof(DiPactRungs));
+            }
+        }
+
         public override void OnRefresh() => Rebuild();
 
         private void Rebuild()
@@ -147,6 +191,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
             var war = state.OngoingWarBetween(us, them);
             DiHeadline = war != null ? WarHeadline(war, them) : PeaceHeadline(state, us, them);
+            DiPactRungs = new MBBindingList<DiPactRungVM>();
+            DiPactValueText = string.Empty;
+            DiShowPacts = false;
 
             if (war != null)
             {
@@ -154,6 +201,12 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 var score = war.ScoreFor(us);
                 DiRowSummary = ExhaustionBands.Name(band)
                                + "   " + (score >= 0f ? "+" : string.Empty) + score.ToString("0");
+            }
+            else
+            {
+                // The truce row's right edge: what this kingdom is to us, and the one
+                // number that matters most about it.
+                DiRowSummary = TruceSummary(state, us, them);
             }
 
             // Vanilla's own comparison rows, in vanilla's own order (Faction1, Faction2)
@@ -165,7 +218,10 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             // Foreign policy belongs to the ruler. A vassal still sees everything - looking
             // is free, and a vassal has every reason to watch - but acts through no button.
             if (player != null && us == player && player.Leader == Hero.MainHero)
+            {
                 BuildActions(state, us, them, war, actions);
+                if (war == null) BuildPactRungs(state, us, them);
+            }
 
             DiActions = actions;
         }
@@ -175,8 +231,12 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         private static string WarHeadline(WarRecord war, Kingdom them)
         {
             var band = ExhaustionBands.Of(war.ExhaustionOf(them));
-            var text = "War over " + war.Justification
-                       + "   legitimacy " + CasusBelli.Legitimacy(war.Justification).ToString("0.00");
+            // Wars the mod did not start have no claim on record - "over None" reads as
+            // a bug, so the honest phrasing is that no claim was ever pressed.
+            var text = war.Justification == CasusBelliType.None
+                ? "War with no claim on record"
+                : "War over " + war.Justification
+                  + "   legitimacy " + CasusBelli.Legitimacy(war.Justification).ToString("0.00");
 
             if (war.IsObligationWar && war.CalledBy != null)
                 text += "   called in by " + war.CalledBy.Name;
@@ -207,6 +267,95 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             }
 
             return parts.Count == 0 ? "No standing agreements." : string.Join("   -   ", parts.ToArray());
+        }
+
+        /// <summary>
+        /// The right edge of a peace row: what the kingdom is to us, and the one figure
+        /// that matters most about it - the hold of a bond, the tribute of a pact, the
+        /// time left on everything shorter. Vassalage wins over the other types because
+        /// it defines what the kingdom *is*; a tributary pact wins over a truce.
+        /// </summary>
+        private static string TruceSummary(ModState state, Kingdom us, Kingdom them)
+        {
+            var theirLink = Hegemony.VassalageOf(state, them);
+            if (theirLink != null && theirLink.DominantParty == us)
+                return "our vassal   hold " + Hegemony.HoldOf(theirLink).ToString("0");
+
+            var ourLink = Hegemony.VassalageOf(state, us);
+            if (ourLink != null && ourLink.DominantParty == them)
+                return "our patron   hold " + Hegemony.HoldOf(ourLink).ToString("0");
+
+            if (theirLink != null)
+                return "answers to " + theirLink.DominantParty.Name;
+
+            var tribute = state.ActiveTreatyBetween(us, them, TreatyType.TributaryPact);
+            if (tribute != null && tribute.TributePayer != null)
+                return tribute.TributePayer == them
+                    ? "tributary   " + tribute.TributeAmount + " to us"
+                    : "tributary   we pay " + tribute.TributeAmount;
+
+            foreach (var treaty in state.ActiveTreatiesOf(us))
+            {
+                if (!treaty.IsBetween(us, them) || treaty.Type == TreatyType.Truce) continue;
+                return ShortTreatyName(treaty.Type) + "   " + TermLeft(treaty);
+            }
+
+            return "independent";
+        }
+
+        private static string ShortTreatyName(TreatyType type)
+        {
+            switch (type)
+            {
+                case TreatyType.NonAggressionPact: return "non-aggression";
+                case TreatyType.DefensivePact: return "defensive pact";
+                case TreatyType.Alliance: return "alliance";
+                case TreatyType.TributaryPact: return "tributary";
+                case TreatyType.Vassalage: return "vassalage";
+                default: return "truce";
+            }
+        }
+
+        private static string TermLeft(Treaty treaty)
+        {
+            if (treaty.ExpiresOn == CampaignTime.Never) return "open-ended";
+            var days = (float)(treaty.ExpiresOn - CampaignTime.Now).ToDays;
+            return days < 84f ? days.ToString("0") + " days" : (days / 84f).ToString("0.0") + " years";
+        }
+
+        /// <summary>
+        /// The pact chooser's three rungs. One number decides all of them - their court's
+        /// own valuation, shown honestly - and each rung differs only in the bar it has
+        /// to clear and the price the court charges us for asking.
+        /// </summary>
+        private void BuildPactRungs(ModState state, Kingdom us, Kingdom them)
+        {
+            var theirValue = (int)AiDiplomacy.PactValue(state, them, us);
+            DiPactValueText = "Their court weighs a pact with us at " + theirValue;
+
+            var rungs = new MBBindingList<DiPactRungVM>();
+            AddRung(rungs, state, us, them, TreatyType.NonAggressionPact,
+                "Non-aggression pact", theirValue);
+            AddRung(rungs, state, us, them, TreatyType.DefensivePact,
+                "Defensive pact", theirValue);
+            AddRung(rungs, state, us, them, TreatyType.Alliance,
+                "Alliance", theirValue);
+            DiPactRungs = rungs;
+            DiShowPacts = true;
+        }
+
+        private void AddRung(MBBindingList<DiPactRungVM> rungs, ModState state, Kingdom us,
+            Kingdom them, TreatyType type, string name, int theirValue)
+        {
+            var canSign = TreatyRegistry.CanSign(state, us, them, type, out var reason);
+            var threshold = (int)DiplomacyMenu.ThresholdFor(type);
+            var cost = DiplomacyConstants.TreatyInfluenceCost(type);
+            var hint = canSign
+                ? cost + " influence. " + them.Name + " weighs this at " + theirValue
+                  + " and needs " + threshold + " - the same number their court would use."
+                : reason;
+            rungs.Add(new DiPactRungVM(name, theirValue, threshold, canSign, cost, hint,
+                () => DiplomacyMenu.ProposePact(state, us, them, type)));
         }
 
         // ----- comparison rows (vanilla's list, vanilla's row type) --------------
@@ -417,10 +566,10 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                         : TreatyEnforcement.Explain(state, us, them, block) + ".",
                     () => DiplomacyMenu.DeclareWar(state, us, them)));
 
-                AddPact(state, us, them, TreatyType.NonAggressionPact, "non-aggression pact", into);
-                AddPact(state, us, them, TreatyType.DefensivePact, "defensive pact", into);
-                AddPact(state, us, them, TreatyType.Alliance, "alliance", into);
-
+                // Pacts no longer live here as buttons: the "what their court would
+                // sign" chooser above the bars owns them, with the same valuation and
+                // the same propose path. If that prefab's XPath ever misses, the
+                // Ctrl+D diplomacy menu still proposes pacts.
                 var canTribute = AiDiplomacy.CanDemandTribute(state, us, them, out var whyTribute);
                 into.Add(new DiplomacyActionVM("Demand tribute",
                     canTribute
@@ -518,29 +667,6 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 + "% chance of being caught, which damages relations with every court and hands "
                 + "the target a claim of their own.",
                 () => DiplomacyMenu.ShowFabricationTargets(state, us, them)));
-        }
-
-        private void AddPact(ModState state, Kingdom us, Kingdom them, TreatyType type,
-            string name, ICollection<DiplomacyActionVM> into)
-        {
-            var allowed = TreatyRegistry.CanSign(state, us, them, type, out var reason);
-            var cost = DiplomacyConstants.TreatyInfluenceCost(type);
-
-            // Their own valuation, shown honestly: this is the number their court decides on.
-            var theirValue = AiDiplomacy.PactValue(state, them, us);
-            var threshold = DiplomacyMenu.ThresholdFor(type);
-
-            into.Add(new DiplomacyActionVM("Propose " + name,
-                allowed
-                    ? "Valued at " + theirValue.ToString("0")
-                      + " (need " + threshold.ToString("0") + ")."
-                    : "Cannot propose (see hint).",
-                cost, allowed && theirValue >= threshold,
-                allowed
-                    ? "They sign only if their own valuation clears the bar. The number shown is "
-                      + "the one their court uses - there is no separate figure for the player."
-                    : reason,
-                () => DiplomacyMenu.ProposePact(state, us, them, type)));
         }
 
         // ----- helpers ---------------------------------------------------------

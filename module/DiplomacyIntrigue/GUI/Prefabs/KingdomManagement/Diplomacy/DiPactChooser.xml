@@ -1,0 +1,95 @@
+<Prefab>
+  <Window>
+    <!-- "What their court would sign": one number, three rungs. The bar is their
+         court's own valuation of a pact with us; each rung is the same number against
+         a different threshold. Green when they would sign, red when they refuse, grey
+         when the pact is structurally impossible - text colours come from brushes and
+         cannot be bound, so the bar carries the verdict. -->
+    <ListPanel DataSource="{CurrentSelectedDiplomacyItem}"
+        WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
+        HorizontalAlignment="Center" MarginTop="8" MarginBottom="6"
+        IsVisible="@DiShowPacts" StackLayout.LayoutMethod="VerticalTopToBottom">
+      <Children>
+
+        <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
+            HeightSizePolicy="CoverChildren" HorizontalAlignment="Center"
+            Brush="ArmyManagement.Army.Tuple.Name" Brush.FontSize="20"
+            IsEnabled="false" Text="What their court would sign" />
+
+        <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
+            HeightSizePolicy="CoverChildren" HorizontalAlignment="Center" MarginTop="2"
+            Brush="ArmyManagement.Army.Tuple.Name" Brush.FontSize="16"
+            IsEnabled="false" Text="@DiPactValueText" />
+
+        <NavigatableListPanel DataSource="{DiPactRungs}" WidthSizePolicy="CoverChildren"
+            HeightSizePolicy="CoverChildren" HorizontalAlignment="Center" MarginTop="4"
+            StackLayout.LayoutMethod="VerticalTopToBottom" MinIndex="0" StepSize="1000">
+          <ItemTemplate>
+            <ListPanel WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
+                MarginTop="4">
+              <Children>
+
+                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="190"
+                    HeightSizePolicy="CoverChildren" VerticalAlignment="Center"
+                    Brush="Kingdom.ParagraphSmall.Text" Text="@Name" />
+
+                <FillBarHorizontalWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed"
+                    HeightSizePolicy="Fixed" SuggestedWidth="170" SuggestedHeight="22"
+                    VerticalAlignment="Center" Sprite="BlankWhiteSquare_9" Color="#00000040"
+                    FillWidget="FillWidget" InitialAmount="@BarValue"
+                    IsDirectionRightward="true" MaxAmount="100">
+                  <Children>
+                    <Widget Id="FillWidget" WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent"
+                        Sprite="BlankWhiteSquare_9" AlphaFactor="0.7" Color="@BarColor" />
+                  </Children>
+                </FillBarHorizontalWidget>
+
+                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="150"
+                    HeightSizePolicy="CoverChildren" VerticalAlignment="Center" MarginLeft="8"
+                    Brush="ArmyManagement.Army.Tuple.Name" Brush.FontSize="16" Text="@DetailText" />
+
+                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="90"
+                    HeightSizePolicy="CoverChildren" VerticalAlignment="Center"
+                    Brush="ArmyManagement.Army.Tuple.Name" Brush.FontSize="16" Text="@VerdictText" />
+
+                <Widget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="150"
+                    SuggestedHeight="34" VerticalAlignment="Center" MarginLeft="8">
+                  <Children>
+                    <HintWidget DataSource="{Hint}" WidthSizePolicy="StretchToParent"
+                        HeightSizePolicy="StretchToParent" Command.HoverBegin="ExecuteBeginHint"
+                        Command.HoverEnd="ExecuteEndHint" IsEnabled="false" />
+                    <ButtonWidget DoNotPassEventsToChildren="true" WidthSizePolicy="StretchToParent"
+                        HeightSizePolicy="StretchToParent" Brush="ButtonBrush2"
+                        UpdateChildrenStates="true" Command.Click="ExecutePropose"
+                        IsEnabled="@CanPropose">
+                      <Children>
+                        <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                            Brush="Kingdom.GeneralButtons.Text" Text="Propose" />
+                      </Children>
+                    </ButtonWidget>
+                  </Children>
+                </Widget>
+
+                <ListPanel DoNotAcceptEvents="true" DoNotPassEventsToChildren="true"
+                    WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
+                    HorizontalAlignment="Center" VerticalAlignment="Center" MarginLeft="6"
+                    IsVisible="@HasInfluenceCost">
+                  <Children>
+                    <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
+                        VerticalAlignment="Center" Brush="Kingdom.GeneralButtons.Text"
+                        IntText="@InfluenceCost" IsEnabled="@CanPropose" />
+                    <Widget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="17"
+                        SuggestedHeight="27" VerticalAlignment="Center"
+                        Sprite="SPKingdom\influence_icon_small" />
+                  </Children>
+                </ListPanel>
+
+              </Children>
+            </ListPanel>
+          </ItemTemplate>
+        </NavigatableListPanel>
+
+      </Children>
+    </ListPanel>
+  </Window>
+</Prefab>

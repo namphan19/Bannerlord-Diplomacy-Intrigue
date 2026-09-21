@@ -6,6 +6,7 @@ using DiplomacyIntrigue.Diplomacy;
 using DiplomacyIntrigue.Models;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Settlements;
+using TaleWorlds.Core;
 using TaleWorlds.Library;
 
 namespace DiplomacyIntrigue.Core
@@ -926,6 +927,42 @@ namespace DiplomacyIntrigue.Core
                    + ", mode " + Campaign.Current.TimeControlMode
                    + ". Test sessions only - this changes how much wall clock a tick gets,"
                    + " not what the tick does.";
+        }
+
+        /// <summary>
+        /// Opens the Kingdom screen the way the K key does - a KingdomState pushed onto the
+        /// game state manager. Test only: it exists because the GABP bridge cannot send a
+        /// keypress and indexes no map-bar widgets, so a UI pass on the Kingdom screen
+        /// otherwise needs a human hand on the keyboard.
+        ///
+        /// Vanilla only ever offers this screen to a player already in a kingdom - the K
+        /// key is bound to nothing otherwise. Pushing it anyway for an independent clan hit
+        /// a NullReferenceException inside KingdomState's own construction (2026-09-21):
+        /// caught here, but the state had already half-registered its native UI stack, and
+        /// the game crashed several minutes later (CLR20r3 / access violation) on a later
+        /// frame that assumed it. The guard below is the fix - refuse before touching
+        /// GameStateManager at all, rather than trusting the try/catch to make it safe.
+        /// Usage: diplomacy.test_open_kingdom
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_open_kingdom", "diplomacy")]
+        public static string TestOpenKingdom(List<string> args)
+        {
+            if (Campaign.Current == null) return NoCampaign;
+            if (Clan.PlayerClan?.Kingdom == null)
+                return "The player is not in a kingdom - vanilla never offers this screen here, "
+                       + "and pushing it anyway has crashed the game. Load onto a kingdom member first.";
+
+            try
+            {
+                var manager = GameStateManager.Current;
+                if (manager == null) return "No game state manager - not in a running game.";
+                manager.PushState(manager.CreateState<TaleWorlds.CampaignSystem.GameState.KingdomState>(), 0);
+                return "Kingdom screen pushed.";
+            }
+            catch (Exception ex)
+            {
+                return "Could not open the Kingdom screen: " + ex.Message;
+            }
         }
 
         [CommandLineFunctionality.CommandLineArgumentFunction("strength", "diplomacy")]

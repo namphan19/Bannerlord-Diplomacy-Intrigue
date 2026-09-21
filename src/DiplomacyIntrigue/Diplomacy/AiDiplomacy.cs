@@ -153,6 +153,16 @@ namespace DiplomacyIntrigue.Diplomacy
 
                 var white = new PeaceTerms(enemy, kingdom);
                 if (!PeaceTable.BothWouldSign(state, war, white, out _)) continue;
+
+                // A signature the formula cannot make for the player is an offer
+                // instead; one refused recently is not sent again, and the quiet war
+                // carries on either way.
+                if (IsPlayerRuled(enemy))
+                {
+                    if (TrustRegistry.RefusedOfferRecently(state, kingdom, enemy)) continue;
+                    return OfferPeaceToPlayer(state, war, kingdom, enemy, white);
+                }
+
                 if (!PeaceTable.Apply(state, war, white, out _, Telemetry.PeaceCause.Dormant)) continue;
 
                 Log.Info("AI", kingdom.Name + " and " + enemy.Name + " let a dormant war lapse after "
@@ -173,19 +183,32 @@ namespace DiplomacyIntrigue.Diplomacy
         private static bool TryBuyPeace(ModState state, WarRecord war, Kingdom kingdom,
             Kingdom enemy, float exhaustion)
         {
+            // A player who turned this kingdom's peace down recently is not asked again
+            // yet; the war carries on and the week looks elsewhere for a move.
+            if (IsPlayerRuled(enemy) && TrustRegistry.RefusedOfferRecently(state, kingdom, enemy))
+                return false;
+
             var white = new PeaceTerms(enemy, kingdom);
-            if (PeaceTable.BothWouldSign(state, war, white, out _)
-                && PeaceTable.Apply(state, war, white, out _))
+            if (PeaceTable.BothWouldSign(state, war, white, out _))
             {
-                Log.Info("AI", kingdom.Name + " sued for peace with " + enemy.Name
-                               + " at exhaustion " + exhaustion.ToString("0.0") + ": white peace.");
-                return true;
+                if (IsPlayerRuled(enemy))
+                    return OfferPeaceToPlayer(state, war, kingdom, enemy, white);
+
+                if (PeaceTable.Apply(state, war, white, out _))
+                {
+                    Log.Info("AI", kingdom.Name + " sued for peace with " + enemy.Name
+                                   + " at exhaustion " + exhaustion.ToString("0.0") + ": white peace.");
+                    return true;
+                }
             }
 
             foreach (var terms in ConcessionLadder(state, war, enemy, kingdom))
             {
                 if (!PeaceTable.IsDemandable(state, war, terms, out _)) continue;
                 if (!PeaceTable.BothWouldSign(state, war, terms, out _)) continue;
+
+                if (IsPlayerRuled(enemy))
+                    return OfferPeaceToPlayer(state, war, kingdom, enemy, terms);
 
                 if (PeaceTable.Apply(state, war, terms, out _))
                 {
@@ -209,12 +232,20 @@ namespace DiplomacyIntrigue.Diplomacy
         private static bool TryCollectPeace(ModState state, WarRecord war, Kingdom kingdom,
             Kingdom enemy, float exhaustion)
         {
+            // Same refusal window as the buying path: a player who turned this
+            // kingdom's offer down recently is left in their war, not asked again.
+            if (IsPlayerRuled(enemy) && TrustRegistry.RefusedOfferRecently(state, kingdom, enemy))
+                return false;
+
             var packages = new List<PeaceTerms>(ConcessionLadder(state, war, kingdom, enemy));
             for (var i = packages.Count - 1; i >= 0; i--)
             {
                 var terms = packages[i];
                 if (!PeaceTable.IsDemandable(state, war, terms, out _)) continue;
                 if (!PeaceTable.BothWouldSign(state, war, terms, out _)) continue;
+
+                if (IsPlayerRuled(enemy))
+                    return OfferPeaceToPlayer(state, war, kingdom, enemy, terms);
 
                 if (PeaceTable.Apply(state, war, terms, out _))
                 {
@@ -227,16 +258,122 @@ namespace DiplomacyIntrigue.Diplomacy
             }
 
             var white = new PeaceTerms(kingdom, enemy);
-            if (PeaceTable.BothWouldSign(state, war, white, out _)
-                && PeaceTable.Apply(state, war, white, out _))
+            if (PeaceTable.BothWouldSign(state, war, white, out _))
             {
-                Log.Info("AI", kingdom.Name + " let " + enemy.Name + " go at exhaustion "
-                               + exhaustion.ToString("0.0")
-                               + ": nothing collectable, white peace.");
-                return true;
+                if (IsPlayerRuled(enemy))
+                    return OfferPeaceToPlayer(state, war, kingdom, enemy, white);
+
+                if (PeaceTable.Apply(state, war, white, out _))
+                {
+                    Log.Info("AI", kingdom.Name + " let " + enemy.Name + " go at exhaustion "
+                                   + exhaustion.ToString("0.0")
+                                   + ": nothing collectable, white peace.");
+                    return true;
+                }
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// The one kingdom the formula may not sign for: a player-ruled realm is put the
+        /// offer instead. Everything up to this point is identical to the AI-vs-AI path -
+        /// same packages, same willingness math - only the signature itself is handed over.
+        /// </summary>
+        private static bool IsPlayerRuled(Kingdom kingdom)
+            => Hero.MainHero != null && kingdom.Leader == Hero.MainHero;
+
+        /// <summary>
+        /// Puts the package the AI just picked in front of the player. BothWouldSign still
+        /// decided which package was worth sending; the player's half of it is then asked
+        /// rather than computed, so a refusal is a real choice with a cost - the war goes
+        /// on and the refusal is remembered - not a rounding of the formula.
+        /// </summary>
+        private static bool OfferPeaceToPlayer(ModState state, WarRecord war, Kingdom offerer,
+            Kingdom player, PeaceTerms terms)
+        {
+            var weAreLoser = terms.Loser == player;
+
+            var body = "At war for " + war.DaysElapsed.ToString("0") + " days over "
+                       + war.Justification + "." + System.Environment.NewLine
+                       + "They are " + ExhaustionBands.Describe(war.ExhaustionOf(offerer)) + "."
+                       + System.Environment.NewLine + System.Environment.NewLine
+                       + (terms.IsWhitePeace
+                           ? "They ask for a white peace: the war simply ends and nothing"
+                             + " changes hands."
+                           : weAreLoser
+                               ? "Their terms, worth " + PeaceTable.CostOf(terms).ToString("0")
+                                 + " against what this war has earned them: "
+                                 + terms + "."
+                               : "They offer, worth " + PeaceTable.CostOf(terms).ToString("0")
+                                 + " against the " + PeaceTable.BudgetFor(war, player).ToString("0")
+                                 + " this war has earned us: " + terms + ".")
+                       + System.Environment.NewLine + System.Environment.NewLine
+                       + "Refusing keeps the war going, and they will remember the answer.";
+
+            try
+            {
+                InformationManager.ShowInquiry(new InquiryData(
+                    weAreLoser ? "Their terms for peace" : "Peace offer from " + offerer.Name,
+                    body,
+                    true, true,
+                    terms.IsWhitePeace ? "Make peace" : "Accept these terms", "Refuse",
+                    () =>
+                    {
+                        // Runs from the UI, outside the try below - a throw here would take the
+                        // game down with it.
+                        try
+                        {
+                            // Re-asked rather than trusted: the inquiry sat open while the
+                            // rest of the week's evaluation ran, so both signatures are
+                            // checked again before anything is signed in our name.
+                            if (!PeaceTable.BothWouldSign(state, war, terms, out var lapsed))
+                            {
+                                Log.Notify("The moment has passed - " + lapsed, Colors.Red);
+                                return;
+                            }
+
+                            if (!PeaceTable.Apply(state, war, terms, out var failed))
+                            {
+                                Log.Notify("Could not make peace: " + failed, Colors.Red);
+                                return;
+                            }
+
+                            Log.Notify("Peace signed with " + offerer.Name + ": " + terms + ".",
+                                Colors.Green);
+                            Log.Info("AI", "The player accepted " + offerer.Name
+                                           + "'s peace offer: " + terms + ".");
+                        }
+                        catch (System.Exception ex)
+                        {
+                            Log.Error("AI", "Accepting the peace offer failed.", ex);
+                        }
+                    },
+                    () =>
+                    {
+                        try
+                        {
+                            Log.Info("AI", "The player refused " + offerer.Name
+                                           + "'s peace offer (" + terms + ").");
+                            TrustRegistry.OnOfferRefused(state, offerer, player,
+                                "refused our peace offer");
+                            Log.Notify("We refused " + offerer.Name
+                                       + "'s terms. The war continues.", Colors.Red);
+                        }
+                        catch (System.Exception ex)
+                        {
+                            Log.Error("AI", "Refusing the peace offer failed.", ex);
+                        }
+                    }), true);
+            }
+            catch (System.Exception ex)
+            {
+                Log.Error("AI", "Could not show the peace offer.", ex);
+            }
+
+            // The week's move was spent putting the offer on the table: the only
+            // signature left is the player's.
+            return true;
         }
 
         /// <summary>

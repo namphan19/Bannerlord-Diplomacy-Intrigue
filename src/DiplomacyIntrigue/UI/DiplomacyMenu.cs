@@ -81,7 +81,7 @@ namespace DiplomacyIntrigue.UI
             });
         }
 
-        private static void WriteReport(ModState state)
+        internal static void WriteReport(ModState state)
         {
             try
             {
@@ -230,7 +230,7 @@ namespace DiplomacyIntrigue.UI
         /// What a hold figure means in behaviour, which is the only part of it a player can
         /// act on. Shown for rivals too - watching a bond fail needs no spies.
         /// </summary>
-        private static string HoldMeaning(ModState state, Treaty link)
+        internal static string HoldMeaning(ModState state, Treaty link)
         {
             var hold = Hegemony.HoldOf(link);
             if (hold >= DiplomacyConstants.HoldRenewThreshold) return "loyal; will renew when the term ends";
@@ -834,261 +834,262 @@ namespace DiplomacyIntrigue.UI
                 });
         }
 
+        /// <summary>
+        /// The peace table. One native multi-select checklist rather than a ladder of menus:
+        /// every term carries its price, the budget sits in the description, and ticking
+        /// nothing offers a white peace. Which table shows depends on who is winning - the
+        /// losing player reaches the same entry point and gets the offer checklist instead,
+        /// because vanilla's peace paths are ours now ([design 05](../../docs/design/05-vanilla-override.md)).
+        /// </summary>
         internal static void ShowPeace(ModState state, Kingdom us, Kingdom them)
         {
             var war = state.OngoingWarBetween(us, them);
             if (war == null) { Notify("We are not at war with " + them.Name + "."); return; }
 
-            var elements = new List<InquiryElement>
-            {
-                Element("white", "Offer a white peace", "Nothing changes hands."),
-                Element("allowance", "What has this war earned?",
-                    "The demand budget, the price of each term, and how close they are to signing."),
-            };
-
-            // Suing for peace. Necessary, not optional: vanilla's peace paths are ours now
-            // ([design 05](../../docs/design/05-vanilla-override.md)), so without this a
-            // losing player would have no way at all to end a war they cannot win.
+            var ourBudget = PeaceTable.BudgetFor(war, us);
             var theirBudget = PeaceTable.BudgetFor(war, them);
-            if (theirBudget > 0f)
-                elements.Add(Element("offer", "Offer terms to end this war",
-                    them.Name + " has earned " + theirBudget.ToString("0")
-                    + " at our expense and will not simply walk away."));
 
-            var budget = PeaceTable.BudgetFor(war, us);
-            if (budget > 0f)
-            {
-                elements.Add(Element("prisoners", "Demand our captives back",
-                    "Costs " + DiplomacyConstants.PeaceCostPrisoners.ToString("0")
-                    + " of a budget of " + budget.ToString("0") + "."));
+            if (ourBudget > 0f) { ShowDemandTable(state, war, us, them, ourBudget); return; }
+            if (theirBudget > 0f) { ShowOfferTable(state, war, us, them, theirBudget); return; }
 
-                if (budget >= DiplomacyConstants.PeaceCostTributaryPact)
-                    elements.Add(Element("tribute", "Demand tribute",
-                        "Costs " + DiplomacyConstants.PeaceCostTributaryPact.ToString("0")
-                        + " of a budget of " + budget.ToString("0") + "."));
-
-                // One rung with two faces at one price. Which face depends on what the loser has
-                // left to give: a hegemon cannot be made a vassal while it still holds vassals
-                // (hegemony is flat), so against one the demand is its sphere instead.
-                if (budget >= PeaceTable.SubjugationCost)
-                {
-                    if (Hegemony.IsHegemon(state, them))
-                        elements.Add(Element("dissolve", "Demand they release their vassals",
-                            "Costs " + DiplomacyConstants.PeaceCostSubjugation.ToString("0")
-                            + " of a budget of " + budget.ToString("0")
-                            + ". They keep their throne; every kingdom sworn to them goes free."
-                            + " We inherit none of them, and they stay in their own wars."));
-                    else
-                        elements.Add(Element("vassalage", "Demand their submission",
-                            "Costs " + DiplomacyConstants.PeaceCostSubjugation.ToString("0")
-                            + " of a budget of " + budget.ToString("0")
-                            + ". They keep their ruler and their lands, and owe us troops, tribute"
-                            + " and their foreign policy - and we owe them protection."));
-                }
-
-                if (ClaimRegistry.HasTerritorialClaim(state, us, them))
-                    elements.Add(Element("land", "Demand land", "Choose a fief to annex."));
-                else
-                    elements.Add(new InquiryElement("land", "Demand land", null, false,
-                        "We hold no territorial claim against " + them.Name
-                        + ", so no land can be demanded whatever this war has earned."));
-            }
-
-            Show("Peace with " + them.Name, PeaceTable.DescribeAllowance(state, war, us), elements, selected =>
-            {
-                var terms = new PeaceTerms(us, them);
-                switch ((string)selected)
-                {
-                    case "allowance":
-                        ShowText("Peace with " + them.Name, PeaceTable.DescribeAllowance(state, war, us));
-                        return;
-                    case "white":
-                        break;
-                    case "offer":
-                        ShowSueForPeace(state, war, us, them);
-                        return;
-                    case "prisoners":
-                        terms.ReleasePrisoners = true;
-                        break;
-                    case "tribute":
-                        terms.ImposeTributaryPact = true;
-                        terms.TributePerPeriod = DiplomacyConstants.AiDefaultTributePerPeriod;
-                        break;
-                    case "vassalage":
-                        terms.ImposeVassalage = true;
-                        terms.TributePerPeriod = DiplomacyConstants.AiDefaultTributePerPeriod;
-                        break;
-                    case "dissolve":
-                        terms.DissolveHegemony = true;
-                        break;
-                    case "land":
-                        ShowLandTargets(state, war, us, them);
-                        return;
-                }
-
-                TryPeace(state, war, terms, us);
-            });
+            Confirm("Peace with " + them.Name,
+                "Neither side has earned enough to ask for anything - a white peace is all this"
+                + " war can produce. Propose it and they sign if the war has worn them too.",
+                "Propose white peace",
+                () => TryPeace(state, war, new PeaceTerms(us, them), us));
         }
 
         /// <summary>
-        /// What we can put on the table to end a war we are losing. The same ladder the AI
-        /// walks, priced against what their victory has earned: below
-        /// <see cref="DiplomacyConstants.PeaceWinnerMinimumShare"/> of it they will not
-        /// bother, above their full score they are being offered more than the war justifies
-        /// and <c>IsDemandable</c> refuses it.
+        /// The winner's checklist. Every line is a thing this war can take from them, priced
+        /// in the same points <see cref="PeaceTable.CostOf"/> counts and gated by what the war
+        /// actually earned: anything beyond the budget stays visible but untickable, with its
+        /// reason, rather than disappearing.
         /// </summary>
-        private static void ShowSueForPeace(ModState state, WarRecord war, Kingdom us, Kingdom them)
+        private static void ShowDemandTable(ModState state, WarRecord war, Kingdom us,
+            Kingdom them, float budget)
         {
-            var budget = PeaceTable.BudgetFor(war, them);
-            // Read from the peace table, not recomputed here. The rule is no longer a simple
-            // share: it is a cliff at the subjugation rung, capped by what this particular war
-            // could actually produce, so an inlined copy would quote a figure the AI does not use.
-            var wanted = PeaceTable.MinimumAcceptable(state, war, them);
-
             var elements = new List<InquiryElement>
             {
-                Element("prisoners", "Release their captives",
-                    "Worth " + DiplomacyConstants.PeaceCostPrisoners.ToString("0")
-                    + ". They want at least " + wanted.ToString("0") + ".")
+                Element("prisoners",
+                    "Demand our captives back   -   " + Priced(DiplomacyConstants.PeaceCostPrisoners, budget),
+                    "They free every hero of ours they hold.")
             };
 
-            // Sized by what the war earned, the same way the AI ladder sizes it.
-            var affordable = PeaceTable.LargestIndemnity(war, them, us);
-            if (affordable >= 1000)
-                elements.Add(Element("gold", "Pay an indemnity of " + affordable + " denars",
-                    "Worth " + (affordable / 1000f * DiplomacyConstants.PeaceCostPerThousandIndemnity)
-                        .ToString("0") + " to them, plus their captives."));
+            // Sized by what the war earned, the same way the AI ladder sizes it, so a small
+            // win buys a small indemnity rather than none.
+            var indemnity = PeaceTable.LargestIndemnity(war, us, them);
+            if (indemnity >= 1000)
+                elements.Add(Element("indemnity",
+                    "Demand an indemnity of " + indemnity + " denars   -   "
+                    + Priced(indemnity / 1000f * DiplomacyConstants.PeaceCostPerThousandIndemnity, budget),
+                    "Gold now rather than land later."));
 
-            elements.Add(Element("tribute", "Agree to pay tribute",
-                "Worth " + DiplomacyConstants.PeaceCostTributaryPact.ToString("0")
-                + ". A tributary pays for peace and keeps everything else."));
+            elements.Add(Element("tribute",
+                "Impose tribute of " + DiplomacyConstants.AiDefaultTributePerPeriod
+                + " per period   -   " + Priced(DiplomacyConstants.PeaceCostTributaryPact, budget),
+                "They pay for peace and keep everything else."));
 
-            // The top rung, in whichever form we still have to give. While we hold vassals we
-            // cannot submit at all, so for a hegemon the sphere is the offer.
-            if (budget >= PeaceTable.SubjugationCost)
+            // One rung with two faces at one price: a hegemon cannot be made a vassal while it
+            // still holds vassals (hegemony is flat), so against one the demand is its sphere.
+            if (Hegemony.IsHegemon(state, them))
+                elements.Add(Element("subjugation",
+                    "Demand they release their vassals   -   "
+                    + Priced(DiplomacyConstants.PeaceCostSubjugation, budget),
+                    "They keep their throne; every kingdom sworn to them goes free."
+                    + " We inherit none of them, and they stay in their own wars."));
+            else
+                elements.Add(Element("subjugation",
+                    "Demand their submission   -   " + Priced(DiplomacyConstants.PeaceCostSubjugation, budget),
+                    "They keep their ruler and their lands, and owe us troops, tribute and their"
+                    + " foreign policy - and we owe them protection."));
+
+            var hasClaim = ClaimRegistry.HasTerritorialClaim(state, us, them);
+            var settlements = them.Settlements;
+            for (var i = 0; i < settlements.Count; i++)
             {
-                if (Hegemony.IsHegemon(state, us))
-                    elements.Add(Element("dissolve", "Release our vassals",
-                        "Worth " + DiplomacyConstants.PeaceCostSubjugation.ToString("0")
-                        + ". We keep our throne, our lands and our court; every kingdom sworn to us"
-                        + " becomes independent. They do not pass to " + them.Name + "."));
-                else
-                    elements.Add(Element("submit", "Submit as their vassal",
-                        "Worth " + DiplomacyConstants.PeaceCostSubjugation.ToString("0")
-                        + ", the most this war can be worth to them. We keep our ruler, our lands"
-                        + " and our court, and owe troops, tribute and our foreign policy - and"
-                        + " they owe us protection. A patron who fails to protect loses the vassal."));
+                var fief = settlements[i];
+                if (!fief.IsFortification) continue;
+                var price = fief.IsTown ? DiplomacyConstants.PeaceCostTown : DiplomacyConstants.PeaceCostCastle;
+                var affordable = price <= budget;
+                elements.Add(new InquiryElement(fief,
+                    "Annex " + fief.Name + (fief.IsTown ? " (town)" : " (castle)")
+                    + "   -   " + Priced(price, budget),
+                    null,
+                    hasClaim && affordable,
+                    !hasClaim
+                        ? "We hold no territorial claim against " + them.Name
+                          + ", so no land can be demanded whatever this war has earned."
+                        : affordable
+                            ? "Within what this war has earned."
+                            : "Costs " + price.ToString("0") + ", more than the " + budget.ToString("0")
+                              + " this war has earned."));
             }
 
-            if (ClaimRegistry.HasTerritorialClaim(state, them, us))
-                elements.Add(Element("land", "Cede a holding", "Choose what to give up."));
-            else
-                elements.Add(new InquiryElement("land", "Cede a holding", null, false,
-                    them.Name + " holds no territorial claim against us, so land cannot change"
-                    + " hands however badly this war goes."));
-
-            Show("Sue for peace with " + them.Name,
-                "Their war score is " + budget.ToString("0") + ". They will not settle for less than "
-                + wanted.ToString("0") + " while they are winning, and cannot take more than "
-                + budget.ToString("0") + " - that is what the war has earned them.",
-                elements, selected =>
+            ShowTerms("Peace with " + them.Name,
+                "At war for " + war.DaysElapsed.ToString("0") + " days over " + war.Justification
+                + ". They are " + ExhaustionBands.Describe(war.ExhaustionOf(them))
+                + ". This war has earned us " + budget.ToString("0")
+                + " - the most our terms may cost. Choose nothing for a white peace.",
+                elements, chosen =>
                 {
-                    var terms = new PeaceTerms(them, us) { ReleasePrisoners = true };
-                    switch ((string)selected)
+                    var terms = new PeaceTerms(us, them);
+                    foreach (var el in chosen)
                     {
-                        case "prisoners":
-                            break;
-                        case "gold":
-                            terms.IndemnityGold = affordable;
-                            break;
-                        case "tribute":
-                            terms.ImposeTributaryPact = true;
-                            terms.TributePerPeriod = DiplomacyConstants.AiDefaultTributePerPeriod;
-                            break;
-                        case "dissolve":
-                            terms.DissolveHegemony = true;
-                            break;
-                        case "submit":
-                            terms.ImposeVassalage = true;
-                            terms.TributePerPeriod = DiplomacyConstants.AiDefaultTributePerPeriod;
-                            break;
-                        case "land":
-                            ShowCedeTargets(state, war, us, them);
-                            return;
+                        if (el.Identifier is Settlement fief) { terms.FiefsCeded.Add(fief); continue; }
+                        switch (el.Identifier as string)
+                        {
+                            case "prisoners": terms.ReleasePrisoners = true; break;
+                            case "indemnity": terms.IndemnityGold = indemnity; break;
+                            case "tribute":
+                                terms.ImposeTributaryPact = true;
+                                terms.TributePerPeriod = DiplomacyConstants.AiDefaultTributePerPeriod;
+                                break;
+                            case "subjugation":
+                                if (Hegemony.IsHegemon(state, them)) terms.DissolveHegemony = true;
+                                else
+                                {
+                                    terms.ImposeVassalage = true;
+                                    terms.TributePerPeriod = DiplomacyConstants.AiDefaultTributePerPeriod;
+                                }
+                                break;
+                        }
                     }
-
                     TryPeace(state, war, terms, us);
                 });
         }
 
-        /// <summary>Our own fiefs, as things we could give up to end a war.</summary>
-        private static void ShowCedeTargets(ModState state, WarRecord war, Kingdom us, Kingdom them)
+        /// <summary>
+        /// The loser's checklist - what we can put on the table to end a war we are losing.
+        /// The same ladder the AI walks, priced against what their victory has earned: below
+        /// their floor they will not bother, above their full score the offer is more than the
+        /// war justifies and <see cref="PeaceTable.IsDemandable"/> refuses it.
+        /// </summary>
+        private static void ShowOfferTable(ModState state, WarRecord war, Kingdom us,
+            Kingdom them, float budget)
         {
-            var budget = PeaceTable.BudgetFor(war, them);
-            var elements = new List<InquiryElement>();
+            var wanted = PeaceTable.MinimumAcceptable(state, war, them);
 
+            var elements = new List<InquiryElement>
+            {
+                Element("prisoners",
+                    "Release their captives   -   worth " + DiplomacyConstants.PeaceCostPrisoners.ToString("0"),
+                    "We free every hero of theirs we hold."),
+                Element("tribute",
+                    "Agree to pay tribute   -   worth " + DiplomacyConstants.PeaceCostTributaryPact.ToString("0"),
+                    "A tributary pays for peace and keeps everything else.")
+            };
+
+            var indemnity = PeaceTable.LargestIndemnity(war, them, us);
+            if (indemnity >= 1000)
+                elements.Add(Element("indemnity",
+                    "Pay an indemnity of " + indemnity + " denars   -   worth "
+                    + (indemnity / 1000f * DiplomacyConstants.PeaceCostPerThousandIndemnity).ToString("0"),
+                    "Sized by what this war earned them."));
+
+            // The top rung, in whichever form we still have to give: while we hold vassals we
+            // cannot submit at all, so for a hegemon the sphere is the offer.
+            if (Hegemony.IsHegemon(state, us))
+                elements.Add(Element("subjugation",
+                    "Release our vassals   -   worth " + DiplomacyConstants.PeaceCostSubjugation.ToString("0"),
+                    "We keep our throne, our lands and our court; every kingdom sworn to us"
+                    + " becomes independent. They do not pass to " + them.Name + "."));
+            else
+                elements.Add(Element("subjugation",
+                    "Submit as their vassal   -   worth " + DiplomacyConstants.PeaceCostSubjugation.ToString("0"),
+                    "We keep our ruler, our lands and our court, and owe troops, tribute and our"
+                    + " foreign policy - and they owe us protection."));
+
+            var hasClaim = ClaimRegistry.HasTerritorialClaim(state, them, us);
             var settlements = us.Settlements;
             for (var i = 0; i < settlements.Count; i++)
             {
-                var settlement = settlements[i];
-                if (!settlement.IsFortification) continue;
-
-                var price = settlement.IsTown
-                    ? DiplomacyConstants.PeaceCostTown
-                    : DiplomacyConstants.PeaceCostCastle;
-                var withinWhatTheyEarned = price <= budget;
-
-                elements.Add(new InquiryElement(settlement,
-                    settlement.Name + (settlement.IsTown ? " (town)" : " (castle)"), null,
-                    withinWhatTheyEarned,
-                    withinWhatTheyEarned
-                        ? "Worth " + price.ToString("0") + " of their score of " + budget.ToString("0") + "."
-                        : "Worth " + price.ToString("0") + ", more than the " + budget.ToString("0")
-                          + " this war has earned them - they cannot take it at a peace table."));
+                var fief = settlements[i];
+                if (!fief.IsFortification) continue;
+                var price = fief.IsTown ? DiplomacyConstants.PeaceCostTown : DiplomacyConstants.PeaceCostCastle;
+                var affordable = price <= budget;
+                elements.Add(new InquiryElement(fief,
+                    "Cede " + fief.Name + (fief.IsTown ? " (town)" : " (castle)")
+                    + "   -   worth " + price.ToString("0"),
+                    null,
+                    hasClaim && affordable,
+                    !hasClaim
+                        ? them.Name + " holds no territorial claim against us, so land cannot"
+                          + " change hands however badly this war goes."
+                        : affordable
+                            ? "Within what this war has earned them."
+                            : "Worth " + price.ToString("0") + ", more than the " + budget.ToString("0")
+                              + " this war has earned them."));
             }
 
-            if (elements.Count == 0) { Notify("We hold nothing that could be ceded."); return; }
-
-            Show("Cede a holding", "Their war score: " + budget.ToString("0") + ".", elements, selected =>
-            {
-                var terms = new PeaceTerms(them, us) { ReleasePrisoners = true };
-                terms.FiefsCeded.Add((Settlement)selected);
-                TryPeace(state, war, terms, us);
-            });
+            ShowTerms("Sue for peace with " + them.Name,
+                "At war for " + war.DaysElapsed.ToString("0") + " days over " + war.Justification
+                + ". Their war score is " + budget.ToString("0") + ": they will not settle for"
+                + " less than " + wanted.ToString("0") + " and cannot take more than "
+                + budget.ToString("0") + ". Choose nothing to offer a white peace.",
+                elements, chosen =>
+                {
+                    var terms = new PeaceTerms(them, us);
+                    foreach (var el in chosen)
+                    {
+                        if (el.Identifier is Settlement fief) { terms.FiefsCeded.Add(fief); continue; }
+                        switch (el.Identifier as string)
+                        {
+                            case "prisoners": terms.ReleasePrisoners = true; break;
+                            case "indemnity": terms.IndemnityGold = indemnity; break;
+                            case "tribute":
+                                terms.ImposeTributaryPact = true;
+                                terms.TributePerPeriod = DiplomacyConstants.AiDefaultTributePerPeriod;
+                                break;
+                            case "subjugation":
+                                if (Hegemony.IsHegemon(state, us)) terms.DissolveHegemony = true;
+                                else
+                                {
+                                    terms.ImposeVassalage = true;
+                                    terms.TributePerPeriod = DiplomacyConstants.AiDefaultTributePerPeriod;
+                                }
+                                break;
+                        }
+                    }
+                    TryPeace(state, war, terms, us);
+                });
         }
 
-        private static void ShowLandTargets(ModState state, WarRecord war, Kingdom us, Kingdom them)
+        /// <summary>"costs 12 of 122" - a term's price against what the war earned.</summary>
+        private static string Priced(float cost, float budget)
+            => "costs " + cost.ToString("0") + " of " + budget.ToString("0");
+
+        /// <summary>
+        /// The multi-select wrapper both tables share. Ticking nothing is legal - that is the
+        /// white peace - so the minimum selection is zero and the affirmative button is always
+        /// live. The callback re-checks everything through <see cref="TryPeace"/> against the
+        /// world as it stands when it fires, never as it stood when the list was built.
+        /// </summary>
+        private static void ShowTerms(string title, string description,
+            List<InquiryElement> elements, Action<List<InquiryElement>> onChosen)
         {
-            var budget = PeaceTable.BudgetFor(war, us);
-            var elements = new List<InquiryElement>();
-
-            var settlements = them.Settlements;
-            for (var i = 0; i < settlements.Count; i++)
+            try
             {
-                var settlement = settlements[i];
-                if (!settlement.IsFortification) continue;
-
-                var price = settlement.IsTown
-                    ? DiplomacyConstants.PeaceCostTown
-                    : DiplomacyConstants.PeaceCostCastle;
-                var affordable = price <= budget;
-
-                elements.Add(new InquiryElement(settlement,
-                    settlement.Name + (settlement.IsTown ? " (town)" : " (castle)"), null, affordable,
-                    affordable
-                        ? "Costs " + price.ToString("0") + " of a budget of " + budget.ToString("0") + "."
-                        : "Costs " + price.ToString("0") + ", but this war has only earned "
-                          + budget.ToString("0") + "."));
+                MBInformationManager.ShowMultiSelectionInquiry(new MultiSelectionInquiryData(
+                    title, description, elements, true, 0, elements.Count,
+                    "Offer these terms", "Back",
+                    chosen =>
+                    {
+                        try
+                        {
+                            onChosen(chosen ?? new List<InquiryElement>());
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error("UI", "Peace-table action failed.", ex);
+                            Notify("Something went wrong - see the Diplomacy & Intrigue log.");
+                        }
+                    },
+                    _ => { }, "", false), true, false);
             }
-
-            if (elements.Count == 0) { Notify(them.Name + " holds nothing we could annex."); return; }
-
-            Show("Demand land", "Budget: " + budget.ToString("0") + ".", elements, selected =>
+            catch (Exception ex)
             {
-                var terms = new PeaceTerms(us, them);
-                terms.FiefsCeded.Add((Settlement)selected);
-                TryPeace(state, war, terms, us);
-            });
+                Log.Error("UI", "Could not show the peace table.", ex);
+            }
         }
 
         /// <summary>
