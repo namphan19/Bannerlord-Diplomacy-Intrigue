@@ -2,19 +2,22 @@
   <Window>
     <!-- Sibling after the game's own proposal list, inside the same bottom strip.
          DataSource narrows to the selected item; IsAcceptableItemSelected lives on the
-         panel VM and must not be asked for here (wrong data context, silently false). -->
+         panel VM and must not be asked for here (wrong data context, silently false).
+         A grid, not a horizontal stack: up to eight buttons can be up at once now, and a
+         single row of 230px columns would run off the pane. Four columns wraps them. -->
     <ListPanel DataSource="{CurrentSelectedDiplomacyItem}"
         WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
         HorizontalAlignment="Center" MarginTop="8"
         IsVisible="@DiHasHeadline">
       <Children>
-        <ListPanel DataSource="{DiActions}" WidthSizePolicy="CoverChildren"
+        <NavigatableGridWidget DataSource="{DiActions}" WidthSizePolicy="Fixed" SuggestedWidth="960"
             HeightSizePolicy="CoverChildren" HorizontalAlignment="Center"
-            StackLayout.LayoutMethod="HorizontalLeftToRight">
+            DefaultCellWidth="240" DefaultCellHeight="110" ColumnCount="4"
+            LayoutImp.VerticalLayoutMethod="TopToBottom">
           <ItemTemplate>
             <ListPanel WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
                 StackLayout.LayoutMethod="VerticalTopToBottom" MarginLeft="5" MarginRight="5"
-                VerticalAlignment="Bottom">
+                HorizontalAlignment="Center" VerticalAlignment="Bottom">
               <Children>
                 <TextWidget WidthSizePolicy="Fixed" SuggestedWidth="220"
                     HeightSizePolicy="CoverChildren" Brush="Kingdom.ParagraphSmall.Text"
@@ -54,7 +57,7 @@
               </Children>
             </ListPanel>
           </ItemTemplate>
-        </ListPanel>
+        </NavigatableGridWidget>
       </Children>
     </ListPanel>
   </Window>

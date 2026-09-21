@@ -1,0 +1,57 @@
+<!-- Brushes for the Kingdom screen's Realm tab (RealmVM.cs / DiRealmPanel.xml).
+     Left-aligned variants of the vanilla styles used elsewhere in the panel, plus a
+     couple of sizes the vanilla set does not have (a small uppercase-ish label, and a
+     tiny bold badge). Colour where the row needs to vary (score, drift, accents) comes
+     from Brush.FontColor bound to a Color property instead of a second brush -
+     Bannerlord already does this for faction-coloured text (PartyNameplateItem.xml). -->
+<Brushes>
+
+  <Brush Name="DiRealm.Header" Font="Galahad" TextHorizontalAlignment="Left">
+    <Styles>
+      <Style Name="Default" FontColor="#E6C87FFF" TextOutlineAmount="0.1" TextGlowRadius="0" TextBlur="0.2" TextShadowOffset="0" FontSize="26" />
+    </Styles>
+  </Brush>
+
+  <Brush Name="DiRealm.Title" Font="Galahad" TextHorizontalAlignment="Left">
+    <Styles>
+      <Style Name="Default" FontColor="#E6C87FFF" TextOutlineAmount="0.1" TextGlowRadius="0" TextBlur="0.2" TextShadowOffset="0" FontSize="20" />
+    </Styles>
+  </Brush>
+
+  <Brush Name="DiRealm.Value" Font="FiraSansExtraCondensed-Regular" TextHorizontalAlignment="Left">
+    <Styles>
+      <Style Name="Default" FontColor="#E0CFA8FF" TextOutlineAmount="0" TextGlowRadius="0.0" TextBlur="0" TextShadowOffset="0" FontSize="20" />
+    </Styles>
+  </Brush>
+
+  <Brush Name="DiRealm.Body" Font="FiraSansExtraCondensed-Regular" TextHorizontalAlignment="Left">
+    <Styles>
+      <Style Name="Default" FontColor="#DDD0B8FF" TextOutlineAmount="0" TextGlowRadius="0.0" TextBlur="0" TextShadowOffset="0" FontSize="17" />
+    </Styles>
+  </Brush>
+
+  <Brush Name="DiRealm.Label" Font="FiraSansExtraCondensed-Regular" TextHorizontalAlignment="Left">
+    <Styles>
+      <Style Name="Default" FontColor="#A89878FF" TextOutlineAmount="0" TextGlowRadius="0.0" TextBlur="0" TextShadowOffset="0" FontSize="15" />
+    </Styles>
+  </Brush>
+
+  <Brush Name="DiRealm.Small" Font="FiraSansExtraCondensed-Regular" TextHorizontalAlignment="Left">
+    <Styles>
+      <Style Name="Default" FontColor="#7E6F56FF" TextOutlineAmount="0" TextGlowRadius="0.0" TextBlur="0" TextShadowOffset="0" FontSize="14" />
+    </Styles>
+  </Brush>
+
+  <Brush Name="DiRealm.Badge" Font="FiraSansExtraCondensed-Regular" TextHorizontalAlignment="Center">
+    <Styles>
+      <Style Name="Default" FontColor="#15100CFF" TextOutlineAmount="0" TextGlowRadius="0.0" TextBlur="0" TextShadowOffset="0" FontSize="13" />
+    </Styles>
+  </Brush>
+
+  <Brush Name="DiRealm.Score" Font="Galahad" TextHorizontalAlignment="Right">
+    <Styles>
+      <Style Name="Default" FontColor="#E0CFA8FF" TextOutlineAmount="0.1" TextGlowRadius="0" TextBlur="0.2" TextShadowOffset="0" FontSize="22" />
+    </Styles>
+  </Brush>
+
+</Brushes>

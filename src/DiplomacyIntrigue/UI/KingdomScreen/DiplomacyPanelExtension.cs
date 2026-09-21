@@ -74,6 +74,38 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
     }
 
     /// <summary>
+    /// The "what their court would sign" chooser: one number - their court's own
+    /// valuation of a pact with us - weighed against the three rungs it could buy,
+    /// each with a propose button. Visible only at peace, only to the ruler.
+    ///
+    /// Markup lives in <c>module/DiplomacyIntrigue/GUI/Prefabs/KingdomManagement/Diplomacy/
+    /// DiPactChooser.xml</c>. Third in the right pane's stack, under our headline (index 1)
+    /// and the vanilla trade/alliance icons row (index 2 is before it). If the XPath
+    /// misses the chooser simply does not render; the Ctrl+D diplomacy menu still
+    /// proposes pacts, so the miss is loud in the log rather than silent in the UI.
+    /// Verified against game v1.4.8, UIExtenderEx v2.13.2.
+    /// </summary>
+    [PrefabExtension("DiplomacyPanel",
+        "descendant::ListPanel[@IsVisible='@IsAcceptableItemSelected']/Children")]
+    internal sealed class DiplomacyPactChooserExtension : PrefabExtensionInsertPatch
+    {
+        public override InsertType Type => InsertType.Child;
+
+        /// <summary>After the title container (0) and our headline (1).</summary>
+        public override int Index => 2;
+
+        private readonly XmlDocument _document = new XmlDocument();
+
+        public DiplomacyPactChooserExtension()
+        {
+            _document.LoadXml("<DiPactChooser />");
+        }
+
+        [PrefabExtensionXmlDocument]
+        public XmlDocument GetPrefabExtension() => _document;
+    }
+
+    /// <summary>
     /// Shortens the game's comparison bars so the mod's block has a strip to live in.
     ///
     /// One attribute on one vanilla widget, and the smallest change that makes the layout
@@ -87,30 +119,31 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         public override List<PrefabExtensionSetAttributePatch.Attribute> Attributes => new List<PrefabExtensionSetAttributePatch.Attribute>
         {
             // Vanilla is 110, which clears the proposal buttons and nothing else. This has
-            // to clear our block as well: one button row of about 120 (a short explanation,
-            // the button, the influence cost) plus the strip's own margins. Measured
-            // against the war case on screen - at peace it leaves a gap, which is the
-            // right way round, since a gap reads as breathing space and an overlap reads
-            // as a bug.
-            new PrefabExtensionSetAttributePatch.Attribute("MarginBottom", "160"),
+            // to clear our grid as well: two rows of about 110 each (explanation, button,
+            // influence cost) plus the strip's bottom margin - the worst case is a peace
+            // row, which can carry six or seven actions once pacts moved to the chooser.
+            // The war case gets the same margin and shows a gap; a gap reads as breathing
+            // space and an overlap reads as a bug, so the margin is sized for peace.
+            new PrefabExtensionSetAttributePatch.Attribute("MarginBottom", "250"),
         };
     }
 
     /// <summary>
-    /// Hides the game's own proposal row while the mod runs diplomacy.
+    /// Empties the game's own proposal row while the mod runs diplomacy.
     ///
-    /// See <see cref="KingdomDiplomacyVMMixin"/> for why: every vanilla proposal is
-    /// refused by our models and renders as a dead button on top of our own row. The
-    /// value is a binding, not a constant - Gauntlet reads "@..." against the panel VM,
-    /// where the mixin lives - so flipping the mod off in MCM brings vanilla's row back
-    /// on the next screen open.
+    /// See <see cref="KingdomDiplomacyVMMixin"/> for why this is a DataSource swap and
+    /// not an IsVisible flag: a binding on the <c>{Actions}</c> ListPanel resolves
+    /// against the Actions list, not the panel VM, so the flag was never found and the
+    /// row rendered anyway - on top of ours. Pointing its DataSource at
+    /// <c>DiVanillaActions</c> feeds it the real list when the mod is off and an empty
+    /// one when it runs, so flipping the mod off in MCM brings vanilla's row back.
     /// </summary>
     [PrefabExtension("DiplomacyPanel", "descendant::ListPanel[@DataSource='{Actions}']")]
     internal sealed class DiplomacyVanillaActionsVisibilityPatch : PrefabExtensionSetAttributePatch
     {
         public override List<PrefabExtensionSetAttributePatch.Attribute> Attributes => new List<PrefabExtensionSetAttributePatch.Attribute>
         {
-            new PrefabExtensionSetAttributePatch.Attribute("IsVisible", "@DiShowVanillaProposals"),
+            new PrefabExtensionSetAttributePatch.Attribute("DataSource", "{DiVanillaActions}"),
         };
     }
 }

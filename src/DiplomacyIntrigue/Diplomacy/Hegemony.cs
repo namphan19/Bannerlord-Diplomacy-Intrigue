@@ -305,6 +305,118 @@ namespace DiplomacyIntrigue.Diplomacy
         }
 
         /// <summary>
+        /// The secession gate: revolt only once Hold has sat below the moving threshold for
+        /// <see cref="DiplomacyConstants.SecessionDaysBelowThreshold"/> days. Who pulls the
+        /// trigger differs - an AI vassal revolts on its own, a player-ruled one is asked
+        /// first - but the revolt itself is <see cref="ExecuteRevolt"/> either way.
+        /// </summary>
+        private static bool TryRevolt(ModState state, Treaty treaty, Kingdom vassal, Kingdom patron)
+        {
+            if (treaty.CriticalSince == CampaignTime.Never) return false;
+
+            var days = (float)(CampaignTime.Now - treaty.CriticalSince).ToDays;
+            if (days < DiplomacyConstants.SecessionDaysBelowThreshold) return false;
+
+            // A player-ruled vassal is asked rather than taken to war by a timer: seceding
+            // is their call to make (design/04 §3.3). The countdown restarts while the
+            // question sits open, so declining is a decision to endure rather than a
+            // daily nag - and the same duration passes before the question returns.
+            if (vassal.Leader == Hero.MainHero)
+            {
+                AskPlayerToSecede(state, treaty, vassal, patron, days);
+                return true;
+            }
+
+            ExecuteRevolt(state, treaty, vassal, patron, days);
+            return true;
+        }
+
+        /// <summary>
+        /// Puts the secession to the player whose kingdom is the resentful vassal. Accepting
+        /// runs the identical revolt an AI vassal would have run on its own.
+        /// </summary>
+        private static void AskPlayerToSecede(ModState state, Treaty treaty, Kingdom vassal,
+            Kingdom patron, float days)
+        {
+            // Restart the clock the moment the question is asked - otherwise the daily tick
+            // would ask again tomorrow while this inquiry is still open.
+            treaty.SetCriticalSince(CampaignTime.Now);
+
+            var hold = HoldOf(treaty);
+            var threshold = SecessionThreshold(state, treaty);
+            var body = "Our hold on our own realm has sat below the breaking point for "
+                       + days.ToString("0") + " days (hold " + hold.ToString("0")
+                       + ", secession at " + threshold.ToString("0") + ")."
+                       + System.Environment.NewLine + System.Environment.NewLine
+                       + "Renouncing breaks our oath to " + patron.Name
+                       + " - every court counts it a breach - and opens a war of independence at once."
+                       + " Other vassals near their own breaking point may rise with us.";
+
+            try
+            {
+                InformationManager.ShowInquiry(new InquiryData(
+                    "Secede from " + patron.Name + "?",
+                    body,
+                    true, true, "Secede", "Stay",
+                    () =>
+                    {
+                        // Runs from the UI, outside the try below - a throw here would take
+                        // the game down with it.
+                        try
+                        {
+                            // Re-asked rather than trusted: while the inquiry sat open the
+                            // link may have expired, collapsed or been renewed.
+                            if (treaty.IsActive && treaty.SubordinateParty == vassal
+                                && treaty.DominantParty == patron)
+                            {
+                                ExecuteRevolt(state, treaty, vassal, patron, days);
+                            }
+                            else
+                            {
+                                Log.Notify("The bond has already changed - the moment has passed.",
+                                    Colors.Red);
+                            }
+                        }
+                        catch (System.Exception ex)
+                        {
+                            Log.Error("Hegemony", "Seceding failed.", ex);
+                        }
+                    },
+                    () =>
+                    {
+                        try
+                        {
+                            Log.Info("Hegemony", "The player chose to stay under " + patron.Name
+                                                 + " - for now.");
+                        }
+                        catch (System.Exception ex)
+                        {
+                            Log.Error("Hegemony", "Recording the refusal to secede failed.", ex);
+                        }
+                    }), true);
+            }
+            catch (System.Exception ex)
+            {
+                Log.Error("Hegemony", "Could not ask the player to secede.", ex);
+            }
+        }
+
+        /// <summary>
+        /// The player pulling the trigger themselves. A ruler-led vassal already at breaking
+        /// point may secede without waiting to be asked: <see cref="IsAtBreakingPoint"/> is
+        /// the realm's condition and it is the same one the automatic pull tests - only the
+        /// thirty-day clock that paces the AI's revolt is the player's to skip. A vassal not
+        /// yet breaking still has the oath-breaking exit, the ordinary Renounce.
+        /// </summary>
+        internal static void Secede(ModState state, Treaty link)
+        {
+            var days = link.CriticalSince == CampaignTime.Never
+                ? 0f
+                : (float)(CampaignTime.Now - link.CriticalSince).ToDays;
+            ExecuteRevolt(state, link, link.SubordinateParty, link.DominantParty, days);
+        }
+
+        /// <summary>
         /// Independence, once the collapse has held for long enough. The vassal breaks its
         /// oath and declares war: a revolt is a breach, and the world judges it as one.
         ///
@@ -314,13 +426,9 @@ namespace DiplomacyIntrigue.Diplomacy
         /// nearly permanent: every rebel faced the patron plus half its other vassals, lost,
         /// and knelt again. Resentment that is shared has to be able to act together.
         /// </summary>
-        private static bool TryRevolt(ModState state, Treaty treaty, Kingdom vassal, Kingdom patron)
+        private static void ExecuteRevolt(ModState state, Treaty treaty, Kingdom vassal,
+            Kingdom patron, float days)
         {
-            if (treaty.CriticalSince == CampaignTime.Never) return false;
-
-            var days = (float)(CampaignTime.Now - treaty.CriticalSince).ToDays;
-            if (days < DiplomacyConstants.SecessionDaysBelowThreshold) return false;
-
             // Other vassals are watching. The demonstration effect starts when somebody
             // defies, not when they win - which is a departure from the spec, where it was
             // conditional on victory. Detecting victory means hooking the peace that ends a
@@ -395,7 +503,6 @@ namespace DiplomacyIntrigue.Diplomacy
                 : fighting.Count > 0
                     ? vassal.Name + " throws off " + patron.Name + " and fights for independence."
                     : vassal.Name + " renounces " + patron.Name + ".");
-            return true;
         }
 
         /// <summary>
@@ -993,11 +1100,6 @@ namespace DiplomacyIntrigue.Diplomacy
             if (!IsHegemon(state, suitor)) return false;
             if (!AiDiplomacy.WouldTakeVassals(state, suitor)) return false;
 
-            // Poaching is a war decision now, so it clears the same restraint any other war
-            // does. A hegemon already fighting a war of its own, or worn out by the last one,
-            // does not open a second front by shopping for vassals.
-            var canFight = AiDiplomacy.CanTakeOnAnotherWar(state, suitor);
-
             Treaty best = null;
             var bestValue = 0f;
 
@@ -1007,42 +1109,127 @@ namespace DiplomacyIntrigue.Diplomacy
                 if (!treaty.IsActive || treaty.Type != TreatyType.Vassalage) continue;
                 if (treaty.DominantParty == suitor) continue;
 
-                var vassal = treaty.SubordinateParty;
-                var patron = treaty.DominantParty;
-                if (vassal == null || patron == null || vassal == suitor) continue;
-                if (vassal.IsEliminated || suitor.IsAtWarWith(vassal)) continue;
-                if (HoldOf(treaty) >= DiplomacyConstants.PoachableBelowHold) continue;
-
-                // Already at war with the patron: the war this would start is the war we are
-                // already in, so there is nothing further to weigh. Otherwise it has to be a
-                // war we are allowed to start and fit to fight - a treaty with the patron
-                // forbids taking its vassal too, or this would be the back door around it.
-                if (!suitor.IsAtWarWith(patron))
-                {
-                    if (!canFight) continue;
-                    if (!TreatyEnforcement.IsWarAllowed(state, suitor, patron)) continue;
-                }
-
-                var value = SubmissionValue(state, vassal, suitor, out _);
-                if (value < DiplomacyConstants.AiSubmissionThreshold) continue;
+                if (!CanPoach(state, suitor, treaty, out var value, out _)) continue;
                 if (value <= bestValue) continue;
-
-                // Asked before anything is torn up. The old link used to be broken first and
-                // the new one signed second, so a signing that failed - on trust, or on a
-                // vassal forbidden from treating with outsiders - left the client free and
-                // nobody's, with the old patron handed a grievance for a transfer that never
-                // happened.
-                if (!TreatyRegistry.CanSign(state, suitor, vassal, TreatyType.Vassalage, out _,
-                        replacing: treaty)) continue;
 
                 best = treaty;
                 bestValue = value;
             }
 
             if (best == null) return false;
+            return ExecutePoach(state, suitor, best, bestValue);
+        }
 
-            var client = best.SubordinateParty;
-            var oldPatron = best.DominantParty;
+        /// <summary>
+        /// Whether <paramref name="suitor"/> could take the vassal of <paramref name="link"/>
+        /// right now. The per-link gates the weekly scan runs, asked with reasons so the
+        /// player's button can say why it is grey.
+        ///
+        /// Taking one means war with the patron it was taken from - a hegemon reaches for a
+        /// rival's client knowing it is reaching for the rival, so a suitor that may not
+        /// start that war may not poach either.
+        /// </summary>
+        public static bool CanPoach(ModState state, Kingdom suitor, Treaty link,
+            out float value, out string reason)
+        {
+            value = 0f;
+            reason = null;
+
+            if (suitor == null || suitor.IsEliminated)
+            {
+                reason = "The courting kingdom no longer exists.";
+                return false;
+            }
+            if (!IsHegemon(state, suitor))
+            {
+                reason = suitor.Name + " holds no vassals - a realm with none to offer cannot"
+                         + " court another's.";
+                return false;
+            }
+            if (!AiDiplomacy.WouldTakeVassals(state, suitor))
+            {
+                reason = suitor.Name + " wants land, not vassals.";
+                return false;
+            }
+            if (link == null || !link.IsActive || link.Type != TreatyType.Vassalage)
+            {
+                reason = "They answer to no one.";
+                return false;
+            }
+
+            var vassal = link.SubordinateParty;
+            var patron = link.DominantParty;
+            if (vassal == null || patron == null || vassal == suitor || vassal.IsEliminated)
+            {
+                reason = "The vassal cannot be moved.";
+                return false;
+            }
+            if (patron == suitor)
+            {
+                reason = "They already answer to us.";
+                return false;
+            }
+            if (suitor.IsAtWarWith(vassal))
+            {
+                reason = "We are already at war with " + vassal.Name + ".";
+                return false;
+            }
+            if (HoldOf(link) >= DiplomacyConstants.PoachableBelowHold)
+            {
+                reason = vassal.Name + " is not unhappy enough to listen (hold "
+                         + HoldOf(link).ToString("0") + ", needs under "
+                         + DiplomacyConstants.PoachableBelowHold.ToString("0") + ").";
+                return false;
+            }
+
+            // Already at war with the patron: the war this would start is the war we are
+            // already in, so there is nothing further to weigh. Otherwise it has to be a
+            // war we are allowed to start and fit to fight - a treaty with the patron
+            // forbids taking its vassal too, or this would be the back door around it.
+            if (!suitor.IsAtWarWith(patron))
+            {
+                if (!AiDiplomacy.CanTakeOnAnotherWar(state, suitor))
+                {
+                    reason = "Taking " + vassal.Name + " means war with " + patron.Name
+                             + ", and we cannot take on another war.";
+                    return false;
+                }
+                if (!TreatyEnforcement.IsWarAllowed(state, suitor, patron))
+                {
+                    reason = "Our treaty with " + patron.Name + " forbids the war this would start.";
+                    return false;
+                }
+            }
+
+            value = SubmissionValue(state, vassal, suitor, out var explanation);
+            if (value < DiplomacyConstants.AiSubmissionThreshold)
+            {
+                reason = vassal.Name + " would not kneel to us (valued at " + value.ToString("0")
+                         + ", needs " + DiplomacyConstants.AiSubmissionThreshold.ToString("0")
+                         + ": " + explanation + ").";
+                return false;
+            }
+
+            // Asked before anything is torn up. The old link used to be broken first and
+            // the new one signed second, so a signing that failed - on trust, or on a
+            // vassal forbidden from treating with outsiders - left the client free and
+            // nobody's, with the old patron handed a grievance for a transfer that never
+            // happened.
+            if (!TreatyRegistry.CanSign(state, suitor, vassal, TreatyType.Vassalage, out reason,
+                    replacing: link)) return false;
+
+            return true;
+        }
+
+        /// <summary>
+        /// Executes the poach <see cref="CanPoach"/> cleared: the old bond repudiated at no
+        /// charge to the client, the new oath signed, the poacher's price paid in trust,
+        /// a casus belli and the patron's enmity - and the war that taking a vassal means.
+        /// </summary>
+        public static bool ExecutePoach(ModState state, Kingdom suitor, Treaty link, float value)
+        {
+            var client = link.SubordinateParty;
+            var oldPatron = link.DominantParty;
 
             // The old link ends as broken by the client, and charges the client nothing. It was
             // closed with the full breach penalty until the review of run 04, which put the
@@ -1052,10 +1239,10 @@ namespace DiplomacyIntrigue.Diplomacy
             // the grievance at the kingdom that reached in and took it - which now also means
             // a war. Charging the world's judgment to the client as well priced one act twice,
             // and the trust it cost was exactly what the new signing then checked.
-            TreatyRegistry.RepudiateAlongside(state, best, client);
+            TreatyRegistry.RepudiateAlongside(state, link, client);
 
             var moved = Submit(state, suitor, client, DiplomacyConstants.HoldOnVoluntarySubmission,
-                DiplomacyConstants.AiDefaultTributePerPeriod, out var reason, route: "poached", value: bestValue);
+                DiplomacyConstants.AiDefaultTributePerPeriod, out var reason, route: "poached", value: value);
             if (moved == null)
             {
                 // CanSign was asked with the old link set aside, so this should not happen.
@@ -1099,9 +1286,9 @@ namespace DiplomacyIntrigue.Diplomacy
             }
 
             Telemetry.Event("poach", "suitor", suitor, "vassal", client, "oldPatron", oldPatron,
-                "value", bestValue, "alreadyAtWar", alreadyAtWar, "warOpened", warOpened);
+                "value", value, "alreadyAtWar", alreadyAtWar, "warOpened", warOpened);
             Log.Info("Hegemony", suitor.Name + " took " + client.Name + " as a vassal from "
-                                 + oldPatron.Name + " (submission value " + bestValue.ToString("0") + ")"
+                                 + oldPatron.Name + " (submission value " + value.ToString("0") + ")"
                                  + (alreadyAtWar
                                      ? " while already at war with it."
                                      : warOpened

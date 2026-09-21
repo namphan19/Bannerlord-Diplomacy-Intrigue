@@ -174,6 +174,36 @@ Two things were added because of this, independent of the cause:
 | **3 — Espionage** | ⬜ spec written and reviewed, no code |
 | **4 — Integration, balance, release** | 🔄 runs 01-06 archived; run 04 was the Phase 1 acceptance run. **Run 07** (2026-09-20) measured the §12 vassalage work on a fresh campaign and is the current reference — [balance/run-07.md](balance/run-07.md) |
 
+### Kingdom screen UI — built and verified live, 2026-09-21
+
+The mockup pass over the native Kingdom screen shipped and was verified on `save007`
+(Khuzait, player-led) — screenshots, not just build success:
+
+- **Realm tab** (6th header tab): standing strip, wars with exhaustion/score and a
+  per-war *Peace table* button, vassals, spheres, claims, agreements, *Write a report*.
+  Switching to and from vanilla tabs verified — the panel coordinates visibility with
+  the five `Show` flags instead of the tab control, which only knows five pairs.
+- **Diplomacy rows**: war rows carry exhaustion band + score (`Fresh +0`); truce rows
+  carry the relationship summary (`independent`, `our vassal`, `answers to X`, tribute).
+- **Headline** under the banners: casus belli + legitimacy + enemy band meaning for
+  wars, standing agreements for peace. Wars recorded without a claim show
+  *"no claim on record"*, not `over None`.
+- **"What their court would sign"** chooser on truce items: the court's real
+  `PactValue` against all three rungs with verdicts, influence costs, and per-rung
+  Propose buttons — the same numbers and path the AI uses.
+- **Bottom action strip**: vanilla's proposal row no longer overlaps ours. The
+  `{Actions}` ListPanel could not be hidden by an `IsVisible` binding — bindings on it
+  resolve against the Actions list, not the panel VM — so its `DataSource` is repointed
+  at `DiVanillaActions`, which serves the real list when the mod is off and an empty
+  list when it runs. Pact buttons were removed from the strip; the chooser owns them.
+- **Peace table** opens a native inquiry from both surfaces. `save007`'s wars are all
+  score ~0, so only the white-peace short path is verified on screen; the
+  multi-selection checklist with a real budget and the AI→player incoming-offer
+  inquiry remain **unverified in a live game** — they need a war that earned terms.
+
+Still loose: the Realm tab widens the centered tab strip enough to touch the leader
+portrait's caption — cosmetic only. Unverified above.
+
 ### Phase 1, feature by feature
 
 All of this exists, builds, and was exercised in a live campaign. `docs/ROADMAP.md` carries

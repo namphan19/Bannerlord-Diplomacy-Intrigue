@@ -63,10 +63,22 @@ namespace ApiDump
 
             // --from pulls in assemblies the game bin does not hold: module DLLs. Parsed out
             // of the argument list before the filters are read.
+            // --calls switches the output from the public surface to a per-method list of
+            // call targets (public and private methods alike): which rebuild method calls
+            // Stats.Clear, whether a widget wires its own clicks, what an ExecuteShow*
+            // actually toggles. The question UI-INTEGRATION §7 could not answer without a
+            // throwaway Cecil script.
+            var callsMode = false;
             var extraDlls = new List<string>();
             var filters = new List<string>();
             for (var i = 0; i < args.Length; i++)
             {
+                if (string.Equals(args[i], "--calls", StringComparison.Ordinal))
+                {
+                    callsMode = true;
+                    continue;
+                }
+
                 if (!string.Equals(args[i], "--from", StringComparison.Ordinal))
                 {
                     filters.Add(args[i]);
@@ -152,7 +164,8 @@ namespace ApiDump
                 foreach (var type in matches)
                 {
                     var file = Path.Combine(outDir, SafeFileName(type.FullName) + ".txt");
-                    File.WriteAllText(file, Describe(type), Encoding.UTF8);
+                    File.WriteAllText(file,
+                        callsMode ? DescribeCalls(type) : Describe(type), Encoding.UTF8);
                     Console.WriteLine("  " + type.FullName + "  ->  artifacts/api/" + Path.GetFileName(file));
                     written++;
                 }
@@ -227,6 +240,42 @@ namespace ApiDump
                     if (n.IsEnum)
                         foreach (var f in n.Fields.Where(f => f.HasConstant))
                             sb.AppendLine("      " + f.Name + " = " + f.Constant);
+                }
+            }
+
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Per method - public or not - the call/callvirt/newobj targets in body order.
+        /// Answers "which method rebuilds what" (the question mixins live or die on) without
+        /// a throwaway IL script: a type written this way shows <c>Stats.Clear()</c> inside
+        /// <c>UpdateDiplomacyProperties</c>, or a widget wiring its own button clicks.
+        /// </summary>
+        private static string DescribeCalls(TypeDefinition type)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("// " + type.Module.Assembly.Name.Name + " :: " + type.FullName);
+            sb.AppendLine("// base: " + (type.BaseType?.FullName ?? "-"));
+            sb.AppendLine();
+
+            foreach (var m in type.Methods.OrderBy(m => m.Name, StringComparer.Ordinal))
+            {
+                sb.AppendLine(m.Name + "(" +
+                    string.Join(", ", m.Parameters.Select(p => Short(p.ParameterType) + " " + p.Name)) + ")"
+                    + (m.IsPublic ? "" : "   [" + (m.IsPrivate ? "private" : m.IsFamily ? "protected" : "internal") + "]"));
+
+                if (!m.HasBody) { sb.AppendLine("  (no body)"); continue; }
+
+                foreach (var ins in m.Body.Instructions)
+                {
+                    var op = ins.OpCode.Code;
+                    if (op != Mono.Cecil.Cil.Code.Call && op != Mono.Cecil.Cil.Code.Callvirt
+                        && op != Mono.Cecil.Cil.Code.Newobj) continue;
+                    if (ins.Operand is MethodReference target)
+                        sb.AppendLine("  -> " + target.DeclaringType.FullName + "::" + target.Name);
+                    if (op == Mono.Cecil.Cil.Code.Newobj && ins.Operand is MethodReference)
+                        continue;
                 }
             }
 
