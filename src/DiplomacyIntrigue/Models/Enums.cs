@@ -84,6 +84,31 @@ namespace DiplomacyIntrigue.Models
         Assassinate = 8,
     }
 
+    /// <summary>
+    /// Why a clan holds something against another clan. Weights live in
+    /// <see cref="Intrigue.IntrigueConstants"/> so a balance pass edits one file.
+    /// </summary>
+    public enum GrievanceType
+    {
+        None = 0,
+        /// <summary>A fief they bid for went to a rival clan.</summary>
+        FiefToRival = 1,
+        /// <summary>A war their bloc opposed. Weight scales with how illegitimate it was.</summary>
+        UnjustWar = 2,
+        /// <summary>The realm bought peace by paying tribute. Only the paying side feels it.</summary>
+        HumiliatingTribute = 3,
+        /// <summary>A relative left in enemy captivity for more than a year.</summary>
+        RelativeInCaptivity = 4,
+        /// <summary>A fief of theirs was lost to the enemy; they blame the crown for not defending it.</summary>
+        FiefLostToEnemy = 5,
+        /// <summary>A policy passed against their agenda.</summary>
+        PolicyAgainstAgenda = 6,
+        /// <summary>Peace signed while they were winning. Hawks specifically.</summary>
+        PeaceWhileWinning = 7,
+        /// <summary>The ruler turned down something they asked for.</summary>
+        RequestRefused = 8,
+    }
+
     public enum MissionOutcome
     {
         Pending = 0,

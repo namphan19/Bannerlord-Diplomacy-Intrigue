@@ -28,6 +28,7 @@ namespace DiplomacyIntrigue.Core
             AddClassDefinition(typeof(FabricationAttempt), 7);
             AddClassDefinition(typeof(TrustRecord), 8);
             AddClassDefinition(typeof(KingdomPower), 9);
+            AddClassDefinition(typeof(Grievance), 10);
         }
 
         protected override void DefineEnumTypes()
@@ -38,6 +39,7 @@ namespace DiplomacyIntrigue.Core
             AddEnumDefinition(typeof(CourtAgenda), 23);
             AddEnumDefinition(typeof(SpyMissionType), 24);
             AddEnumDefinition(typeof(MissionOutcome), 25);
+            AddEnumDefinition(typeof(GrievanceType), 26);
         }
 
         protected override void DefineContainerDefinitions()
@@ -50,6 +52,7 @@ namespace DiplomacyIntrigue.Core
             ConstructContainerDefinition(typeof(List<FabricationAttempt>));
             ConstructContainerDefinition(typeof(List<TrustRecord>));
             ConstructContainerDefinition(typeof(List<KingdomPower>));
+            ConstructContainerDefinition(typeof(List<Grievance>));
         }
     }
 }

@@ -198,6 +198,13 @@ namespace DiplomacyIntrigue
                 starter.AddBehavior(new AiDiplomacyBehavior());
                 starter.AddBehavior(new TelemetryBehavior());
             }
+
+            // Its own toggle, not EnableDiplomacy: turning court intrigue off must not
+            // disturb diplomacy, and turning diplomacy off must not freeze every grievance.
+            if (Settings.Current.EnableIntrigue)
+            {
+                starter.AddBehavior(new IntrigueBehavior());
+            }
         }
 
         /// <summary>

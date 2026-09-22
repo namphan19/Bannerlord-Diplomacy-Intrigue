@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using DiplomacyIntrigue.Behaviors;
 using DiplomacyIntrigue.Diplomacy;
+using DiplomacyIntrigue.Intrigue;
 using DiplomacyIntrigue.Models;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Settlements;
@@ -255,6 +256,67 @@ namespace DiplomacyIntrigue.Core
             }
             var text = sb.ToString();
             return text.Length == 0 ? "No trust records involving that kingdom." : text;
+        }
+
+        /// <summary>
+        /// The court's memory: who holds what against whom, and what it still weighs after
+        /// decay. Grouped by the clan that feels wronged, heaviest first.
+        /// Usage: diplomacy.grievances   or   diplomacy.grievances Vlandia
+        /// A kingdom name filters to the clans of that kingdom.
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("grievances", "diplomacy")]
+        public static string Grievances(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+            if (state.Grievances.Count == 0)
+                return "No grievances on record. They accrue when a fief goes to a rival, when a"
+                       + " war the clan opposed is declared, when the realm pays tribute, and from"
+                       + " the other sources in design 02 §1.";
+
+            Kingdom filter = null;
+            if (args != null && args.Count > 0)
+            {
+                var wanted = string.Join(" ", args);
+                filter = FindKingdom(wanted);
+                if (filter == null) return "No kingdom matching \"" + wanted + "\".";
+            }
+
+            var byHolder = new Dictionary<Clan, List<Grievance>>();
+            for (var i = 0; i < state.Grievances.Count; i++)
+            {
+                var g = state.Grievances[i];
+                if (filter != null && g.Holder.Kingdom != filter) continue;
+                if (!byHolder.TryGetValue(g.Holder, out var list))
+                {
+                    list = new List<Grievance>();
+                    byHolder[g.Holder] = list;
+                }
+                list.Add(g);
+            }
+
+            if (byHolder.Count == 0) return "No grievances held by clans of that kingdom.";
+
+            var sb = new StringBuilder();
+            foreach (var pair in byHolder)
+            {
+                var holder = pair.Key;
+                var crown = GrievanceRegistry.AgainstCrown(state, holder);
+                sb.AppendLine(holder.Name + " (" + (holder.Kingdom == null ? "no kingdom" : holder.Kingdom.Name.ToString())
+                              + ") - against its crown: " + crown.ToString("0.0"));
+
+                pair.Value.Sort((a, b) => b.Weight.CompareTo(a.Weight));
+                for (var i = 0; i < pair.Value.Count; i++)
+                {
+                    var g = pair.Value[i];
+                    sb.AppendLine("    " + g.Weight.ToString("0.0").PadLeft(5) + "  " + g.Type
+                                  + "  vs " + g.Target.Name
+                                  + "  (" + g.Created.ElapsedDaysUntilNow.ToString("0") + "d ago)");
+                }
+            }
+            sb.AppendLine("Decay is " + IntrigueConstants.GrievanceDecayPerDay.ToString("0.00")
+                          + "/day; a record is dropped at zero.");
+            return sb.ToString();
         }
 
         /// <summary>
@@ -521,6 +583,7 @@ namespace DiplomacyIntrigue.Core
             TrustRegistry.DailyTick(state);
             ClaimRegistry.ExpireStale(state);
             ClaimRegistry.ResolveFabrications(state);
+            GrievanceRegistry.DailyTick(state);
         }
 
         private static readonly char[] CommaSeparator = { ',' };
