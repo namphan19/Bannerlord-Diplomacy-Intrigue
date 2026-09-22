@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "opencode-bridge": {
+      "command": "node",
+      "args": ["tools/opencode-bridge/server.mjs"],
+      "env": {
+        "OPENCODE_PROJECT_DIR": "C:\\Users\\nambi\\Desktop\\bannerlord.mod.opencode"
+      }
+    }
+  }
+}

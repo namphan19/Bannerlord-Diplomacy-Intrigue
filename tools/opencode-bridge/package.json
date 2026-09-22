@@ -1,0 +1,11 @@
+{
+  "name": "opencode-bridge",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "MCP server that lets Claude Code (BA / tech lead) hand tasks to the opencode CLI (dev / tester) for this project.",
+  "main": "server.mjs",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0"
+  }
+}

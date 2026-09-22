@@ -1,0 +1,11 @@
+{
+  "name": "claude-bridge",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "MCP server that lets opencode (dev/tester) ask Claude Code (BA/tech lead) a question mid-task, for this project. Registered on opencode's side.",
+  "main": "server.mjs",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0"
+  }
+}

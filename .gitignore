@@ -22,3 +22,6 @@ artifacts/
 
 # Archived balance runs are data, not build noise
 !docs/balance/*.log
+
+# Node tooling dependencies (the bridges)
+node_modules/
