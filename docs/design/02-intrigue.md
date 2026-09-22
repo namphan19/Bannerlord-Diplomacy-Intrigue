@@ -162,16 +162,43 @@ negotiation rather than annihilation is the interesting case.
 | 2.6 | Civil war secession | 2.5 |
 | 2.7 | Court UI: blocs, loyalty, grievance ledger, legitimacy | all above |
 
-## 9. Open questions
+## 9. Decisions, and what is still open
 
-1. **How much of the court does the player see?** Same fork as enemy war exhaustion
-   (spec 01 §8). Exact grievance ledger for your own court is clearly fine; the question is
-   whether you see *rival kingdoms'* internal politics without espionage.
-2. **Should the player's own clan be subject to this as a vassal?** If yes, serving a king
-   becomes a real political position rather than a waiting room. It is more work and touches
-   the player's own loyalty number.
-3. **Kingdom decisions: extend vanilla or replace?** Extending `KingdomDecision` keeps
-   compatibility and less code; replacing gives full control of the vote UI. Recommend
-   extending until it visibly constrains us.
-4. **Civil war frequency.** The §6 thresholds are a guess. This needs a long AI-only run to
-   tune — too frequent and Calradia shatters, too rare and the system never shows up.
+Three of the four were settled by the project lead on 2026-09-23, before any Phase 2 code was
+written. They are recorded here rather than in a chat log because they change what gets built.
+
+**1. How much of the court does the player see? — a band for rivals, the ledger for your own.**
+
+Your own court is fully legible: the grievance ledger item by item, every clan's loyalty
+number, bloc membership and power, the legitimacy pool. A *rival* kingdom shows a qualitative
+band only — the sort of thing an envoy would report — and the exact figures are what Phase 3's
+`ReadCourt` mission sells.
+
+This follows the fork the lead already decided for enemy war exhaustion (spec 01 §8), and it
+is the same reasoning: a number the player can read for free is a number Phase 3 cannot sell.
+Band edges are the behavioural thresholds in §2 and §6, so a band is never decorative — it
+says which side of a threshold the court sits on without saying how far.
+
+**2. Is the player's own clan subject to this? — yes, on the same terms as any AI clan.**
+
+When the player serves another ruler, their clan accrues grievances and carries a loyalty
+number like everyone else. Serving a king becomes a political position rather than a waiting
+room, and the player can be courted, can defect, and can be the pretender.
+
+This is the project's standing rule applied to a new pillar: `ClaimRegistry`, `TreatyRegistry`,
+`PeaceTable` and `CallToArms` take no "is this the player" argument anywhere, and neither will
+the grievance ledger or the loyalty calculation. Where the player's *experience* needs to
+differ — a prompt instead of a silent AI roll — that belongs in the UI layer, not in the
+resolver. It costs extra work at 2.2 and 2.7, and the lead took that cost deliberately.
+
+**3. Kingdom decisions: extend `KingdomDecision`, not replace it.**
+
+Per this spec's own recommendation, and because `ModKingdomDecisionPermissionModel` was
+already written on that assumption — it deliberately leaves policy votes, annexation, clan
+expulsion and king selection alone, with a comment saying Phase 2 will extend them. Revisit
+only when extending visibly constrains us.
+
+**4. Still open: civil-war frequency.** The §6 thresholds are a guess by admission. Tuning
+them needs a long AI-only run — too frequent and Calradia shatters, too rare and the system
+never shows up. Deferred to the balance pass, like every other rate in this project. Nothing
+in 2.1–2.5 is blocked by it.

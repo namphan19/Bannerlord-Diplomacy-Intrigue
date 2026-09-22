@@ -40,7 +40,7 @@ game cannot load. See ARCHITECTURE §1.1.
 
 ---
 
-## Phase 1 — Diplomacy core
+## Phase 1 — Diplomacy core ✅ accepted 2026-09-23
 
 The pillar everything else hangs off. Playable target: *wars end for reasons, and peace can be shaped.*
 
@@ -259,30 +259,23 @@ The band edges are the behavioural thresholds themselves, verified in game:
 | Menu renders | screenshot confirms title, sections and the vassal-only notice |
 | Band mapping | `diplomacy.bands` reproduces the table above from the same constants the AI reads |
 
-## Acceptance: NOT yet met
+## The un-tuned constants, and an honest correction
 
-**In a 10-year AI-only campaign, wars average under ~3 years, at least one alliance forms
-and holds, and no kingdom sits at permanent total war.**
+`AiWarThreshold`, `WarValueLandHunger` and the pact thresholds started life as first-cut
+numbers. Balance runs 01–07 retuned many of them against real campaign data — the evidence
+is in the per-feature tables below and in [docs/balance/](balance/) — but **21 constants in
+`DiplomacyConstants` still carry an un-tuned marker in their own doc comment**, and that
+marker is the authority on which is which.
 
-This has **not** been validated, and cannot be with the tooling that exists:
+The limit that made this hard is still there: `diplomacy.tick_days` and `diplomacy.ai_week`
+drive the real upkeep and the real evaluation but **cannot move `CampaignTime.Now`**, so
+inside them treaties never expire, claims never age out and influence never regenerates. A
+52-week simulated run once produced no wars at all and that read as a finding; it was an
+artifact. Both commands now print the caveat when asked for a long horizon.
 
-- `diplomacy.tick_days` and `diplomacy.ai_week` drive the real upkeep and the real
-  evaluation, but **they cannot move `CampaignTime.Now`**. So inside them treaties never
-  expire, claims never age out, and clan influence never regenerates.
-- A 52-week run produced no wars at all. That reads as a finding and is mostly an artifact:
-  the non-aggression pacts signed in week one never expired, and nobody could ever afford
-  the 180–240 influence a war costs because influence income needs the game's own tick.
-- `ai_week` now prints this caveat when asked for more than four weeks, so the trap is
-  labelled rather than left for the next person to fall into.
-
-What this means concretely: **`AiWarThreshold`, `WarValueLandHunger` and the pact
-thresholds are un-tuned first-cut numbers.** They are marked as such in
-`DiplomacyConstants`. Tuning them needs a real campaign left to run - the Phase 4 balance
-task - and that is the one remaining item before Phase 1 can be called done.
-
-An honest correction: an earlier pass justified two of these constants as "measured". They
-were not; the run behind that claim was confounded by the limits above. The comments have
-been corrected rather than left to mislead.
+An honest correction, kept here rather than quietly fixed: an earlier pass justified two of
+these constants as "measured". They were not — the run behind that claim was confounded by
+exactly the frozen clock above. The comments have been corrected.
 
 **1.9 Submission and hegemony** ✅ **implemented**, partly verified — the mechanism by which
 one kingdom rises over others. Spec and the selection from the lead's source document:
@@ -387,15 +380,44 @@ on the AI.
 | Wars now last; the ladder fires | **not verified.** Needs run 03 — a two-day sample says nothing about median war length |
 | Dormant wars lapse | **not verified in game.** No console command can age a war: `CampaignTime.Now` cannot be moved, and a war's age is read from it. Verified by construction only |
 
+
 ---
 
-## Phase 2 — Court intrigue
+## Phase 1 — accepted by the project lead, 2026-09-23
+
+Phase 1 is **closed**. The bar was *"in a 10-year AI-only campaign, wars average under ~3
+years, at least one alliance forms and holds, and no kingdom sits at permanent total war"*,
+and balance run 01 cleared it over 28 in-game years — 340 weekly snapshots, 247 wars, 0
+errors. Runs 02–07 then reworked what run 01 exposed; **run 07** (20.8 in-game years, 100
+wars, 0 errors, and the first vassal links this project ever produced) is the current
+reference measurement: [balance/run-07.md](balance/run-07.md).
+
+The lead accepted the pillar on 2026-09-23 so Phase 2 can start. **Acceptance is a decision
+about priority, not a claim that everything under it is measured.** What is carried forward
+unresolved, stated plainly:
+
+| Carried debt | State | Lands in |
+|---|---|---|
+| **§13** — merged subjugation rung, the cliff at 75, reachable ceiling, indemnity resize, threshold 50 | **smoke-tested only**: builds clean, LoadProbe clean, 2 in-game years with 0 errors. None of the five questions in [design/04 §13.7](design/04-hegemony.md#137-what-the-next-run-must-answer) is answered | balance run 08 |
+| Strength margin on `IsStrongEnoughToHold` ([design/04 §13.6](design/04-hegemony.md)) | **undecided** — needs run 08 to show how often a link is doomed at signing | Phase 4 |
+| Whether the indemnity price should bite ([design/04 §13.4](design/04-hegemony.md)) | **undecided** — 8 points per 1,000 denars is trivial against a late-game treasury | Phase 4 |
+| Peace-table multi-selection checklist against a real budget | **unverified in a live game** — `save007`'s wars are all war score ~0, so only the white-peace short path has been seen on screen | first run that produces a war with terms |
+| AI → player incoming peace-offer inquiry | **unverified in a live game**, same reason | as above |
+| Battle casualties and siege capture feeding exhaustion | wired, reviewed, exercised in long runs — never asserted against hand-computed values | Phase 4 |
+| Realm tab widens the tab strip into the leader portrait's caption | cosmetic, unfixed | whenever the court UI (2.7) touches that screen |
+
+**Run 08 is deferred, not cancelled.** It is the measurement that closes §13, and Phase 2
+work will produce campaigns to fold it into.
+
+---
+
+## Phase 2 — Court intrigue 🔄 started 2026-09-23
 
 Playable target: *being a king is a political problem, not just a military one.*
 
 **2.1 Grievances** — event-sourced records with decay: fief given to a rival, war the clan opposed, humiliating tribute, a relative left in captivity, forced levies.
 
-**2.2 Vassal loyalty** — derived from grievances, relation, fief wealth, and war exhaustion. Drives defection risk and vote behaviour.
+**2.2 Vassal loyalty** — derived from grievances, relation, fief wealth, and war exhaustion. Drives defection risk and vote behaviour. Derived, never saved, and it applies to the player's clan on the same terms as any AI clan (§9.2).
 
 **2.3 Court blocs** — clans coalesce into the agendas in `Models/CourtAgenda` (doves, hawks, autonomists, centralists, pretenders) around a leading clan. Blocs vote as units, which makes kingdom decisions predictable enough to play against.
 
@@ -405,9 +427,45 @@ Playable target: *being a king is a political problem, not just a military one.*
 
 **2.6 Civil war** — a strong pretender bloc can secede into a rival kingdom, taking its fiefs. The end state of unmanaged internal pressure.
 
-**2.7 Intrigue UI** — court screen: blocs, loyalty, grievance ledger, legitimacy.
+**2.7 Intrigue UI** — court screen: blocs, loyalty, grievance ledger, legitimacy — in full for your own court, as a qualitative band for rivals (§9.1).
 
 **Acceptance:** an AI kingdom that loses a long illegitimate war visibly fractures — blocs shift, then either sues for peace or splits. The player can survive it by managing grievances.
+
+### What Phase 1 already left waiting for it
+
+| Hook | Where |
+|---|---|
+| `ExhaustionCourtPressure` = 40 — the doves threshold in [design/02 §3](design/02-intrigue.md) | `Diplomacy/DiplomacyConstants.cs` |
+| A caught fabrication already computes its legitimacy penalty and only logs it, "pending the Phase 2 legitimacy pool" | `Diplomacy/ClaimRegistry.cs:283` |
+| Policy votes, annexation, clan expulsion and king selection were **left alone on purpose** for Phase 2 to extend | `GameModels/ModKingdomDecisionPermissionModel.cs:29` |
+| `EnableIntrigue` settings toggle, already shipped and defaulting on | `Core/ModSettings.cs:31` |
+| The `Hold` formula wants a crown-legitimacy term | [design/04 §1.2](design/04-hegemony.md) |
+| `CourtAgenda`, `SpyMissionType`, `MissionOutcome` — enums written in Phase 0 and already registered at definer ids 23–25 | `Models/Enums.cs`, `Core/ModSaveDefiner.cs` |
+| `AiDiplomacy.TryDemandTribute` accepts on strength ratio and trust alone, with no sense of the target court's willingness | revisit at 2.2 |
+
+Two Phase 1 pieces are parked until Phase 2 makes them mean something: **vassal-party
+summons** ([design/04 §8](design/04-hegemony.md) — the most intrusive and least load-bearing
+part of hegemony) and **titles** (Emperor, Khagan), which sit on top of legitimacy at 2.4.
+
+### Save ids this phase may take
+
+The frozen-id rules in CLAUDE.md §3 apply unchanged. Free inside the reserved block
+`2749100`–`2749199`: **class ids from 10**, and `ModState` **properties from 11**. The three
+intrigue enums are already defined. Every new savable type needs a class definition **and**
+a container definition in `ModSaveDefiner` — a missing container definition crashes on save,
+which is the single most common way to break a Bannerlord mod.
+
+### Design decisions, taken before any Phase 2 code
+
+[design/02 §9](design/02-intrigue.md) carried four questions. Three were settled by the
+project lead on 2026-09-23; the reasoning is in that section.
+
+| # | Question | Decision |
+|---|---|---|
+| 1 | Does the player see *rival* kingdoms' internal politics without espionage? | **Band for rivals, full ledger for your own court.** Exact rival figures are Phase 3 `ReadCourt`'s to sell |
+| 2 | Is the player's own clan subject to this when serving another king? | **Yes**, on the same terms as any AI clan |
+| 3 | Kingdom decisions: extend `KingdomDecision` or replace it? | **Extend**, until it visibly constrains us |
+| 4 | Civil-war trigger thresholds (§6) | **Still open** — guesses by admission, deferred to a long AI-only run. Blocks nothing in 2.1–2.5 |
 
 ---
 

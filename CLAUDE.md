@@ -189,9 +189,11 @@ row, not a submission, and it cannot be used to test anything downstream of `Sub
 
 Saves used for testing: `di_phase1_full` (richest state), `di_treaty_test`, `di_phase0_test`.
 
-**What the bridge cannot do:** click buttons inside a `MultiSelectionInquiry` — GABS only
-indexes map-layer widgets, so menu navigation past the root needs a human. Screenshots do
-confirm rendering.
+**What the bridge has not been shown to do:** click buttons inside a `MultiSelectionInquiry`.
+An earlier version of this said GABS only indexes map-layer widgets and that any menu past the
+root needs a human; that is too strong — on 2026-09-20 `ui/click_widget` drove the whole of
+character creation, and only the intro video needed a key sent from outside. The inquiry case
+specifically is untested. Screenshots do confirm rendering.
 
 **What no tool can do:** advance `CampaignTime.Now`. `diplomacy.tick_days` and
 `diplomacy.ai_week` drive the real upkeep and the real AI evaluation, but the clock stays
@@ -207,7 +209,8 @@ reuse a save-definer local id for a different type, never change the definer bas
 (`2749100`, block `2749100`–`2749199`). `Treaty` currently uses ids **1-17** (14 `Hold`, 15
 defiance marks, 16 last defiance, 17 the revolt clock), so the next free id there is **18**. `TrustRecord` uses **1-6** (5 `LastPositiveChange`, 6
 `LastOfferRefused`), next free **7**. `ModState` uses
-properties **1-10** (10 is `PowerRecords`), and the definer's class ids run to **9** (`KingdomPower`). Adding a new savable type means a class definition
+properties **1-10** (10 is `PowerRecords`), and the definer's class ids run to **9** (`KingdomPower`) with the enums at **20-25** — so Phase 2 takes class ids from **10** and `ModState`
+properties from **11**. Adding a new savable type means a class definition
 **and** a container definition in `ModSaveDefiner` — a missing container definition crashes
 on save, which is the single most common way to break a Bannerlord mod. Bump
 `ModState.CurrentSchemaVersion` only when the *meaning* of existing data changes; adding a
@@ -277,3 +280,44 @@ beside them: the launcher load order (`Documents\...\Configs\LauncherData.xml`, 
 ButterLib/UIExtenderEx/MCM which were off) and the GABS launch script
 (`Desktop\Agent_Bannerlord\Bannerlord.GABS\launch-bannerlord.ps1`, whose `_MODULES_` list is
 hardcoded and does not read LauncherData).
+
+## 7. Roles, and delegating to opencode
+
+- **Product owner**: the user. Makes design and priority calls.
+- **Claude Code (you)**: BA / tech lead. Breaks work down, decides what to delegate to
+  opencode versus do directly, reviews what opencode produces before reporting to the owner.
+- **opencode CLI**: dev / tester. Implements and tests whatever Claude Code delegates to it.
+
+Claude and opencode work in **two separate clones** of the same GitHub repo
+(`namphan19/Bannerlord-Diplomacy-Intrigue`) — this one (`bannerlord.mod`, branch `development`)
+and opencode's own `bannerlord.mod.opencode` (currently `feature/ui-proposal`) — not one shared
+folder. opencode's actual output therefore travels through three channels: the `opencode-bridge`
+MCP server for synchronous delegation, **git** for what it actually built (its commits sit
+in its own clone against the shared origin; review them there, e.g. `git fetch` + diff, or a
+PR), and `claude-bridge` for opencode to page Claude mid-task with a question.
+
+Delegate through the `opencode-bridge` MCP server (`tools/opencode-bridge/`, registered in
+`.mcp.json` with `OPENCODE_PROJECT_DIR` pointed at opencode's checkout, not this one):
+`opencode_delegate(task, session_id?, agent?, title?, timeout_seconds?)` — pass
+`session_id` from a prior call to continue the same conversation (follow-ups, fix requests on
+the same piece of work). `opencode_list_sessions` / `opencode_delete_session` for housekeeping.
+Details and setup: [tools/opencode-bridge/README.md](tools/opencode-bridge/README.md).
+
+The reverse direction is `tools/claude-bridge/` (registered in opencode's own
+`opencode.jsonc`, not here): `ask_claude(question, session_id?, timeout_seconds?)` lets
+opencode consult Claude without a human relaying. It runs read-only (`claude -p
+--allowedTools "Read Grep Glob"`, no permission-bypass flag) — deliberately, since a
+headless Claude with write access could collide with an interactive session editing the
+same tree, and answering a question is not the same job as acting on one. Not live-verified
+end to end: this harness blocks a Claude Code session from spawning a nested `claude -p`
+itself ("Create Unsafe Agents"), so only opencode's side of the handshake (`opencode mcp
+list` showing `claude-bridge` as `connected`) has been confirmed — the first real
+`ask_claude` call is the first live test of the `claude -p` invocation. Setup and the full
+safety reasoning: [tools/claude-bridge/README.md](tools/claude-bridge/README.md).
+
+opencode runs with `--auto` — it has no TTY through this bridge, so a permission prompt would
+hang forever with nothing able to answer it — and the owner granted it full permissions on
+2026-09-22. A delegated task can therefore run any shell command in this repo unsupervised.
+Review what comes back before passing it on; the rules in §3 (save ids, Harmony as last
+resort, one resolver per concept, no throw across the engine boundary) still apply to code
+opencode wrote — delegating a task doesn't relax them.

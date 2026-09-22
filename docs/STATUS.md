@@ -1,127 +1,142 @@
-# Status — 2026-09-20
+# Status — 2026-09-23
 
 Point-in-time state. [CLAUDE.md](../CLAUDE.md) holds the things that are always true; this
 file holds what changes. Update it when you finish a chunk of work.
 
 Module version 0.1.0. Save schema **v4**, definer base id **2749100**.
-Save ids: `Treaty` 1-17, `ModState` 1-10, definer class ids to 9 (`KingdomPower`).
+Save ids in use: `Treaty` 1-17, `TrustRecord` 1-6, `ModState` 1-10, definer class ids to 9
+(`KingdomPower`), enums 20-25. Free for Phase 2: class ids **from 10**, `ModState`
+properties **from 11**.
 Last completed measurement: **balance run 07** — [docs/balance/run-07.md](balance/run-07.md).
 
-## Start here — handoff, 2026-09-20
+## Start here — handoff, 2026-09-23
 
-Branch **`feature/run-06-fixes`**, off `development`, committed and pushed on 2026-09-20 (see
-`git log`). It carries three layers of work, and the third has only been smoke-tested:
+**Phase 1 is accepted and closed. Phase 2 — court intrigue — is the work now.**
 
-| Layer | What it is | Where | Run in a game? |
-|---|---|---|---|
-| Run-06 follow-ups | F2 trust decay, F3 defection, F4, F5 greed, plus the branch review fixes | [balance/run-06.md](balance/run-06.md) | yes — live checks of 2026-09-19 |
-| **§12** — the vassalage design | unbounded war score, the dissolution rung, submission to an attacker, sibling reconciliation | [design/04 §12](design/04-hegemony.md#12-the-vassalage-drought-and-the-design-that-answers-it-2026-09-20) | **yes — run 07** |
-| **§13** — one subjugation rung and a cliff | merged rung at 70, demand is a cliff at 75, reachable ceiling, indemnity fix, threshold 50, `[SUBMIT]` telemetry | [design/04 §13](design/04-hegemony.md#13-one-subjugation-rung-and-a-cliff-2026-09-20-after-run-07) | **smoke-tested only** — 2 years, 0 errors; not a measured run |
+Branch `development`, clean and level with `origin/development`. Everything that was in
+flight has landed: PR #3 (run-06 fixes, §12, §13) and PR #4 (Kingdom screen UI), and no
+remote branch is unmerged. `main` sits **24 commits behind** `development` and has
+deliberately not been moved — cutting a release is Phase 4's job, not a side effect of
+closing a pillar.
 
-### The headline: the drought is over
+### What acceptance did and did not mean
 
-Before this work, [vassalage-absence-2026-09-19.md](balance/vassalage-absence-2026-09-19.md)
-recorded **zero vassal links in ~6 in-game years**, and zero peace-table vassalage in the entire
-history of the project.
+The lead accepted Phase 1 on 2026-09-23, on priority grounds. The measured part is real:
+run 01 cleared the acceptance bar over 28 in-game years, and **run 07** — 20.8 in-game
+years, 100 wars, 0 errors, and the first vassal links this project ever produced — is the
+reference measurement.
 
-**Run 07** — a fresh campaign from Summer 1, 1084 to Spring 1, 1105, **20.8 in-game years, 100
-wars, 0 errors, 0 warnings** — produced **seven links through all four routes**:
+**The §13 vassalage rework sitting under that acceptance is smoke-tested only**: it builds
+clean, passes LoadProbe, and ran 2 in-game years with 0 errors. None of the five questions
+in [design/04 §13.7](design/04-hegemony.md#137-what-the-next-run-must-answer) is answered.
+Anyone reading "Phase 1 ✅" should read that sentence with it.
 
-| Route | Count | Start Hold |
-|---|---|---|
-| `imposed` (peace table) | 3 | 35 |
-| `submitted_to_attacker` | 2 | 45 |
-| `voluntary` | 1 | 60 |
-| `defection` (F3) | 1 | 45 |
+The full carried-debt table is in
+[ROADMAP.md](ROADMAP.md#phase-1--accepted-by-the-project-lead-2026-09-23). The short version:
 
-It also ran, for the first time ever: **F3 defection end to end**, a **full vassal lifecycle**
-(kneel → Hold erosion → defiance marks → revolt → independence → choose a new patron → defect),
-and a **hegemon losing its vassal by erosion alone** — which is what §12.4.6 predicted would
-happen without any dissolve-on-defeat rule.
+- **Balance run 08 is deferred, not cancelled.** It is what closes §13, and it unblocks two
+  undecided constants: the strength margin on `IsStrongEnoughToHold` (§13.6) and whether the
+  indemnity price should bite (§13.4).
+- **Two peace-table surfaces have never been seen working**: the multi-selection checklist
+  against a real budget, and the AI→player incoming offer. `save007`'s wars are all war
+  score ~0, so only the white-peace short path has rendered on screen.
+- The risk run 07 flagged is still unmeasured: **13 of its 18 tributary pacts settled at war
+  score ≥ 75**, and the §13 cliff is expected to convert most of those into subjugations.
+  That multiplies the imposed-vassalage rate by an unknown factor.
 
-The §12.4.1 band table was predicted from arithmetic and then **measured**: tribute below war
-score 130, subjugation above it, with a settlement at 122.4 sitting 3.8 points inside the
-boundary.
+### Phase 2 — where it starts
 
-### What §13 changed, and why it is the risk
+Spec: [design/02-intrigue.md](design/02-intrigue.md). The order is fixed by that spec's §8
+and is a real dependency chain, not a preference: **2.1 grievances → 2.2 loyalty →
+2.3 blocs → 2.4 legitimacy → 2.5 succession → 2.6 civil war → 2.7 court UI**.
 
-The lead's calls after reading run 07. All of it builds clean and passes LoadProbe, and a
-**two-year smoke test ran with 0 errors** (see design/04 §13.7). That test showed the code runs; it
-answered none of the questions that make it a measured run.
+The shape of the pillar, restated so the first commit does not have to re-derive it:
 
-- **The two top rungs merged** into `PeaceCostSubjugation = 70` (package 75). A free kingdom
-  gives up independence, a hegemon gives up its sphere; the two can never both apply.
-- **The demand is a cliff at 75.** Above that score the winner asks for the loser's standing
-  rather than the tribute half the score would have bought. This also closed the open 12b
-  question — a cliff is symmetric, so which side reaches the table first no longer decides
-  whether a kingdom loses its independence.
-- **The ceiling now describes what is reachable** (`DearestDemandable`). The old constant
-  ceiling was wrong and run 07 proved it: a **225.6-point victory ended in a white peace**
-  because the loser already had a patron, so nothing on the table could reach the demand.
-- **The indemnity rung was dead** — 0 of 100 settlements used it — and is now sized from the war
-  score instead of the treasury.
-- **`AiSubmissionThreshold` 55 → 50**, and a new weekly **`[SUBMIT]`** record so the next run has
-  the near-miss distribution this decision was made without.
+- A **grievance is event-sourced** — a thing that happened, attached to a (clan → liege)
+  pair, with a type, a weight and a date. It is saved. Nothing about it is recomputed from
+  world state.
+- **Loyalty is derived and not saved** — a function of saved grievances plus live world
+  state. That keeps the save small and makes a balance change take effect on existing
+  campaigns rather than only on new ones. Same discipline as `Hegemony.IsHegemon`: one
+  source of truth, derived where it is read.
+- **Crown legitimacy is a saved pool**, 0–100, starting at 60. It is the one genuinely new
+  per-kingdom number, and the fabrication hook in `ClaimRegistry` is already computing a
+  penalty for it and only logging it.
+- **Civil war and succession are outcomes, not systems.** They route through Phase 1
+  machinery — a civil war is a war with a war record, exhaustion and a peace table.
 
-**The risk to watch:** run 07 settled 18 tributary pacts and 13 of them were at score 75 or
-more. The cliff is expected to convert most of those into subjugations, which multiplies the
-rate of imposed links several times over. The lead deliberately left
-`IsStrongEnoughToHold` without a strength margin, so each extra link is another chance to create
-one that is doomed at signing — run 07 §7.1 has the example (patron 1.2% stronger, Hold target 0
-from day one).
+What Phase 1 already left waiting, verified present in the code on 2026-09-23:
+
+| Hook | Where |
+|---|---|
+| `ExhaustionCourtPressure = 40`, the doves threshold | `Diplomacy/DiplomacyConstants.cs:83` |
+| A caught fabrication computes its legitimacy penalty and only logs it, "pending the Phase 2 legitimacy pool" | `Diplomacy/ClaimRegistry.cs:283` |
+| Policy votes, annexation, clan expulsion and king selection **left alone on purpose** for Phase 2 to extend | `GameModels/ModKingdomDecisionPermissionModel.cs:29` |
+| `CourtAgenda`, `SpyMissionType`, `MissionOutcome` enums, registered at definer ids 23–25 since Phase 0 | `Models/Enums.cs`, `Core/ModSaveDefiner.cs` |
+| `EnableIntrigue` settings toggle, shipped and defaulting on | `Core/ModSettings.cs:31` |
+
+A claim this handoff removed rather than repeated: the previous version said
+`CallToArms.WouldAnswer` carried a note about vassal defiance reading grievances. **It does
+not** — there is no such note in that file. The idea is still right and belongs at 2.2; it
+was simply never written into the code.
+
+Parked until Phase 2 gives them weight: **vassal-party summons**
+([design/04 §8](design/04-hegemony.md)) and **titles** (Emperor, Khagan), which sit on top of
+legitimacy at 2.4.
 
 ### What to do next
 
-1. **Deploy and run 08** from `di_fresh_1084`. The five questions it has to answer are in
-   [design/04 §13.7](design/04-hegemony.md#137-what-the-next-run-must-answer).
-2. Decide the strength margin (§13.6) once run 08 shows how often the doomed-link case appears.
-3. Decide whether the indemnity *price* should bite (§13.4) — 8 points per 1,000 denars makes a
-   60-point indemnity 7,500 denars, trivial against a late-game treasury.
-4. Open a pull request into `development` once run 08 has answered §13.7.
+1. **2.1 — the grievance ledger.** A new savable type at class id **10**, with its container
+   definition added to `ModSaveDefiner` in the same commit (a missing container definition
+   crashes on save), a `ModState` list at property **11**, the eight sources in
+   [design/02 §1](design/02-intrigue.md), the −0.02/day decay, and a `diplomacy.grievances`
+   diagnostic. No schema bump: a new list that defaults empty does not change the meaning of
+   existing data.
+2. **2.2 — loyalty**, derived on the weekly tick, plus the `AiDiplomacy.TryDemandTribute`
+   revisit — it accepts on strength ratio and trust alone, with no sense of the target
+   court's willingness.
+3. **2.3–2.4** in order. 2.4 is where the `ClaimRegistry` hook stops logging and starts
+   paying, and where the `Hold` formula gets its legitimacy term
+   ([design/04 §1.2](design/04-hegemony.md)).
+4. **Fold run 08 in** once Phase 2 work produces a campaign long enough to carry it. Same
+   deployment, same telemetry; what it needs is in-game years, which Phase 2 testing
+   generates anyway.
+
+### Design decisions taken before any Phase 2 code, [design/02 §9](design/02-intrigue.md)
+
+| # | Question | Decision, 2026-09-23 |
+|---|---|---|
+| 1 | Does the player see *rival* kingdoms' internal politics without espionage? | **A band for rivals, the full ledger for your own court.** Exact rival figures are what Phase 3 `ReadCourt` sells. Same fork the lead already took for enemy war exhaustion |
+| 2 | Is the player's own clan subject to this when serving another king? | **Yes, on the same terms as any AI clan.** No "is this the player" argument in the ledger or the loyalty calculation; where the experience must differ, that lives in the UI layer. Costs extra work at 2.2 and 2.7, taken deliberately |
+| 3 | Kingdom decisions: extend `KingdomDecision` or replace it? | **Extend.** The spec recommends it and `ModKingdomDecisionPermissionModel` was already written on that assumption |
+| 4 | Civil-war trigger thresholds ([design/02 §6](design/02-intrigue.md)) | **Still open** — guesses by admission, deferred to a long AI-only run. Nothing in 2.1–2.5 is blocked by it |
 
 ### Saves
 
 | Save | State |
 |---|---|
 | `di_fresh_1084` | **Summer 1, 1084, pristine start, hero parked in Myzea.** The run-08 baseline |
+| `save007` | Khuzait, player-led — the save the Kingdom screen UI was verified on |
 | `di_run07_1104` | Winter 1104, end of run 07: 7 kingdoms, 2 hegemons |
-| `di_hegemony_1166` | Vlandia with 2 vassals, from the evolved save. The only state holding a sphere built at the peace table |
+| `di_hegemony_1166` | Vlandia with 2 vassals. The only state holding a sphere built at the peace table |
 | `di_review_0919_b` | Winter 15, 1162 — the old evolved world, pre-§12 |
 | `di_run06_resume`, `di_review_0919` | run 06 checkpoints |
 
 Never save over `di_phase1_full`.
 
-### Session notes, 2026-09-20
+### Traps from the 2026-09-20 session that are not in CLAUDE.md §1
 
-**Corrections made to earlier claims.** All three are recorded where they were wrong, not
-quietly fixed:
-
-- CLAUDE.md said long-run verification could not be done from a tool call, and that the game
-  throttles to ~2 in-game hours per real minute when unfocused. Both wrong. The lever is
-  `Campaign.SpeedUpMultiplier` (default 4, no vanilla console command sets it);
-  `diplomacy.test_set_speed <1-50>` now does. Measured: **3.0 in-game days per real minute at
-  multiplier 4, 33 at 50.** Foregrounding the window changed nothing.
-- CLAUDE.md said bridge menu navigation past the root needs a human. `ui/click_widget` drives
-  the whole of character creation; only the intro video needs a key sent from outside.
-- It was claimed mid-session that war score bleeds heavily between a war's peak and its
-  settlement. Measured across run 07 the mean drop is **6.5 points**; the one 23-point case was
-  an outlier generalised too early.
-
-**Traps** (the always-true ones are in CLAUDE.md §1):
-- **GABS crashed the game again** — `CLR20r3`, P4 = `Lib.GAB` — on the `started_bridge_pending`
-  path. A restart that returned `started_connected` was stable for two hours.
 - **Parking the hero is not optional.** Crossing the map to a town, the party was stopped by
   bandits **twice**; each halts the clock until something clears it.
-- `diplomacy.sign_treaty` with `Vassalage` calls `TreatyRegistry.Sign` **directly** — it skips
-  `Hegemony.Submit`, so no starting Hold, no call to arms, no sibling reconciliation. It is a
-  treaty row, not a submission, and cannot test anything downstream of `Submit`.
 - Two diagnostics were lying and are fixed: `diplomacy.submission_value` called `CanSign`
   without `settlesWar` (so it reported the entire attacker route as impossible), and
   `diplomacy.offer_peace` had no term for the dissolution rung.
 
-**New tools:** `diplomacy.test_set_speed`, `tools/peak-scores.py` (reconstructs peak war score
-per war from `[WAR]` telemetry), the `[SUBMIT]` weekly record.
-
+The §12/§13 design detail that used to fill this section lives in
+[design/04 §12–§13](design/04-hegemony.md); the run-07 measurement is in
+[balance/run-07.md](balance/run-07.md). The corrections made on 2026-09-20 — the
+`SpeedUpMultiplier` lever, the war-score bleed figure — were folded into CLAUDE.md §1 and
+are not repeated here.
 ---
 
 ---
@@ -169,10 +184,10 @@ Two things were added because of this, independent of the cause:
 | Phase | State |
 |---|---|
 | **0 — Foundation** | ✅ done, verified in a live campaign |
-| **1 — Diplomacy core (1.1–1.12)** | ✅ **code complete**, including submission and hegemony (1.9/1.10), the vanilla takeover (1.11) and power (1.12). Verified piecewise in live campaigns; run 04 accepted 1.1-1.11, run 06 is measuring the rework |
-| **2 — Court intrigue** | ⬜ spec written and reviewed, no code |
+| **1 — Diplomacy core (1.1–1.12)** | ✅ **accepted by the lead, 2026-09-23**. Code complete including submission and hegemony (1.9/1.10), the vanilla takeover (1.11) and power (1.12). Measured over runs 01–07; the §13 rework under it is smoke-tested only, and the carried debt is listed in [ROADMAP.md](ROADMAP.md#phase-1--accepted-by-the-project-lead-2026-09-23) |
+| **2 — Court intrigue** | 🔄 **started 2026-09-23**. Spec written and reviewed, no code yet; 2.1 grievances is the first deliverable |
 | **3 — Espionage** | ⬜ spec written and reviewed, no code |
-| **4 — Integration, balance, release** | 🔄 runs 01-06 archived; run 04 was the Phase 1 acceptance run. **Run 07** (2026-09-20) measured the §12 vassalage work on a fresh campaign and is the current reference — [balance/run-07.md](balance/run-07.md) |
+| **4 — Integration, balance, release** | 🔄 runs 01-07 archived. **Run 07** (2026-09-20) is the current reference — [balance/run-07.md](balance/run-07.md). **Run 08 is owed** and closes the §13 questions |
 
 ### Kingdom screen UI — built and verified live, 2026-09-21
 
@@ -674,15 +689,11 @@ Run 06 is that measurement.
 
 ### 4. Phase 2 — court intrigue
 
-Specced in `docs/design/02-intrigue.md`; order is 2.1 grievances → 2.2 loyalty → 2.3 blocs →
-2.4 legitimacy → 2.5 succession → 2.6 civil war → 2.7 UI. Phase 1 leaves hooks waiting for
-it: `ExhaustionCourtPressure` (40) for doves, a note in `CallToArms.WouldAnswer` where vassal
-defiance should read grievances, and the `Hold` formula wants a legitimacy term
-([design/04](design/04-hegemony.md) §1.2).
-
-Two Phase 1 pieces are deliberately parked until Phase 2 makes them mean something:
-**vassal-party summons** (design 04 §8 — the most intrusive and least load-bearing part of
-hegemony) and **titles** (Emperor, Khagan), which sit on top of legitimacy at 2.4.
+Superseded on 2026-09-23 — Phase 2 is no longer a future item, and the current version of
+this is the **Phase 2 — where it starts** section in the handoff at the top of this file.
+One correction this entry needs recording rather than deleting: it claimed
+`CallToArms.WouldAnswer` carries a note about vassal defiance reading grievances. It does
+not, and never did.
 
 ## Decisions already made. Do not re-litigate.
 
@@ -694,6 +705,9 @@ hegemony) and **titles** (Emperor, Khagan), which sit on top of legitimacy at 2.
 | Minor factions out of scope | Treaties, claims and exhaustion are kingdom-only |
 | AI plays by the same rules | Enforced in code — no "is this the player" argument anywhere |
 | Enemy exhaustion shown as a band | Five bands whose edges are the behavioural thresholds. Phase 3 `ReadCourt` buys the exact figure |
+| Rival courts shown as a band too | 2026-09-23. Own court fully legible, rivals qualitative only, exact figures sold by Phase 3. The same fork as enemy exhaustion, for the same reason |
+| The player's clan is subject to intrigue | 2026-09-23. Serving a king is a political position, not a waiting room. Extends "the AI plays by the same rules" to Phase 2 |
+| Kingdom decisions extended, not replaced | 2026-09-23. Revisit only when extending visibly constrains us |
 | Vassalage stays in Phase 1 | And it carries military service; a tributary pays, a vassal pays and fights |
 | Blocked routine path, deliberate defiance | The AI never wanders into a forbidden war; breaking a treaty on purpose is always possible and always expensive |
 | Native dialogs, not a Gauntlet screen | A custom screen is the eventual goal and the most fragile thing a mod can own |
@@ -709,9 +723,12 @@ hegemony) and **titles** (Emperor, Khagan), which sit on top of legitimacy at 2.
   observed.
 - **Clock-dependent behaviour unverified** for the same reason: treaty expiry and its trust
   dividend, tribute changing hands on day 7, the two-year peace dividend.
-- **Menu navigation past the root** was never clicked through — GABS cannot click inside a
-  `MultiSelectionInquiry`. The root renders correctly (screenshot) and the vassal/ruler
-  distinction works. Ask the lead to walk the submenus.
+- **Menu navigation past the root** has not been clicked through in a `MultiSelectionInquiry`.
+  The root renders correctly (screenshot) and the vassal/ruler distinction works. The blanket
+  claim that this needs a human is **too strong** and was corrected on 2026-09-20:
+  `ui/click_widget` drove the whole of character creation, so GABS is not limited to the map
+  layer. Whether it reaches a `MultiSelectionInquiry` specifically is **untested** — worth ten
+  minutes before asking the lead to walk the submenus by hand.
 - **`AiDiplomacy.TryDemandTribute` accepts on a strength ratio and a trust floor only.** It
   has no notion of the target's willingness beyond that; a weak kingdom with high trust will
   submit readily. Worth revisiting when Phase 2 gives courts an opinion.
