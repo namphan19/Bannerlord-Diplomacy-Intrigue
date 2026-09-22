@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <!-- Diagnostic tool, not shipped. Reads the game assemblies as metadata only.
+         Written for the Phase 2 internal-politics work: option C needs to patch the
+         engine's hostility resolution, and you cannot patch what you have not located. -->
+    <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>CallSites</AssemblyName>
+    <RootNamespace>CallSites</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Mono.Cecil" Version="0.11.5" />
+  </ItemGroup>
+
+</Project>
