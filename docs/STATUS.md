@@ -246,6 +246,56 @@ a loyalty.
   than more united. Worth revisiting if a balance run shows blocs carrying votes their leaders
   visibly did not want.
 
+### 2.5 is built and verified live, 2026-09-23 (evening)
+
+The first attempt at verifying this failed for a reason worth keeping: killing a ruler hands the
+choice to vanilla's king selection, which needs the **real** campaign clock, and
+`diplomacy.tick_days` does not move it. What worked: seed the throne watch with one
+`tick_days 1`, kill the ruler, then `diplomacy.test_set_speed 50` plus `set_time_speed 3` and let
+the real clock run. The succession resolves within a few seconds of wall time.
+
+Set-up on `di_grievance_test`: Battania, whose fen Eingal (Aradwyr) already qualified as a
+claimant on strength (influence x1.70, loyalty 23.4). Two great houses were given +100 relation
+with him - "he has been courting them" - then the king, Caladog, was killed. **0 errors, 0
+warnings** throughout.
+
+| Check | Result |
+|---|---|
+| The throne watch catches an heir inheriting *inside* the ruling clan | yes - the case `RulingClanChanged` never fires for |
+| A contested succession | `Battania divides: Muinser 49% (4 clans), Aradwyr 51% (4 clans)` |
+| It costs the new crown | legitimacy **60.0 -> 45.0**, exactly -15 |
+| Backers of the loser are grieved | **4** `SuccessionPassedOver` grievances at 6.0 - exactly the 4 clans the tally put behind Aradwyr |
+| A strong loser stays a claimant | "Aradwyr kept 51% of the court and remains a pretender" |
+| No bloc on half the condition | at legitimacy 45 with a living claimant: **no bloc** |
+| The bloc forms on both halves | the new king broke a treaty, 45 -> **25**, and a **Pretenders bloc** formed: 5 clans, power 1,560, led by fen Eingal |
+| Pressures check by hand | Eingal **200.0** (own claim); Caernacht **50.0** = 0.5 x (100 - 0); the two houses that do not prefer Aradwyr: **0** |
+| **Save round trip** of `Pretender` (class 12) | saved `di_pretender_test`, new process, reloaded: `1 pretenders, 2 legitimacy pools`, and the bloc came back identical |
+
+Note the division: the court wanted the loser. Aradwyr held **51%** and vanilla crowned the heir
+anyway - which is the strongest pretender this system can produce, and a direct consequence of
+the decision that vanilla picks the king and this pillar does the politics afterwards.
+
+**Two bugs found by running it, both fixed and re-verified:**
+
+- **Two definitions of "who backed whom".** The tally weighed loyalty and self-backing; the
+  grievances compared bare relations. On the very first contested succession they already
+  disagreed - the tally put 4 clans behind the loser and **5** were grieved. The fifth, fen
+  Penraic, sat at loyalty 66, which counted it for the new king in the vote; it was then punished
+  for backing his rival. It was first written up as the two "happening to agree"; they did not,
+  it had simply not been checked. Now one backing map feeds both, and a `divides:` log line makes
+  the invariant checkable: re-run, **4 backers and 4 grievances**.
+- **Mercenary companies were treated as courtiers.** The Legion of the Betrayed and Skolderbroda
+  were being given loyalty scores, sorted into blocs and counted at successions in the Northern
+  Empire. A clan under mercenary service holds no fief from the crown and cannot vote in vanilla.
+  `Intrigue/Court.IsMember` is now the single definition of court membership, used by all nine
+  loops that had been deciding it separately. Verified: the Northern Empire court now lists 8
+  clans.
+
+**An emergent balance signal, recorded not acted on:** after the contested succession and one
+broken treaty, most of Battania's court sat at loyalty **0-7.5**. A new king starts with near-zero
+relation with everyone, and relation is measured against the *current* ruler, so every
+succession resets the largest positive term in the loyalty sum. Realistic, and very strong.
+
 ### What to do next
 
 1. ~~**2.1 - the grievance ledger.**~~ **Done and verified above.** Originally: A new savable type at class id **10**, with its container

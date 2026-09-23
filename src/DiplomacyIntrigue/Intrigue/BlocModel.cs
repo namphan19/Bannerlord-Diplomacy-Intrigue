@@ -53,8 +53,8 @@ namespace DiplomacyIntrigue.Intrigue
 
             // The ruling clan is the crown, not a faction at its own court. Design 02 §3 lists
             // it under Centralists, but a bloc of one that always agrees with itself adds
-            // nothing to read and would distort every power share.
-            if (clan == ruling) return result;
+            // nothing to read and would distort every power share. A mercenary has no seat.
+            if (clan == ruling || !Court.IsMember(clan)) return result;
 
             var exhaustion = WarExhaustion.Worst(state, kingdom);
             var hunger = FiefStanding.Hunger(clan);
@@ -187,7 +187,7 @@ namespace DiplomacyIntrigue.Intrigue
             for (var i = 0; i < kingdom.Clans.Count; i++)
             {
                 var clan = kingdom.Clans[i];
-                if (clan == null || clan.IsEliminated) continue;
+                if (!Court.IsMember(clan)) continue;
 
                 var agenda = AgendaOf(state, clan);
                 if (agenda == CourtAgenda.None) continue;
@@ -245,7 +245,7 @@ namespace DiplomacyIntrigue.Intrigue
             for (var i = 0; i < kingdom.Clans.Count; i++)
             {
                 var other = kingdom.Clans[i];
-                if (other == null || other.IsEliminated) continue;
+                if (!Court.IsMember(other)) continue;
                 if (other.Influence > 0f) total += other.Influence;
             }
             if (total <= 0f) return 0f;

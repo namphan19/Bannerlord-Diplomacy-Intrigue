@@ -303,7 +303,7 @@ namespace DiplomacyIntrigue.Core
                 for (var i = 0; i < kingdom.Clans.Count; i++)
                 {
                     var clan = kingdom.Clans[i];
-                    if (clan == null || clan.IsEliminated || clan == kingdom.RulingClan) continue;
+                    if (!Court.IsMember(clan) || clan == kingdom.RulingClan) continue;
 
                     // What the clan wants on its own: the outcome it supports most.
                     DecisionOutcome own = null;
@@ -392,7 +392,7 @@ namespace DiplomacyIntrigue.Core
                 for (var i = 0; i < kingdom.Clans.Count; i++)
                 {
                     var clan = kingdom.Clans[i];
-                    if (clan == null || clan.IsEliminated || clan == kingdom.RulingClan) continue;
+                    if (!Court.IsMember(clan) || clan == kingdom.RulingClan) continue;
 
                     var ratio = SuccessionModel.InfluenceRatio(clan, kingdom);
                     var loyalty = LoyaltyModel.Of(state, clan);
@@ -510,6 +510,11 @@ namespace DiplomacyIntrigue.Core
                 {
                     var clan = kingdom.Clans[c];
                     if (clan == null || clan.IsEliminated) continue;
+                    if (clan.IsUnderMercenaryService)
+                    {
+                        sb.AppendLine("        " + clan.Name + ": a mercenary company, no seat at court");
+                        continue;
+                    }
 
                     var pressures = BlocModel.Pressures(state, clan);
                     if (pressures.Count == 0)
@@ -562,7 +567,7 @@ namespace DiplomacyIntrigue.Core
                 for (var i = 0; i < kingdom.Clans.Count; i++)
                 {
                     var clan = kingdom.Clans[i];
-                    if (clan == null || clan.IsEliminated) continue;
+                    if (!Court.IsMember(clan)) continue;
 
                     var explained = LoyaltyModel.Explain(state, clan);
                     if (!explained.Applies) continue;   // the ruling clan itself

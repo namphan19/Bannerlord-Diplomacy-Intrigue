@@ -210,8 +210,12 @@ reuse a save-definer local id for a different type, never change the definer bas
 (`2749100`, block `2749100`–`2749199`). `Treaty` currently uses ids **1-17** (14 `Hold`, 15
 defiance marks, 16 last defiance, 17 the revolt clock), so the next free id there is **18**. `TrustRecord` uses **1-6** (5 `LastPositiveChange`, 6
 `LastOfferRefused`), next free **7**. `ModState` uses
-properties **1-10** (10 is `PowerRecords`), and the definer's class ids run to **9** (`KingdomPower`) with the enums at **20-25** — so Phase 2 takes class ids from **10** and `ModState`
-properties from **11**. Adding a new savable type means a class definition
+properties **1-13** (11 `Grievances`, 12 `Legitimacy`, 13 `Pretenders`), next free **14**.
+The definer's class ids run to **12** (10 `Grievance`, 11 `KingdomLegitimacy`, 12 `Pretender`),
+next free **13**; enums are **20-26** (26 `GrievanceType`), next free **27**. `Grievance` uses
+properties 1-5, `KingdomLegitimacy` 1-5, `Pretender` 1-4. A new *value* on an enum the definer
+already registers is safe (`GrievanceType.SuccessionPassedOver = 9` was added that way);
+renumbering or reusing one is not. Adding a new savable type means a class definition
 **and** a container definition in `ModSaveDefiner` — a missing container definition crashes
 on save, which is the single most common way to break a Bannerlord mod. Bump
 `ModState.CurrentSchemaVersion` only when the *meaning* of existing data changes; adding a
@@ -224,9 +228,11 @@ check it and stay inert rather than half-running.
 
 **Prefer events and `GameModel` overrides. Harmony is the last resort.** Rules for
 `Patches/`: one patched method per file, a header stating *what* it changes, *why* no event
-exists, and the *game version verified against*; a `try/catch` that degrades to vanilla. Two
-patches exist today and both follow this. Do not add a third without exhausting the
-alternatives.
+exists, and the *game version verified against*; a `try/catch` that degrades to vanilla. Three
+patches exist today and all follow this; the third,
+`KingdomDecision_DetermineSupportOption_Patch` (Phase 2.3 bloc voting), records in its header
+the evidence that no event or `GameModel` could do the job. Do not add a fourth without the
+same evidence.
 
 **The AI plays by the same rules as the player.** A project decision, enforced in code:
 `ClaimRegistry`, `TreatyRegistry`, `PeaceTable` and `CallToArms` take no "is this the player"

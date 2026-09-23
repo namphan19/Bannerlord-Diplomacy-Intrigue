@@ -63,7 +63,8 @@ namespace DiplomacyIntrigue.Intrigue
 
             var kingdom = clan?.Kingdom;
             var ruling = kingdom?.RulingClan;
-            if (state == null || ruling == null || ruling == clan) return result;
+            // A mercenary is paid, not sworn: it has no loyalty to the crown to measure.
+            if (state == null || ruling == null || ruling == clan || !Court.IsMember(clan)) return result;
 
             result.Applies = true;
 

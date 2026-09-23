@@ -63,7 +63,7 @@ namespace DiplomacyIntrigue.Intrigue
             for (var i = 0; i < kingdom.Clans.Count; i++)
             {
                 var clan = kingdom.Clans[i];
-                if (clan == receiver || clan == ruling || clan.IsEliminated) continue;
+                if (clan == receiver || clan == ruling || !Court.IsMember(clan)) continue;
 
                 var hunger = FiefStanding.Hunger(clan);
                 if (hunger <= 0f) continue;   // a clan already well provided for does not begrudge it
@@ -84,7 +84,7 @@ namespace DiplomacyIntrigue.Intrigue
         {
             var kingdom = loser?.Kingdom;
             var ruling = kingdom?.RulingClan;
-            if (ruling == null || loser == ruling) return;
+            if (ruling == null || loser == ruling || !Court.IsMember(loser)) return;
 
             // A fief changing hands inside one kingdom is not a defeat; only a real loss to
             // an outside power is.
@@ -134,7 +134,7 @@ namespace DiplomacyIntrigue.Intrigue
             for (var i = 0; i < aggressor.Clans.Count; i++)
             {
                 var clan = aggressor.Clans[i];
-                if (clan == ruling || clan.IsEliminated) continue;
+                if (clan == ruling || !Court.IsMember(clan)) continue;
 
                 GrievanceRegistry.Add(state, clan, ruling, GrievanceType.UnjustWar, weight,
                     "war on " + defender.Name + " at legitimacy " + legitimacy.ToString("0.00"));
@@ -170,7 +170,7 @@ namespace DiplomacyIntrigue.Intrigue
                 for (var c = 0; c < payer.Clans.Count; c++)
                 {
                     var clan = payer.Clans[c];
-                    if (clan == ruling || clan.IsEliminated) continue;
+                    if (clan == ruling || !Court.IsMember(clan)) continue;
 
                     GrievanceRegistry.Add(state, clan, ruling, GrievanceType.HumiliatingTribute,
                         reason: "the realm pays tribute");
@@ -186,7 +186,7 @@ namespace DiplomacyIntrigue.Intrigue
 
                 var clan = hero.Clan;
                 var ruling = clan?.Kingdom?.RulingClan;
-                if (ruling == null || clan == ruling) continue;
+                if (ruling == null || clan == ruling || !Court.IsMember(clan)) continue;
 
                 if (hero.CaptivityStartTime.ElapsedYearsUntilNow < IntrigueConstants.CaptivityGrievanceYears)
                     continue;

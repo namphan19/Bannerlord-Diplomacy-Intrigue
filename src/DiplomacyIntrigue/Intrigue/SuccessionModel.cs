@@ -129,12 +129,37 @@ namespace DiplomacyIntrigue.Intrigue
                 return;
             }
 
-            var support = Support(state, kingdom, claimants);
+            // Who backs whom is decided ONCE and both the tally and the grievances read it.
+            // The first version decided it twice - Support() weighed loyalty and self-backing,
+            // GrieveBackers() compared bare relations - and on the very first live contested
+            // succession they already disagreed: the tally put 4 clans behind the loser and 5
+            // clans were handed a grievance for backing him. The fifth, fen Penraic, sat at
+            // loyalty 66, which counted it firmly for the new king in the vote; it was then
+            // punished for not supporting him. This was first written up as the two "happening
+            // to agree" - they did not, it was simply not checked. Re-run on this code: 4 and 4.
+            // CLAUDE.md §3: a value derived in two places is the bug.
+            var backing = Backing(state, kingdom, claimants);
+            var support = Support(kingdom, claimants, backing);
             var total = 0f;
             foreach (var pair in support) total += pair.Value;
             if (total <= 0f) return;
 
             var incumbentShare = support.TryGetValue(incumbent, out var own) ? own / total : 0f;
+
+            // One line with the whole division, so a contested succession can be checked from
+            // the log: the grievances that follow must go to exactly the clans counted here
+            // behind each loser, since both read the same backing map.
+            var division = new System.Text.StringBuilder();
+            foreach (var pair in support)
+            {
+                var clans = 0;
+                foreach (var b in backing) if (b.Value == pair.Key) clans++;
+                if (division.Length > 0) division.Append(", ");
+                division.Append(pair.Key.Name).Append(' ')
+                        .Append((pair.Value / total * 100f).ToString("0")).Append("% (")
+                        .Append(clans).Append(clans == 1 ? " clan)" : " clans)");
+            }
+            Log.Info("Succession", kingdom.Name + " divides: " + division);
 
             if (incumbentShare >= IntrigueConstants.SuccessionClearMajority)
             {
@@ -155,7 +180,7 @@ namespace DiplomacyIntrigue.Intrigue
                 var share = pair.Value / total;
 
                 // Everyone who backed a loser is left with a grievance against the winner.
-                GrieveBackers(state, kingdom, claimant, incumbent);
+                GrieveBackers(state, kingdom, claimant, backing);
 
                 if (share < IntrigueConstants.SuccessionPretenderShare) continue;
                 if (claimant.Clan == null || claimant.Clan == kingdom.RulingClan) continue;
@@ -242,7 +267,7 @@ namespace DiplomacyIntrigue.Intrigue
             {
                 var clan = kingdom.Clans[i];
                 var leader = clan?.Leader;
-                if (leader == null || clan.IsEliminated || leader == incumbent) continue;
+                if (leader == null || !Court.IsMember(clan) || leader == incumbent) continue;
                 if (claimants.Contains(leader)) continue;
 
                 if (HasBloodClaim(leader, lateRuler, oldRulingClan)
@@ -283,7 +308,7 @@ namespace DiplomacyIntrigue.Intrigue
             for (var i = 0; i < kingdom.Clans.Count; i++)
             {
                 var other = kingdom.Clans[i];
-                if (other == null || other.IsEliminated || other.Influence <= 0f) continue;
+                if (!Court.IsMember(other) || other.Influence <= 0f) continue;
                 total += other.Influence;
                 counted++;
             }
@@ -310,7 +335,7 @@ namespace DiplomacyIntrigue.Intrigue
             for (var i = 0; i < kingdom.Clans.Count; i++)
             {
                 var other = kingdom.Clans[i];
-                if (other == null || other.IsEliminated || other.Influence <= 0f) continue;
+                if (!Court.IsMember(other) || other.Influence <= 0f) continue;
                 total += other.Influence;
                 counted++;
             }
@@ -326,28 +351,24 @@ namespace DiplomacyIntrigue.Intrigue
         }
 
         /// <summary>
-        /// How the court divides. Every clan backs one claimant and brings its influence.
+        /// How the court divides: which claimant each clan backs. The single answer to that
+        /// question - the tally and the grievances both read this map.
         ///
         /// Backing follows design 02 §5 - "loyalty, bloc agenda, and relation to the claimant".
         /// Relation carries it, with the incumbent given the clan's loyalty as a bonus, because
         /// loyalty to the crown is exactly the disposition to accept whoever now wears it.
         /// Bloc agenda enters through loyalty rather than as a separate term: a clan's bloc is
-        /// already a function of the same pressures.
+        /// already a function of the same pressures. A claimant's own clan backs its claimant.
         /// </summary>
-        private static Dictionary<Hero, float> Support(ModState state, Kingdom kingdom, List<Hero> claimants)
+        private static Dictionary<Clan, Hero> Backing(ModState state, Kingdom kingdom, List<Hero> claimants)
         {
-            var support = new Dictionary<Hero, float>();
-            for (var i = 0; i < claimants.Count; i++) support[claimants[i]] = 0f;
-
-            var incumbent = kingdom.RulingClan?.Leader;
+            var backing = new Dictionary<Clan, Hero>();
+            var incumbent = kingdom.Leader;
 
             for (var c = 0; c < kingdom.Clans.Count; c++)
             {
                 var clan = kingdom.Clans[c];
-                if (clan?.Leader == null || clan.IsEliminated) continue;
-
-                var influence = clan.Influence > 0f ? clan.Influence : 0f;
-                if (influence <= 0f) continue;
+                if (clan?.Leader == null || !Court.IsMember(clan)) continue;
 
                 Hero backed = null;
                 var best = float.MinValue;
@@ -367,7 +388,23 @@ namespace DiplomacyIntrigue.Intrigue
                     backed = claimant;
                 }
 
-                if (backed != null) support[backed] += influence;
+                if (backed != null) backing[clan] = backed;
+            }
+            return backing;
+        }
+
+        /// <summary>Each claimant's weight at court: the influence of the clans backing them.</summary>
+        private static Dictionary<Hero, float> Support(Kingdom kingdom, List<Hero> claimants,
+            Dictionary<Clan, Hero> backing)
+        {
+            var support = new Dictionary<Hero, float>();
+            for (var i = 0; i < claimants.Count; i++) support[claimants[i]] = 0f;
+
+            foreach (var pair in backing)
+            {
+                var influence = pair.Key.Influence > 0f ? pair.Key.Influence : 0f;
+                if (influence <= 0f) continue;
+                if (support.ContainsKey(pair.Value)) support[pair.Value] += influence;
             }
             return support;
         }
@@ -377,18 +414,16 @@ namespace DiplomacyIntrigue.Intrigue
         /// puts this at weight 6; the grievance is against the new ruling clan, which is the
         /// crown now.
         /// </summary>
-        private static void GrieveBackers(ModState state, Kingdom kingdom, Hero loser, Hero incumbent)
+        private static void GrieveBackers(ModState state, Kingdom kingdom, Hero loser,
+            Dictionary<Clan, Hero> backing)
         {
             var ruling = kingdom.RulingClan;
             if (ruling == null) return;
 
-            for (var c = 0; c < kingdom.Clans.Count; c++)
+            foreach (var pair in backing)
             {
-                var clan = kingdom.Clans[c];
-                if (clan?.Leader == null || clan.IsEliminated || clan == ruling) continue;
-
-                // Backed the loser if they simply like them better than the winner.
-                if (clan.Leader.GetRelation(loser) <= clan.Leader.GetRelation(incumbent)) continue;
+                var clan = pair.Key;
+                if (clan == ruling || pair.Value != loser) continue;
 
                 GrievanceRegistry.Add(state, clan, ruling, GrievanceType.SuccessionPassedOver,
                     reason: "backed " + loser.Name + " for the throne");
