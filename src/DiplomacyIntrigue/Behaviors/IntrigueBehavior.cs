@@ -2,6 +2,8 @@ using System;
 using DiplomacyIntrigue.Core;
 using DiplomacyIntrigue.Intrigue;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.CampaignSystem.Settlements;
 
 namespace DiplomacyIntrigue.Behaviors
 {
@@ -24,6 +26,9 @@ namespace DiplomacyIntrigue.Behaviors
         public override void RegisterEvents()
         {
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
+            CampaignEvents.WeeklyTickEvent.AddNonSerializedListener(this, OnWeeklyTick);
+            CampaignEvents.WarDeclared.AddNonSerializedListener(this, OnWarDeclared);
+            CampaignEvents.OnSettlementOwnerChangedEvent.AddNonSerializedListener(this, OnSettlementOwnerChanged);
         }
 
         // Grievances live in ModState, owned by CoreBehavior.
@@ -43,6 +48,58 @@ namespace DiplomacyIntrigue.Behaviors
             catch (Exception ex)
             {
                 Log.Error("Intrigue", "Daily intrigue upkeep failed.", ex);
+            }
+        }
+
+        /// <summary>
+        /// The sources that are conditions rather than moments - a tribute being paid, a
+        /// relative still held. See <see cref="GrievanceSources.WeeklyScan"/>.
+        /// </summary>
+        private void OnWeeklyTick()
+        {
+            var state = CoreBehavior.State;
+            if (state == null || !Settings.Current.EnableIntrigue) return;
+
+            try
+            {
+                GrievanceSources.WeeklyScan(state);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Intrigue", "Weekly grievance scan failed.", ex);
+            }
+        }
+
+        private void OnWarDeclared(IFaction aggressor, IFaction defender,
+            DeclareWarAction.DeclareWarDetail detail)
+        {
+            var state = CoreBehavior.State;
+            if (state == null || !Settings.Current.EnableIntrigue) return;
+
+            try
+            {
+                GrievanceSources.OnWarDeclared(state, aggressor as Kingdom, defender as Kingdom, detail);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Intrigue", "Grievance on war declaration failed.", ex);
+            }
+        }
+
+        private void OnSettlementOwnerChanged(Settlement settlement, bool openToClaim, Hero newOwner,
+            Hero oldOwner, Hero capturerHero,
+            ChangeOwnerOfSettlementAction.ChangeOwnerOfSettlementDetail detail)
+        {
+            var state = CoreBehavior.State;
+            if (state == null || !Settings.Current.EnableIntrigue) return;
+
+            try
+            {
+                GrievanceSources.OnSettlementOwnerChanged(state, settlement, newOwner, oldOwner, detail);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Intrigue", "Grievance on settlement owner change failed.", ex);
             }
         }
     }

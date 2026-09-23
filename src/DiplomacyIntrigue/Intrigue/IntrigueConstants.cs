@@ -40,6 +40,12 @@ namespace DiplomacyIntrigue.Intrigue
         /// <summary>A relative left in enemy captivity over a year. UN-TUNED. Renews if still held.</summary>
         public const float GrievanceRelativeInCaptivity = 6f;
 
+        /// <summary>
+        /// How long a relative must have been held before the clan blames its own crown for
+        /// leaving them there. UN-TUNED: design 02 §1's "more than 1 year".
+        /// </summary>
+        public const float CaptivityGrievanceYears = 1f;
+
         /// <summary>The realm bought peace with tribute. UN-TUNED. Paying side only.</summary>
         public const float GrievanceHumiliatingTribute = 5f;
 
