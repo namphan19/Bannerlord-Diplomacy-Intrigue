@@ -423,9 +423,11 @@ UI-INTEGRATION.md §0b.
      siege lands; the log line `passed from ... the rising now holds N fiefs` is the check.
    - Both player prompts. The player is Khuzait in that save, so this needs a world where the
      player is a Battanian vassal, or a pretender.
-2. **2.6b, succession disputes inside a clan**, including the ruling clan. This is the rest of
-   the lead's brief for design 07. Engine spike first, as for 2.6: which vanilla behaviour
-   picks a clan's new leader, and whether a model reaches it.
+2. **Verify 2.6b, a house divided**, [design/07 §5](design/07-internal-politics.md). It is
+   built and has **not run in a game**. `diplomacy.heirs` finds a house one death away from
+   splitting. `diplomacy.test_divide_clan` tests the split mechanics. Then kill a real head
+   with `bannerlord.hero.kill_hero` to test the event path. Finally a save and reload with the
+   cadet branch in it.
 3. **Court tab gaps**: no scrolling past ~13 sworn clans; the physical row click is unverified.
 4. **The `AiDiplomacy.TryDemandTribute` revisit** planned for 2.2 was never done: it still
    accepts on strength ratio and trust alone, with no sense of the target court's willingness.
@@ -519,7 +521,7 @@ Two things were added because of this, independent of the cause:
 |---|---|
 | **0 — Foundation** | ✅ done, verified in a live campaign |
 | **1 — Diplomacy core (1.1–1.12)** | ✅ **accepted by the lead, 2026-09-23**. Code complete including submission and hegemony (1.9/1.10), the vanilla takeover (1.11) and power (1.12). Measured over runs 01–07; the §13 rework under it is smoke-tested only, and the carried debt is listed in [ROADMAP.md](ROADMAP.md#phase-1--accepted-by-the-project-lead-2026-09-23) |
-| **2 — Court intrigue** | 🔄 2.1-2.5 and 2.7 built and verified live; **2.6 civil war** built and verified on its main path, on `feature/phase-2.6-civil-war`; 2.6b (clan succession disputes) not started |
+| **2 — Court intrigue** | 🔄 2.1-2.5 and 2.7 built and verified live; **2.6 civil war** built and verified on its main path, on `feature/phase-2.6-civil-war`; 2.6b (a house divided) built, not yet run in a game |
 | **3 — Espionage** | ⬜ spec written and reviewed, no code |
 | **4 — Integration, balance, release** | 🔄 runs 01-07 archived. **Run 07** (2026-09-20) is the current reference — [balance/run-07.md](balance/run-07.md). **Run 08 is owed** and closes the §13 questions |
 

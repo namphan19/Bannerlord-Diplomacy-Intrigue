@@ -36,6 +36,7 @@ namespace DiplomacyIntrigue.Behaviors
             CampaignEvents.MobilePartyCreated.AddNonSerializedListener(this, OnMobilePartyCreated);
             CampaignEvents.MobilePartyDestroyed.AddNonSerializedListener(this, OnMobilePartyDestroyed);
             CampaignEvents.HeroKilledEvent.AddNonSerializedListener(this, OnHeroKilled);
+            CampaignEvents.OnClanLeaderChangedEvent.AddNonSerializedListener(this, OnClanLeaderChanged);
         }
 
         // Grievances live in ModState, owned by CoreBehavior.
@@ -202,6 +203,22 @@ namespace DiplomacyIntrigue.Behaviors
             catch (Exception ex)
             {
                 Log.Error("Intrigue", "Internal war roster update (hero killed) failed.", ex);
+            }
+        }
+
+        /// <summary>A house's head changed; if by death and contested, it may divide (2.6b).</summary>
+        private void OnClanLeaderChanged(Hero oldLeader, Hero newLeader)
+        {
+            var state = CoreBehavior.State;
+            if (state == null || !Settings.Current.EnableIntrigue) return;
+
+            try
+            {
+                ClanSuccession.OnClanLeaderChanged(state, oldLeader, newLeader);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Intrigue", "Clan succession politics failed.", ex);
             }
         }
 

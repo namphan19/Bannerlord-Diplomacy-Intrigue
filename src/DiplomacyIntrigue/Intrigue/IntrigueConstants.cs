@@ -318,6 +318,31 @@ namespace DiplomacyIntrigue.Intrigue
         /// </summary>
         public const float InternalWarPlayerAskAgainDays = 30f;
 
+        // ----- A house divided (design 07 §5, Phase 2.6b) ----------------------
+
+        /// <summary>
+        /// Heir points (vanilla's `HeirSelectionCalculationModel` scale) within which a runner-up
+        /// counts as having nearly had it. UN-TUNED. Vanilla gives +10 for the direct line, +10
+        /// for sex and ±5 for age, so 5 is "one age step apart": an eldest son against a younger
+        /// son who is the most skilled of the family, not a son against a cousin.
+        /// </summary>
+        public const int ClanSuccessionContestMargin = 5;
+
+        /// <summary>
+        /// Below this relation with the new head, a close runner-up will not serve and leaves.
+        /// UN-TUNED. How warm family relations run in a real campaign is not yet measured.
+        /// </summary>
+        public const int ClanSuccessionDisputeRelation = 10;
+
+        /// <summary>Relation lost between the two heads when a house divides. UN-TUNED.</summary>
+        public const int ClanSuccessionRelationPenalty = 20;
+
+        /// <summary>
+        /// Share of the parent house's renown a cadet branch starts with, which sets its tier.
+        /// UN-TUNED. A younger son of a great house starts above a freed companion.
+        /// </summary>
+        public const float ClanSuccessionCadetRenownShare = 0.25f;
+
         /// <summary>
         /// The starting weight for a type. One place, so a source cannot disagree with the
         /// ledger about what a slight is worth.

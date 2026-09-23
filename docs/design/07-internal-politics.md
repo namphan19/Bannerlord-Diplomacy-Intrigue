@@ -380,3 +380,60 @@ dotnet run --project tools/CallSites -- --members "Clan"
 ```
 
 Output lands in `artifacts/callsites/`.
+
+## 5. A house divided: succession disputes inside a clan (2.6b), 2026-09-23
+
+The rest of the lead's brief: "a clan should be able to have its own **succession dispute**
+when its leader dies, including the ruling clan". Built on the same rule as 2.5: **vanilla
+still picks the heir, and this pillar handles the politics afterwards.**
+
+### What the spike found (IL, v1.4.8)
+
+| Question | Answer |
+|---|---|
+| Who picks a clan's new head? | `ChangeClanLeaderAction.ApplyInternal` calls `clan.GetHeirApparents()`, which scores every eligible clan hero through **`HeirSelectionCalculationModel`**, a GameModel. The highest score wins and ties are broken at random. Then `Clan.SetLeader`, then **`OnClanLeaderChanged(oldLeader, newLeader)`** |
+| How are heirs scored? | Male +10, direct line +10, older or younger ±5, and the family's most skilled hero gets `HighestSkillPoint` on top. So "close" is measurable on vanilla's own scale |
+| Can a hero found a new clan at runtime? | Yes, by vanilla's own recipe: `Clan.CreateCompanionToLordClan` (create, name, culture, banner, kingdom, home, `hero.Clan`, `SetLeader`, `IsNoble`, `OnClanCreated`). It is the path used every time a player grants a fief to a companion |
+| What happens to the party a hero is leading when they change clan? | Nothing. `Hero.set_Clan` only moves them between lord lists. So the hero is first taken out of the party with `TeleportHeroAction.ApplyImmediateTeleportToSettlement`, which removes them from the roster |
+
+No Harmony patch, no model override and no new save data. The cadet branch is an ordinary
+clan that vanilla saves.
+
+### The rule
+
+When a head dies, if the runner-up heir came within **5 points** of the successor
+(`ClanSuccessionContestMargin`) **and** their relation with the successor is below **10**
+(`ClanSuccessionDisputeRelation`), the house divides. The runner-up leaves with their spouse
+and their children who have not come of age, and founds **a cadet branch in the same realm**.
+It has no fief, starts with a quarter of the parent house's renown, and flies the parent's icon
+in its colours. Relation between the two heads drops by 20. All four numbers are UN-TUNED.
+
+The rule does not apply while the house is fighting an internal war (§3a Q3), or while the
+runner-up is held prisoner or is in battle.
+
+**The ruling house needs nothing extra.** A runner-up who splits from the ruling clan is now a
+clan leader, and is a child or sibling of the late ruler. That is exactly who
+`SuccessionModel`'s blood claim admits. At the next daily succession watch they stand as a
+claimant, the court is tallied, and at 30% support they become a standing pretender. From
+there the Pretenders bloc and the internal war (2.6) follow by their own rules. A second
+claimant path here would be a second resolver for the same question.
+
+**The player's house is under the same rule.** Vanilla lets the player choose their heir.
+Passing over a higher-scoring heir who dislikes the choice can split the player's own house.
+
+### Tools
+
+- `diplomacy.heirs [clan]` shows, for every house or one, what would happen if its head died
+  today. It prints `ClanSuccession.Predict`, the resolver the event uses.
+- `diplomacy.test_divide_clan <clan>` splits a house now, skipping the thresholds but not the
+  mechanics. It is for testing the split itself.
+
+### Not yet verified — nothing here has run in a game
+
+- The split mechanics: the new clan exists, is in the realm, is noble, has the household, the
+  founder is out of their old party, and the clan survives a save and reload.
+- A real death: the event path (`bannerlord.hero.kill_hero` on a head that `diplomacy.heirs`
+  marks WOULD DIVIDE).
+- The ruling-house path: that the next succession watch counts the cadet leader as a claimant.
+- How often it fires. The relation threshold in particular is a guess until warm family
+  relations in a real campaign are measured.

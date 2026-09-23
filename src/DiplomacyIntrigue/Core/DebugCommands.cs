@@ -1730,6 +1730,109 @@ namespace DiplomacyIntrigue.Core
             return sb.ToString();
         }
 
+        // ----- A house divided (Phase 2.6b) ---------------------------------------
+
+        /// <summary>
+        /// For every court house (or one), what would happen if its head died today: the heirs
+        /// as vanilla scores them, who would succeed, and whether the house would divide -
+        /// printed from <see cref="ClanSuccession.Predict"/>, the same resolver the event uses.
+        /// Usage: diplomacy.heirs   or   diplomacy.heirs fen Eingal
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("heirs", "diplomacy")]
+        public static string Heirs(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            Clan only = null;
+            if (args != null && args.Count > 0)
+            {
+                only = FindClan(string.Join(" ", args));
+                if (only == null) return "No clan matching \"" + string.Join(" ", args) + "\".";
+            }
+
+            var sb = new StringBuilder();
+            var dividing = 0;
+            foreach (var kingdom in Kingdom.All)
+            {
+                if (!kingdom.IsRealm()) continue;
+                foreach (var clan in Court.MembersOf(kingdom))
+                {
+                    if (only != null && clan != only) continue;
+                    if (!clan.IsNoble || clan.Leader == null) continue;
+
+                    var a = ClanSuccession.Predict(state, clan);
+                    if (a.Divides) dividing++;
+                    if (only == null && !a.Divides && a.RunnerUp == null) continue;
+
+                    sb.AppendLine(kingdom.Name + " / " + clan.Name + (clan == kingdom.RulingClan ? " [ruling]" : "")
+                                  + ": head " + clan.Leader.Name + " -> " + (a.Successor?.Name?.ToString() ?? "?")
+                                  + " (" + a.SuccessorPoints + ")"
+                                  + (a.RunnerUp == null ? "" : ", runner-up " + a.RunnerUp.Hero.Name + " (" + a.RunnerUp.Points
+                                                               + ", relation " + a.Relation + ")")
+                                  + " => " + (a.Divides ? "WOULD DIVIDE" : "holds") + " - " + a.Reason);
+                    if (only != null)
+                        for (var i = 0; i < a.Heirs.Count; i++)
+                            sb.AppendLine("    " + a.Heirs[i].Hero.Name + "  " + a.Heirs[i].Points
+                                          + "  age " + a.Heirs[i].Hero.Age.ToString("0"));
+                }
+            }
+            sb.AppendLine(dividing + " house(s) would divide at their head's death today. Thresholds: within "
+                          + IntrigueConstants.ClanSuccessionContestMargin + " heir points, relation below "
+                          + IntrigueConstants.ClanSuccessionDisputeRelation + ".");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Divides a house now, as if its head had died and the runner-up walked out - skipping
+        /// the closeness and relation thresholds, not the mechanics. Test saves only.
+        /// Usage: diplomacy.test_divide_clan fen Eingal
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_divide_clan", "diplomacy")]
+        public static string TestDivideClan(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+            if (args == null || args.Count == 0) return "Usage: diplomacy.test_divide_clan <clan>";
+
+            var clan = FindClan(string.Join(" ", args));
+            if (clan == null) return "No clan matching \"" + string.Join(" ", args) + "\".";
+
+            // The head stays alive here, so the "successor" is the head itself and the runner-up
+            // is the best-scoring heir: the split mechanics are exercised, the death is not.
+            var a = ClanSuccession.Assess(state, clan, clan.Leader, clan.Leader);
+            if (a.Heirs.Count == 0) return clan.Name + ": no eligible heir to leave.";
+            a.RunnerUp = a.Heirs[0];
+            if (a.RunnerUp.Hero == clan.Leader.Spouse && a.Heirs.Count > 1) a.RunnerUp = a.Heirs[1];
+
+            var cadet = ClanSuccession.Divide(state, a);
+            if (cadet == null) return clan.Name + ": the division did not happen - see the log.";
+
+            var sb = new StringBuilder();
+            sb.AppendLine(clan.Name + " divided: " + cadet.Name + " (" + cadet.StringId + "), tier " + cadet.Tier
+                          + ", led by " + cadet.Leader?.Name + ", in " + cadet.Kingdom?.Name
+                          + ", home " + cadet.HomeSettlement?.Name + ".");
+            for (var i = 0; i < cadet.Heroes.Count; i++)
+                sb.AppendLine("    " + cadet.Heroes[i].Name + "  party: "
+                              + (cadet.Heroes[i].PartyBelongedTo?.Name?.ToString() ?? "none")
+                              + "  settlement: " + (cadet.Heroes[i].CurrentSettlement?.Name?.ToString() ?? "none"));
+            sb.AppendLine(clan.Name + " keeps " + clan.Heroes.Count + " hero(es); relation between the heads now "
+                          + cadet.Leader?.GetRelation(clan.Leader) + ".");
+            return sb.ToString();
+        }
+
+        private static Clan FindClan(string name)
+        {
+            foreach (var clan in Clan.All)
+                if (string.Equals(clan.Name?.ToString(), name, StringComparison.OrdinalIgnoreCase)) return clan;
+            foreach (var clan in Clan.All)
+            {
+                var clanName = clan.Name?.ToString();
+                if (clanName != null && clanName.StartsWith(name, StringComparison.OrdinalIgnoreCase)) return clan;
+            }
+            return null;
+        }
+
         private static Kingdom FindKingdom(string name)
         {
             foreach (var kingdom in Kingdom.All)
