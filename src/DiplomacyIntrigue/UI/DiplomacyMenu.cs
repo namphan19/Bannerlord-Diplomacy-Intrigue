@@ -849,14 +849,46 @@ namespace DiplomacyIntrigue.UI
             var ourBudget = PeaceTable.BudgetFor(war, us);
             var theirBudget = PeaceTable.BudgetFor(war, them);
 
-            if (ourBudget > 0f) { ShowDemandTable(state, war, us, them, ourBudget); return; }
-            if (theirBudget > 0f) { ShowOfferTable(state, war, us, them, theirBudget); return; }
+            try
+            {
+                if (ourBudget > 0f)
+                {
+                    // The winner's table: we price what to take.
+                    UI.Negotiation.PeaceTableScreen.ShowDemand(state, war, us, them, true,
+                        terms => TryPeace(state, war, terms, us),
+                        () => TryPeace(state, war, new PeaceTerms(us, them), us));
+                    return;
+                }
+                if (theirBudget > 0f)
+                {
+                    // The loser's table: we price what to give.
+                    UI.Negotiation.PeaceTableScreen.ShowDemand(state, war, us, them, false,
+                        terms => TryPeace(state, war, terms, us),
+                        () => TryPeace(state, war, new PeaceTerms(them, us), us));
+                    return;
+                }
 
-            Confirm("Peace with " + them.Name,
-                "Neither side has earned enough to ask for anything - a white peace is all this"
-                + " war can produce. Propose it and they sign if the war has worn them too.",
-                "Propose white peace",
-                () => TryPeace(state, war, new PeaceTerms(us, them), us));
+                Confirm("Peace with " + them.Name,
+                    "Neither side has earned enough to ask for anything - a white peace is all this"
+                    + " war can produce. Propose it and they sign if the war has worn them too.",
+                    "Propose white peace",
+                    () => TryPeace(state, war, new PeaceTerms(us, them), us));
+            }
+            catch (Exception ex)
+            {
+                // The screen is the one piece of Gauntlet this project owns; if it cannot
+                // come up, the war still has to be negotiable. The old inquiry tables are
+                // the fallback, not a second implementation of the rules - they price and
+                // decide through the same PeaceTable resolvers.
+                Log.Error("UI", "The peace table could not open; falling back to the checklist.", ex);
+                if (ourBudget > 0f) ShowDemandTable(state, war, us, them, ourBudget);
+                else if (theirBudget > 0f) ShowOfferTable(state, war, us, them, theirBudget);
+                else Confirm("Peace with " + them.Name,
+                    "Neither side has earned enough to ask for anything - a white peace is all this"
+                    + " war can produce. Propose it and they sign if the war has worn them too.",
+                    "Propose white peace",
+                    () => TryPeace(state, war, new PeaceTerms(us, them), us));
+            }
         }
 
         /// <summary>

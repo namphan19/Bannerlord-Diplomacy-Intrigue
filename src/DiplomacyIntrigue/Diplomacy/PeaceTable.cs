@@ -234,6 +234,21 @@ namespace DiplomacyIntrigue.Diplomacy
             if (terms == null) { reason = "No terms."; return false; }
             if (terms.IsWhitePeace) return true;
 
+            // A package cannot contradict itself. The negotiation screen asks
+            // PeaceTerms.AreExclusive to untick conflicting lines before they are ever
+            // priced, but a hand-built package (the AI, a console command) reaches this
+            // point directly and has to be refused here or the rule lives nowhere.
+            if (terms.ImposeVassalage && terms.ImposeTributaryPact)
+            {
+                reason = "A vassalage carries its own tribute; a separate tributary pact would charge twice.";
+                return false;
+            }
+            if (terms.ImposeVassalage && terms.DissolveHegemony)
+            {
+                reason = "One package cannot both submit a kingdom and break up its sphere.";
+                return false;
+            }
+
             if (!war.Involves(terms.Winner) || !war.Involves(terms.Loser))
             {
                 reason = "Those kingdoms are not in this war.";
