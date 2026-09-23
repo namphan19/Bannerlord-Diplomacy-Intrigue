@@ -44,10 +44,10 @@ namespace DiplomacyIntrigue.Intrigue
         {
             switch (band)
             {
-                case LoyaltyBand.Reliable: return "reliable - votes with the ruler, answers the call";
-                case LoyaltyBand.Transactional: return "transactional - votes its own interest";
-                case LoyaltyBand.Disaffected: return "disaffected - votes against the ruler, volunteers nothing";
-                default: return "defection risk";
+                case LoyaltyBand.Reliable: return "Reliable - votes with the ruler, answers the call.";
+                case LoyaltyBand.Transactional: return "Transactional - votes its own interest.";
+                case LoyaltyBand.Disaffected: return "Disaffected - votes against the ruler, volunteers nothing.";
+                default: return "A defection risk.";
             }
         }
 

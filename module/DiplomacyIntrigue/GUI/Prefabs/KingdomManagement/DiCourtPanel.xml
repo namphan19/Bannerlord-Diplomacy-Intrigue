@@ -1,0 +1,419 @@
+<Prefab>
+  <Window>
+    <!-- The Court tab's panel (Phase 2.7). Sits in the same slot as the five vanilla panels
+         and the Realm panel, visible only while DiCourt.Show is true.
+
+         Layout is the design the lead approved on 2026-09-23 (artifact "Court Intrigue
+         Screen", board "Your own court"): a header strip carrying the crown's legitimacy,
+         then three columns - the court's blocs, the clans of the court, and the selected
+         clan explained term by term - and a footer carrying the succession watch.
+
+         Fonts are the game's own: Galahad stands in for the mockup's display face and
+         Fira Sans Extra Condensed for its body face. Bars are vanilla FillBarHorizontalWidget,
+         copied from DeclareWarDecisionPanel.xml; InitialAmount binds an Int32. -->
+    <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" IsVisible="@Show">
+      <Children>
+
+        <BrushListPanel WidthSizePolicy="Fixed" SuggestedWidth="1240" HeightSizePolicy="StretchToParent"
+            HorizontalAlignment="Center" VerticalAlignment="Bottom" MarginTop="6" MarginBottom="9"
+            Brush="Frame1Brush" StackLayout.LayoutMethod="VerticalTopToBottom">
+          <Children>
+
+            <!-- ================= Header: the realm and the crown's standing ================= -->
+            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="78"
+                MarginTop="14" MarginLeft="24" MarginRight="24">
+              <Children>
+                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                    Sprite="BlankWhiteSquare_9" Color="#24201888" />
+
+                <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                    MarginLeft="18" MarginRight="18" MarginTop="10" MarginBottom="10">
+                  <Children>
+                    <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                        StackLayout.LayoutMethod="VerticalTopToBottom">
+                      <Children>
+                        <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
+                            HeightSizePolicy="CoverChildren" Brush="DiRealm.Header" IsEnabled="false"
+                            Text="@RealmName" />
+                        <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
+                            HeightSizePolicy="CoverChildren" MarginTop="4" Brush="DiRealm.Label"
+                            IsEnabled="false" Text="@CourtLine" />
+                      </Children>
+                    </ListPanel>
+
+                    <!-- Crown legitimacy: number, bar with the pretender threshold marked, note -->
+                    <ListPanel WidthSizePolicy="Fixed" SuggestedWidth="400" HeightSizePolicy="StretchToParent"
+                        HorizontalAlignment="Right" StackLayout.LayoutMethod="VerticalTopToBottom">
+                      <Children>
+                        <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren">
+                          <Children>
+                            <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
+                                HeightSizePolicy="CoverChildren" VerticalAlignment="Center"
+                                Brush="DiRealm.Label" IsEnabled="false" Text="CROWN LEGITIMACY" />
+                            <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
+                                HeightSizePolicy="CoverChildren" MarginLeft="12" VerticalAlignment="Center"
+                                Brush="DiRealm.Score" IsEnabled="false" Text="@LegitimacyText" />
+                          </Children>
+                        </ListPanel>
+
+                        <Widget WidthSizePolicy="Fixed" SuggestedWidth="400" HeightSizePolicy="Fixed"
+                            SuggestedHeight="12" MarginTop="5">
+                          <Children>
+                            <FillBarHorizontalWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                                Sprite="BlankWhiteSquare_9" Color="#0D0A07CC" FillWidget="FillWidget"
+                                InitialAmount="@LegitimacyAmount" IsDirectionRightward="true" MaxAmount="100">
+                              <Children>
+                                <Widget Id="FillWidget" WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent"
+                                    Sprite="BlankWhiteSquare_9" Color="@LegitimacyColor" />
+                              </Children>
+                            </FillBarHorizontalWidget>
+                            <!-- 40 of 100 on a 400px bar: the line below which a pretender may gather openly -->
+                            <Widget WidthSizePolicy="Fixed" SuggestedWidth="2" HeightSizePolicy="Fixed"
+                                SuggestedHeight="20" HorizontalAlignment="Left" VerticalAlignment="Center"
+                                PositionXOffset="159" Sprite="BlankWhiteSquare_9" Color="#D9695AFF" />
+                          </Children>
+                        </Widget>
+
+                        <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                            HeightSizePolicy="CoverChildren" MarginTop="4" Brush="DiRealm.Small"
+                            IsEnabled="false" Text="@LegitimacyNote" />
+                      </Children>
+                    </ListPanel>
+                  </Children>
+                </ListPanel>
+              </Children>
+            </Widget>
+
+            <!-- ================= Body: blocs | the court | the selected clan ================= -->
+            <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                MarginTop="12" MarginLeft="24" MarginRight="24" MarginBottom="8">
+              <Children>
+
+                <!-- Column 1: court blocs -->
+                <ListPanel WidthSizePolicy="Fixed" SuggestedWidth="280" HeightSizePolicy="StretchToParent"
+                    StackLayout.LayoutMethod="VerticalTopToBottom">
+                  <Children>
+                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
+                        HeightSizePolicy="CoverChildren" MarginBottom="6" Brush="DiRealm.Title"
+                        IsEnabled="false" Text="Court blocs" />
+
+                    <ListPanel DataSource="{Blocs}" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                        StackLayout.LayoutMethod="VerticalTopToBottom">
+                      <ItemTemplate>
+                        <!-- Fixed height, not CoverChildren: a CoverChildren card with a
+                             StretchToParent background stretches to fill the whole column. -->
+                        <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="112" MarginBottom="8">
+                          <Children>
+                            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                                Sprite="BlankWhiteSquare_9" Color="#201A1388" />
+                            <Widget WidthSizePolicy="Fixed" SuggestedWidth="4" HeightSizePolicy="StretchToParent"
+                                Sprite="BlankWhiteSquare_9" Color="@AccentColor" />
+
+                            <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                MarginLeft="16" MarginRight="14" MarginTop="9" MarginBottom="9"
+                                StackLayout.LayoutMethod="VerticalTopToBottom">
+                              <Children>
+                                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="24">
+                                  <Children>
+                                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
+                                        HeightSizePolicy="CoverChildren" HorizontalAlignment="Left"
+                                        Brush="DiRealm.Value" Text="@Name" />
+                                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
+                                        HeightSizePolicy="CoverChildren" HorizontalAlignment="Right"
+                                        Brush="DiRealm.Value" Text="@ShareText" />
+                                  </Children>
+                                </Widget>
+
+                                <FillBarHorizontalWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed"
+                                    SuggestedHeight="8" MarginTop="6" Sprite="BlankWhiteSquare_9" Color="#0D0A07CC"
+                                    FillWidget="FillWidget" InitialAmount="@ShareAmount" IsDirectionRightward="true"
+                                    MaxAmount="100">
+                                  <Children>
+                                    <Widget Id="FillWidget" WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent"
+                                        Sprite="BlankWhiteSquare_9" Color="@AccentColor" />
+                                  </Children>
+                                </FillBarHorizontalWidget>
+
+                                <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginTop="6">
+                                  <Children>
+                                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
+                                        HeightSizePolicy="CoverChildren" Brush="DiRealm.Label" Text="@LeaderText" />
+                                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
+                                        HeightSizePolicy="CoverChildren" MarginLeft="14" Brush="DiRealm.Label"
+                                        Text="@CountText" />
+                                  </Children>
+                                </ListPanel>
+                                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                                    HeightSizePolicy="CoverChildren" MarginTop="2" Brush="DiRealm.Small"
+                                    Text="@PowerText" />
+                                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                                    HeightSizePolicy="CoverChildren" MarginTop="2" IsVisible="@HasLoyalNote"
+                                    Brush="DiRealm.Small" Text="@LoyalNote" />
+                              </Children>
+                            </ListPanel>
+                          </Children>
+                        </Widget>
+                      </ItemTemplate>
+                    </ListPanel>
+
+                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                        HeightSizePolicy="CoverChildren" MarginBottom="8" IsVisible="@NoBlocs"
+                        Brush="DiRealm.Body" IsEnabled="false"
+                        Text="No faction has formed. No cause is pulling hard enough on any clan to organise it." />
+
+                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                        HeightSizePolicy="CoverChildren" MarginTop="2" Brush="DiRealm.Small" IsEnabled="false"
+                        Text="A bloc votes as one: its members back whatever its leader wants. A clan at loyalty 70 or above ignores its bloc and votes with the crown." />
+
+                    <!-- The realm's worst war -->
+                    <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="62" MarginTop="14">
+                      <Children>
+                        <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                            Sprite="BlankWhiteSquare_9" Color="#201A1388" />
+                        <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                            MarginLeft="14" MarginRight="14" MarginTop="9" MarginBottom="9"
+                            StackLayout.LayoutMethod="VerticalTopToBottom">
+                          <Children>
+                            <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
+                                HeightSizePolicy="CoverChildren" Brush="DiRealm.Label" IsEnabled="false"
+                                Text="THE REALM'S WORST WAR" />
+                            <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginTop="3">
+                              <Children>
+                                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
+                                    HeightSizePolicy="CoverChildren" VerticalAlignment="Center"
+                                    Brush="DiRealm.Value" IsEnabled="false" Text="@WorstWarText" />
+                                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                                    HeightSizePolicy="CoverChildren" MarginLeft="10" VerticalAlignment="Center"
+                                    Brush="DiRealm.Small" IsEnabled="false" Text="@WorstWarNote" />
+                              </Children>
+                            </ListPanel>
+                          </Children>
+                        </ListPanel>
+                      </Children>
+                    </Widget>
+                  </Children>
+                </ListPanel>
+
+                <!-- Column 2: the clans of the court -->
+                <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                    MarginLeft="18" MarginRight="18" StackLayout.LayoutMethod="VerticalTopToBottom">
+                  <Children>
+                    <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginBottom="6">
+                      <Children>
+                        <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
+                            HeightSizePolicy="CoverChildren" Brush="DiRealm.Title" IsEnabled="false"
+                            Text="The court" />
+                        <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
+                            HeightSizePolicy="CoverChildren" MarginLeft="12" VerticalAlignment="Bottom"
+                            Brush="DiRealm.Small" IsEnabled="false" Text="@ClanCountText" />
+                      </Children>
+                    </ListPanel>
+
+                    <!-- Column headings -->
+                    <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="24">
+                      <Children>
+                        <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="125"
+                            HeightSizePolicy="StretchToParent" MarginLeft="10" Brush="DiRealm.Small"
+                            IsEnabled="false" Text="CLAN" />
+                        <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="110"
+                            HeightSizePolicy="StretchToParent" Brush="DiRealm.Small" IsEnabled="false"
+                            Text="BLOC" />
+                        <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="60"
+                            HeightSizePolicy="StretchToParent" Brush="DiRealm.Small" IsEnabled="false"
+                            Text="INFL." />
+                        <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="116"
+                            HeightSizePolicy="StretchToParent" MarginLeft="10" Brush="DiRealm.Small"
+                            IsEnabled="false" Text="LOYALTY" />
+                        <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                            HeightSizePolicy="StretchToParent" Brush="DiRealm.Small" IsEnabled="false"
+                            Text="STANDING" />
+                      </Children>
+                    </ListPanel>
+
+                    <ListPanel DataSource="{Clans}" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                        StackLayout.LayoutMethod="VerticalTopToBottom">
+                      <ItemTemplate>
+                        <!-- The row is a button, as vanilla's own ClanTuple is: OnSelect + IsSelected,
+                             with the tuple brush giving the hover and selected states. -->
+                        <ButtonWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="38"
+                            MarginBottom="2" Brush="Kingdom.Item.Tuple" DoNotPassEventsToChildren="true"
+                            Command.Click="OnSelect" IsSelected="@IsSelected" UpdateChildrenStates="true">
+                          <Children>
+                            <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent">
+                              <Children>
+                                <TextWidget WidthSizePolicy="Fixed" SuggestedWidth="125" HeightSizePolicy="StretchToParent"
+                                    MarginLeft="10" Brush="DiRealm.Body" Text="@Name" />
+                                <TextWidget WidthSizePolicy="Fixed" SuggestedWidth="110" HeightSizePolicy="StretchToParent"
+                                    Brush="DiRealm.Label" Text="@BlocText" />
+                                <TextWidget WidthSizePolicy="Fixed" SuggestedWidth="60" HeightSizePolicy="StretchToParent"
+                                    Brush="DiRealm.Body" Text="@InfluenceText" />
+
+                                <FillBarHorizontalWidget WidthSizePolicy="Fixed" SuggestedWidth="70" HeightSizePolicy="Fixed"
+                                    SuggestedHeight="8" MarginLeft="10" VerticalAlignment="Center"
+                                    Sprite="BlankWhiteSquare_9" Color="#0D0A07CC" FillWidget="FillWidget"
+                                    InitialAmount="@LoyaltyAmount" IsDirectionRightward="true" MaxAmount="100">
+                                  <Children>
+                                    <Widget Id="FillWidget" WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent"
+                                        Sprite="BlankWhiteSquare_9" Color="@BandColor" />
+                                  </Children>
+                                </FillBarHorizontalWidget>
+                                <TextWidget WidthSizePolicy="Fixed" SuggestedWidth="40" HeightSizePolicy="StretchToParent"
+                                    MarginLeft="6" Brush="DiRealm.Body" Text="@LoyaltyText" />
+
+                                <!-- Band chip -->
+                                <Widget WidthSizePolicy="CoverChildren" HeightSizePolicy="Fixed" SuggestedHeight="20"
+                                    VerticalAlignment="Center" Sprite="BlankWhiteSquare_9" Color="@BandColor">
+                                  <Children>
+                                    <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="StretchToParent"
+                                        MarginLeft="7" MarginRight="7" Brush="DiRealm.Badge" Text="@BandText" />
+                                  </Children>
+                                </Widget>
+                                <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="StretchToParent"
+                                    MarginLeft="8" IsVisible="@IsPressing" Brush="DiRealm.Small"
+                                    Brush.FontColor="#D9695AFF" Text="claimant" />
+                              </Children>
+                            </ListPanel>
+                          </Children>
+                        </ButtonWidget>
+                      </ItemTemplate>
+                    </ListPanel>
+                  </Children>
+                </ListPanel>
+
+                <!-- Column 3: the selected clan, explained.
+                     Data context: the OUTER list is DiCourtVM (it owns Terms and Grievances);
+                     only the header card narrows to {Selected}. Narrowing the whole column
+                     would make {Terms} resolve against the clan row, find nothing, and render
+                     an empty column with no error: the data-context trap in UI-INTEGRATION.md 1. -->
+                <ListPanel WidthSizePolicy="Fixed" SuggestedWidth="310" HeightSizePolicy="StretchToParent"
+                    IsVisible="@HasSelection" StackLayout.LayoutMethod="VerticalTopToBottom">
+                  <Children>
+
+                    <ListPanel DataSource="{Selected}" WidthSizePolicy="StretchToParent"
+                        HeightSizePolicy="CoverChildren" StackLayout.LayoutMethod="VerticalTopToBottom">
+                      <Children>
+                        <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                            HeightSizePolicy="CoverChildren" MarginBottom="6" Brush="DiRealm.Title"
+                            Text="@Name" />
+                        <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="96">
+                          <Children>
+                            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                                Sprite="BlankWhiteSquare_9" Color="#201A1388" />
+                            <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                MarginLeft="14" MarginRight="14" MarginTop="10" MarginBottom="10"
+                                StackLayout.LayoutMethod="VerticalTopToBottom">
+                              <Children>
+                                <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren">
+                                  <Children>
+                                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
+                                        HeightSizePolicy="CoverChildren" VerticalAlignment="Center"
+                                        Brush="DiRealm.Score" Text="@LoyaltyText" />
+                                    <Widget WidthSizePolicy="CoverChildren" HeightSizePolicy="Fixed" SuggestedHeight="22"
+                                        MarginLeft="12" VerticalAlignment="Center" Sprite="BlankWhiteSquare_9"
+                                        Color="@BandColor">
+                                      <Children>
+                                        <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="StretchToParent"
+                                            MarginLeft="8" MarginRight="8" Brush="DiRealm.Badge" Text="@BandText" />
+                                      </Children>
+                                    </Widget>
+                                  </Children>
+                                </ListPanel>
+                                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                                    HeightSizePolicy="CoverChildren" MarginTop="5" Brush="DiRealm.Label"
+                                    Text="@BandDescription" />
+                              </Children>
+                            </ListPanel>
+                          </Children>
+                        </Widget>
+                      </Children>
+                    </ListPanel>
+
+                    <!-- WHY: the loyalty sum, term by term. LoyaltyModel.Explain - the number the AI uses. -->
+                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
+                        HeightSizePolicy="CoverChildren" MarginTop="12" MarginBottom="4" Brush="DiRealm.Label"
+                        IsEnabled="false" Text="WHY" />
+                    <ListPanel DataSource="{Terms}" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                        StackLayout.LayoutMethod="VerticalTopToBottom">
+                      <ItemTemplate>
+                        <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginBottom="3">
+                          <Children>
+                            <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                                HeightSizePolicy="CoverChildren" Brush="DiRealm.Body" Text="@Label" />
+                            <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="60"
+                                HeightSizePolicy="CoverChildren" Brush="DiRealm.Body" Brush.FontColor="@ValueColor"
+                                Brush.TextHorizontalAlignment="Right" Text="@ValueText" />
+                          </Children>
+                        </ListPanel>
+                      </ItemTemplate>
+                    </ListPanel>
+
+                    <!-- What they have not forgotten -->
+                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
+                        HeightSizePolicy="CoverChildren" MarginTop="14" MarginBottom="4" Brush="DiRealm.Label"
+                        IsEnabled="false" Text="WHAT THEY HAVE NOT FORGOTTEN" />
+                    <ListPanel DataSource="{Grievances}" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                        StackLayout.LayoutMethod="VerticalTopToBottom">
+                      <ItemTemplate>
+                        <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="44" MarginBottom="6">
+                          <Children>
+                            <Widget WidthSizePolicy="Fixed" SuggestedWidth="3" HeightSizePolicy="StretchToParent"
+                                Sprite="BlankWhiteSquare_9" Color="#D98C4AFF" />
+                            <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                MarginLeft="12" StackLayout.LayoutMethod="VerticalTopToBottom">
+                              <Children>
+                                <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren">
+                                  <Children>
+                                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                                        HeightSizePolicy="CoverChildren" Brush="DiRealm.Body" Text="@Title" />
+                                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="44"
+                                        HeightSizePolicy="CoverChildren" Brush="DiRealm.Body"
+                                        Brush.TextHorizontalAlignment="Right" Text="@WeightText" />
+                                  </Children>
+                                </ListPanel>
+                                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                                    HeightSizePolicy="CoverChildren" MarginTop="1" Brush="DiRealm.Small"
+                                    Text="@AgeText" />
+                              </Children>
+                            </ListPanel>
+                          </Children>
+                        </Widget>
+                      </ItemTemplate>
+                    </ListPanel>
+                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                        HeightSizePolicy="CoverChildren" IsVisible="@NoGrievances" Brush="DiRealm.Small"
+                        IsEnabled="false" Text="Nothing is held against the crown by this clan." />
+                  </Children>
+                </ListPanel>
+              </Children>
+            </ListPanel>
+
+            <!-- ================= Footer: the succession watch ================= -->
+            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="58"
+                MarginLeft="24" MarginRight="24" MarginBottom="16">
+              <Children>
+                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                    Sprite="BlankWhiteSquare_9" Color="#24201888" />
+                <Widget WidthSizePolicy="Fixed" SuggestedWidth="4" HeightSizePolicy="StretchToParent"
+                    Sprite="BlankWhiteSquare_9" Color="#D9695AFF" />
+                <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                    VerticalAlignment="Center" MarginLeft="18" MarginRight="18"
+                    StackLayout.LayoutMethod="VerticalTopToBottom">
+                  <Children>
+                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                        HeightSizePolicy="CoverChildren" Brush="DiRealm.Body" IsEnabled="false"
+                        Text="@SuccessionTitle" />
+                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                        HeightSizePolicy="CoverChildren" MarginTop="2" Brush="DiRealm.Small"
+                        IsEnabled="false" Text="@SuccessionDetail" />
+                  </Children>
+                </ListPanel>
+              </Children>
+            </Widget>
+
+          </Children>
+        </BrushListPanel>
+
+      </Children>
+    </Widget>
+  </Window>
+</Prefab>

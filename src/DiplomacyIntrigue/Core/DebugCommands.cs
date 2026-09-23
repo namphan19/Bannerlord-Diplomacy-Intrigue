@@ -415,6 +415,21 @@ namespace DiplomacyIntrigue.Core
         }
 
         /// <summary>
+        /// Selects a clan in the open Court tab, through the same method a row click calls.
+        /// Test-only: exists because the GABS bridge cannot click a Court row (every clan name
+        /// also appears, earlier in the widget tree, in vanilla's hidden Clans list).
+        /// Usage: diplomacy.test_court_select Harfit
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_court_select", "diplomacy")]
+        public static string TestCourtSelect(List<string> args)
+        {
+            var court = UI.KingdomScreen.DiCourtVM.Current;
+            if (court == null) return "The Kingdom screen is not open.";
+            if (args == null || args.Count == 0) return "Usage: diplomacy.test_court_select <clan>";
+            return court.SelectByName(string.Join(" ", args));
+        }
+
+        /// <summary>
         /// Crown legitimacy per kingdom, with what last moved it.
         /// Usage: diplomacy.legitimacy
         /// </summary>

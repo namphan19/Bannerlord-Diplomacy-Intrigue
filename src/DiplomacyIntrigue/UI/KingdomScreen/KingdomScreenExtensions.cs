@@ -6,15 +6,21 @@ using Bannerlord.UIExtenderEx.Prefabs2;
 namespace DiplomacyIntrigue.UI.KingdomScreen
 {
     /// <summary>
-    /// The Realm tab button, appended after Diplomacy in the header's tab strip.
+    /// Our two tab buttons - Realm, then Court (Phase 2.7) - appended after Diplomacy in the
+    /// header's tab strip.
     ///
-    /// The strip is a compiled <c>KingdomTabControlListPanel</c> that only knows the
-    /// five vanilla button/panel pairs, so the button manages itself: its click calls
-    /// <see cref="DiRealmVM.ExecuteShow"/> on our own view model, which hides the five
-    /// vanilla categories, and its selected state binds to the same <c>Show</c> flag
-    /// the vanilla panels bind their visibility to. Markup lives in
-    /// <c>module/DiplomacyIntrigue/GUI/Prefabs/KingdomManagement/DiRealmTabButton.xml</c>.
-    /// If the XPath misses, the screen renders with five tabs exactly as vanilla.
+    /// **One patch inserts both, on purpose.** Court must come after Realm, because the last
+    /// tab wears the rounded end cap and Realm now wears the centre art. Two separate Append
+    /// patches on the same anchor would leave that order to whatever sequence UIExtenderEx
+    /// happens to apply them in. A single document with a throwaway root, loaded with
+    /// removeRootNode, inserts its children in document order.
+    ///
+    /// The strip is a compiled <c>KingdomTabControlListPanel</c> that only knows the five
+    /// vanilla button/panel pairs, so each button manages itself: its click calls
+    /// <c>ExecuteShow</c> on our own view model, which hides every other panel, and its
+    /// selected state binds to the same <c>Show</c> flag its panel binds its visibility to.
+    /// Markup lives in <c>module/DiplomacyIntrigue/GUI/Prefabs/KingdomManagement/</c>. If the
+    /// XPath misses, the screen renders with five tabs exactly as vanilla.
     /// Verified against game v1.4.8, UIExtenderEx v2.13.2.
     /// </summary>
     [PrefabExtension("KingdomManagement",
@@ -27,10 +33,10 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
         public RealmTabButtonExtension()
         {
-            _document.LoadXml("<DiRealmTabButton />");
+            _document.LoadXml("<DiTabs><DiRealmTabButton /><DiCourtTabButton /></DiTabs>");
         }
 
-        [PrefabExtensionXmlDocument]
+        [PrefabExtensionXmlDocument(true)]
         public XmlDocument GetPrefabExtension() => _document;
     }
 
@@ -67,6 +73,71 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         public override List<PrefabExtensionSetAttributePatch.Attribute> Attributes => new List<PrefabExtensionSetAttributePatch.Attribute>
         {
             new PrefabExtensionSetAttributePatch.Attribute("PositionXOffset", "0"),
+        };
+    }
+
+    /// <summary>
+    /// The Court panel (Phase 2.7), a seventh sibling in the same slot as the five vanilla
+    /// panels and the Realm panel.
+    ///
+    /// A separate patch from the Realm panel's, unlike the buttons: panels overlap in one
+    /// slot and only one is ever visible, so the order they are inserted in changes nothing.
+    /// Margins match the vanilla panels exactly. Data context is our <c>DiCourt</c> view
+    /// model; visibility is its <c>Show</c> flag, traded with every other panel by
+    /// <see cref="KingdomManagementVMMixin"/>. Markup lives in
+    /// <c>module/DiplomacyIntrigue/GUI/Prefabs/KingdomManagement/DiCourtPanel.xml</c>.
+    /// Verified against game v1.4.8, UIExtenderEx v2.13.2.
+    /// </summary>
+    [PrefabExtension("KingdomManagement", "descendant::DiplomacyPanel")]
+    internal sealed class CourtPanelExtension : PrefabExtensionInsertPatch
+    {
+        public override InsertType Type => InsertType.Append;
+
+        private readonly XmlDocument _document = new XmlDocument();
+
+        public CourtPanelExtension()
+        {
+            _document.LoadXml("<DiCourtPanel Id=\"DiCourtPanel\" DataSource=\"{DiCourt}\""
+                              + " MarginTop=\"188\" MarginBottom=\"75\" />");
+        }
+
+        [PrefabExtensionXmlDocument]
+        public XmlDocument GetPrefabExtension() => _document;
+    }
+
+    /// <summary>
+    /// Narrows vanilla's five tabs so seven fit. Vanilla scales every tab's art to 0.90; at
+    /// that size six tabs already reached the leader portrait's caption, and seven would run
+    /// into it. 0.70 is the same scale our own two buttons declare in their prefabs, so all
+    /// seven stay the same width. The Diplomacy mod does the same thing (0.60 for six tabs).
+    /// Height is left at 0.90: the art only needs to be narrower, not shorter.
+    /// </summary>
+    [PrefabExtension("KingdomManagement", "descendant::Constant[@Name='Header.Tab.Left.Width.Scaled']")]
+    internal sealed class TabLeftWidthPatch : PrefabExtensionSetAttributePatch
+    {
+        public override List<PrefabExtensionSetAttributePatch.Attribute> Attributes => new List<PrefabExtensionSetAttributePatch.Attribute>
+        {
+            new PrefabExtensionSetAttributePatch.Attribute("MultiplyResult", "0.70"),
+        };
+    }
+
+    /// <summary>See <see cref="TabLeftWidthPatch"/>.</summary>
+    [PrefabExtension("KingdomManagement", "descendant::Constant[@Name='Header.Tab.Center.Width.Scaled']")]
+    internal sealed class TabCenterWidthPatch : PrefabExtensionSetAttributePatch
+    {
+        public override List<PrefabExtensionSetAttributePatch.Attribute> Attributes => new List<PrefabExtensionSetAttributePatch.Attribute>
+        {
+            new PrefabExtensionSetAttributePatch.Attribute("MultiplyResult", "0.70"),
+        };
+    }
+
+    /// <summary>See <see cref="TabLeftWidthPatch"/>.</summary>
+    [PrefabExtension("KingdomManagement", "descendant::Constant[@Name='Header.Tab.Right.Width.Scaled']")]
+    internal sealed class TabRightWidthPatch : PrefabExtensionSetAttributePatch
+    {
+        public override List<PrefabExtensionSetAttributePatch.Attribute> Attributes => new List<PrefabExtensionSetAttributePatch.Attribute>
+        {
+            new PrefabExtensionSetAttributePatch.Attribute("MultiplyResult", "0.70"),
         };
     }
 

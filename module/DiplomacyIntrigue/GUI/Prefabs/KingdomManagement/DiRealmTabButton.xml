@@ -1,25 +1,29 @@
 <Prefab>
   <Constants>
-    <Constant Name="Header.Tab.Right.Width" BrushLayer="Default" BrushName="Header.Tab.Right" BrushValueType="Width" />
-    <Constant Name="Header.Tab.Right.Height" BrushLayer="Default" BrushName="Header.Tab.Right" BrushValueType="Height" />
-    <Constant Name="Header.Tab.Right.Width.Scaled" MultiplyResult="0.90" Value="!Header.Tab.Right.Width" />
-    <Constant Name="Header.Tab.Right.Height.Scaled" MultiplyResult="0.90" Value="!Header.Tab.Right.Height" />
+    <!-- Realm is no longer the last tab once Court follows it, so it wears the centre
+         art, not the rounded end cap - the same move DiplomacyTabBrushPatch makes for
+         Diplomacy. Width is scaled to 0.70, not vanilla's 0.90: seven tabs at 0.90 run
+         into the leader portrait's caption, which six already brushed against. -->
+    <Constant Name="Header.Tab.Center.Width" BrushLayer="Default" BrushName="Header.Tab.Center" BrushValueType="Width" />
+    <Constant Name="Header.Tab.Center.Height" BrushLayer="Default" BrushName="Header.Tab.Center" BrushValueType="Height" />
+    <Constant Name="Header.Tab.Center.Width.Scaled" MultiplyResult="0.70" Value="!Header.Tab.Center.Width" />
+    <Constant Name="Header.Tab.Center.Height.Scaled" MultiplyResult="0.90" Value="!Header.Tab.Center.Height" />
   </Constants>
   <Window>
     <!-- Sixth header tab. The compiled KingdomTabControlListPanel only knows the five
          vanilla button/panel pairs, so this button manages itself: IsSelected binds to
          our panel's Show the way the tab control computes it for the vanilla buttons,
-         and ExecuteShow hides the five vanilla categories itself. DataSource narrows
-         the context from KingdomManagementVM to our realm VM. -->
+         and ExecuteShow hides every other panel itself. DataSource narrows the context
+         from KingdomManagementVM to our realm VM. -->
     <ButtonWidget DataSource="{DiRealm}" DoNotPassEventsToChildren="true"
         WidthSizePolicy="Fixed" HeightSizePolicy="Fixed"
-        SuggestedWidth="!Header.Tab.Right.Width.Scaled" SuggestedHeight="!Header.Tab.Right.Height.Scaled"
-        HorizontalAlignment="Right" VerticalAlignment="Center" Brush="Header.Tab.Right"
+        SuggestedWidth="!Header.Tab.Center.Width.Scaled" SuggestedHeight="!Header.Tab.Center.Height.Scaled"
+        HorizontalAlignment="Right" VerticalAlignment="Center" PositionYOffset="2" Brush="Header.Tab.Center"
         Command.Click="ExecuteShow" IsSelected="@Show" IsVisible="@TabVisible"
         UpdateChildrenStates="true">
       <Children>
         <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
-            HorizontalAlignment="Center" VerticalAlignment="Center" PositionXOffset="-10"
+            HorizontalAlignment="Center" VerticalAlignment="Center"
             MarginTop="3" Brush="Clan.TabControl.Text" Text="@TabText" />
       </Children>
     </ButtonWidget>

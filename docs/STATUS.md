@@ -296,6 +296,49 @@ broken treaty, most of Battania's court sat at loyalty **0-7.5**. A new king sta
 relation with everyone, and relation is measured against the *current* ruler, so every
 succession resets the largest positive term in the loyalty sum. Realistic, and very strong.
 
+### 2.7 Court tab is built and verified live, 2026-09-23 (night)
+
+The lead approved the mockup (artifact "Court Intrigue Screen") and chose where it lives: a
+**seventh Kingdom-screen tab, "Court"**, after Realm. A rival court goes on that kingdom's
+**Encyclopedia page** as bands only (design 02 §9.1) - **not built yet**.
+
+Built the Realm tab's way: one prefab patch inserts both our tab buttons, one inserts the panel,
+the management mixin owns `DiCourtVM` beside `DiRealmVM`, and each of our tabs hides every other
+panel when it opens. All seven tabs narrowed from 0.90 to 0.70 of their art so they fit.
+
+Every number on the panel comes from the resolver the AI uses (`LoyaltyModel.Explain`,
+`BlocModel`, `LegitimacyRegistry`, `GrievanceRegistry`, `SuccessionModel`) - never recomputed
+for display.
+
+Verified by screenshot on two different worlds. **0 errors, 0 warnings.**
+
+| Check | Result |
+|---|---|
+| Seven tabs fit | Clans ... Diplomacy, Realm, **Court**; clear of the leader portrait's caption |
+| Ruler's view (`di_grievance_test`, Khuzait) | Hawks 78% / Autonomists 22%, 9 clans, three marked `claimant`, footer "3 houses would press a claim" |
+| Vassal's view (`di_phase1_full` + `campaign.join_kingdom battania`) | "you serve Rath", **"fen Calrain (you)"** listed with its own loyalty 49.0 - design 02 §9.2 on screen |
+| Mercenaries kept out | vanilla's Clans tab lists 16 Battanian clans; Court lists the **8** sworn ones |
+| Numbers match the AI's | Arkit 50 - 0.5 - 11.7 - 6.0 - 0.6 + 2.0 = **33.2**; fen Uvain **53.5**; fen Giall **84.5** - each shown and each summed by hand |
+| Bloc card agrees with rows | "2 of them will vote with the crown regardless" - exactly two RELIABLE rows |
+| Cross-check against vanilla | vanilla shows Harfit tier 3 with 1 fief: (1-3)/3 x 10 = **-6.7**, the fief term on our panel |
+| Selecting a clan redraws the right column | row highlight moves, WHY and grievances rebuild |
+| Tab switching | Court <-> vanilla Clans, Court <-> Realm: never two panels at once |
+| Close and reopen | the rebuilt panel is pixel-identical to the first |
+| No kingdom | the screen is refused, as vanilla does |
+
+**Not verified:**
+- **A physical click on a clan row.** The GABS bridge clicks the first widget whose text matches,
+  and every clan name also sits, earlier in the tree, in vanilla's hidden Clans list - so a row
+  here cannot be clicked from a tool call. Selection was driven through `DiCourtVM.Select`, the
+  method the click calls, via the new `diplomacy.test_court_select`. The binding itself is
+  vanilla's own `ClanTuple` pattern (`Command.Click="OnSelect" IsSelected="@IsSelected"`).
+- **No scrolling.** The largest court seen had 9 sworn clans and fits. A court past roughly 13
+  would run into the footer.
+- Only 1280x720 was captured.
+- The legitimacy note showed "none yet" in both worlds; a real reason on screen was not seen.
+
+Five Gauntlet lessons from building it went into UI-INTEGRATION.md §0b.
+
 ### What to do next
 
 1. ~~**2.1 - the grievance ledger.**~~ **Done and verified above.** Originally: A new savable type at class id **10**, with its container

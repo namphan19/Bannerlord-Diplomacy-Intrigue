@@ -43,6 +43,37 @@ so correct them in the same change that fixes the code.
 
 ---
 
+## 0b. Five more, learned building the Court tab (2026-09-23)
+
+Each of these rendered wrong or would have failed at load, and none of them produced an error.
+
+1. **A `CoverChildren` widget holding a `StretchToParent` child stretches to fill its parent.**
+   A card built as a `CoverChildren` `Widget` with a full-size background child (the usual
+   `Sprite="BlankWhiteSquare_9" Color=...` backdrop) did not wrap its content - the first bloc card
+   filled the entire column and pushed everything below it off the panel. Give cards a **Fixed**
+   height, as the Realm panel already does for its war cards.
+2. **`HorizontalAlignment="Right"` does nothing inside a horizontal `ListPanel`.** A ListPanel
+   stacks its children; alignment is ignored. "Hawks" and "78%" rendered as "Hawks78%". For a
+   left/right pair, use a plain `Widget` (children overlap) and align each child.
+3. **An XML comment may not contain `--`.** `<!-- ---- Column 1 ---- -->` is malformed XML, and
+   .NET's `XmlDocument` rejects it. Run new prefabs through any XML parser before deploying:
+   `python -c "import xml.dom.minidom,sys; xml.dom.minidom.parse(sys.argv[1])" file.xml`.
+4. **Two `Append` patches on the same anchor have no guaranteed order.** Our two tab buttons must
+   go Realm then Court (the last tab wears the end-cap art). Insert both from **one** patch: a
+   document with a throwaway root, `LoadXml("<DiTabs><DiRealmTabButton /><DiCourtTabButton /></DiTabs>")`,
+   returned under `[PrefabExtensionXmlDocument(true)]` - the `true` is `removeRootNode`, which
+   inserts the children in document order.
+5. **The GABS bridge clicks the first widget whose text matches - hidden panels included.** A row
+   whose text also appears in a vanilla list earlier in the tree cannot be clicked by text, and
+   `__index:N` does not follow `ui.get_screen`'s ordering (it clicked a policy in the hidden
+   Policies tab). `ui.call_viewmodel_method_at_index` reflects the vanilla VM's C# type, so it
+   cannot see a mixin's properties either. Give a panel a test hook that calls the same method the
+   click would (`diplomacy.test_court_select`), and say plainly that the click itself was not
+   exercised.
+
+And one that went right and is worth copying: **run the whole checklist in §7 on a second world**.
+The vassal's view, mercenary exclusion and a RELIABLE band only appeared on the second save.
+
 ## 1. Mental model of Gauntlet (just enough)
 
 | Piece | What it is |
