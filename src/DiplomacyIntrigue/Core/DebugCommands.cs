@@ -259,6 +259,87 @@ namespace DiplomacyIntrigue.Core
         }
 
         /// <summary>
+        /// The court split into blocs: who leads each, what it weighs, and how much of that
+        /// weight will actually vote its agenda rather than follow the ruler.
+        /// Usage: diplomacy.blocs   or   diplomacy.blocs Khuzait
+        /// With a kingdom named, also prints each clan's agenda pressures term by term.
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("blocs", "diplomacy")]
+        public static string Blocs(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            Kingdom filter = null;
+            if (args != null && args.Count > 0)
+            {
+                var wanted = string.Join(" ", args);
+                filter = FindKingdom(wanted);
+                if (filter == null) return "No kingdom matching \"" + wanted + "\".";
+            }
+
+            var sb = new StringBuilder();
+            foreach (var kingdom in Kingdom.All)
+            {
+                if (kingdom == null || kingdom.IsEliminated) continue;
+                if (filter != null && kingdom != filter) continue;
+
+                var blocs = BlocModel.BlocsOf(state, kingdom);
+                sb.AppendLine(kingdom.Name + "  (crown authority "
+                              + CrownAuthority.Of(kingdom).ToString("+0.00;-0.00;0.00")
+                              + ", ruler " + (kingdom.RulingClan == null ? "?" : kingdom.RulingClan.Name.ToString()) + ")");
+
+                if (blocs.Count == 0)
+                {
+                    sb.AppendLine("    no bloc has formed - no agenda is pulling on anyone.");
+                    continue;
+                }
+
+                var totalInfluence = 0f;
+                for (var i = 0; i < blocs.Count; i++) totalInfluence += blocs[i].Power;
+
+                for (var i = 0; i < blocs.Count; i++)
+                {
+                    var bloc = blocs[i];
+                    sb.AppendLine("    " + bloc + "  ["
+                                  + (bloc.PowerShare(totalInfluence) * 100f).ToString("0") + "% of the court]");
+                    for (var m = 0; m < bloc.Members.Count; m++)
+                        sb.AppendLine("        " + bloc.Members[m].Name
+                                      + "  influence " + bloc.Members[m].Influence.ToString("0")
+                                      + ", loyalty " + LoyaltyModel.Of(state, bloc.Members[m]).ToString("0.0"));
+                }
+
+                if (filter == null) continue;
+
+                sb.AppendLine("    -- why each clan sits where it does --");
+                for (var c = 0; c < kingdom.Clans.Count; c++)
+                {
+                    var clan = kingdom.Clans[c];
+                    if (clan == null || clan.IsEliminated) continue;
+
+                    var pressures = BlocModel.Pressures(state, clan);
+                    if (pressures.Count == 0)
+                    {
+                        sb.AppendLine("        " + clan.Name + ": the ruling clan, no agenda of its own");
+                        continue;
+                    }
+
+                    var line = new StringBuilder();
+                    foreach (var pair in pressures)
+                    {
+                        if (line.Length > 0) line.Append(", ");
+                        line.Append(pair.Key).Append(' ').Append(pair.Value.ToString("0.0"));
+                    }
+                    sb.AppendLine("        " + clan.Name + ": " + line);
+                }
+            }
+
+            sb.AppendLine("Blocs are derived, never saved. Pretenders cannot form until crown"
+                          + " legitimacy (2.4) and standing claimants (2.5) exist.");
+            return sb.ToString();
+        }
+
+        /// <summary>
         /// Every clan's loyalty to its own ruler, term by term. Sorted lowest first, because
         /// the bottom of the list is what decides whether a court fractures.
         /// Usage: diplomacy.loyalty   or   diplomacy.loyalty Khuzait

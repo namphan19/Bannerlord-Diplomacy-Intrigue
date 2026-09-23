@@ -61,6 +61,34 @@ namespace DiplomacyIntrigue.Intrigue
         /// <summary>The ruler turned down a request. UN-TUNED, and deliberately the cheapest.</summary>
         public const float GrievanceRequestRefused = 2f;
 
+        // ----- Court blocs (design 02 §3) -------------------------------------
+        //
+        // These are pressures, not probabilities: only their order within one clan matters,
+        // because a clan joins whichever agenda pulls hardest. Comparing them between clans
+        // means nothing. All UN-TUNED.
+
+        /// <summary>Dove pull per point of war exhaustion above `ExhaustionCourtPressure`. UN-TUNED.</summary>
+        public const float DovePressurePerExhaustion = 1f;
+
+        /// <summary>Hawk pull at full land hunger, when a weaker neighbour exists. UN-TUNED.</summary>
+        public const float HawkPressureFromHunger = 40f;
+
+        /// <summary>
+        /// How much weaker a neighbour must be before the hawks think it is worth taking.
+        /// UN-TUNED. Reads the same smoothed strength the Phase 1 war valuation reads, so the
+        /// hawks push for wars the kingdom's own AI would also consider.
+        /// </summary>
+        public const float HawkWeakNeighbourRatio = 0.9f;
+
+        /// <summary>
+        /// Autonomist pull at full crown authority for a clan holding the entire court's
+        /// influence. UN-TUNED, and scaled by influence share, so in practice it is small.
+        /// </summary>
+        public const float AutonomistPressure = 120f;
+
+        /// <summary>Centralist pull for a clan holding more land than its standing demands. UN-TUNED.</summary>
+        public const float CentralistPressureFromPatronage = 30f;
+
         // ----- Loyalty (design 02 §2) -----------------------------------------
 
         /// <summary>Where a clan with no feelings either way sits. UN-TUNED.</summary>
