@@ -92,6 +92,9 @@ namespace DiplomacyIntrigue.Intrigue
 
             GrievanceRegistry.Add(state, loser, ruling, GrievanceType.FiefLostToEnemy,
                 reason: "the crown did not defend it");
+
+            // The court blames the crown, and so does the wider world (design 02 §4).
+            LegitimacyRegistry.OnFiefLost(state, kingdom);
         }
 
         /// <summary>
@@ -119,6 +122,12 @@ namespace DiplomacyIntrigue.Intrigue
             if (ruling == null) return;
 
             var legitimacy = CasusBelli.ResolvedLegitimacy(state, aggressor, defender, detail);
+
+            // A war with nothing at all to point at costs the crown its own standing, on top
+            // of what it costs with the court (design 02 §4).
+            if (CasusBelli.Resolve(state, aggressor, defender, detail) == CasusBelliType.None)
+                LegitimacyRegistry.OnWarDeclaredWithoutCause(state, aggressor);
+
             var weight = IntrigueConstants.GrievanceUnjustWarMax * (1f - legitimacy);
             if (weight <= 0f) return;
 

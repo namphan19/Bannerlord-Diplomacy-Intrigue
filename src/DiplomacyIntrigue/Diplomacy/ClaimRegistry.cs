@@ -280,12 +280,13 @@ namespace DiplomacyIntrigue.Diplomacy
                 }
             }
 
-            // Crown legitimacy is a Phase 2 system. The penalty is logged rather than
-            // silently dropped, so the hook is visible when that pool exists.
+            // The pool this was waiting for exists as of 2.4, so the penalty is paid rather
+            // than logged. The constant stays here, where the exposure rules live.
+            if (Core.Settings.Current.EnableIntrigue)
+                Intrigue.LegitimacyRegistry.OnCaughtFabricating(state, fabricator);
+
             Log.Info("Claims", fabricator.Name + " was caught fabricating a claim on "
-                               + attempt.Target.Name + " - relations damaged with every kingdom."
-                               + " Legitimacy penalty of " + DiplomacyConstants.FabricateExposedLegitimacyLoss
-                               + " pending the Phase 2 legitimacy pool.");
+                               + attempt.Target.Name + " - relations damaged with every kingdom.");
         }
     }
 }

@@ -44,6 +44,7 @@ namespace DiplomacyIntrigue.Behaviors
             try
             {
                 GrievanceRegistry.DailyTick(state);
+                LegitimacyRegistry.DailyTick(state);
             }
             catch (Exception ex)
             {

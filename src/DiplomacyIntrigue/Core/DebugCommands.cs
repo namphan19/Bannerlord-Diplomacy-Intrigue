@@ -259,6 +259,44 @@ namespace DiplomacyIntrigue.Core
         }
 
         /// <summary>
+        /// Crown legitimacy per kingdom, with what last moved it.
+        /// Usage: diplomacy.legitimacy
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("legitimacy", "diplomacy")]
+        public static string Legitimacy(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var sb = new StringBuilder();
+            foreach (var kingdom in Kingdom.All)
+            {
+                if (kingdom == null || kingdom.IsEliminated) continue;
+
+                var value = LegitimacyRegistry.Of(state, kingdom);
+                var weak = LegitimacyRegistry.IsWeak(state, kingdom);
+
+                KingdomLegitimacy record = null;
+                for (var i = 0; i < state.Legitimacy.Count; i++)
+                    if (state.Legitimacy[i].Kingdom == kingdom) record = state.Legitimacy[i];
+
+                sb.AppendLine(kingdom.Name + "  " + value.ToString("0.0")
+                              + (weak ? "  WEAK - a pretender could speak openly" : "")
+                              + (record == null
+                                  ? "   (no record yet; reads as the starting value)"
+                                  : "   last: " + record.LastReason));
+            }
+
+            sb.AppendLine("Starts at " + IntrigueConstants.LegitimacyStart.ToString("0")
+                          + "; below " + IntrigueConstants.LegitimacyPretenderThreshold.ToString("0")
+                          + " a crown is weak enough for a pretender (the claimant half of that"
+                          + " condition is 2.5 and does not exist yet).");
+            sb.AppendLine("The peace dividend cannot be driven by diplomacy.tick_days - it is"
+                          + " measured in dates, and the clock does not move there.");
+            return sb.ToString();
+        }
+
+        /// <summary>
         /// The court split into blocs: who leads each, what it weighs, and how much of that
         /// weight will actually vote its agenda rather than follow the ruler.
         /// Usage: diplomacy.blocs   or   diplomacy.blocs Khuzait
@@ -721,6 +759,11 @@ namespace DiplomacyIntrigue.Core
             ClaimRegistry.ExpireStale(state);
             ClaimRegistry.ResolveFabrications(state);
             GrievanceRegistry.DailyTick(state);
+
+            // Included although a frozen clock means it can never actually pay: the rule is
+            // that this drives the *full* daily set, and a list that quietly omits a call is
+            // how diplomacy.tick_days once made a vassalage Hold look broken for a day.
+            LegitimacyRegistry.DailyTick(state);
         }
 
         private static readonly char[] CommaSeparator = { ',' };

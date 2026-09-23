@@ -61,6 +61,65 @@ namespace DiplomacyIntrigue.Intrigue
         /// <summary>The ruler turned down a request. UN-TUNED, and deliberately the cheapest.</summary>
         public const float GrievanceRequestRefused = 2f;
 
+        // ----- Crown legitimacy (design 02 §4) --------------------------------
+
+        /// <summary>Where every crown starts, on a 0-100 pool. UN-TUNED: design 02 §4.</summary>
+        public const float LegitimacyStart = 60f;
+
+        /// <summary>Won a war whose cause was solid. UN-TUNED.</summary>
+        public const float LegitimacyWonJustWar = 12f;
+
+        /// <summary>
+        /// Won a war in the middle of the justification range. UN-TUNED, and **not in design
+        /// 02 §4** - the spec gives a figure for a just win and for an unjust win and nothing
+        /// between, which would make a war at justification 0.5 pay the same as naked
+        /// aggression. The midpoint is interpolated rather than left as a cliff.
+        /// </summary>
+        public const float LegitimacyWonOrdinaryWar = 7f;
+
+        /// <summary>Won a war nobody could justify. A win is a win, barely. UN-TUNED.</summary>
+        public const float LegitimacyWonUnjustWar = 2f;
+
+        /// <summary>Lost a war. UN-TUNED.</summary>
+        public const float LegitimacyLostWar = 10f;
+
+        /// <summary>Declared a war with nothing to point at. UN-TUNED.</summary>
+        public const float LegitimacyNoCasusBelli = 8f;
+
+        /// <summary>
+        /// Broke a treaty. The heaviest single entry in design 02 §4, deliberately: a crown
+        /// that breaks its word is treated as worse than a crown that loses. UN-TUNED.
+        /// </summary>
+        public const float LegitimacyBrokeTreaty = 20f;
+
+        /// <summary>Lost a fief to an outside power. UN-TUNED.</summary>
+        public const float LegitimacyLostFief = 3f;
+
+        /// <summary>Granted for each full year without a war. UN-TUNED.</summary>
+        public const float LegitimacyPeaceDividend = 3f;
+
+        /// <summary>How long that year is. UN-TUNED, and a year by definition.</summary>
+        public const float LegitimacyPeaceDividendYears = 1f;
+
+        /// <summary>At or above this war justification, a victory counts as a just one. UN-TUNED.</summary>
+        public const float LegitimacyJustWar = 0.7f;
+
+        /// <summary>Below this war justification, a victory buys almost nothing. UN-TUNED.</summary>
+        public const float LegitimacyUnjustWar = 0.3f;
+
+        /// <summary>
+        /// War score below which a settlement is a white peace with no victor, so neither
+        /// crown's standing moves. UN-TUNED. Without it both sides of every stalemate would
+        /// file a claim to victory.
+        /// </summary>
+        public const float LegitimacyDecisiveScore = 10f;
+
+        /// <summary>
+        /// Below this the crown is weak enough for a pretender to speak openly (design 02 §3,
+        /// §5). UN-TUNED. The claimant half of that condition is 2.5's.
+        /// </summary>
+        public const float LegitimacyPretenderThreshold = 40f;
+
         // ----- Court blocs (design 02 §3) -------------------------------------
         //
         // These are pressures, not probabilities: only their order within one clan matters,

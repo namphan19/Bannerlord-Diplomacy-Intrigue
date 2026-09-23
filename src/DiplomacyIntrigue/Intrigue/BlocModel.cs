@@ -94,10 +94,11 @@ namespace DiplomacyIntrigue.Intrigue
                 : 0f;
 
             // Pretenders need a claim on the throne AND crown legitimacy below 40 (design 02
-            // §3). Neither exists yet: legitimacy is 2.4 and standing claimants come out of
-            // succession, 2.5. The entry is present and always zero so that the bloc cannot
-            // quietly form on half its conditions - design 07's armed contest is the thing
-            // waiting on it, and it must not start firing early on an accident.
+            // §3). As of 2.4 the crown's half is real - LegitimacyRegistry.IsWeak answers it -
+            // but there are still no standing claimants, which is succession's job at 2.5.
+            // Deliberately still zero: letting the bloc form on half its conditions would let
+            // design 07's armed contest start firing on an accident, and a bloc that exists
+            // with no claimant to rally to has nobody to put on the throne.
             result[CourtAgenda.Pretenders] = 0f;
 
             return result;

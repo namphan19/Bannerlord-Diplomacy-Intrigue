@@ -270,6 +270,8 @@ namespace DiplomacyIntrigue.Diplomacy
 
             TrustRegistry.OnTreatyBroken(state, treaty, breaker);
             ClaimRegistry.GrantBrokenTreatyClaim(state, victim, breaker);
+            if (Core.Settings.Current.EnableIntrigue)
+                Intrigue.LegitimacyRegistry.OnTreatyBroken(state, breaker);
 
             Log.Info("Treaty", breaker.Name + " broke " + treaty.Type + " with " + victim.Name
                                + " - " + victim.Name + " now has a casus belli.");

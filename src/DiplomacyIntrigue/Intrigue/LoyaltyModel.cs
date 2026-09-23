@@ -82,11 +82,10 @@ namespace DiplomacyIntrigue.Intrigue
             result.WarExhaustion = -WarExhaustion.Worst(state, kingdom)
                                    * IntrigueConstants.LoyaltyWarExhaustionFactor;
 
-            // Crown legitimacy is 2.4 and does not exist yet. The term is written out rather
-            // than omitted so that wiring it later is one line and not a re-reading of the
-            // spec - and it contributes exactly zero until then, because the neutral value is
-            // the midpoint the formula subtracts.
-            var crownLegitimacy = IntrigueConstants.LegitimacyNeutral;   // 2.4 will read the real pool
+            // Live as of 2.4. A crown above the midpoint of the scale steadies its court and
+            // one below it drains loyalty everywhere at once - which is what makes legitimacy
+            // worth defending rather than a number on a screen.
+            var crownLegitimacy = LegitimacyRegistry.Of(state, kingdom);
             result.Legitimacy = (crownLegitimacy - IntrigueConstants.LegitimacyNeutral)
                                 * IntrigueConstants.LoyaltyLegitimacyFactor;
 

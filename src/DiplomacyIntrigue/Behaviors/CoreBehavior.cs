@@ -252,6 +252,12 @@ namespace DiplomacyIntrigue.Behaviors
             // next war with nothing to show for the last one.
             Diplomacy.WarExhaustion.CarryOverToWeariness(_state, war);
 
+            // A war's verdict is a political fact as well as a military one. Gated on the
+            // intrigue toggle here rather than inside the registry, because CoreBehavior runs
+            // whatever the player has switched on and must not assume a pillar is present.
+            if (Settings.Current.EnableIntrigue)
+                Intrigue.LegitimacyRegistry.OnWarEnded(_state, war);
+
             // Machine-readable first, so a long run can be parsed out of the log.
             if (Settings.Current.EnableTelemetry) Telemetry.WriteWarEnded(war);
 
