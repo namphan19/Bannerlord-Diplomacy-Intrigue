@@ -181,8 +181,12 @@ by the strength the formulas read, with its sphere), `diplomacy.hegemony` (every
 link's hold and the terms pulling it), `diplomacy.submission_value A | B`,
 `diplomacy.offer_peace <winner> | <loser> | vassalage, prisoners` (drives the real peace-table
 route rather than fabricating a treaty), `diplomacy.war_value`, `diplomacy.peace_allowance`.
+Court intrigue: `diplomacy.grievances`, `loyalty`, `blocs`, `legitimacy`, `pretenders` (with
+who would stand at the next succession), and `court_bands` (a court exactly as its
+Encyclopedia page describes it, bands only).
 Test-only levers for reaching a state: `diplomacy.test_set_speed <1-50>` (see §1),
-`diplomacy.test_set_player_age`, `diplomacy.sign_treaty`. Note that `sign_treaty` with
+`diplomacy.test_set_player_age`, `diplomacy.sign_treaty`, and for UI the screen openers
+`test_open_kingdom`, `test_open_encyclopedia <kingdom>` and `test_court_select <clan>`. Note that `sign_treaty` with
 `Vassalage` calls `TreatyRegistry.Sign` **directly** — it skips `Hegemony.Submit`, so the link
 it makes has no starting Hold, no call to arms and no sibling reconciliation. It is a treaty
 row, not a submission, and it cannot be used to test anything downstream of `Submit`.

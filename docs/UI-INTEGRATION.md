@@ -43,7 +43,7 @@ so correct them in the same change that fixes the code.
 
 ---
 
-## 0b. Five more, learned building the Court tab (2026-09-23)
+## 0b. Six more, learned building the Court tab and its Encyclopedia section (2026-09-23)
 
 Each of these rendered wrong or would have failed at load, and none of them produced an error.
 
@@ -70,6 +70,12 @@ Each of these rendered wrong or would have failed at load, and none of them prod
    cannot see a mixin's properties either. Give a panel a test hook that calls the same method the
    click would (`diplomacy.test_court_select`), and say plainly that the click itself was not
    exercised.
+
+6. **The bridge cannot scroll.** A section below the fold of a `ScrollablePanel` (the
+   Encyclopedia's right column) cannot be reached by any bridge tool. Real input can: bring
+   the game window forward with `SetForegroundWindow`, put the cursor over the panel with
+   `SetCursorPos`, and send `mouse_event(MOUSEEVENTF_WHEEL, ..., +/-120)` per notch. Six notches
+   crossed most of a kingdom page; aim, screenshot, adjust.
 
 And one that went right and is worth copying: **run the whole checklist in §7 on a second world**.
 The vassal's view, mercenary exclusion and a RELIABLE band only appeared on the second save.
@@ -400,6 +406,15 @@ link and hover for free. Skip kingdoms the page manager says are not valid encyc
 
 Good fits for this project: treaty partners by type, vassals and patron (hegemony sphere),
 standing claims, and the trust ledger shown as a band.
+
+**Built and verified, 2026-09-23 (Phase 2.7 rival court):** anchored with `Append` on
+`descendant::EncyclopediaSubPageElement[@Id='Leader']` so the section sits beside the ruler
+whatever other mods add at the bottom. One wrapper `ListPanel` carries `DataSource`, so the
+vanilla `EncyclopediaDivider` inside it binds `Parameter.Title` to our VM and collapses our
+body through `Parameter.ItemList="..\DiCourtBody"` exactly like a vanilla section (clicked
+live). The page's constructor calls `RefreshValues` before any mixin exists, so the mixin
+composes once in its own constructor as well as in `OnRefresh`. Code:
+`UI/EncyclopediaPages/`, prefab `Encyclopedia/DiEncyclopediaCourt.xml`.
 
 **v1.4.8 note, verified:** `EncyclopediaFactionPageVM.Refresh()` (public, virtual) is what fills
 leader, clans, settlements; `RefreshValues()` only sets texts. If a section must update when the

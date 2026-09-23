@@ -298,7 +298,11 @@ namespace DiplomacyIntrigue.Intrigue
             return false;
         }
 
-        /// <summary>Influence of this clan as a multiple of its court's average. Diagnostic.</summary>
+        /// <summary>
+        /// Influence of this clan as a multiple of its court's average - the one place that
+        /// average is computed. Sworn clans with positive influence make up the average; a
+        /// mercenary is not at court and a clan at or below zero carries no weight in it.
+        /// </summary>
         public static float InfluenceRatio(Clan clan, Kingdom kingdom)
         {
             if (clan == null || kingdom?.Clans == null) return 0f;
@@ -329,26 +333,24 @@ namespace DiplomacyIntrigue.Intrigue
         {
             if (clan?.Leader == null) return false;
             if (LoyaltyModel.Of(state, clan) >= IntrigueConstants.LoyaltyTransactional) return false;
-
-            var total = 0f;
-            var counted = 0;
-            for (var i = 0; i < kingdom.Clans.Count; i++)
-            {
-                var other = kingdom.Clans[i];
-                if (!Court.IsMember(other) || other.Influence <= 0f) continue;
-                total += other.Influence;
-                counted++;
-            }
-            if (counted == 0 || total <= 0f) return false;
-
-            // Measured against the court's average rather than an absolute share of it. The
-            // first version used a flat 15% and nobody in the game ever qualified: a nine-clan
-            // court averages 11% each and its strongest clan held 14%, so the bar sat above
-            // the top of the field. A share threshold silently encodes an assumption about how
-            // many clans a kingdom has; a multiple of the average does not.
-            var average = total / counted;
-            return clan.Influence >= average * IntrigueConstants.SuccessionClaimantInfluenceRatio;
+            return IsMagnate(clan, kingdom);
         }
+
+        /// <summary>
+        /// Strong enough at court to press a claim: influence at least
+        /// <see cref="IntrigueConstants.SuccessionClaimantInfluenceRatio"/> times the court's
+        /// average. The influence half of <see cref="HasPowerClaim"/>, on its own because a
+        /// rival court's Encyclopedia band ("among the great houses") is this same edge -
+        /// before 2.7 the average was computed twice, here and in <see cref="InfluenceRatio"/>.
+        ///
+        /// Measured against the court's average rather than an absolute share of it. The
+        /// first version used a flat 15% and nobody in the game ever qualified: a nine-clan
+        /// court averages 11% each and its strongest clan held 14%, so the bar sat above
+        /// the top of the field. A share threshold silently encodes an assumption about how
+        /// many clans a kingdom has; a multiple of the average does not.
+        /// </summary>
+        public static bool IsMagnate(Clan clan, Kingdom kingdom)
+            => InfluenceRatio(clan, kingdom) >= IntrigueConstants.SuccessionClaimantInfluenceRatio;
 
         /// <summary>
         /// How the court divides: which claimant each clan backs. The single answer to that

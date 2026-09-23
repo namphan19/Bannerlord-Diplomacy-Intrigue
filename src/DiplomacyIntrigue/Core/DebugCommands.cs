@@ -430,6 +430,71 @@ namespace DiplomacyIntrigue.Core
         }
 
         /// <summary>
+        /// A court as its Encyclopedia page describes it - bands only for a rival, a pointer to
+        /// the Court tab for your own. Prints the very view model the page binds, so it checks
+        /// what the page will say rather than a second rendering of it. Put it beside
+        /// <c>diplomacy.loyalty</c> and <c>diplomacy.legitimacy</c> to see each band against
+        /// the figure behind it.
+        /// Usage: diplomacy.court_bands [kingdom]
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("court_bands", "diplomacy")]
+        public static string CourtBandsCommand(List<string> args)
+        {
+            if (Campaign.Current == null) return NoCampaign;
+
+            Kingdom filter = null;
+            if (args != null && args.Count > 0)
+            {
+                var wanted = string.Join(" ", args);
+                filter = FindKingdom(wanted);
+                if (filter == null) return "No kingdom named \"" + wanted + "\".";
+            }
+
+            var sb = new StringBuilder();
+            sb.AppendLine("Edges: crown Failing < " + IntrigueConstants.LegitimacyPretenderThreshold.ToString("0")
+                          + " <= Questioned < " + IntrigueConstants.LegitimacyNeutral.ToString("0")
+                          + " <= Secure; great house at x"
+                          + IntrigueConstants.SuccessionClaimantInfluenceRatio.ToString("0.00")
+                          + " the court's average influence; no weight at <= 0.");
+            foreach (var kingdom in Kingdom.All)
+            {
+                if (filter != null && kingdom != filter) continue;
+                if (filter == null && kingdom.IsEliminated) continue;
+                sb.AppendLine();
+                sb.AppendLine("== " + kingdom.Name + " ==");
+                sb.Append(new UI.EncyclopediaPages.DiEncyclopediaCourtVM(kingdom).Describe());
+            }
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Opens a kingdom's Encyclopedia page, the way clicking its link in a message does.
+        /// Test-only: reaches a page in one step instead of clicking through the Encyclopedia's
+        /// lists from a tool call.
+        /// Usage: diplomacy.test_open_encyclopedia Sturgia
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_open_encyclopedia", "diplomacy")]
+        public static string TestOpenEncyclopedia(List<string> args)
+        {
+            if (Campaign.Current == null) return NoCampaign;
+            if (args == null || args.Count == 0) return "Usage: diplomacy.test_open_encyclopedia <kingdom>";
+
+            var wanted = string.Join(" ", args);
+            var kingdom = FindKingdom(wanted);
+            if (kingdom == null) return "No kingdom named \"" + wanted + "\".";
+
+            try
+            {
+                Campaign.Current.EncyclopediaManager.GoToLink(kingdom.EncyclopediaLink);
+                return "Opened the Encyclopedia page of " + kingdom.Name + ".";
+            }
+            catch (Exception ex)
+            {
+                return "Could not open the Encyclopedia: " + ex.Message;
+            }
+        }
+
+        /// <summary>
         /// Crown legitimacy per kingdom, with what last moved it.
         /// Usage: diplomacy.legitimacy
         /// </summary>
@@ -460,8 +525,9 @@ namespace DiplomacyIntrigue.Core
 
             sb.AppendLine("Starts at " + IntrigueConstants.LegitimacyStart.ToString("0")
                           + "; below " + IntrigueConstants.LegitimacyPretenderThreshold.ToString("0")
-                          + " a crown is weak enough for a pretender (the claimant half of that"
-                          + " condition is 2.5 and does not exist yet).");
+                          + " a crown is weak enough for a pretender's party to gather, if a claim"
+                          + " stands (diplomacy.pretenders); below " + IntrigueConstants.LegitimacyNeutral.ToString("0")
+                          + " it costs every clan loyalty.");
             sb.AppendLine("The peace dividend cannot be driven by diplomacy.tick_days - it is"
                           + " measured in dates, and the clock does not move there.");
             return sb.ToString();

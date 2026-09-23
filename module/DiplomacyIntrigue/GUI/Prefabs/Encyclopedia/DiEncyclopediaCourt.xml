@@ -1,0 +1,189 @@
+<Prefab>
+  <Window>
+    <!-- A kingdom's court, on its Encyclopedia page (Phase 2.7, design 02 section 9.1).
+         Inserted after the ruler, before the clans, by EncyclopediaCourtSectionExtension.
+
+         Your own kingdom gets one line pointing to the Court tab. A rival gets the approved
+         "rival court" board as bands only: the crown's standing, what your envoys report,
+         the mood of the court, and each house named but never measured. There is not one
+         number on this page, on purpose: the VM has no number property to bind.
+
+         Data context: DiEncyclopediaCourtVM, set on the outer list, so the vanilla divider's
+         title binds to it too. The divider collapses DiCourtBody like every other section.
+         Row and chip patterns are copied from DiCourtPanel.xml, where they were verified. -->
+    <ListPanel Id="DiEncyclopediaCourtSection" DataSource="{DiEncyclopediaCourt}" WidthSizePolicy="StretchToParent"
+        HeightSizePolicy="CoverChildren" IsVisible="@Visible" StackLayout.LayoutMethod="VerticalTopToBottom">
+      <Children>
+
+        <EncyclopediaDivider Id="DiCourtDivider" MarginTop="50" Parameter.Title="@SectionTitle"
+            Parameter.ItemList="..\DiCourtBody" />
+
+        <ListPanel Id="DiCourtBody" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+            MarginTop="14" MarginLeft="20" MarginRight="25" StackLayout.LayoutMethod="VerticalTopToBottom">
+          <Children>
+
+            <!-- Your own court: the figures are one screen away -->
+            <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                IsVisible="@IsOwnCourt" Brush="Encyclopedia.SubPage.Info.Text" Brush.FontSize="18"
+                Text="@OwnCourtText" />
+
+            <!-- A rival court, as your envoys can describe it -->
+            <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" IsVisible="@IsRivalCourt"
+                StackLayout.LayoutMethod="VerticalTopToBottom">
+              <Children>
+
+                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                    Brush="DiRealm.Label" Brush.FontSize="17" Text="@HeaderLine" />
+
+                <!-- The crown's standing (left) and the mood of the court (right) -->
+                <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginTop="16">
+                  <Children>
+
+                    <ListPanel WidthSizePolicy="Fixed" SuggestedWidth="380" HeightSizePolicy="CoverChildren"
+                        StackLayout.LayoutMethod="VerticalTopToBottom">
+                      <Children>
+                        <ListPanel WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren">
+                          <Children>
+                            <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
+                                HeightSizePolicy="CoverChildren" VerticalAlignment="Center" Brush="DiRealm.Small" Brush.FontSize="16"
+                                Text="THE CROWN'S STANDING" />
+                            <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
+                                HeightSizePolicy="CoverChildren" MarginLeft="12" VerticalAlignment="Center"
+                                Brush="DiRealm.Title" Brush.FontColor="@StandingColor" Text="@StandingText" />
+                          </Children>
+                        </ListPanel>
+
+                        <!-- Three segments: Failing, Questioned, Secure. Only the one the crown sits in is lit. -->
+                        <ListPanel DataSource="{StandingSegments}" WidthSizePolicy="CoverChildren"
+                            HeightSizePolicy="CoverChildren" MarginTop="8">
+                          <ItemTemplate>
+                            <ListPanel WidthSizePolicy="Fixed" SuggestedWidth="@SegmentWidth" HeightSizePolicy="CoverChildren"
+                                MarginRight="4" StackLayout.LayoutMethod="VerticalTopToBottom">
+                              <Children>
+                                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="12"
+                                    Sprite="BlankWhiteSquare_9" Color="@Color" />
+                                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                                    HeightSizePolicy="CoverChildren" MarginTop="3" Brush="DiRealm.Small" Brush.FontSize="16"
+                                    Brush.FontColor="@LabelColor" Brush.TextHorizontalAlignment="Center" Text="@Label" />
+                              </Children>
+                            </ListPanel>
+                          </ItemTemplate>
+                        </ListPanel>
+
+                        <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                            HeightSizePolicy="CoverChildren" MarginTop="6" Brush="DiRealm.Body" Brush.FontSize="18" Text="@StandingMeaning" />
+                      </Children>
+                    </ListPanel>
+
+                    <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginLeft="24"
+                        StackLayout.LayoutMethod="VerticalTopToBottom">
+                      <Children>
+                        <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
+                            HeightSizePolicy="CoverChildren" Brush="DiRealm.Small" Brush.FontSize="16" Text="THE MOOD OF THE COURT" />
+                        <!-- One segment per mood present, worst first, each as wide as its share of the houses -->
+                        <ListPanel DataSource="{MoodSegments}" WidthSizePolicy="CoverChildren" HeightSizePolicy="Fixed"
+                            SuggestedHeight="18" MarginTop="10">
+                          <ItemTemplate>
+                            <Widget WidthSizePolicy="Fixed" SuggestedWidth="@SegmentWidth" HeightSizePolicy="StretchToParent"
+                                MarginRight="3" Sprite="BlankWhiteSquare_9" Color="@Color" />
+                          </ItemTemplate>
+                        </ListPanel>
+                        <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                            HeightSizePolicy="CoverChildren" MarginTop="8" Brush="DiRealm.Body" Brush.FontSize="18" Text="@MoodText" />
+                      </Children>
+                    </ListPanel>
+
+                  </Children>
+                </ListPanel>
+
+                <!-- What your envoys report -->
+                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
+                    MarginTop="22" Brush="DiRealm.Small" Brush.FontSize="16" Text="WHAT YOUR ENVOYS REPORT" />
+                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                    MarginTop="6" Brush="Encyclopedia.SubPage.Info.Text" Brush.FontSize="18" Text="@FactionReport" />
+                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                    MarginTop="4" Brush="Encyclopedia.SubPage.Info.Text" Brush.FontSize="18" Text="@DefectionReport" />
+
+                <!-- Their houses, named but not measured -->
+                <ListPanel WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" MarginTop="22">
+                  <Children>
+                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
+                        Brush="DiRealm.Small" Brush.FontSize="16" Text="THEIR HOUSES" />
+                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
+                        MarginLeft="10" Brush="DiRealm.Small" Brush.FontSize="16" Brush.FontColor="#A89878FF" Text="@HouseCountText" />
+                  </Children>
+                </ListPanel>
+
+                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="26" MarginTop="6">
+                  <Children>
+                    <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                        Sprite="BlankWhiteSquare_9" Color="#0D0A0799" />
+                    <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent">
+                      <Children>
+                        <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="200"
+                            HeightSizePolicy="StretchToParent" MarginLeft="10" Brush="DiRealm.Small" Brush.FontSize="16" Text="HOUSE" />
+                        <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="180"
+                            HeightSizePolicy="StretchToParent" Brush="DiRealm.Small" Brush.FontSize="16" Text="HOW THEY ARE SPOKEN OF" />
+                        <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                            HeightSizePolicy="StretchToParent" Brush="DiRealm.Small" Brush.FontSize="16" Text="STANDING AT COURT" />
+                      </Children>
+                    </ListPanel>
+                  </Children>
+                </Widget>
+
+                <ListPanel DataSource="{Houses}" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                    StackLayout.LayoutMethod="VerticalTopToBottom">
+                  <ItemTemplate>
+                    <!-- Fixed height: see UI-INTEGRATION.md 0b, lesson 1 -->
+                    <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="34">
+                      <Children>
+                        <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="1"
+                            VerticalAlignment="Bottom" Sprite="BlankWhiteSquare_9" Color="#E0CFA822" />
+                        <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent">
+                          <Children>
+                            <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="200"
+                                HeightSizePolicy="StretchToParent" MarginLeft="10" Brush="DiRealm.Body" Brush.FontSize="18" Text="@Name" />
+                            <Widget WidthSizePolicy="Fixed" SuggestedWidth="180" HeightSizePolicy="StretchToParent">
+                              <Children>
+                                <Widget WidthSizePolicy="CoverChildren" HeightSizePolicy="Fixed" SuggestedHeight="20"
+                                    VerticalAlignment="Center" Sprite="BlankWhiteSquare_9" Color="@MoodColor">
+                                  <Children>
+                                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
+                                        HeightSizePolicy="StretchToParent" MarginLeft="7" MarginRight="7"
+                                        Brush="DiRealm.Badge" Text="@MoodText" />
+                                  </Children>
+                                </Widget>
+                              </Children>
+                            </Widget>
+                            <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                                HeightSizePolicy="StretchToParent" Brush="DiRealm.Label" Brush.FontSize="17" Text="@WeightText" />
+                          </Children>
+                        </ListPanel>
+                      </Children>
+                    </Widget>
+                  </ItemTemplate>
+                </ListPanel>
+
+                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                    MarginTop="8" Brush="DiRealm.Small" Brush.FontSize="15" Text="@ThresholdNote" />
+
+                <!-- Their ledger: what only an agent inside could read (Phase 3, ReadCourt) -->
+                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
+                    MarginTop="22" Brush="DiRealm.Small" Brush.FontSize="16" Text="THEIR LEDGER" />
+                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                    MarginTop="6" Brush="DiRealm.Label" Brush.FontSize="17" Text="@LedgerNote" />
+
+                <!-- Standing claims are public: a claim nobody hears of is not a claim -->
+                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                    MarginTop="18" Brush="Encyclopedia.SubPage.Info.Text" Brush.FontSize="18" Text="@ClaimText" />
+
+              </Children>
+            </ListPanel>
+
+          </Children>
+        </ListPanel>
+
+      </Children>
+    </ListPanel>
+  </Window>
+</Prefab>

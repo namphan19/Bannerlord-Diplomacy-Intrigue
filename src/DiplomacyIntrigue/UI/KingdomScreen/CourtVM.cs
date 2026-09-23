@@ -330,9 +330,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             var legitimacy = LegitimacyRegistry.Of(state, kingdom);
             LegitimacyText = legitimacy.ToString("0.0");
             LegitimacyAmount = (int)Math.Round(legitimacy);
-            LegitimacyColor = legitimacy < IntrigueConstants.LegitimacyPretenderThreshold
-                ? DefectionColor
-                : (legitimacy < IntrigueConstants.LegitimacyStart ? DisaffectedColor : ReliableColor);
+            LegitimacyColor = CrownColor(CourtBands.CrownOf(legitimacy));
             LegitimacyNote = LastLegitimacyReason(state, kingdom);
 
             // Blocs, strongest first, with the share of the court each carries.
@@ -459,6 +457,17 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 case LoyaltyBand.Transactional: return TransactionalColor;
                 case LoyaltyBand.Disaffected: return DisaffectedColor;
                 default: return DefectionColor;
+            }
+        }
+
+        /// <summary>The same three colours as a rival crown's band on its Encyclopedia page.</summary>
+        internal static Color CrownColor(CrownStanding standing)
+        {
+            switch (standing)
+            {
+                case CrownStanding.Failing: return DefectionColor;
+                case CrownStanding.Questioned: return DisaffectedColor;
+                default: return ReliableColor;
             }
         }
 

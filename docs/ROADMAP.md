@@ -427,7 +427,7 @@ Playable target: *being a king is a political problem, not just a military one.*
 
 **2.6 Civil war** — a strong pretender bloc can secede into a rival kingdom, taking its fiefs. The end state of unmanaged internal pressure.
 
-**2.7 Intrigue UI** — court screen: blocs, loyalty, grievance ledger, legitimacy — in full for your own court, as a qualitative band for rivals (§9.1). **Own court: built and verified live 2026-09-23** as a seventh Kingdom-screen tab, "Court" (STATUS.md). **Rival court: not built** — it goes on the kingdom's Encyclopedia page.
+**2.7 Intrigue UI** — court screen: blocs, loyalty, grievance ledger, legitimacy — in full for your own court, as a qualitative band for rivals (§9.1). **Own court: built and verified live 2026-09-23** as a seventh Kingdom-screen tab, "Court" (STATUS.md). **Rival court: built and verified live 2026-09-23** — a bands-only "Court" section on the kingdom's Encyclopedia page, every edge a behavioural threshold (`CourtBands`).
 
 **Acceptance:** an AI kingdom that loses a long illegitimate war visibly fractures — blocs shift, then either sues for peace or splits. The player can survive it by managing grievances.
 

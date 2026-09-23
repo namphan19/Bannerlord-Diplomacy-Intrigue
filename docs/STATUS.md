@@ -4,18 +4,18 @@ Point-in-time state. [CLAUDE.md](../CLAUDE.md) holds the things that are always 
 file holds what changes. Update it when you finish a chunk of work.
 
 Module version 0.1.0. Save schema **v4**, definer base id **2749100**.
-Save ids in use: `Treaty` 1-17, `TrustRecord` 1-6, `ModState` 1-10, definer class ids to 9
-(`KingdomPower`), enums 20-25. Free for Phase 2: class ids **from 10**, `ModState`
-properties **from 11**.
+Save ids in use: `Treaty` 1-17, `TrustRecord` 1-6, `ModState` 1-13, definer class ids to 12
+(`Pretender`), enums 20-26. Next free: class id **13**, `ModState` property **14**, enum
+**27** (CLAUDE.md §3 has the per-type detail).
 Last completed measurement: **balance run 07** — [docs/balance/run-07.md](balance/run-07.md).
 
 ## Start here — handoff, 2026-09-23
 
 **Phase 1 is accepted and closed. Phase 2 — court intrigue — is the work now.**
+2.1-2.5 and 2.7 are built and verified live (sections below); **2.6, the civil war, is what
+remains**, and it is the largest piece of the pillar.
 
-Branch `development`, clean and level with `origin/development`. Everything that was in
-flight has landed: PR #3 (run-06 fixes, §12, §13) and PR #4 (Kingdom screen UI), and no
-remote branch is unmerged. `main` sits **24 commits behind** `development` and has
+Branch `development`, pushed. `main` sits **40-odd commits behind** `development` and has
 deliberately not been moved — cutting a release is Phase 4's job, not a side effect of
 closing a pillar.
 
@@ -300,7 +300,7 @@ succession resets the largest positive term in the loyalty sum. Realistic, and v
 
 The lead approved the mockup (artifact "Court Intrigue Screen") and chose where it lives: a
 **seventh Kingdom-screen tab, "Court"**, after Realm. A rival court goes on that kingdom's
-**Encyclopedia page** as bands only (design 02 §9.1) - **not built yet**.
+**Encyclopedia page** as bands only (design 02 §9.1) - built the same night, next section.
 
 Built the Realm tab's way: one prefab patch inserts both our tab buttons, one inserts the panel,
 the management mixin owns `DiCourtVM` beside `DiRealmVM`, and each of our tabs hides every other
@@ -339,20 +339,76 @@ Verified by screenshot on two different worlds. **0 errors, 0 warnings.**
 
 Five Gauntlet lessons from building it went into UI-INTEGRATION.md §0b.
 
+### 2.7 rival court on the Encyclopedia is built and verified live, 2026-09-23 (night)
+
+The rival half of the approved design (board "A rival court"), where the lead put it: a
+**"Court" section on each kingdom's Encyclopedia page**, after the ruler and before the clans.
+Your own kingdom's page shows one line pointing to the Court tab instead.
+
+**Bands, never figures.** `Intrigue/CourtBands.cs` is the one place the bands are drawn, in
+the same style as Phase 1's `ExhaustionBands`: every edge is a threshold the AI acts on, read
+from the constant it uses.
+
+| Band | Edges | What acts on the edge |
+|---|---|---|
+| Crown: Failing / Questioned / Secure | 40, 50 | below 40 a pretender's party may gather (`LegitimacyRegistry.IsWeak`); below 50 the crown costs every clan loyalty (`LoyaltyModel`) |
+| House mood: Ready to break / Sullen / Self-interested / Steadfast | 25, 40, 70 | the loyalty bands themselves (`LoyaltyModel.Band`) |
+| House weight: no weight / middling / great house | 0, x1.30 the court's average | at or below 0 influence adds nothing to bloc power or succession support; x1.30 is the magnate half of a power claim (`SuccessionModel.IsMagnate`) |
+
+The view model exposes only text and colours - there is no number property on it to bind.
+Standing pretenders are named (a claim nobody hears of is not a claim); a house that *would*
+press a claim is not, but "great house" + "Ready to break" says it to a player who reads both.
+
+Two changes outside the new files, both "one resolver per concept":
+- `SuccessionModel.HasPowerClaim` computed the court's average influence itself, a second copy
+  of `InfluenceRatio`. It now reads `IsMagnate`, which reads `InfluenceRatio`. Verified the
+  same result live: the four Khuzait clans flagged `claimant` on the Court tab are exactly the
+  four `diplomacy.pretenders` marks WOULD STAND, including Khergit sitting on x1.30.
+- The Court tab coloured legitimacy on **60** (`LegitimacyStart`), which is where a crown
+  starts and changes no behaviour. It now reads `CourtBands.CrownOf`, so both views share the
+  40/50 edges. **Visible change:** a crown at 50-59 was orange on the Court tab and is green now.
+
+Verified on `di_pretender_test`. **0 errors, 0 warnings** across two sessions.
+
+| Check | Result |
+|---|---|
+| Section renders in the page | after Leader, vanilla divider style; screenshot |
+| Battania, the crisis court | Failing (legitimacy 25), "The Pretenders are the strongest party at court, and speak through Clan fen Eingal", four houses ready to break, "Aradwyr presses a claim to the throne of Battania" |
+| Bands against the figures | fen Morcar 39.4 Sullen, fen Giall 43.4 Self-interested, fen Penraic 66.0 Self-interested, fen Eingal x1.91 great house, Dolentos x1.34 great house, dey Cortain x-0.08 no weight, Aserai 57 Secure - every one matched against `diplomacy.loyalty` / `pretenders` / `legitimacy` |
+| All eight kingdoms composed | `diplomacy.court_bands`, which prints the very VM the page binds |
+| Your own kingdom (Khuzait) | the pointer line only, Clans directly below |
+| The divider collapses the section | a **real click** through the bridge: arrow turns, body hides |
+| Court tab regression | unchanged apart from the colour edge above |
+
+**Not verified:**
+- A female ruler's page on screen. `court_bands` composed Southern Empire with "her"
+  throughout, but only Battania's and Khuzait's pages were looked at.
+- A kingdom whose court has no sworn clan besides the ruler's ("none but his own house").
+- The page reached by clicking through the Encyclopedia's own lists: `diplomacy.test_open_encyclopedia`
+  opens it through `EncyclopediaManager.GoToLink`, the same call a link in a message makes.
+- Only 1280x720, again.
+
+One testing trick worth keeping: **the bridge has no scroll tool**, and the section sits below
+the fold. Real mouse-wheel input to the game window works (Win32 `SetCursorPos` +
+`mouse_event(MOUSEEVENTF_WHEEL)` after `SetForegroundWindow`); it is recorded in
+UI-INTEGRATION.md §0b.
+
 ### What to do next
 
-1. ~~**2.1 - the grievance ledger.**~~ **Done and verified above.** Originally: A new savable type at class id **10**, with its container
-   definition added to `ModSaveDefiner` in the same commit (a missing container definition
-   crashes on save), a `ModState` list at property **11**, the eight sources in
-   [design/02 §1](design/02-intrigue.md), the −0.02/day decay, and a `diplomacy.grievances`
-   diagnostic. No schema bump: a new list that defaults empty does not change the meaning of
-   existing data.
-2. **2.2 — loyalty**, derived on the weekly tick, plus the `AiDiplomacy.TryDemandTribute`
-   revisit — it accepts on strength ratio and trust alone, with no sense of the target
-   court's willingness.
-3. **2.3–2.4** in order. 2.4 is where the `ClaimRegistry` hook stops logging and starts
-   paying, and where the `Hold` formula gets its legitimacy term
-   ([design/04 §1.2](design/04-hegemony.md)).
+1. **2.6 - the civil war**, which the lead chose at its most ambitious (option C: true
+   intra-kingdom hostility, no faction split) together with the secession ladder
+   (disaffection -> political contest -> armed internal contest -> secession).
+   [design/07](design/07-internal-politics.md) holds the spike. Before code: pick and write down
+   defaults for its §3 open questions (what winning grants, whether the player is dragged in,
+   whether a ruling-clan dispute can run beside a crown contest). The lever is a patch on
+   `Clan.get_MapFaction` - **the fourth Harmony patch**, on a getter with 2,216 call sites,
+   so its header must carry the evidence CLAUDE.md §3 demands and it wants the most careful
+   live verification of anything in the pillar. Intra-clan succession disputes belong to the
+   same design.
+2. **Court tab gaps**: no scrolling past ~13 sworn clans; the physical row click is unverified.
+3. **The `AiDiplomacy.TryDemandTribute` revisit** planned for 2.2 was never done: it still
+   accepts on strength ratio and trust alone, with no sense of the target court's willingness.
+   Loyalty and legitimacy now exist for it to read.
 4. **Fold run 08 in** once Phase 2 work produces a campaign long enough to carry it. Same
    deployment, same telemetry; what it needs is in-game years, which Phase 2 testing
    generates anyway.
