@@ -49,6 +49,13 @@ namespace DiplomacyIntrigue.Core
         /// </summary>
         [SaveableProperty(12)] public List<KingdomLegitimacy> Legitimacy { get; private set; }
 
+        /// <summary>
+        /// Standing claimants to a throne (Phase 2.5). Added without a schema bump: a save
+        /// that predates it loads with the list empty, which is correct - no succession has
+        /// been contested under the new rules yet.
+        /// </summary>
+        [SaveableProperty(13)] public List<Pretender> Pretenders { get; private set; }
+
         public ModState()
         {
             SchemaVersion = CurrentSchemaVersion;
@@ -62,6 +69,7 @@ namespace DiplomacyIntrigue.Core
             PowerRecords = new List<KingdomPower>();
             Grievances = new List<Grievance>();
             Legitimacy = new List<KingdomLegitimacy>();
+            Pretenders = new List<Pretender>();
             NextTreatyId = 1;
         }
 
@@ -81,6 +89,7 @@ namespace DiplomacyIntrigue.Core
             if (PowerRecords == null) PowerRecords = new List<KingdomPower>();
             if (Grievances == null) Grievances = new List<Grievance>();
             if (Legitimacy == null) Legitimacy = new List<KingdomLegitimacy>();
+            if (Pretenders == null) Pretenders = new List<Pretender>();
             if (NextTreatyId < 1) NextTreatyId = 1;
 
             Migrate();
@@ -97,13 +106,15 @@ namespace DiplomacyIntrigue.Core
             PowerRecords.RemoveAll(p => p == null || p.Kingdom == null);
             Grievances.RemoveAll(g => g == null || g.Holder == null || g.Target == null);
             Legitimacy.RemoveAll(l => l == null || l.Kingdom == null);
+            Pretenders.RemoveAll(p => p == null || p.Kingdom == null || p.Claimant == null);
 
             Log.Info("State", "Loaded: " + Treaties.Count + " treaties, " + Wars.Count
                               + " war records, " + Weariness.Count + " weariness entries, "
                               + Claims.Count + " claims, " + FiefHistory.Count + " fief records, "
                               + Trust.Count + " trust records, " + Grievances.Count
                               + " grievances, " + Legitimacy.Count
-                              + " legitimacy pools, schema v" + SchemaVersion + ".");
+                              + " legitimacy pools, " + Pretenders.Count
+                              + " pretenders, schema v" + SchemaVersion + ".");
         }
 
         private void Migrate()

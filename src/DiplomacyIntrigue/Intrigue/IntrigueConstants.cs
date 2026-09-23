@@ -61,6 +61,9 @@ namespace DiplomacyIntrigue.Intrigue
         /// <summary>The ruler turned down a request. UN-TUNED, and deliberately the cheapest.</summary>
         public const float GrievanceRequestRefused = 2f;
 
+        /// <summary>Backed a losing claimant at a contested succession. UN-TUNED: design 02 §5.</summary>
+        public const float GrievanceSuccessionPassedOver = 6f;
+
         // ----- Crown legitimacy (design 02 §4) --------------------------------
 
         /// <summary>Where every crown starts, on a 0-100 pool. UN-TUNED: design 02 §4.</summary>
@@ -120,6 +123,37 @@ namespace DiplomacyIntrigue.Intrigue
         /// </summary>
         public const float LegitimacyPretenderThreshold = 40f;
 
+        // ----- Succession (design 02 §5) --------------------------------------
+
+        /// <summary>
+        /// Share of the court the new ruler needs for the succession to pass off quietly.
+        /// UN-TUNED: design 02 §5's "clear majority (> 60%)".
+        /// </summary>
+        public const float SuccessionClearMajority = 0.6f;
+
+        /// <summary>What a contested succession costs the new crown. UN-TUNED: design 02 §5.</summary>
+        public const float SuccessionContestedLegitimacy = 15f;
+
+        /// <summary>
+        /// Share a losing claimant must keep to remain a standing pretender. UN-TUNED:
+        /// design 02 §5's "more than 30% support".
+        /// </summary>
+        public const float SuccessionPretenderShare = 0.3f;
+
+        /// <summary>
+        /// How strongly a clan leader backs their own claim, on the same scale as relation
+        /// (-100..100). UN-TUNED, and set high: a claimant who would rather see somebody else
+        /// crowned is not a claimant.
+        /// </summary>
+        public const float SuccessionSelfBacking = 100f;
+
+        /// <summary>
+        /// How much loyalty to the crown counts as backing for whoever now wears it. UN-TUNED.
+        /// At 0.5 a fully loyal clan brings the equivalent of +50 relation to the incumbent,
+        /// which is what makes a well-run realm inherit smoothly.
+        /// </summary>
+        public const float SuccessionLoyaltyWeight = 0.5f;
+
         // ----- Court blocs (design 02 §3) -------------------------------------
         //
         // These are pressures, not probabilities: only their order within one clan matters,
@@ -147,6 +181,20 @@ namespace DiplomacyIntrigue.Intrigue
 
         /// <summary>Centralist pull for a clan holding more land than its standing demands. UN-TUNED.</summary>
         public const float CentralistPressureFromPatronage = 30f;
+
+        /// <summary>
+        /// Pull on a clan whose own leader holds a claim to the throne. UN-TUNED, and set
+        /// above every other agenda on purpose: a clan with a crown within reach is not
+        /// weighing tax policy.
+        /// </summary>
+        public const float PretenderPressureOwnClaim = 200f;
+
+        /// <summary>
+        /// Pull per point by which a clan prefers a claimant to the sitting ruler. UN-TUNED.
+        /// At 0.5 a clan that likes a pretender 60 points more than its king is pulled harder
+        /// than any other agenda can manage.
+        /// </summary>
+        public const float PretenderPressurePerRelationPoint = 0.5f;
 
         // ----- Loyalty (design 02 §2) -----------------------------------------
 
@@ -215,6 +263,7 @@ namespace DiplomacyIntrigue.Intrigue
                 case GrievanceType.PolicyAgainstAgenda: return GrievancePolicyAgainstAgenda;
                 case GrievanceType.PeaceWhileWinning: return GrievancePeaceWhileWinning;
                 case GrievanceType.RequestRefused: return GrievanceRequestRefused;
+                case GrievanceType.SuccessionPassedOver: return GrievanceSuccessionPassedOver;
                 default: return 0f;
             }
         }

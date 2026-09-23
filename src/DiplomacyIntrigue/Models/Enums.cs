@@ -107,6 +107,14 @@ namespace DiplomacyIntrigue.Models
         PeaceWhileWinning = 7,
         /// <summary>The ruler turned down something they asked for.</summary>
         RequestRefused = 8,
+        /// <summary>
+        /// They backed a losing claimant at a contested succession (design 02 §5).
+        ///
+        /// Value 9 because 1-8 are already in save files. A new *value* on an enum the definer
+        /// already registers is safe - existing values keep their numbers - but reusing or
+        /// renumbering one would silently change the meaning of grievances already stored.
+        /// </summary>
+        SuccessionPassedOver = 9,
     }
 
     /// <summary>

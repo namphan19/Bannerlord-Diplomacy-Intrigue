@@ -30,6 +30,7 @@ namespace DiplomacyIntrigue.Behaviors
             CampaignEvents.WeeklyTickEvent.AddNonSerializedListener(this, OnWeeklyTick);
             CampaignEvents.WarDeclared.AddNonSerializedListener(this, OnWarDeclared);
             CampaignEvents.OnSettlementOwnerChangedEvent.AddNonSerializedListener(this, OnSettlementOwnerChanged);
+            CampaignEvents.RulingClanChanged.AddNonSerializedListener(this, OnRulingClanChanged);
         }
 
         // Grievances live in ModState, owned by CoreBehavior.
@@ -63,6 +64,7 @@ namespace DiplomacyIntrigue.Behaviors
             {
                 GrievanceRegistry.DailyTick(state);
                 LegitimacyRegistry.DailyTick(state);
+                SuccessionModel.RetireSpentClaims(state);
             }
             catch (Exception ex)
             {
@@ -86,6 +88,25 @@ namespace DiplomacyIntrigue.Behaviors
             catch (Exception ex)
             {
                 Log.Error("Intrigue", "Weekly grievance scan failed.", ex);
+            }
+        }
+
+        /// <summary>
+        /// A throne changed hands. Vanilla decided who sits on it; this works out how divided
+        /// the court was about it and what that costs (design 02 §5).
+        /// </summary>
+        private void OnRulingClanChanged(Kingdom kingdom, Clan oldRulingClan)
+        {
+            var state = CoreBehavior.State;
+            if (state == null || !Settings.Current.EnableIntrigue) return;
+
+            try
+            {
+                SuccessionModel.OnRulingClanChanged(state, kingdom, oldRulingClan);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Intrigue", "Succession politics failed.", ex);
             }
         }
 

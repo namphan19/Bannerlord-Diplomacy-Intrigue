@@ -351,6 +351,43 @@ namespace DiplomacyIntrigue.Core
         }
 
         /// <summary>
+        /// Standing claims to a throne, and what the Pretenders bloc needs to form.
+        /// Usage: diplomacy.pretenders
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("pretenders", "diplomacy")]
+        public static string Pretenders(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var sb = new StringBuilder();
+            var any = false;
+
+            foreach (var kingdom in Kingdom.All)
+            {
+                if (kingdom == null || kingdom.IsEliminated) continue;
+
+                var claims = SuccessionModel.PretendersTo(state, kingdom);
+                var weak = LegitimacyRegistry.IsWeak(state, kingdom);
+                if (claims.Count == 0 && !weak) continue;
+
+                any = true;
+                sb.AppendLine(kingdom.Name + "  legitimacy "
+                              + LegitimacyRegistry.Of(state, kingdom).ToString("0.0")
+                              + (weak ? " (weak)" : " (not weak - no bloc can form)")
+                              + ", " + claims.Count + " standing claim(s)");
+                for (var i = 0; i < claims.Count; i++)
+                    sb.AppendLine("    " + claims[i]);
+            }
+
+            if (!any) return "No standing claims, and no crown weak enough for one to matter."
+                             + " A claim is created only by a contested succession (design 02 §5).";
+
+            sb.AppendLine("The Pretenders bloc needs BOTH a weak crown and a living claimant.");
+            return sb.ToString();
+        }
+
+        /// <summary>
         /// Crown legitimacy per kingdom, with what last moved it.
         /// Usage: diplomacy.legitimacy
         /// </summary>

@@ -94,12 +94,11 @@ namespace DiplomacyIntrigue.Intrigue
                 : 0f;
 
             // Pretenders need a claim on the throne AND crown legitimacy below 40 (design 02
-            // §3). As of 2.4 the crown's half is real - LegitimacyRegistry.IsWeak answers it -
-            // but there are still no standing claimants, which is succession's job at 2.5.
-            // Deliberately still zero: letting the bloc form on half its conditions would let
-            // design 07's armed contest start firing on an accident, and a bloc that exists
-            // with no claimant to rally to has nobody to put on the throne.
-            result[CourtAgenda.Pretenders] = 0f;
+            // §3). Both halves are real as of 2.5. The clan either holds the claim itself or
+            // is rallying to somebody else's - and a court with a weak crown and a living
+            // claimant is the one condition this pillar treats as outweighing everything else,
+            // because it is the road to design 07's armed contest.
+            result[CourtAgenda.Pretenders] = PretenderPressure(state, clan, kingdom);
 
             return result;
         }
@@ -204,6 +203,40 @@ namespace DiplomacyIntrigue.Intrigue
 
             blocs.Sort((a, b) => b.Power.CompareTo(a.Power));
             return blocs;
+        }
+
+        /// <summary>
+        /// How strongly this clan is pulled toward a pretender. Zero unless the crown is weak
+        /// *and* somebody is actually claiming the throne - design 02 §3 requires both, and
+        /// either alone is a grievance rather than a programme.
+        ///
+        /// A clan holding the claim itself is pulled hardest. Others are pulled by how much
+        /// they prefer a claimant to the sitting ruler, so a court that likes its king does
+        /// not produce a pretender bloc however weak his standing.
+        /// </summary>
+        private static float PretenderPressure(ModState state, Clan clan, Kingdom kingdom)
+        {
+            if (!LegitimacyRegistry.IsWeak(state, kingdom)) return 0f;
+
+            var claims = SuccessionModel.PretendersTo(state, kingdom);
+            if (claims.Count == 0) return 0f;
+
+            if (SuccessionModel.ClaimOf(state, clan) != null)
+                return IntrigueConstants.PretenderPressureOwnClaim;
+
+            var ruler = kingdom.Leader;
+            if (ruler == null || clan.Leader == null) return 0f;
+
+            var rulerRelation = clan.Leader.GetRelation(ruler);
+            var best = 0f;
+
+            for (var i = 0; i < claims.Count; i++)
+            {
+                var preference = clan.Leader.GetRelation(claims[i].Claimant) - rulerRelation;
+                if (preference > best) best = preference;
+            }
+
+            return best * IntrigueConstants.PretenderPressurePerRelationPoint;
         }
 
         private static float InfluenceShare(Clan clan, Kingdom kingdom)
