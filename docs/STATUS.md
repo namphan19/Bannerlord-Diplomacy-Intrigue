@@ -109,6 +109,38 @@ an active tribute and a year-long captivity respectively. `PolicyAgainstAgenda`,
 A correction to CLAUDE.md §2 while testing: the bridge **does** have `core/skip_video`, so the
 note that the intro video needs a key sent from outside is out of date.
 
+### 2.2 is built and verified live, 2026-09-23
+
+Verified on `di_grievance_test` (the `save007` world carried forward). **0 errors, 0
+warnings.** Every figure below was predicted by hand first and then read off the game:
+
+| Check | Result |
+|---|---|
+| Grievance term | grievance weight 7.8 x 1.5 = **-11.7**, exact |
+| War term | worst exhaustion 3.0 x 0.2 = **-0.6**, exact |
+| Whole sum | Harfit: 50 - 0.5 - 11.7 - 6.7 - 0.6 = **30.5**, exact |
+| The chain moves together | `tick_days 100`: grievance decayed to 5.8 (**-8.7**), exhaustion rose to 33.0 (**-6.6**), predicted total **27.5** and the game printed 27.5 |
+| All four bands reachable | Sturgia, which holds no grievances, spans **16.4 (defection risk) to 75.4 (reliable)** |
+| The ruling clan is excluded | Airit, the player's clan, does not appear in its own court's list |
+
+**Two balance signals, recorded not acted on** - every constant is still marked UN-TUNED and
+tuning needs a real run:
+
+- **One maximum-weight unjust war moves an entire court a band.** Khuzait's nine clans sat
+  around 44 (transactional) before; one war at legitimacy 0.00 put **all nine** at 30-38,
+  disaffected. `LoyaltyGrievanceFactor` 1.5 is the most load-bearing number in the pillar.
+- **War exhaustion outruns grievance decay.** Over 100 days the grievance term recovered 3.0
+  points while the war term lost 6.0, so loyalty fell *despite* the court forgetting. At
+  exhaustion 100 the war term alone is -20 across every clan in the realm. Whether that is
+  right is a design question for the lead; it is certainly potent.
+- `Kuloving` of Sturgia is a **defection risk at campaign start** on vanilla relation alone
+  (-50 relation, short of land). Not caused by this mod, but design 07 should know that a
+  day-one defection candidate already exists.
+
+A correction made while testing: mid-session I predicted a loyalty figure using
+`ExhaustionPerDayAtWar = 0.08`. The real rate is **0.3/day**; 0.08 is a stale Phase 1 figure
+that survives in ROADMAP's early narrative. The prediction was re-derived and then matched.
+
 ### What to do next
 
 1. ~~**2.1 - the grievance ledger.**~~ **Done and verified above.** Originally: A new savable type at class id **10**, with its container
