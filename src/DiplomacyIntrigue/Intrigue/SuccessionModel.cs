@@ -24,21 +24,104 @@ namespace DiplomacyIntrigue.Intrigue
     public static class SuccessionModel
     {
         /// <summary>
-        /// A ruling clan changed. Work out how contested it was and apply the consequences in
-        /// design 02 §5: a contested succession drains the crown's standing, hands every
-        /// backer of a losing claimant a grievance, and leaves a strong loser as a pretender.
+        /// Who was on each throne when we last looked. Not saved: it is rebuilt silently on
+        /// the first daily tick after a load, which costs one missed succession only if a
+        /// ruler dies while the game is not running - which cannot happen.
+        /// </summary>
+        private static readonly Dictionary<Kingdom, Hero> LastKnownRulers = new Dictionary<Kingdom, Hero>();
+
+        /// <summary>Drops the watch list. Session start, where the kingdoms belong to another campaign.</summary>
+        public static void Reset() => LastKnownRulers.Clear();
+
+        /// <summary>
+        /// Notices that a throne changed hands, by watching who sits on it rather than by
+        /// listening for an event.
+        ///
+        /// **`RulingClanChanged` is not enough, measured rather than assumed.** It fires when
+        /// the ruling *clan* changes and not when an heir inherits inside it - which is the
+        /// ordinary case. Killing Battania's ruler produced a new king and no event at all,
+        /// while killing Sturgia's produced one, and the difference is whether the clan itself
+        /// changed. Hooking the event alone would have meant most successions in the game
+        /// silently skipping this system.
+        ///
+        /// Polling also sidesteps event ordering, which CLAUDE.md §1 records as unreliable
+        /// here: by the time the daily tick runs, whoever vanilla chose is already on the
+        /// throne, so there is no race to lose.
+        /// </summary>
+        public static void DailyWatch(ModState state)
+        {
+            if (state == null) return;
+
+            foreach (var kingdom in Kingdom.All)
+            {
+                if (kingdom == null || kingdom.IsEliminated) continue;
+
+                var ruler = kingdom.Leader;
+                if (ruler == null) continue;
+
+                if (!LastKnownRulers.TryGetValue(kingdom, out var previous))
+                {
+                    // First sighting: seed it, and say nothing. A load is not a succession.
+                    LastKnownRulers[kingdom] = ruler;
+                    continue;
+                }
+
+                if (previous == ruler) continue;
+
+                LastKnownRulers[kingdom] = ruler;
+                Resolve(state, kingdom, previous);
+            }
+        }
+
+        /// <summary>
+        /// The event path, kept alongside the daily watch rather than replaced by it.
+        ///
+        /// `RulingClanChanged` was observed firing for real - Vlandia and Sturgia both
+        /// produced a succession line through it - and it arrives immediately rather than up
+        /// to a day late. What it misses is an heir inheriting inside the ruling clan, which
+        /// is the ordinary case and which the watch catches. Using only the watch would have
+        /// meant discarding a path already seen working for one only reasoned about.
+        ///
+        /// They cannot both fire for the same succession: whichever arrives first records the
+        /// new ruler in <see cref="LastKnownRulers"/>, and the other then sees no change.
         /// </summary>
         public static void OnRulingClanChanged(ModState state, Kingdom kingdom, Clan oldRulingClan)
         {
             if (state == null || kingdom == null || kingdom.IsEliminated) return;
 
-            var incumbent = kingdom.RulingClan?.Leader;
-            if (incumbent == null) return;
+            var ruler = kingdom.Leader;
+            if (ruler == null) return;
+
+            if (LastKnownRulers.TryGetValue(kingdom, out var previous))
+            {
+                if (previous == ruler) return;   // the watch already handled it
+                LastKnownRulers[kingdom] = ruler;
+                Resolve(state, kingdom, previous);
+                return;
+            }
+
+            // Never seen this kingdom before: the late ruler is the best we can name.
+            LastKnownRulers[kingdom] = ruler;
+            Resolve(state, kingdom, oldRulingClan?.Leader);
+        }
+
+        /// <summary>
+        /// Work out how contested a succession was and apply the consequences in design 02 §5:
+        /// a contested succession drains the crown's standing, hands every backer of a losing
+        /// claimant a grievance, and leaves a strong loser as a pretender.
+        /// </summary>
+        private static void Resolve(ModState state, Kingdom kingdom, Hero lateRuler)
+        {
+            var oldRulingClan = lateRuler?.Clan;
+            if (state == null || kingdom == null || kingdom.IsEliminated) return;
+
+            var incumbent = kingdom.Leader;
+            if (incumbent == null || incumbent == lateRuler) return;
 
             // A claim against a throne nobody holds any more is not a claim.
             RetireSpentClaims(state);
 
-            var claimants = Claimants(state, kingdom, incumbent, oldRulingClan);
+            var claimants = Claimants(state, kingdom, incumbent, oldRulingClan, lateRuler);
             if (claimants.Count < 2)
             {
                 Log.Info("Succession", kingdom.Name + ": " + incumbent.Name
@@ -135,18 +218,25 @@ namespace DiplomacyIntrigue.Intrigue
         /// Who could plausibly have taken the throne. Design 02 §5: "the late ruler's heir,
         /// plus any clan leader with a blood claim."
         ///
-        /// **This pool is narrow, by the spec's own rule.** Bannerlord's kingdom clans are
-        /// separate families at campaign start, so on a fresh map almost nobody outside the
-        /// ruling clan is related to the ruler and almost every succession will be unopposed.
-        /// That is faithful to design 02 §5 and it may well be too faithful - it would make
-        /// the Pretenders bloc, and with it design 07's armed contest, nearly unreachable. The
-        /// measurement is worth having before the rule is widened, so the narrow version ships
-        /// first and says so.
+        /// **The blood rule alone is too narrow, measured rather than guessed.** Shipped
+        /// spec-faithful first and tested: killing Vlandia's ruler produced "took the throne
+        /// unopposed - no rival claimant stood", because Bannerlord's kingdom clans are
+        /// separate families and the heir inherits inside the ruling clan. Every succession on
+        /// a fresh map would have been uncontested, which makes the Pretenders bloc and design
+        /// 07's armed contest dead code.
+        ///
+        /// **So a second route was added, and it is a change beyond design 02 §5.** A clan
+        /// leader is also a claimant when the clan is strong enough at court to press one and
+        /// disaffected enough to want to - influence at least
+        /// <see cref="IntrigueConstants.SuccessionClaimantInfluenceRatio"/> times the court's
+        /// average and loyalty below the transactional band. That is the magnate pressing his claim, and it is built out
+        /// of numbers this pillar already has rather than a new invented fact. Setting the
+        /// ratio constant very high turns it off and restores the spec's rule exactly.
         /// </summary>
-        private static List<Hero> Claimants(ModState state, Kingdom kingdom, Hero incumbent, Clan oldRulingClan)
+        private static List<Hero> Claimants(ModState state, Kingdom kingdom, Hero incumbent,
+            Clan oldRulingClan, Hero lateRuler)
         {
             var claimants = new List<Hero> { incumbent };
-            var lateRuler = oldRulingClan?.Leader;
 
             for (var i = 0; i < kingdom.Clans.Count; i++)
             {
@@ -155,7 +245,9 @@ namespace DiplomacyIntrigue.Intrigue
                 if (leader == null || clan.IsEliminated || leader == incumbent) continue;
                 if (claimants.Contains(leader)) continue;
 
-                if (HasBloodClaim(leader, lateRuler, oldRulingClan)) claimants.Add(leader);
+                if (HasBloodClaim(leader, lateRuler, oldRulingClan)
+                    || HasPowerClaim(state, clan, kingdom))
+                    claimants.Add(leader);
             }
             return claimants;
         }
@@ -179,6 +271,58 @@ namespace DiplomacyIntrigue.Intrigue
                 if (sibling == lateRuler) return true;
 
             return false;
+        }
+
+        /// <summary>Influence of this clan as a multiple of its court's average. Diagnostic.</summary>
+        public static float InfluenceRatio(Clan clan, Kingdom kingdom)
+        {
+            if (clan == null || kingdom?.Clans == null) return 0f;
+
+            var total = 0f;
+            var counted = 0;
+            for (var i = 0; i < kingdom.Clans.Count; i++)
+            {
+                var other = kingdom.Clans[i];
+                if (other == null || other.IsEliminated || other.Influence <= 0f) continue;
+                total += other.Influence;
+                counted++;
+            }
+            if (counted == 0 || total <= 0f) return 0f;
+            return clan.Influence / (total / counted);
+        }
+
+        /// <summary>
+        /// The magnate's claim: strong enough at court to press one, disaffected enough to
+        /// want to. **Not in design 02 §5** - see the note on <see cref="Claimants"/> for why
+        /// it exists and how to turn it off.
+        ///
+        /// Both halves are required. Influence alone would make every great clan a claimant at
+        /// every succession, which is a different game; disaffection alone would let a clan
+        /// with no standing at court declare for the throne and be ignored.
+        /// </summary>
+        public static bool HasPowerClaim(ModState state, Clan clan, Kingdom kingdom)
+        {
+            if (clan?.Leader == null) return false;
+            if (LoyaltyModel.Of(state, clan) >= IntrigueConstants.LoyaltyTransactional) return false;
+
+            var total = 0f;
+            var counted = 0;
+            for (var i = 0; i < kingdom.Clans.Count; i++)
+            {
+                var other = kingdom.Clans[i];
+                if (other == null || other.IsEliminated || other.Influence <= 0f) continue;
+                total += other.Influence;
+                counted++;
+            }
+            if (counted == 0 || total <= 0f) return false;
+
+            // Measured against the court's average rather than an absolute share of it. The
+            // first version used a flat 15% and nobody in the game ever qualified: a nine-clan
+            // court averages 11% each and its strongest clan held 14%, so the bar sat above
+            // the top of the field. A share threshold silently encodes an assumption about how
+            // many clans a kingdom has; a multiple of the average does not.
+            var average = total / counted;
+            return clan.Influence >= average * IntrigueConstants.SuccessionClaimantInfluenceRatio;
         }
 
         /// <summary>

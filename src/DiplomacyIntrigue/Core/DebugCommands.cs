@@ -361,7 +361,6 @@ namespace DiplomacyIntrigue.Core
             if (state == null) return NoCampaign;
 
             var sb = new StringBuilder();
-            var any = false;
 
             foreach (var kingdom in Kingdom.All)
             {
@@ -371,7 +370,6 @@ namespace DiplomacyIntrigue.Core
                 var weak = LegitimacyRegistry.IsWeak(state, kingdom);
                 if (claims.Count == 0 && !weak) continue;
 
-                any = true;
                 sb.AppendLine(kingdom.Name + "  legitimacy "
                               + LegitimacyRegistry.Of(state, kingdom).ToString("0.0")
                               + (weak ? " (weak)" : " (not weak - no bloc can form)")
@@ -380,8 +378,37 @@ namespace DiplomacyIntrigue.Core
                     sb.AppendLine("    " + claims[i]);
             }
 
-            if (!any) return "No standing claims, and no crown weak enough for one to matter."
-                             + " A claim is created only by a contested succession (design 02 §5).";
+            // Who would stand if the throne fell vacant today. Printed because the claimant
+            // rule has already been re-tuned twice against real courts rather than guessed at:
+            // a flat 15% share admitted nobody, since a nine-clan court averages 11% each.
+            sb.AppendLine();
+            sb.AppendLine("-- who would stand at the next succession --");
+            foreach (var kingdom in Kingdom.All)
+            {
+                if (kingdom == null || kingdom.IsEliminated || kingdom.RulingClan == null) continue;
+
+                var standing = 0;
+                var lines = new StringBuilder();
+                for (var i = 0; i < kingdom.Clans.Count; i++)
+                {
+                    var clan = kingdom.Clans[i];
+                    if (clan == null || clan.IsEliminated || clan == kingdom.RulingClan) continue;
+
+                    var ratio = SuccessionModel.InfluenceRatio(clan, kingdom);
+                    var loyalty = LoyaltyModel.Of(state, clan);
+                    var qualifies = SuccessionModel.HasPowerClaim(state, clan, kingdom);
+                    if (qualifies) standing++;
+
+                    lines.AppendLine("        " + clan.Name
+                                     + "  influence x" + ratio.ToString("0.00")
+                                     + " (needs x" + IntrigueConstants.SuccessionClaimantInfluenceRatio.ToString("0.00") + ")"
+                                     + ", loyalty " + loyalty.ToString("0.0")
+                                     + " (needs < " + IntrigueConstants.LoyaltyTransactional.ToString("0") + ")"
+                                     + (qualifies ? "   <- WOULD STAND" : ""));
+                }
+                sb.AppendLine("    " + kingdom.Name + ": " + standing + " would stand on strength");
+                sb.Append(lines);
+            }
 
             sb.AppendLine("The Pretenders bloc needs BOTH a weak crown and a living claimant.");
             return sb.ToString();
@@ -501,9 +528,9 @@ namespace DiplomacyIntrigue.Core
                 }
             }
 
-            sb.AppendLine("Blocs are derived, never saved. Crown legitimacy is live as of 2.4,"
-                          + " so the only thing still holding Pretenders back is the absence of"
-                          + " standing claimants (2.5).");
+            sb.AppendLine("Blocs are derived, never saved. Pretenders needs BOTH a crown below "
+                          + IntrigueConstants.LegitimacyPretenderThreshold.ToString("0")
+                          + " legitimacy and a living claimant; diplomacy.pretenders shows both.");
             return sb.ToString();
         }
 
@@ -896,6 +923,12 @@ namespace DiplomacyIntrigue.Core
             // that this drives the *full* daily set, and a list that quietly omits a call is
             // how diplomacy.tick_days once made a vassalage Hold look broken for a day.
             LegitimacyRegistry.DailyTick(state);
+
+            // The succession watch belongs here for the same reason. It was left out of the
+            // first version of this list and diplomacy.tick_days then reported nothing after a
+            // ruler was killed, which read as a broken system and was a missing line.
+            SuccessionModel.DailyWatch(state);
+            SuccessionModel.RetireSpentClaims(state);
         }
 
         private static readonly char[] CommaSeparator = { ',' };

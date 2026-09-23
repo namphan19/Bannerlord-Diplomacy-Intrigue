@@ -46,6 +46,7 @@ namespace DiplomacyIntrigue.Behaviors
             try
             {
                 BlocModel.Reset();
+                SuccessionModel.Reset();
             }
             catch (Exception ex)
             {
@@ -64,6 +65,7 @@ namespace DiplomacyIntrigue.Behaviors
             {
                 GrievanceRegistry.DailyTick(state);
                 LegitimacyRegistry.DailyTick(state);
+                SuccessionModel.DailyWatch(state);
                 SuccessionModel.RetireSpentClaims(state);
             }
             catch (Exception ex)
@@ -92,8 +94,9 @@ namespace DiplomacyIntrigue.Behaviors
         }
 
         /// <summary>
-        /// A throne changed hands. Vanilla decided who sits on it; this works out how divided
-        /// the court was about it and what that costs (design 02 §5).
+        /// The immediate half of succession detection. The daily watch in
+        /// <see cref="SuccessionModel.DailyWatch"/> covers what this event does not see; the
+        /// two cannot double-fire.
         /// </summary>
         private void OnRulingClanChanged(Kingdom kingdom, Clan oldRulingClan)
         {

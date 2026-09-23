@@ -135,6 +135,23 @@ namespace DiplomacyIntrigue.Intrigue
         public const float SuccessionContestedLegitimacy = 15f;
 
         /// <summary>
+        /// How much more influence than the average clan a disaffected clan needs before its
+        /// leader counts as a claimant on strength alone.
+        ///
+        /// **This route is not in design 02 §5.** The spec's blood-only rule was shipped,
+        /// tested and measured: every succession came back unopposed, because Bannerlord's
+        /// kingdom clans are separate families and the heir inherits inside the ruling clan.
+        /// Set this very high to disable the route and restore the spec exactly.
+        ///
+        /// A **multiple of the average**, not a share of the total, and that was also measured:
+        /// the first attempt used a flat 15% share and nobody in the game qualified - a
+        /// nine-clan court averages 11% each and its strongest clan held 14%. A share
+        /// threshold silently encodes an assumption about how many clans a kingdom has.
+        /// UN-TUNED at 1.3.
+        /// </summary>
+        public const float SuccessionClaimantInfluenceRatio = 1.3f;
+
+        /// <summary>
         /// Share a losing claimant must keep to remain a standing pretender. UN-TUNED:
         /// design 02 §5's "more than 30% support".
         /// </summary>
