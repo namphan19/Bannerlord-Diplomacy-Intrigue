@@ -84,9 +84,34 @@ Parked until Phase 2 gives them weight: **vassal-party summons**
 ([design/04 §8](design/04-hegemony.md)) and **titles** (Emperor, Khagan), which sit on top of
 legitimacy at 2.4.
 
+### 2.1 is built and verified live, 2026-09-23
+
+Verified on `save007` (Khuzait, player-led, Okhon of clan Airit is the ruler), through the
+GABS bridge, **0 errors and 0 warnings** in the mod log throughout:
+
+| Check | Result |
+|---|---|
+| New definer entry loads on an existing save | `Loaded: ... 0 grievances, schema v4` on `save007` - no schema bump needed, as designed |
+| `UnjustWar` source fires | Khuzait declared war on Aserai at legitimacy 0.00: **all 9 non-ruling Khuzait clans** recorded weight **8.0**, the full ceiling |
+| The weight is `(1 - legitimacy) x ceiling` | 8.0 at legitimacy 0.00 matches exactly |
+| One resolver, two readers agree | the grievance handler and `CoreBehavior` both logged legitimacy 0.00 for the same war |
+| Decay arithmetic | `tick_days 10` took every record 8.0 -> **7.8**, exactly 10 x 0.02 |
+| **Save does not crash** | saved as `di_grievance_test` - the test that catches a missing container definition |
+| **Round trip across a process restart** | game stopped, restarted, save reloaded: **9 grievances** back with weight **7.8**, type, holder and target all intact |
+| Renew, not stack | a second unjust war (on Vlandia) pushed 7.8 back to **8.0** and created **no tenth record** |
+| The player's clan is under the same rules | every grievance names **Airit**, the player's own clan, as the target. Design 02 §9.2 holds in practice, not just in the spec |
+
+Not covered by this session: `FiefToRival`, `FiefLostToEnemy`, `HumiliatingTribute` and
+`RelativeInCaptivity` are wired but **were not triggered** - they need a fief grant, a siege,
+an active tribute and a year-long captivity respectively. `PolicyAgainstAgenda`,
+`PeaceWhileWinning` and `RequestRefused` are not wired at all and wait on 2.3.
+
+A correction to CLAUDE.md §2 while testing: the bridge **does** have `core/skip_video`, so the
+note that the intro video needs a key sent from outside is out of date.
+
 ### What to do next
 
-1. **2.1 — the grievance ledger.** A new savable type at class id **10**, with its container
+1. ~~**2.1 - the grievance ledger.**~~ **Done and verified above.** Originally: A new savable type at class id **10**, with its container
    definition added to `ModSaveDefiner` in the same commit (a missing container definition
    crashes on save), a `ModState` list at property **11**, the eight sources in
    [design/02 §1](design/02-intrigue.md), the −0.02/day decay, and a `diplomacy.grievances`

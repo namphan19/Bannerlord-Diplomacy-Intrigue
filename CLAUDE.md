@@ -192,8 +192,9 @@ Saves used for testing: `di_phase1_full` (richest state), `di_treaty_test`, `di_
 **What the bridge has not been shown to do:** click buttons inside a `MultiSelectionInquiry`.
 An earlier version of this said GABS only indexes map-layer widgets and that any menu past the
 root needs a human; that is too strong — on 2026-09-20 `ui/click_widget` drove the whole of
-character creation, and only the intro video needed a key sent from outside. The inquiry case
-specifically is untested. Screenshots do confirm rendering.
+character creation. The intro video does not need one either - the bridge has
+`core/skip_video` (confirmed 2026-09-23). The inquiry case specifically is untested.
+Screenshots do confirm rendering.
 
 **What no tool can do:** advance `CampaignTime.Now`. `diplomacy.tick_days` and
 `diplomacy.ai_week` drive the real upkeep and the real AI evaluation, but the clock stays
