@@ -141,6 +141,38 @@ A correction made while testing: mid-session I predicted a loyalty figure using
 `ExhaustionPerDayAtWar = 0.08`. The real rate is **0.3/day**; 0.08 is a stale Phase 1 figure
 that survives in ROADMAP's early narrative. The prediction was re-derived and then matched.
 
+### 2.3 is built and verified live, 2026-09-23
+
+Verified on `di_grievance_test`. **0 errors, 0 warnings.**
+
+| Check | Result |
+|---|---|
+| Blocs form and are led correctly | Khuzait: **Hawks 7 clans / 78%** led by Arkit, **Autonomists 2 / 22%** led by Koltit |
+| Strongest pressure wins, including at the margin | Koltit went Autonomist on **13.4 against Hawks 13.3** |
+| Dove threshold is real | `tick_days 300` took exhaustion to 93; dove pressure **(93-40) x 1 = 53.0**, exact, and the whole court flipped to a single Doves bloc at 100% |
+| Loyalty beats agenda | Southern Empire: power 1528, **effective 1177** with 2 members at loyalty 79.4 and 77.2 excluded. 1528 - (156+196) = 1176, matches. Aserai 1704 - (217+190) = **1297**, exact |
+| Crown authority varies on real data | **+1.00** Khuzait and Southern Empire, **0.00** Western Empire and Sturgia, **-1.00** Northern Empire, Battania, Aserai, Vlandia |
+| Pretenders stays empty | zero everywhere, as hard-wired until 2.4/2.5 |
+
+**An emergent result worth keeping:** at exhaustion 93 the Khuzait court was simultaneously
+**entirely dovish and entirely below loyalty 29** - most of it under the defection threshold
+of 25. A long bloody war unites a court behind peace *and* makes it disloyal, which is
+exactly the precondition design 07's armed contest needs. Nothing was written to make that
+happen; it falls out of the two formulas.
+
+**Two gaps found by running it, reported rather than silently patched:**
+
+- **Centralists can essentially never form.** The spec's rule is "the clan is the ruling clan,
+  or benefits from crown patronage", and the ruling clan is deliberately excluded from its own
+  court, so only patronage remains - which on a fresh map is nobody. The bloc was zero in all
+  eight kingdoms.
+- **Four of eight kingdoms have no bloc at all** at campaign start. Autonomists only pull when
+  crown authority is *positive*, so a kingdom whose lords already hold everything (-1.00) has
+  nothing pulling on anyone. Arguably a court where the crown is weak should have centralists
+  pushing back; the spec's agenda table does not say so, so it was left alone.
+
+Both are design questions for the lead rather than bugs: the code does what design 02 §3 says.
+
 ### What to do next
 
 1. ~~**2.1 - the grievance ledger.**~~ **Done and verified above.** Originally: A new savable type at class id **10**, with its container
