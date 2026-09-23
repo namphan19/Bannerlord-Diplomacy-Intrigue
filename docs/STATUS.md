@@ -15,6 +15,19 @@ Last completed measurement: **balance run 07** — [docs/balance/run-07.md](bala
 2.1-2.5 and 2.7 are built and verified live (sections below); **2.6, the civil war, is what
 remains**, and it is the largest piece of the pillar.
 
+### Checkpoint — resume here (paused by the lead, 2026-09-23 night)
+
+- **Last commit:** `c43444f` (2.7 rival court on the Encyclopedia), pushed; tree clean; no game
+  running. Nothing is half-built.
+- **Next piece:** 2.6 civil war — see "What to do next" below. The first step is a document,
+  not code: defaults for [design/07 §3](design/07-internal-politics.md) ("Open, for the lead"),
+  written down and shown to the lead before the fourth Harmony patch is started.
+- **Test worlds for Phase 2:** `di_pretender_test` (Battania: legitimacy 25, standing claim by
+  Aradwyr, Pretenders bloc - the richest court state) and `di_grievance_test` (Khuzait,
+  player-ruled, 21 grievances). Neither is precious; `di_phase1_full` still must never be saved over.
+- **UI test levers:** `diplomacy.test_open_kingdom`, `test_open_encyclopedia <kingdom>`,
+  `test_court_select <clan>`; mouse-wheel scrolling via Win32 input (UI-INTEGRATION.md §0b.6).
+
 Branch `development`, pushed. `main` sits **40-odd commits behind** `development` and has
 deliberately not been moved — cutting a release is Phase 4's job, not a side effect of
 closing a pillar.
@@ -426,6 +439,8 @@ UI-INTEGRATION.md §0b.
 
 | Save | State |
 |---|---|
+| `di_pretender_test` | **Phase 2's richest court:** Battania at legitimacy 25 with a standing pretender (Aradwyr) and a Pretenders bloc; Khuzait player-ruled with four would-be claimants |
+| `di_grievance_test` | Khuzait, player-ruled, with a grievance ledger - the Court tab's ruler view was verified here |
 | `di_fresh_1084` | **Summer 1, 1084, pristine start, hero parked in Myzea.** The run-08 baseline |
 | `save007` | Khuzait, player-led — the save the Kingdom screen UI was verified on |
 | `di_run07_1104` | Winter 1104, end of run 07: 7 kingdoms, 2 hegemons |
