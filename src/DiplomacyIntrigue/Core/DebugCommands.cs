@@ -372,8 +372,9 @@ namespace DiplomacyIntrigue.Core
                 }
             }
 
-            sb.AppendLine("Blocs are derived, never saved. Pretenders cannot form until crown"
-                          + " legitimacy (2.4) and standing claimants (2.5) exist.");
+            sb.AppendLine("Blocs are derived, never saved. Crown legitimacy is live as of 2.4,"
+                          + " so the only thing still holding Pretenders back is the absence of"
+                          + " standing claimants (2.5).");
             return sb.ToString();
         }
 
@@ -429,7 +430,9 @@ namespace DiplomacyIntrigue.Core
                           + " reliable, >=" + IntrigueConstants.LoyaltyTransactional.ToString("0")
                           + " transactional, >=" + IntrigueConstants.LoyaltyDisaffected.ToString("0")
                           + " disaffected, below that a defection risk.");
-            sb.AppendLine("Loyalty is derived, never saved. The crown-legitimacy term is inert until 2.4.");
+            sb.AppendLine("Loyalty is derived, never saved. The crown-legitimacy term reads the"
+                          + " real pool as of 2.4; it is zero only when a crown sits at the"
+                          + " midpoint of the scale.");
             return sb.ToString();
         }
 

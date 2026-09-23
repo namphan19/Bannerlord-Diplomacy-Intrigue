@@ -173,6 +173,36 @@ happen; it falls out of the two formulas.
 
 Both are design questions for the lead rather than bugs: the code does what design 02 §3 says.
 
+### 2.4 is built and verified live, 2026-09-23
+
+Verified on `di_grievance_test`. **0 errors, 0 warnings.**
+
+| Check | Result |
+|---|---|
+| New definer entry (class 11) loads on an existing save | `0 legitimacy pools` - and every kingdom still read **60.0**, the starting value, not zero |
+| War with no casus belli | Khuzait **60.0 -> 52.0**, exactly -8, reason recorded |
+| Treaty broken | Sturgia **60.0 -> 40.0**, exactly -20, the heaviest entry in the table |
+| **Legitimacy feeds loyalty** | every Sturgian clan picked up **legitimacy -2.0** = (40-50) x 0.2, and every loyalty fell by exactly 2.0 from the earlier reading - Kuloving 16.4 -> 14.4, Togaroving 33.6 -> 31.6, and so on down the list |
+| White peace moves nothing | a settlement at war score 0.00 left Khuzait at 52 and Aserai with no record at all. A stalemate has no victor and no verdict |
+| Boundary is right | Sturgia at exactly 40.0 is **not** flagged weak; the threshold is *below* 40 |
+
+One breach of one pact cost the entire Sturgian court two loyalty points each. That is the
+whole argument for the pool being worth defending rather than a number on a screen.
+
+**Still unverified in 2.4**, and not verifiable from a debug command:
+
+- **A decisive win or loss.** Both need a real war score, which comes from battles and sieges;
+  no console lever fabricates one. The white-peace branch is the only one exercised.
+- **The peace dividend.** Measured in dates, and `diplomacy.tick_days` cannot move
+  `CampaignTime.Now`. `diplomacy.legitimacy` says so in its own output rather than leaving it
+  to be discovered.
+- **Fief lost** (needs a siege) and **caught fabricating** (needs a 30-day timer the frozen
+  clock cannot advance, behind a 20% roll).
+
+A bug caught by reading the output: `diplomacy.loyalty` still printed "the crown-legitimacy
+term is inert until 2.4" while showing a live -2.0 in the same block. Fixed, along with the
+same staleness in `diplomacy.blocs`.
+
 ### What to do next
 
 1. ~~**2.1 - the grievance ledger.**~~ **Done and verified above.** Originally: A new savable type at class id **10**, with its container
