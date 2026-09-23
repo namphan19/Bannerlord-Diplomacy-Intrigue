@@ -6,13 +6,14 @@
     <ListPanel WidthSizePolicy="Fixed" SuggestedWidth="170"
         HeightSizePolicy="CoverChildren" VerticalAlignment="Center"
         MarginRight="10" StackLayout.LayoutMethod="VerticalTopToBottom"
-        IsVisible="@DiHasRowValue">
+        IsVisible="@DiHasRowStatus">
       <Children>
         <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
             HeightSizePolicy="CoverChildren" IsVisible="@DiHasRowStatus"
             Brush="Kingdom.ParagraphSmall.Text" Text="@DiRowStatus" />
         <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
-            HeightSizePolicy="CoverChildren" Brush="ArmyManagement.Army.Tuple.Name"
+            HeightSizePolicy="CoverChildren" IsVisible="@DiHasRowValue"
+            Brush="ArmyManagement.Army.Tuple.Name"
             Brush.FontColor="@DiRowValueColor" Text="@DiRowValue" />
       </Children>
     </ListPanel>

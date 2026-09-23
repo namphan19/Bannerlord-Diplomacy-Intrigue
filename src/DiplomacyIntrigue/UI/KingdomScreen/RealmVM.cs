@@ -710,12 +710,19 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                         var expiry = "ages out in " + Math.Max(0, (int)daysLeft) + " days";
                         footer = footer.Length > 0 ? footer + "   -   " + expiry : expiry;
                     }
+                    // A broken-treaty claim carries its own story: the mockup's line under
+                    // the claim name, with the year the pact died from the claim's record.
+                    var note = claim.Type == CasusBelliType.BrokenTreaty
+                        ? "They tore up a pact in " + claim.AcquiredOn.GetYear
+                          + ". A war on this needs no excuse."
+                        : string.Empty;
                     rows.Add(new DiRealmClaimVM(
                         claim.Type.ToString(),
                         claim.Legitimacy.ToString("0.00"),
                         claim.Legitimacy >= 0.5f ? PositiveColor : NegativeColor,
                         claim.AllowsFiefDemands,
-                        footer));
+                        footer,
+                        note));
                 }
                 if (rows.Count == 0) continue;
                 groups.Add(new DiRealmClaimGroupVM(
@@ -898,6 +905,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
     {
         private const int BarWidth = 160;
 
+        private static readonly Color EmptyDotColor = Color.ConvertStringToColor("#3A2F24FF");
+        private static readonly Color GoldColor = Color.ConvertStringToColor("#D9A441FF");
+
         public DiRealmVassalVM(string name, Color accentColor, int holdValue, int thresholdValue,
             int driftValue, string holdText, string thresholdText, int defianceMarks,
             string tributeText, string termText, MBBindingList<DiRealmTermVM> terms)
@@ -917,6 +927,10 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 ? "defiance: " + defianceMarks + " mark(s)"
                 : "defiance: none - " + DiplomacyConstants.DefianceMarksToLapse
                   + " marks and the link does not renew";
+            // One slot per mark the bond can take before it lapses, filled as they land.
+            Dot1Color = defianceMarks >= 1 ? GoldColor : EmptyDotColor;
+            Dot2Color = defianceMarks >= 2 ? GoldColor : EmptyDotColor;
+            Dot3Color = defianceMarks >= 3 ? GoldColor : EmptyDotColor;
             TributeText = tributeText;
             TermText = termText;
             Terms = terms;
@@ -935,6 +949,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         [DataSourceProperty] public int DefianceMarks { get; }
         [DataSourceProperty] public bool HasDefiance { get; }
         [DataSourceProperty] public string DefianceText { get; }
+        [DataSourceProperty] public Color Dot1Color { get; }
+        [DataSourceProperty] public Color Dot2Color { get; }
+        [DataSourceProperty] public Color Dot3Color { get; }
         [DataSourceProperty] public string TributeText { get; }
         [DataSourceProperty] public string TermText { get; }
         [DataSourceProperty] public MBBindingList<DiRealmTermVM> Terms { get; }
@@ -962,7 +979,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
     internal sealed class DiRealmClaimVM : ViewModel
     {
         public DiRealmClaimVM(string typeText, string legitimacyText, Color legitimacyColor,
-            bool isLand, string footerText)
+            bool isLand, string footerText, string noteText)
         {
             TypeText = typeText;
             LegitimacyText = legitimacyText;
@@ -970,6 +987,8 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             IsLand = isLand;
             FooterText = footerText;
             HasFooter = !string.IsNullOrEmpty(footerText);
+            NoteText = noteText;
+            HasNote = !string.IsNullOrEmpty(noteText);
         }
 
         [DataSourceProperty] public string TypeText { get; }
@@ -978,6 +997,10 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         [DataSourceProperty] public bool IsLand { get; }
         [DataSourceProperty] public string FooterText { get; }
         [DataSourceProperty] public bool HasFooter { get; }
+
+        /// <summary>The mockup's story line under a broken-treaty claim.</summary>
+        [DataSourceProperty] public string NoteText { get; }
+        [DataSourceProperty] public bool HasNote { get; }
     }
 
     /// <summary>A claim card: one target kingdom and every claim we hold on it.</summary>

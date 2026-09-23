@@ -497,9 +497,11 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             if (theirLink != null)
             {
                 // A rival's bond is described, never numbered: the exact hold is what
-                // Phase 3's espionage sells, and the mockup's figure is sample data.
+                // Phase 3's espionage sells, and the mockup's figure is sample data. The
+                // row carries the band's short word ("loyal", "resisting"); the full
+                // sentence lives in the detail pane.
                 DiRowStatus = "Vassal of " + theirLink.DominantParty.Name;
-                DiRowValue = DiplomacyMenu.HoldMeaning(state, theirLink);
+                DiRowValue = ShortHold(DiplomacyMenu.HoldMeaning(state, theirLink));
                 DiRowValueColor = MutedColor;
                 return;
             }
@@ -534,6 +536,19 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             DiRowValueColor = hold >= DiplomacyConstants.HoldRenewThreshold ? PositiveColor
                 : hold >= DiplomacyConstants.HoldPassiveResistanceThreshold ? GoldColor
                     : NegativeColor;
+        }
+
+        /// <summary>
+        /// The first clause of <see cref="DiplomacyMenu.HoldMeaning"/> - "loyal" out of
+        /// "loyal; will renew when the term ends" - for the row, which has one line. The
+        /// full sentence is the detail pane's, and the band boundaries are still the
+        /// resolver's own.
+        /// </summary>
+        private static string ShortHold(string meaning)
+        {
+            if (string.IsNullOrEmpty(meaning)) return string.Empty;
+            var cut = meaning.IndexOfAny(new[] { ';', ',' });
+            return cut > 0 ? meaning.Substring(0, cut).Trim() : meaning;
         }
 
         private static string ShortTreatyName(TreatyType type)

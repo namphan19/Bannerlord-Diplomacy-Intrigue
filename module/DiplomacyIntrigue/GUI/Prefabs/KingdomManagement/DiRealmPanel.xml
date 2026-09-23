@@ -266,8 +266,21 @@
                                                 <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
                                                     MarginTop="5">
                                                   <Children>
+                                                    <Widget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed"
+                                                        SuggestedWidth="10" SuggestedHeight="10"
+                                                        VerticalAlignment="Center" Sprite="BlankWhiteSquare_9"
+                                                        Color="@Dot1Color" />
+                                                    <Widget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed"
+                                                        SuggestedWidth="10" SuggestedHeight="10"
+                                                        VerticalAlignment="Center" MarginLeft="4"
+                                                        Sprite="BlankWhiteSquare_9" Color="@Dot2Color" />
+                                                    <Widget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed"
+                                                        SuggestedWidth="10" SuggestedHeight="10"
+                                                        VerticalAlignment="Center" MarginLeft="4"
+                                                        Sprite="BlankWhiteSquare_9" Color="@Dot3Color" />
                                                     <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
-                                                        HeightSizePolicy="CoverChildren" Brush="DiRealm.Small"
+                                                        HeightSizePolicy="CoverChildren" MarginLeft="8"
+                                                        Brush="DiRealm.Small"
                                                         Brush.FontColor="#E08070FF" Text="@DefianceText" />
                                                     <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
                                                         HeightSizePolicy="CoverChildren" Brush="DiRealm.Small" Text="@TermText" />
@@ -394,6 +407,9 @@
                                                             </Widget>
                                                           </Children>
                                                         </ListPanel>
+                                                        <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                                                            HeightSizePolicy="CoverChildren" IsVisible="@HasNote"
+                                                            Brush="DiRealm.Small" Text="@NoteText" />
                                                         <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
                                                             HeightSizePolicy="CoverChildren" IsVisible="@HasFooter"
                                                             Brush="DiRealm.Small" Text="@FooterText" />
