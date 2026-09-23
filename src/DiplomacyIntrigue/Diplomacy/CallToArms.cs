@@ -264,7 +264,7 @@ namespace DiplomacyIntrigue.Diplomacy
         private static bool WillingToAnswer(ModState state, Treaty treaty, Kingdom caller, Kingdom ally,
             out string why)
         {
-            var worstExhaustion = WorstExhaustion(state, ally);
+            var worstExhaustion = WarExhaustion.Worst(state, ally);
             if (worstExhaustion > DiplomacyConstants.CallToArmsRefuseAboveExhaustion)
             {
                 why = "already fighting for its life (exhaustion " + worstExhaustion.ToString("0.0") + ")";
@@ -550,16 +550,6 @@ namespace DiplomacyIntrigue.Diplomacy
             return false;
         }
 
-        private static float WorstExhaustion(ModState state, Kingdom kingdom)
-        {
-            var worst = 0f;
-            foreach (var war in state.OngoingWarsOf(kingdom))
-            {
-                var value = war.ExhaustionOf(kingdom);
-                if (value > worst) worst = value;
-            }
-            return worst;
-        }
 
         private static void Announce(string text, Color color)
         {

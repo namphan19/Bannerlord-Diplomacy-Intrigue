@@ -259,6 +259,62 @@ namespace DiplomacyIntrigue.Core
         }
 
         /// <summary>
+        /// Every clan's loyalty to its own ruler, term by term. Sorted lowest first, because
+        /// the bottom of the list is what decides whether a court fractures.
+        /// Usage: diplomacy.loyalty   or   diplomacy.loyalty Khuzait
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("loyalty", "diplomacy")]
+        public static string Loyalty(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            Kingdom filter = null;
+            if (args != null && args.Count > 0)
+            {
+                var wanted = string.Join(" ", args);
+                filter = FindKingdom(wanted);
+                if (filter == null) return "No kingdom matching \"" + wanted + "\".";
+            }
+
+            var rows = new List<KeyValuePair<Clan, LoyaltyBreakdown>>();
+            foreach (var kingdom in Kingdom.All)
+            {
+                if (kingdom == null || kingdom.IsEliminated) continue;
+                if (filter != null && kingdom != filter) continue;
+
+                for (var i = 0; i < kingdom.Clans.Count; i++)
+                {
+                    var clan = kingdom.Clans[i];
+                    if (clan == null || clan.IsEliminated) continue;
+
+                    var explained = LoyaltyModel.Explain(state, clan);
+                    if (!explained.Applies) continue;   // the ruling clan itself
+                    rows.Add(new KeyValuePair<Clan, LoyaltyBreakdown>(clan, explained));
+                }
+            }
+
+            if (rows.Count == 0) return "No clans to report on.";
+            rows.Sort((a, b) => a.Value.Total.CompareTo(b.Value.Total));
+
+            var sb = new StringBuilder();
+            for (var i = 0; i < rows.Count; i++)
+            {
+                var clan = rows[i].Key;
+                var e = rows[i].Value;
+                var band = LoyaltyModel.Band(e.Total);
+                sb.AppendLine(clan.Name + " (" + clan.Kingdom.Name + ")  " + e
+                              + "  -> " + LoyaltyModel.Describe(band));
+            }
+            sb.AppendLine("Bands: >=" + IntrigueConstants.LoyaltyReliable.ToString("0")
+                          + " reliable, >=" + IntrigueConstants.LoyaltyTransactional.ToString("0")
+                          + " transactional, >=" + IntrigueConstants.LoyaltyDisaffected.ToString("0")
+                          + " disaffected, below that a defection risk.");
+            sb.AppendLine("Loyalty is derived, never saved. The crown-legitimacy term is inert until 2.4.");
+            return sb.ToString();
+        }
+
+        /// <summary>
         /// The court's memory: who holds what against whom, and what it still weighs after
         /// decay. Grouped by the clan that feels wronged, heaviest first.
         /// Usage: diplomacy.grievances   or   diplomacy.grievances Vlandia

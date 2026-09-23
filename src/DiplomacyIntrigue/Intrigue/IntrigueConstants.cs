@@ -61,6 +61,57 @@ namespace DiplomacyIntrigue.Intrigue
         /// <summary>The ruler turned down a request. UN-TUNED, and deliberately the cheapest.</summary>
         public const float GrievanceRequestRefused = 2f;
 
+        // ----- Loyalty (design 02 §2) -----------------------------------------
+
+        /// <summary>Where a clan with no feelings either way sits. UN-TUNED.</summary>
+        public const float LoyaltyBase = 50f;
+
+        /// <summary>
+        /// Relation contributes half its value, so vanilla's -100..+100 becomes -50..+50.
+        /// UN-TUNED. Design 02 §2 writes it as "relation / 2".
+        /// </summary>
+        public const float LoyaltyRelationFactor = 0.5f;
+
+        /// <summary>
+        /// What one point of accumulated grievance costs in loyalty. UN-TUNED, and the most
+        /// load-bearing number in the pillar: at 1.5, a court holding two maximum grievances
+        /// (16 weight) is already 24 points down, which takes a neutral clan from
+        /// transactional to disaffected on its own.
+        /// </summary>
+        public const float LoyaltyGrievanceFactor = 1.5f;
+
+        /// <summary>Full satisfaction with holdings is worth this much either way. UN-TUNED.</summary>
+        public const float LoyaltyFiefFactor = 10f;
+
+        /// <summary>
+        /// How much the realm's worst ongoing war drags on loyalty, per point of exhaustion.
+        /// UN-TUNED. At 0.2 a war at exhaustion 100 costs 20 loyalty across the whole court.
+        /// </summary>
+        public const float LoyaltyWarExhaustionFactor = 0.2f;
+
+        /// <summary>Per point of crown legitimacy away from neutral. UN-TUNED. Inert until 2.4.</summary>
+        public const float LoyaltyLegitimacyFactor = 0.2f;
+
+        /// <summary>
+        /// The midpoint of the crown-legitimacy pool (design 02 §4 starts every kingdom at 60,
+        /// on a 0-100 scale whose neutral point is 50). Until 2.4 exists every crown reads as
+        /// exactly neutral, so the legitimacy term contributes nothing rather than guessing.
+        /// </summary>
+        public const float LegitimacyNeutral = 50f;
+
+        // Band edges. These are not cosmetic: each one is a behavioural threshold, which is
+        // why the court UI shows a band rather than a number for rival kingdoms (design 02
+        // §9.1) - a band says which side of a threshold a court sits on without saying how far.
+
+        /// <summary>At or above: votes with the ruler regardless of agenda. UN-TUNED.</summary>
+        public const float LoyaltyReliable = 70f;
+
+        /// <summary>At or above: votes its own interest. UN-TUNED.</summary>
+        public const float LoyaltyTransactional = 40f;
+
+        /// <summary>At or above: votes against the ruler but stays. Below: defection risk. UN-TUNED.</summary>
+        public const float LoyaltyDisaffected = 25f;
+
         /// <summary>
         /// The starting weight for a type. One place, so a source cannot disagree with the
         /// ledger about what a slight is worth.

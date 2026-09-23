@@ -1260,10 +1260,10 @@ namespace DiplomacyIntrigue.Diplomacy
                 reason = "The war with " + target.Name + " is the demand - end it at the peace table.";
                 return false;
             }
-            if (WorstExhaustion(state, kingdom) > DiplomacyConstants.AiMaxExhaustionToExpand)
+            if (WarExhaustion.Worst(state, kingdom) > DiplomacyConstants.AiMaxExhaustionToExpand)
             {
                 reason = kingdom.Name + " is too exhausted to press anyone (exhaustion "
-                         + WorstExhaustion(state, kingdom).ToString("0") + ").";
+                         + WarExhaustion.Worst(state, kingdom).ToString("0") + ").";
                 return false;
             }
             if (!ClaimRegistry.HasTerritorialClaim(state, kingdom, target))
@@ -1325,7 +1325,7 @@ namespace DiplomacyIntrigue.Diplomacy
         {
             if (state == null || kingdom == null) return false;
             if (ChosenWarCount(state, kingdom) >= MaxChosenWars(kingdom)) return false;
-            if (WorstExhaustion(state, kingdom) > DiplomacyConstants.AiMaxExhaustionToExpand) return false;
+            if (WarExhaustion.Worst(state, kingdom) > DiplomacyConstants.AiMaxExhaustionToExpand) return false;
             if (state.WearinessOf(kingdom) > DiplomacyConstants.AiMaxWearinessToExpand) return false;
             return true;
         }
@@ -1627,7 +1627,7 @@ namespace DiplomacyIntrigue.Diplomacy
                           + " (must be < " + allowed + ", dominance " + Power.Dominance(us).ToString("0.00") + ")"
                           + (chosen >= allowed ? "   BLOCKED" : ""));
 
-            var worstExhaustion = WorstExhaustion(state, us);
+            var worstExhaustion = WarExhaustion.Worst(state, us);
             sb.AppendLine("  our exhaustion: " + worstExhaustion.ToString("0.0")
                           + " (must be <= " + DiplomacyConstants.AiMaxExhaustionToExpand.ToString("0") + ")"
                           + (worstExhaustion > DiplomacyConstants.AiMaxExhaustionToExpand ? "   BLOCKED" : ""));
@@ -1693,16 +1693,6 @@ namespace DiplomacyIntrigue.Diplomacy
         private static bool CanAffordInfluence(Kingdom kingdom, int cost)
             => cost <= 0 || (kingdom.RulingClan != null && kingdom.RulingClan.Influence >= cost);
 
-        private static float WorstExhaustion(ModState state, Kingdom kingdom)
-        {
-            var worst = 0f;
-            foreach (var war in state.OngoingWarsOf(kingdom))
-            {
-                var value = war.ExhaustionOf(kingdom);
-                if (value > worst) worst = value;
-            }
-            return worst;
-        }
 
         /// <summary>
         /// Wars this kingdom chose, as opposed to ones a treaty dragged it into.

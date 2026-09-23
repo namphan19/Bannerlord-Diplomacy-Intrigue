@@ -51,7 +51,8 @@ namespace DiplomacyIntrigue.Intrigue
         /// "How strongly they bid" (design 02 §1) is not available to us - vanilla's fief
         /// decision does not expose the bids - so land hunger stands in for it. That is a
         /// **proxy, not the specified rule**, and it is the first thing to revisit if the
-        /// source turns out to fire too widely.
+        /// source turns out to fire too widely. Land hunger itself lives in
+        /// <see cref="FiefStanding"/>, because loyalty asks the same question.
         /// </summary>
         private static void GrantedToARival(ModState state, Clan receiver)
         {
@@ -64,7 +65,7 @@ namespace DiplomacyIntrigue.Intrigue
                 var clan = kingdom.Clans[i];
                 if (clan == receiver || clan == ruling || clan.IsEliminated) continue;
 
-                var hunger = LandHunger(clan);
+                var hunger = FiefStanding.Hunger(clan);
                 if (hunger <= 0f) continue;   // a clan already well provided for does not begrudge it
 
                 GrievanceRegistry.Add(state, clan, ruling, GrievanceType.FiefToRival,
@@ -186,22 +187,5 @@ namespace DiplomacyIntrigue.Intrigue
             }
         }
 
-        /// <summary>
-        /// How short of land a clan is, 0..1, standing in for design 02 §1's "how strongly
-        /// they bid". A clan is expected to hold roughly one fief per tier; holding none at
-        /// tier 3 reads as 1, holding what it deserves reads as 0.
-        /// </summary>
-        private static float LandHunger(Clan clan)
-        {
-            if (clan == null) return 0f;
-
-            var deserved = clan.Tier;
-            if (deserved <= 0) return 0f;
-
-            var held = clan.Fiefs == null ? 0 : clan.Fiefs.Count;
-            if (held >= deserved) return 0f;
-
-            return (deserved - held) / (float)deserved;
-        }
     }
 }

@@ -25,6 +25,29 @@ namespace DiplomacyIntrigue.Diplomacy
         /// Per-day accrual for every ongoing war, plus the daily decay of peacetime
         /// weariness. Called once per campaign day.
         /// </summary>
+        /// <summary>
+        /// How worn down a realm is by the worst war it is currently fighting. The realm's
+        /// war exhaustion, wherever anything asks for a single number per kingdom.
+        ///
+        /// Promoted from two byte-identical private copies in <see cref="AiDiplomacy"/> and
+        /// <see cref="CallToArms"/> when court loyalty needed a third. They happened to agree,
+        /// but CLAUDE.md §3 is explicit that a value derived in more than one place *is* the
+        /// bug - legitimacy was computed twice, twice, and both times a kingdom honouring a
+        /// treaty was punished as an aggressor.
+        /// </summary>
+        public static float Worst(ModState state, Kingdom kingdom)
+        {
+            if (state == null || kingdom == null) return 0f;
+
+            var worst = 0f;
+            foreach (var war in state.OngoingWarsOf(kingdom))
+            {
+                var value = war.ExhaustionOf(kingdom);
+                if (value > worst) worst = value;
+            }
+            return worst;
+        }
+
         public static void DailyTick(ModState state)
         {
             var rate = Settings.Current.WarExhaustionRate;

@@ -109,6 +109,25 @@ namespace DiplomacyIntrigue.Models
         RequestRefused = 8,
     }
 
+    /// <summary>
+    /// What a clan's loyalty means for its behaviour (design 02 §2).
+    ///
+    /// **Not registered in ModSaveDefiner, on purpose.** Loyalty is derived and never stored,
+    /// so this enum never reaches a save file. Adding it to the definer would freeze an id
+    /// for something no save contains.
+    /// </summary>
+    public enum LoyaltyBand
+    {
+        /// <summary>Below 25 - will leave, given a reason and somewhere to go.</summary>
+        DefectionRisk = 0,
+        /// <summary>25-39 - votes against the ruler, volunteers nothing.</summary>
+        Disaffected = 1,
+        /// <summary>40-69 - votes its own interest.</summary>
+        Transactional = 2,
+        /// <summary>70+ - votes with the ruler and answers the call regardless of agenda.</summary>
+        Reliable = 3,
+    }
+
     public enum MissionOutcome
     {
         Pending = 0,
