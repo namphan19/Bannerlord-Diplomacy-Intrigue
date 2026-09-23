@@ -1,9 +1,20 @@
 <Prefab>
   <Window>
-    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed"
-        HeightSizePolicy="CoverChildren" SuggestedWidth="150"
-        VerticalAlignment="Center" MarginRight="10"
-        Brush="ArmyManagement.Army.Tuple.Name"
-        IsVisible="@DiHasRowSummary" Text="@DiRowSummary" />
+    <!-- The war list row: what this war is to us (status) and the one figure that
+         matters (the value, coloured by whether it favours us). Two stacked lines in
+         the appended slot: the row's name column already carries the kingdom name. -->
+    <ListPanel WidthSizePolicy="Fixed" SuggestedWidth="170"
+        HeightSizePolicy="CoverChildren" VerticalAlignment="Center"
+        MarginRight="10" StackLayout.LayoutMethod="VerticalTopToBottom"
+        IsVisible="@DiHasRowValue">
+      <Children>
+        <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+            HeightSizePolicy="CoverChildren" IsVisible="@DiHasRowStatus"
+            Brush="Kingdom.ParagraphSmall.Text" Text="@DiRowStatus" />
+        <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+            HeightSizePolicy="CoverChildren" Brush="ArmyManagement.Army.Tuple.Name"
+            Brush.FontColor="@DiRowValueColor" Text="@DiRowValue" />
+      </Children>
+    </ListPanel>
   </Window>
 </Prefab>

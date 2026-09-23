@@ -4,7 +4,10 @@
          DataSource narrows to the selected item; IsAcceptableItemSelected lives on the
          panel VM and must not be asked for here (wrong data context, silently false).
          A grid, not a horizontal stack: up to eight buttons can be up at once now, and a
-         single row of 230px columns would run off the pane. Four columns wraps them. -->
+         single row of 230px columns would run off the pane. Four columns wraps them.
+         The button label carries the mockup's kind colour (green is good for us, red is
+         bad for us, gold is a threshold): a label colour binds, a button background
+         does not. -->
     <ListPanel DataSource="{CurrentSelectedDiplomacyItem}"
         WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
         HorizontalAlignment="Center" MarginTop="8"
@@ -36,22 +39,27 @@
                         IsEnabled="@IsEnabled">
                       <Children>
                         <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
-                            Brush="Kingdom.GeneralButtons.Text" Text="@Name" />
+                            Brush="Kingdom.GeneralButtons.Text" Brush.FontColor="@LabelColor"
+                            Text="@Name" />
                       </Children>
                     </ButtonWidget>
                   </Children>
                 </Widget>
                 <ListPanel DoNotAcceptEvents="true" DoNotPassEventsToChildren="true"
                     WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
-                    HorizontalAlignment="Center" IsVisible="@HasInfluenceCost">
+                    HorizontalAlignment="Center">
                   <Children>
                     <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
                         HorizontalAlignment="Center" VerticalAlignment="Bottom"
                         Brush="Kingdom.GeneralButtons.Text" IntText="@InfluenceCost"
-                        IsEnabled="@IsEnabled" />
+                        IsEnabled="@IsEnabled" IsVisible="@HasInfluenceCost" />
                     <Widget WidthSizePolicy="Fixed" HeightSizePolicy="Fixed" SuggestedWidth="17"
                         SuggestedHeight="27" HorizontalAlignment="Right" VerticalAlignment="Bottom"
-                        Sprite="SPKingdom\influence_icon_small" />
+                        Sprite="SPKingdom\influence_icon_small" IsVisible="@HasInfluenceCost" />
+                    <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
+                        HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                        Brush="Kingdom.GeneralButtons.Text" Text="@CostText"
+                        IsEnabled="@IsEnabled" IsVisible="@HasCostText" />
                   </Children>
                 </ListPanel>
               </Children>

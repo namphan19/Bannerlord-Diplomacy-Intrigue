@@ -1,11 +1,37 @@
 <Prefab>
   <Window>
-    <TextWidget DataSource="{CurrentSelectedDiplomacyItem}" DoNotAcceptEvents="true"
+    <!-- The block under the two banners: the relationship word, the one-line headline,
+         the note about what the bars mean, and the divider that says the game's own
+         rows follow ours in the list below. The mockup puts the note under its bars;
+         ours and the game's rows share one Stats list and cannot be interleaved with
+         text, so the lines sit above the list they describe. -->
+    <ListPanel DataSource="{CurrentSelectedDiplomacyItem}"
         WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
         HorizontalAlignment="Center" MarginLeft="60" MarginRight="60"
         MarginTop="6" MarginBottom="4"
-        Brush="ArmyManagement.Army.Tuple.Name" Brush.FontSize="20"
-        Brush.TextHorizontalAlignment="Center" IsEnabled="false"
-        IsVisible="@DiHasHeadline" Text="@DiHeadline" />
+        StackLayout.LayoutMethod="VerticalTopToBottom">
+      <Children>
+        <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+            HeightSizePolicy="CoverChildren" HorizontalAlignment="Center"
+            Brush="ArmyManagement.Army.Tuple.Name" Brush.FontSize="17"
+            Brush.TextHorizontalAlignment="Center" IsEnabled="false"
+            IsVisible="@DiHasHeaderWord" Brush.FontColor="@DiHeaderWordColor"
+            Text="@DiHeaderWord" />
+        <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+            HeightSizePolicy="CoverChildren" HorizontalAlignment="Center"
+            Brush="ArmyManagement.Army.Tuple.Name" Brush.FontSize="20"
+            Brush.TextHorizontalAlignment="Center" IsEnabled="false"
+            IsVisible="@DiHasHeadline" Text="@DiHeadline" />
+        <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+            HeightSizePolicy="CoverChildren" HorizontalAlignment="Center" MarginTop="4"
+            Brush="Kingdom.ParagraphSmall.Text" Brush.TextHorizontalAlignment="Center"
+            IsVisible="@DiHasNote" Text="@DiNote" />
+        <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+            HeightSizePolicy="CoverChildren" HorizontalAlignment="Center" MarginTop="2"
+            Brush="Kingdom.ParagraphSmall.Text" Brush.TextHorizontalAlignment="Center"
+            IsEnabled="false" IsVisible="@DiHasNote"
+            Text="· · ·  the game's own rows (strength, fiefs, clans) continue below  · · ·" />
+      </Children>
+    </ListPanel>
   </Window>
 </Prefab>
