@@ -65,7 +65,7 @@ namespace DiplomacyIntrigue.Diplomacy
             var living = 0;
             foreach (var other in Kingdom.All)
             {
-                if (other.IsEliminated) continue;
+                if (!other.IsRealm()) continue;
                 total += other.CurrentTotalStrength;
                 living++;
             }
@@ -112,7 +112,7 @@ namespace DiplomacyIntrigue.Diplomacy
 
             foreach (var kingdom in Kingdom.All)
             {
-                if (kingdom.IsEliminated) continue;
+                if (!kingdom.IsRealm()) continue;
 
                 var record = Find(state, kingdom);
                 if (record == null)
@@ -139,7 +139,7 @@ namespace DiplomacyIntrigue.Diplomacy
             var living = 0;
             foreach (var other in Kingdom.All)
             {
-                if (other.IsEliminated) continue;
+                if (!other.IsRealm()) continue;
                 total += Smoothed(state, other);
                 living++;
             }
@@ -207,7 +207,7 @@ namespace DiplomacyIntrigue.Diplomacy
         {
             var living = 0;
             foreach (var kingdom in Kingdom.All)
-                if (!kingdom.IsEliminated) living++;
+                if (kingdom.IsRealm()) living++;
             return living < 1 ? 1 : living;
         }
 

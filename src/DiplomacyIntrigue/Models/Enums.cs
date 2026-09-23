@@ -118,6 +118,27 @@ namespace DiplomacyIntrigue.Models
     }
 
     /// <summary>
+    /// How an internal war ended (design 07 §3a). Registered at definer enum id 27.
+    ///
+    /// <see cref="Ongoing"/> is the zero value on purpose: a record loaded from a save made
+    /// before the outcome was written reads as a war still running, which is the only safe
+    /// reading of a record that has no end date either.
+    /// </summary>
+    public enum InternalWarOutcome
+    {
+        Ongoing = 0,
+        /// <summary>The claimant took the throne.</summary>
+        RebelsWon = 1,
+        /// <summary>The claim was broken and retired.</summary>
+        CrownWon = 2,
+        /// <summary>Both sides stopped with nothing settled; the claim stands.</summary>
+        Stalemate = 3,
+        /// <summary>The war stopped existing under it - the rebel banner left the realm, the
+        /// kingdom fell, or a peace was made outside this system.</summary>
+        Dissolved = 4,
+    }
+
+    /// <summary>
     /// What a clan's loyalty means for its behaviour (design 02 §2).
     ///
     /// **Not registered in ModSaveDefiner, on purpose.** Loyalty is derived and never stored,

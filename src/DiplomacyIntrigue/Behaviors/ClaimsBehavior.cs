@@ -89,6 +89,7 @@ namespace DiplomacyIntrigue.Behaviors
                 var victim = village.Settlement?.MapFaction as Kingdom;
                 var raider = village.Settlement?.LastAttackerParty?.MapFaction as Kingdom;
                 if (victim == null || raider == null || victim == raider) return;
+                if (Intrigue.InternalWars.IsFaction(victim) || Intrigue.InternalWars.IsFaction(raider)) return;   // a raid inside an internal war is not a casus belli
 
                 ClaimRegistry.GrantRaidClaim(state, victim, raider);
             }

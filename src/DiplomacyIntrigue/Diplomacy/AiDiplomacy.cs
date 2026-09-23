@@ -490,6 +490,7 @@ namespace DiplomacyIntrigue.Diplomacy
 
             foreach (var patron in Kingdom.All)
             {
+                if (!patron.IsRealm()) continue;
                 if (!CanSubmitTo(state, kingdom, patron, out _, out var settlesWar)) continue;
 
                 var value = Hegemony.SubmissionValue(state, kingdom, patron, out var explanation);
@@ -1037,7 +1038,7 @@ namespace DiplomacyIntrigue.Diplomacy
 
             foreach (var other in Kingdom.All)
             {
-                if (other == kingdom || other.IsEliminated) continue;
+                if (other == kingdom || !other.IsRealm()) continue;
                 if (kingdom.IsAtWarWith(other)) continue;
 
                 var ourValue = PactValue(state, kingdom, other);
@@ -1141,7 +1142,7 @@ namespace DiplomacyIntrigue.Diplomacy
             var strongest = 0f;
             foreach (var head in Kingdom.All)
             {
-                if (head.IsEliminated || head == ourHead || head == theirHead) continue;
+                if (!head.IsRealm() || head == ourHead || head == theirHead) continue;
                 if (Hegemony.PatronOf(state, head) != null) continue;
 
                 var strength = Power.SmoothedSphere(state, head);
@@ -1162,7 +1163,7 @@ namespace DiplomacyIntrigue.Diplomacy
             var shared = 0;
             foreach (var kingdom in Kingdom.All)
             {
-                if (kingdom == us || kingdom.IsEliminated) continue;
+                if (kingdom == us || !kingdom.IsRealm()) continue;
                 if (!us.IsAtWarWith(kingdom)) continue;
                 ours++;
                 if (kingdom != them && them.IsAtWarWith(kingdom)) shared++;
@@ -1218,6 +1219,7 @@ namespace DiplomacyIntrigue.Diplomacy
         {
             foreach (var target in Kingdom.All)
             {
+                if (!target.IsRealm()) continue;
                 if (!CanDemandTribute(state, kingdom, target, out _)) continue;
 
                 var treaty = TreatyRegistry.Sign(state, kingdom, target, TreatyType.TributaryPact,
@@ -1351,7 +1353,7 @@ namespace DiplomacyIntrigue.Diplomacy
 
             foreach (var target in Kingdom.All)
             {
-                if (target == kingdom || target.IsEliminated) continue;
+                if (target == kingdom || !target.IsRealm()) continue;
                 if (kingdom.IsAtWarWith(target)) continue;
 
                 // A war a treaty forbids is off the table - unless the treaty is our own
@@ -1573,7 +1575,7 @@ namespace DiplomacyIntrigue.Diplomacy
             var totalFiefs = 0;
             foreach (var other in Kingdom.All)
             {
-                if (other.IsEliminated) continue;
+                if (!other.IsRealm()) continue;
                 totalStrength += other.CurrentTotalStrength;
                 totalFiefs += CountFortifications(other);
             }

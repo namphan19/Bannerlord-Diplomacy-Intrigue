@@ -82,6 +82,7 @@ namespace DiplomacyIntrigue.Behaviors
         private void OnKingdomDestroyed(Kingdom destroyed)
         {
             if (_state == null || destroyed == null) return;
+            if (Intrigue.InternalWars.IsFaction(destroyed)) return;   // a rising ending with its war, not a realm falling
 
             try
             {
@@ -145,6 +146,10 @@ namespace DiplomacyIntrigue.Behaviors
             {
                 _state.AfterLoad();
             }
+
+            // Here rather than at session launch: the map reads map factions while the world
+            // is still being restored, and the index must already say who the rebels are.
+            Intrigue.InternalWars.RebuildIndex(_state);
         }
 
         private void OnSessionLaunched(CampaignGameStarter starter)
@@ -184,10 +189,10 @@ namespace DiplomacyIntrigue.Behaviors
             var opened = 0;
             foreach (var kingdom in Kingdom.All)
             {
-                if (kingdom.IsEliminated) continue;
+                if (!kingdom.IsRealm()) continue;
                 foreach (var other in Kingdom.All)
                 {
-                    if (other == kingdom || other.IsEliminated) continue;
+                    if (other == kingdom || !other.IsRealm()) continue;
                     if (!kingdom.IsAtWarWith(other)) continue;
                     if (_state.OngoingWarBetween(kingdom, other) != null) continue;
 
@@ -207,6 +212,10 @@ namespace DiplomacyIntrigue.Behaviors
                 var a = attacker as Kingdom;
                 var d = defender as Kingdom;
                 if (a == null || d == null) return;   // minor factions are out of scope for now
+
+                // An internal war's rising is a Kingdom only so vanilla's casts hold; its war
+                // lives in an InternalWar record, never here (design 07 §3b).
+                if (Intrigue.InternalWars.IsFaction(a) || Intrigue.InternalWars.IsFaction(d)) return;
                 if (_state.OngoingWarBetween(a, d) != null) return;
 
                 // One resolver for everyone - see CasusBelli.Resolve for why.
@@ -231,6 +240,7 @@ namespace DiplomacyIntrigue.Behaviors
                 var a = side1 as Kingdom;
                 var b = side2 as Kingdom;
                 if (a == null || b == null) return;
+                if (Intrigue.InternalWars.IsFaction(a) || Intrigue.InternalWars.IsFaction(b)) return;
 
                 var war = _state.OngoingWarBetween(a, b);
                 if (war == null) return;

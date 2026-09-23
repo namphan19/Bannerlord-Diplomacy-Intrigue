@@ -269,7 +269,7 @@ namespace DiplomacyIntrigue.Diplomacy
             {
                 foreach (var kingdom in Kingdom.All)
                 {
-                    if (kingdom == fabricator || kingdom.IsEliminated) continue;
+                    if (kingdom == fabricator || !kingdom.IsRealm()) continue;
 
                     var leader = kingdom.Leader;
                     if (leader == null) continue;

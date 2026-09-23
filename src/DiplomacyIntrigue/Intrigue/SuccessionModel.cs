@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using DiplomacyIntrigue.Core;
 using DiplomacyIntrigue.Models;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Actions;
 
 namespace DiplomacyIntrigue.Intrigue
 {
@@ -34,6 +35,54 @@ namespace DiplomacyIntrigue.Intrigue
         public static void Reset() => LastKnownRulers.Clear();
 
         /// <summary>
+        /// Set while an internal war puts its claimant on the throne. `ChangeRulingClanAction`
+        /// raises `RulingClanChanged` synchronously, and without this the succession politics
+        /// below would run a second time on a change the war has already priced: the contested
+        /// succession's -15 on top of the war's own -15, and grievances for "backing the loser"
+        /// handed to the loyalists who just lost a war.
+        /// </summary>
+        private static Kingdom _installingByArms;
+
+        /// <summary>
+        /// Crowns a clan that won an internal war (design 07 §3a Q1). The throne changes hands
+        /// through vanilla's own action; this only keeps the succession watch from treating it
+        /// as an ordinary succession.
+        /// </summary>
+        public static void InstallByArms(ModState state, Kingdom kingdom, Clan clan)
+        {
+            if (kingdom == null || clan == null) return;
+
+            _installingByArms = kingdom;
+            try
+            {
+                ChangeRulingClanAction.Apply(kingdom, clan);
+            }
+            finally
+            {
+                _installingByArms = null;
+            }
+
+            if (kingdom.Leader != null) LastKnownRulers[kingdom] = kingdom.Leader;
+            RetireSpentClaims(state);
+        }
+
+        /// <summary>
+        /// Drops a claim that was fought for and lost (design 07 §3a Q1). A claim otherwise
+        /// only ends when its holder dies, takes the throne or leaves - losing a war over it is
+        /// the one ending that is a decision rather than a fact.
+        /// </summary>
+        public static void RetireClaim(ModState state, Kingdom kingdom, Hero claimant, string reason)
+        {
+            if (state == null || kingdom == null || claimant == null) return;
+
+            var removed = state.Pretenders.RemoveAll(p => p.Kingdom == kingdom && p.Claimant == claimant);
+            if (removed == 0) return;
+
+            BlocModel.Invalidate();
+            Log.Info("Succession", kingdom.Name + ": " + claimant.Name + "'s claim is retired - " + reason + ".");
+        }
+
+        /// <summary>
         /// Notices that a throne changed hands, by watching who sits on it rather than by
         /// listening for an event.
         ///
@@ -54,7 +103,7 @@ namespace DiplomacyIntrigue.Intrigue
 
             foreach (var kingdom in Kingdom.All)
             {
-                if (kingdom == null || kingdom.IsEliminated) continue;
+                if (!kingdom.IsRealm()) continue;
 
                 var ruler = kingdom.Leader;
                 if (ruler == null) continue;
@@ -92,6 +141,14 @@ namespace DiplomacyIntrigue.Intrigue
             var ruler = kingdom.Leader;
             if (ruler == null) return;
 
+            if (kingdom == _installingByArms)
+            {
+                // An internal war's outcome, already priced by the war. Record the new ruler
+                // so the daily watch does not see a change tomorrow either.
+                LastKnownRulers[kingdom] = ruler;
+                return;
+            }
+
             if (LastKnownRulers.TryGetValue(kingdom, out var previous))
             {
                 if (previous == ruler) return;   // the watch already handled it
@@ -120,6 +177,17 @@ namespace DiplomacyIntrigue.Intrigue
 
             // A claim against a throne nobody holds any more is not a claim.
             RetireSpentClaims(state);
+
+            // A ruler who dies mid-civil-war is succeeded by vanilla's heir without a second
+            // contest (design 07 §3a Q3): the war already is the contest, and running the
+            // succession politics beside it would mint pretenders and grievances for a court
+            // whose sides are already drawn. If the heir is a rebel, the war sees that tomorrow.
+            if (InternalWars.OngoingIn(state, kingdom) != null)
+            {
+                Log.Info("Succession", kingdom.Name + ": " + incumbent.Name
+                                       + " took the throne during a civil war - the war decides the rest.");
+                return;
+            }
 
             var claimants = Claimants(state, kingdom, incumbent, oldRulingClan, lateRuler);
             if (claimants.Count < 2)

@@ -30,8 +30,10 @@ namespace DiplomacyIntrigue.Diplomacy
             {
                 if (!settlement.IsFortification) continue;
 
-                var kingdom = settlement.MapFaction as Kingdom;
-                if (kingdom == null) continue;
+                // Clan.Kingdom, not MapFaction: a rebel's castle answers to its rising on the
+                // map, and belongs to the realm it rose in (design 07 §3b).
+                var kingdom = settlement.OwnerClan?.Kingdom;
+                if (kingdom == null || Intrigue.InternalWars.IsFaction(kingdom)) continue;
                 if (CurrentRecord(state, settlement) != null) continue;
 
                 state.FiefHistory.Add(new FiefOwnershipRecord(settlement, kingdom, CampaignTime.Now));

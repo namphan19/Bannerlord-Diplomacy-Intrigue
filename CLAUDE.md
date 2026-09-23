@@ -65,8 +65,41 @@ Get-WinEvent -FilterHashtable @{LogName='Application'; StartTime=(Get-Date).AddM
 # then match MetadataToken.ToUInt32() -eq 0x06000000 -bor <P7> over ModuleDefinition.GetTypes()
 ```
 
-`SubModule.InstallCrashLogging` now catches unhandled exceptions into the mod log, so this
-should only be needed for faults that happen before the module loads.
+**A crash on the game's main thread is not in the mod log, and it looks like a hang.** An
+earlier version of this said `SubModule.InstallCrashLogging` catches unhandled exceptions into
+the mod log. It does not catch one thrown during a campaign tick. The engine's native handler
+takes it first and opens its crash-report dialog. The process then sits `Responding` at near
+zero CPU, with every GABS main-thread tool timing out, until someone dismisses the dialog.
+On 2026-09-23 that was read as the game stalling in the background, and it was a crash. Two
+places have the real answer:
+
+- `C:\ProgramData\Mount and Blade II Bannerlord\logs\rgl_log_errors_<pid>.txt` gives the
+  moment and a native stack. A `MonoMod.Utils` frame there means a Harmony-patched method was
+  on the path.
+- `%LOCALAPPDATA%\CrashDumps\<exe>.<pid>.dmp` holds the managed exception itself, message and
+  stack. `dotnet run --project tools/DumpProbe -- <dump>` prints it with ClrMD, against the
+  local .NET Framework DAC. It took the 2026-09-23 crash from "unknown" to the exact vanilla
+  method and cast in one run.
+
+`InstallCrashLogging` still catches exceptions on other threads, and faults that happen before
+the module loads.
+
+**A map faction must be a `Kingdom` whenever the clan is in one.** Vanilla casts
+`MapFaction` to `Kingdom` without checking at about 25 places: `GainKingdomInfluenceAction`,
+hourly party AI, fief elections, lord conversations and more. It assumes a clan inside a kingdom
+answers with that kingdom. Redirecting a rebel clan's map faction to the clan itself crashed the
+game two seconds into the first civil war (2026-09-23). The internal war's rising is a real
+`Kingdom` for this reason (design 07 §3c–§3d).
+
+**Destroying a kingdom destroys every clan still in its list.** `DestroyKingdomAction` runs
+`DestroyClanAction` on each clan in `kingdom.Clans`. A kingdom's clan, fief, hero and war-party
+lists are `[CachedData]`: never saved, and rebuilt on load from `Clan.Kingdom`. Anything that
+fills those lists by hand, as the rising does, must empty them before destroying the kingdom.
+
+**Vanilla destroys, on every load, any kingdom whose `Leader.MapFaction` is not itself.** The
+check is `ClanVariablesCampaignBehavior.OnSessionLaunched`. A kingdom whose ruling clan belongs
+to another kingdom survives a reload only if the map-faction redirect is already in place when
+that runs, which means rebuilding it in `SyncData`, not at session launch.
 
 **A hegemon is derived, never stored.** Any kingdom holding one active `Vassalage` treaty is
 one; `Hegemony.IsHegemon` reads the treaties and there is deliberately no flag, no title
@@ -214,10 +247,12 @@ reuse a save-definer local id for a different type, never change the definer bas
 (`2749100`, block `2749100`–`2749199`). `Treaty` currently uses ids **1-17** (14 `Hold`, 15
 defiance marks, 16 last defiance, 17 the revolt clock), so the next free id there is **18**. `TrustRecord` uses **1-6** (5 `LastPositiveChange`, 6
 `LastOfferRefused`), next free **7**. `ModState` uses
-properties **1-13** (11 `Grievances`, 12 `Legitimacy`, 13 `Pretenders`), next free **14**.
-The definer's class ids run to **12** (10 `Grievance`, 11 `KingdomLegitimacy`, 12 `Pretender`),
-next free **13**; enums are **20-26** (26 `GrievanceType`), next free **27**. `Grievance` uses
-properties 1-5, `KingdomLegitimacy` 1-5, `Pretender` 1-4. A new *value* on an enum the definer
+properties **1-14** (11 `Grievances`, 12 `Legitimacy`, 13 `Pretenders`, 14 `InternalWars`),
+next free **15**. The definer's class ids run to **14** (10 `Grievance`, 11 `KingdomLegitimacy`,
+12 `Pretender`, 13 `InternalWar`, 14 `InternalWarMember`), next free **15**; enums are **20-27**
+(26 `GrievanceType`, 27 `InternalWarOutcome`), next free **28**. `Grievance` uses
+properties 1-5, `KingdomLegitimacy` 1-5, `Pretender` 1-4, `InternalWar` 1-13 (13 `Faction`),
+`InternalWarMember` 1. A new *value* on an enum the definer
 already registers is safe (`GrievanceType.SuccessionPassedOver = 9` was added that way);
 renumbering or reusing one is not. Adding a new savable type means a class definition
 **and** a container definition in `ModSaveDefiner` — a missing container definition crashes
@@ -232,11 +267,12 @@ check it and stay inert rather than half-running.
 
 **Prefer events and `GameModel` overrides. Harmony is the last resort.** Rules for
 `Patches/`: one patched method per file, a header stating *what* it changes, *why* no event
-exists, and the *game version verified against*; a `try/catch` that degrades to vanilla. Three
-patches exist today and all follow this; the third,
-`KingdomDecision_DetermineSupportOption_Patch` (Phase 2.3 bloc voting), records in its header
-the evidence that no event or `GameModel` could do the job. Do not add a fourth without the
-same evidence.
+exists, and the *game version verified against*; a `try/catch` that degrades to vanilla. Five
+patches exist today and all follow this. The third,
+`KingdomDecision_DetermineSupportOption_Patch` (Phase 2.3 bloc voting), and the fourth and
+fifth, `Clan_MapFaction_Patch` and `Hero_MapFaction_Patch` (Phase 2.6 internal war), record in
+their headers the evidence that no event or `GameModel` could do the job. Do not add a sixth
+without the same evidence.
 
 **The AI plays by the same rules as the player.** A project decision, enforced in code:
 `ClaimRegistry`, `TreatyRegistry`, `PeaceTable` and `CallToArms` take no "is this the player"

@@ -4,24 +4,29 @@ Point-in-time state. [CLAUDE.md](../CLAUDE.md) holds the things that are always 
 file holds what changes. Update it when you finish a chunk of work.
 
 Module version 0.1.0. Save schema **v4**, definer base id **2749100**.
-Save ids in use: `Treaty` 1-17, `TrustRecord` 1-6, `ModState` 1-13, definer class ids to 12
-(`Pretender`), enums 20-26. Next free: class id **13**, `ModState` property **14**, enum
-**27** (CLAUDE.md §3 has the per-type detail).
+Save ids in use: `Treaty` 1-17, `TrustRecord` 1-6, `ModState` 1-14, definer class ids to 14
+(`InternalWarMember`), enums 20-27. Next free: class id **15**, `ModState` property **15**, enum
+**28** (CLAUDE.md §3 has the per-type detail). The 2.6 ids (13, 14, 27, property 14) are on
+branch `feature/phase-2.6-civil-war` and not yet in any save anyone plays.
 Last completed measurement: **balance run 07** — [docs/balance/run-07.md](balance/run-07.md).
 
 ## Start here — handoff, 2026-09-23
 
-**Phase 1 is accepted and closed. Phase 2 — court intrigue — is the work now.**
-2.1-2.5 and 2.7 are built and verified live (sections below); **2.6, the civil war, is what
-remains**, and it is the largest piece of the pillar.
+**Phase 1 is accepted and closed. Phase 2, court intrigue, is the work now.**
+2.1-2.5 and 2.7 are built and verified live (sections below). **2.6, the civil war, is built
+and verified live on its main path** on branch `feature/phase-2.6-civil-war`, not yet merged.
+What remains of it is listed under "2.6" below.
 
-### Checkpoint — resume here (paused by the lead, 2026-09-23 night)
+### Checkpoint, 2026-09-23 late night
 
-- **Last commit:** `c43444f` (2.7 rival court on the Encyclopedia), pushed; tree clean; no game
-  running. Nothing is half-built.
-- **Next piece:** 2.6 civil war — see "What to do next" below. The first step is a document,
-  not code: defaults for [design/07 §3](design/07-internal-politics.md) ("Open, for the lead"),
-  written down and shown to the lead before the fourth Harmony patch is started.
+- **Branch:** `feature/phase-2.6-civil-war`, off `development` at `4ae4ab6`. opencode works in
+  its own clone on `feature/phase1-ui-match-mockup`. **One game for both**: check who is running
+  it before deploying (CLAUDE.md §7).
+- **Where 2.6 stands:** [design/07 §3d](design/07-internal-politics.md) has the mechanism
+  that shipped and the live-test table. The first build crashed the game, and §3c records why.
+  Both are worth reading before touching `Intrigue/InternalWars.cs`.
+- **New save:** `di_civilwar_test`, Battania mid civil war (Aradwyr's rising, 5 rebel clans,
+  exhaustion ~2/3). Load it to test anything downstream of the war starting.
 - **Test worlds for Phase 2:** `di_pretender_test` (Battania: legitimacy 25, standing claim by
   Aradwyr, Pretenders bloc - the richest court state) and `di_grievance_test` (Khuzait,
   player-ruled, 21 grievances). Neither is precious; `di_phase1_full` still must never be saved over.
@@ -408,21 +413,24 @@ UI-INTEGRATION.md §0b.
 
 ### What to do next
 
-1. **2.6 - the civil war**, which the lead chose at its most ambitious (option C: true
-   intra-kingdom hostility, no faction split) together with the secession ladder
-   (disaffection -> political contest -> armed internal contest -> secession).
-   [design/07](design/07-internal-politics.md) holds the spike. Before code: pick and write down
-   defaults for its §3 open questions (what winning grants, whether the player is dragged in,
-   whether a ruling-clan dispute can run beside a crown contest). The lever is a patch on
-   `Clan.get_MapFaction` - **the fourth Harmony patch**, on a getter with 2,216 call sites,
-   so its header must carry the evidence CLAUDE.md §3 demands and it wants the most careful
-   live verification of anything in the pillar. Intra-clan succession disputes belong to the
-   same design.
-2. **Court tab gaps**: no scrolling past ~13 sworn clans; the physical row click is unverified.
-3. **The `AiDiplomacy.TryDemandTribute` revisit** planned for 2.2 was never done: it still
+1. **Finish verifying 2.6**, [design/07 §3d](design/07-internal-politics.md). From
+   `di_civilwar_test`, with the game to ourselves:
+   - `diplomacy.test_end_internal_war Battania | crown`, then `| stalemate` after a reload.
+     Only the rebel win has been seen.
+   - After any ending, ask the game: the rising `di_rising` eliminated, and all five rebel
+     clans alive and still in Battania (`bannerlord.kingdom.get_kingdom`).
+   - A fief changing hands between the sides. Let the war run at `test_set_speed 50` until a
+     siege lands; the log line `passed from ... the rising now holds N fiefs` is the check.
+   - Both player prompts. The player is Khuzait in that save, so this needs a world where the
+     player is a Battanian vassal, or a pretender.
+2. **2.6b, succession disputes inside a clan**, including the ruling clan. This is the rest of
+   the lead's brief for design 07. Engine spike first, as for 2.6: which vanilla behaviour
+   picks a clan's new leader, and whether a model reaches it.
+3. **Court tab gaps**: no scrolling past ~13 sworn clans; the physical row click is unverified.
+4. **The `AiDiplomacy.TryDemandTribute` revisit** planned for 2.2 was never done: it still
    accepts on strength ratio and trust alone, with no sense of the target court's willingness.
    Loyalty and legitimacy now exist for it to read.
-4. **Fold run 08 in** once Phase 2 work produces a campaign long enough to carry it. Same
+5. **Fold run 08 in** once Phase 2 work produces a campaign long enough to carry it. Same
    deployment, same telemetry; what it needs is in-game years, which Phase 2 testing
    generates anyway.
 
@@ -511,7 +519,7 @@ Two things were added because of this, independent of the cause:
 |---|---|
 | **0 — Foundation** | ✅ done, verified in a live campaign |
 | **1 — Diplomacy core (1.1–1.12)** | ✅ **accepted by the lead, 2026-09-23**. Code complete including submission and hegemony (1.9/1.10), the vanilla takeover (1.11) and power (1.12). Measured over runs 01–07; the §13 rework under it is smoke-tested only, and the carried debt is listed in [ROADMAP.md](ROADMAP.md#phase-1--accepted-by-the-project-lead-2026-09-23) |
-| **2 — Court intrigue** | 🔄 **started 2026-09-23**. Spec written and reviewed, no code yet; 2.1 grievances is the first deliverable |
+| **2 — Court intrigue** | 🔄 2.1-2.5 and 2.7 built and verified live; **2.6 civil war** built and verified on its main path, on `feature/phase-2.6-civil-war`; 2.6b (clan succession disputes) not started |
 | **3 — Espionage** | ⬜ spec written and reviewed, no code |
 | **4 — Integration, balance, release** | 🔄 runs 01-07 archived. **Run 07** (2026-09-20) is the current reference — [balance/run-07.md](balance/run-07.md). **Run 08 is owed** and closes the §13 questions |
 

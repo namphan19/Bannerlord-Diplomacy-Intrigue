@@ -86,6 +86,7 @@ namespace DiplomacyIntrigue.Behaviors
                 var aggressor = attacker as Kingdom;
                 var target = defender as Kingdom;
                 if (aggressor == null || target == null) return;
+                if (Intrigue.InternalWars.IsFaction(aggressor) || Intrigue.InternalWars.IsFaction(target)) return;   // no treaty binds a rising
 
                 var blocking = TreatyEnforcement.FirstBlockingTreaty(state, aggressor, target);
                 if (blocking != null)
@@ -123,6 +124,7 @@ namespace DiplomacyIntrigue.Behaviors
                 var a = side1 as Kingdom;
                 var b = side2 as Kingdom;
                 if (a == null || b == null) return;
+                if (Intrigue.InternalWars.IsFaction(a) || Intrigue.InternalWars.IsFaction(b)) return;
 
                 // Anyone dragged in by either side is let out with them.
                 CallToArms.ReleaseFollowers(state, a, b);

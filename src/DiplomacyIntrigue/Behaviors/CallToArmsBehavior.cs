@@ -35,6 +35,7 @@ namespace DiplomacyIntrigue.Behaviors
                 var aggressor = attacker as Kingdom;
                 var target = defender as Kingdom;
                 if (aggressor == null || target == null) return;
+                if (Intrigue.InternalWars.IsFaction(aggressor) || Intrigue.InternalWars.IsFaction(target)) return;   // an internal war summons no allies (design 07 §3b)
 
                 // The defender's allies are answering an attack; the aggressor's are being
                 // asked to join a war of its choosing. The flag is what a defensive pact

@@ -25,9 +25,16 @@ namespace DiplomacyIntrigue.GameModels
     /// may" - and that distinction is the entire basis of the war takeover. The patch keeps
     /// the proposer-aware rule; this model keeps the universal one.
     ///
-    /// LEFT ALONE ON PURPOSE: policy votes, annexation, clan expulsion and king selection. A
-    /// kingdom's internal politics is Phase 2's subject, and Phase 2 will extend those rather
-    /// than replace them.
+    /// - **An internal war's rising** (Phase 2.6): no war, peace or alliance decision may name
+    ///   it, no king may be elected to it, no fief under its banner annexed, and no rebel clan
+    ///   expelled while the war runs. The rising is a `Kingdom` only so that vanilla's casts
+    ///   hold (design 07 §3c); a decision voted inside it by its rebels - who are still members
+    ///   of their realm - could otherwise expel one of them from that realm, or make a peace
+    ///   the internal war never agreed to.
+    ///
+    /// Otherwise LEFT ALONE ON PURPOSE: policy votes, annexation, clan expulsion and king
+    /// selection. A kingdom's internal politics is Phase 2's subject, and Phase 2 extends those
+    /// rather than replacing them.
     ///
     /// VERIFIED AGAINST: Bannerlord v1.4.8 (KingdomDecisionPermissionModel; consumers
     /// DeclareWarDecision.IsAllowed, MakePeaceKingdomDecision.IsAllowed,
@@ -42,6 +49,12 @@ namespace DiplomacyIntrigue.GameModels
         {
             try
             {
+                if (Intrigue.InternalWars.IsFaction(kingdom1) || Intrigue.InternalWars.IsFaction(kingdom2))
+                {
+                    reason = new TextObject("A rising is settled by its own war, not by a decision of state.");
+                    return false;
+                }
+
                 if (VanillaDiplomacy.Active && kingdom1 != null && kingdom2 != null)
                 {
                     var state = CoreBehavior.State;
@@ -66,6 +79,12 @@ namespace DiplomacyIntrigue.GameModels
         {
             try
             {
+                if (Intrigue.InternalWars.IsFaction(kingdom1) || Intrigue.InternalWars.IsFaction(kingdom2))
+                {
+                    reason = new TextObject("A rising is settled by its own war, not by a decision of state.");
+                    return false;
+                }
+
                 if (VanillaDiplomacy.Active && VanillaDiplomacy.BothKingdoms(kingdom1, kingdom2))
                 {
                     VanillaDiplomacy.NotePeaceRefused();
@@ -87,6 +106,12 @@ namespace DiplomacyIntrigue.GameModels
         {
             try
             {
+                if (Intrigue.InternalWars.IsFaction(kingdom1) || Intrigue.InternalWars.IsFaction(kingdom2))
+                {
+                    reason = new TextObject("A rising is settled by its own war, not by a decision of state.");
+                    return false;
+                }
+
                 if (VanillaDiplomacy.Active && VanillaDiplomacy.BothKingdoms(kingdom1, kingdom2))
                 {
                     VanillaDiplomacy.NoteAllianceRefused();
@@ -101,6 +126,55 @@ namespace DiplomacyIntrigue.GameModels
             }
 
             return base.IsStartAllianceDecisionAllowedBetweenKingdoms(kingdom1, kingdom2, out reason);
+        }
+
+        /// <summary>
+        /// A rebel clan cannot be expelled while its war runs: the war decides its fate
+        /// (design 07 §3a Q1), and an expulsion voted inside the rising by the rebels themselves
+        /// would throw one of them out of the realm they are fighting for.
+        /// </summary>
+        public override bool IsExpulsionDecisionAllowed(Clan expelledClan)
+        {
+            try
+            {
+                if (Intrigue.InternalWars.TryFaction(expelledClan, out _)) return false;
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Override", "IsExpulsionDecisionAllowed failed; falling back to vanilla.", ex);
+            }
+            return base.IsExpulsionDecisionAllowed(expelledClan);
+        }
+
+        /// <summary>A fief under a rising's banner is the war's to settle, not an annexation's.</summary>
+        public override bool IsAnnexationDecisionAllowed(TaleWorlds.CampaignSystem.Settlements.Settlement annexedSettlement)
+        {
+            try
+            {
+                if (Intrigue.InternalWars.IsFaction(annexedSettlement?.MapFaction as Kingdom)) return false;
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Override", "IsAnnexationDecisionAllowed failed; falling back to vanilla.", ex);
+            }
+            return base.IsAnnexationDecisionAllowed(annexedSettlement);
+        }
+
+        /// <summary>
+        /// A rising has no throne to elect to. Its leader is the claimant because its ruling
+        /// clan is the claimant's; that is the only way vanilla lets a kingdom have one.
+        /// </summary>
+        public override bool IsKingSelectionDecisionAllowed(Kingdom kingdom)
+        {
+            try
+            {
+                if (Intrigue.InternalWars.IsFaction(kingdom)) return false;
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Override", "IsKingSelectionDecisionAllowed failed; falling back to vanilla.", ex);
+            }
+            return base.IsKingSelectionDecisionAllowed(kingdom);
         }
     }
 }

@@ -31,6 +31,11 @@ namespace DiplomacyIntrigue.Behaviors
             CampaignEvents.WarDeclared.AddNonSerializedListener(this, OnWarDeclared);
             CampaignEvents.OnSettlementOwnerChangedEvent.AddNonSerializedListener(this, OnSettlementOwnerChanged);
             CampaignEvents.RulingClanChanged.AddNonSerializedListener(this, OnRulingClanChanged);
+            CampaignEvents.MapEventEnded.AddNonSerializedListener(this, OnMapEventEnded);
+            CampaignEvents.OnClanChangedKingdomEvent.AddNonSerializedListener(this, OnClanChangedKingdom);
+            CampaignEvents.MobilePartyCreated.AddNonSerializedListener(this, OnMobilePartyCreated);
+            CampaignEvents.MobilePartyDestroyed.AddNonSerializedListener(this, OnMobilePartyDestroyed);
+            CampaignEvents.HeroKilledEvent.AddNonSerializedListener(this, OnHeroKilled);
         }
 
         // Grievances live in ModState, owned by CoreBehavior.
@@ -47,6 +52,13 @@ namespace DiplomacyIntrigue.Behaviors
             {
                 BlocModel.Reset();
                 SuccessionModel.Reset();
+                InternalWars.Reset();
+                InternalWars.RebuildIndex(CoreBehavior.State);
+
+                // The engine never saves a kingdom's clan and fief lists, so a rising comes back
+                // from a load with empty ones. Filled here, after the engine's own load-time
+                // rebuild, which would otherwise start from scratch over the top of them.
+                InternalWars.SyncAll(CoreBehavior.State);
             }
             catch (Exception ex)
             {
@@ -67,6 +79,7 @@ namespace DiplomacyIntrigue.Behaviors
                 LegitimacyRegistry.DailyTick(state);
                 SuccessionModel.DailyWatch(state);
                 SuccessionModel.RetireSpentClaims(state);
+                InternalWars.DailyTick(state);
             }
             catch (Exception ex)
             {
@@ -121,11 +134,90 @@ namespace DiplomacyIntrigue.Behaviors
 
             try
             {
+                // A rising is not a realm; its declaration against the crown is not a war the
+                // court judges (design 07 §3b).
+                if (!(aggressor as Kingdom).IsRealm() || !(defender as Kingdom).IsRealm()) return;
+
                 GrievanceSources.OnWarDeclared(state, aggressor as Kingdom, defender as Kingdom, detail);
             }
             catch (Exception ex)
             {
                 Log.Error("Intrigue", "Grievance on war declaration failed.", ex);
+            }
+        }
+
+        /// <summary>A battle between the two sides of an internal war wears them down.</summary>
+        private void OnMapEventEnded(TaleWorlds.CampaignSystem.MapEvents.MapEvent mapEvent)
+        {
+            var state = CoreBehavior.State;
+            if (state == null || !Settings.Current.EnableIntrigue) return;
+
+            try
+            {
+                InternalWars.OnMapEventEnded(state, mapEvent);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Intrigue", "Internal war battle accounting failed.", ex);
+            }
+        }
+
+        private void OnMobilePartyCreated(TaleWorlds.CampaignSystem.Party.MobileParty party)
+        {
+            if (!InternalWars.Any || party?.WarPartyComponent == null) return;
+            try
+            {
+                InternalWars.OnRosterChanged(CoreBehavior.State, party.ActualClan);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Intrigue", "Internal war roster update (party raised) failed.", ex);
+            }
+        }
+
+        private void OnMobilePartyDestroyed(TaleWorlds.CampaignSystem.Party.MobileParty party,
+            TaleWorlds.CampaignSystem.Party.PartyBase destroyer)
+        {
+            if (!InternalWars.Any || party?.WarPartyComponent == null) return;
+            try
+            {
+                // The clan may already be detached from a party being finalised, so every
+                // running rising is re-synced rather than the one the clan would name.
+                InternalWars.OnRosterChanged(CoreBehavior.State, null);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Intrigue", "Internal war roster update (party destroyed) failed.", ex);
+            }
+        }
+
+        private void OnHeroKilled(Hero victim, Hero killer, KillCharacterAction.KillCharacterActionDetail detail,
+            bool showNotification)
+        {
+            if (!InternalWars.Any || victim?.Clan == null) return;
+            try
+            {
+                InternalWars.OnRosterChanged(CoreBehavior.State, victim.Clan, victim);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Intrigue", "Internal war roster update (hero killed) failed.", ex);
+            }
+        }
+
+        private void OnClanChangedKingdom(Clan clan, Kingdom oldKingdom, Kingdom newKingdom,
+            ChangeKingdomAction.ChangeKingdomActionDetail detail, bool showNotification)
+        {
+            var state = CoreBehavior.State;
+            if (state == null || !Settings.Current.EnableIntrigue) return;
+
+            try
+            {
+                InternalWars.OnClanChangedKingdom(state, clan, oldKingdom);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Intrigue", "Internal war membership update failed.", ex);
             }
         }
 
@@ -138,6 +230,7 @@ namespace DiplomacyIntrigue.Behaviors
 
             try
             {
+                InternalWars.OnSettlementOwnerChanged(state, settlement, newOwner, oldOwner);
                 GrievanceSources.OnSettlementOwnerChanged(state, settlement, newOwner, oldOwner, detail);
             }
             catch (Exception ex)
