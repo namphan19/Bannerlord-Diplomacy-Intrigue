@@ -14,8 +14,11 @@ Reference source: <https://github.com/DiplomacyTeam/Bannerlord.Diplomacy>, folde
 or XML.** Vanilla TaleWorlds markup is what we copy from.
 
 Constraints that still apply (CLAUDE.md, docs/STATUS.md): game v1.4.8, `net472`,
-UIExtenderEx v2.13.2, native look, **no Gauntlet screen of our own** (lead's decision), no
-throw crossing into the engine, English text.
+UIExtenderEx v2.13.2, native look, **no Gauntlet screen of our own - with one named
+exception, the peace table** (lead's decision, narrowed on 2026-09-20: a budget that updates
+as terms are picked cannot be done in an inquiry, and GABS cannot click inside an inquiry, so
+inquiry flows cannot be verified at all), no throw crossing into the engine, English text.
+The approved mockup is in [ui-proposal/](ui-proposal/README.md).
 
 ---
 

@@ -301,7 +301,7 @@ hardcoded and does not read LauncherData).
 
 Claude and opencode work in **two separate clones** of the same GitHub repo
 (`namphan19/Bannerlord-Diplomacy-Intrigue`) — this one (`bannerlord.mod`, branch `development`)
-and opencode's own `bannerlord.mod.opencode` (currently `feature/ui-proposal`) — not one shared
+and opencode's own `bannerlord.mod.opencode` (one `feature/*` branch per brief) — not one shared
 folder. opencode's actual output therefore travels through three channels: the `opencode-bridge`
 MCP server for synchronous delegation, **git** for what it actually built (its commits sit
 in its own clone against the shared origin; review them there, e.g. `git fetch` + diff, or a
@@ -332,3 +332,12 @@ hang forever with nothing able to answer it — and the owner granted it full pe
 Review what comes back before passing it on; the rules in §3 (save ids, Harmony as last
 resort, one resolver per concept, no throw across the engine boundary) still apply to code
 opencode wrote — delegating a task doesn't relax them.
+
+opencode's working rules live in [AGENTS.md](AGENTS.md), which opencode reads on its own: a
+branch per brief off `origin/development`, a PR into `development`, **never merging its own
+PR** (you review, then merge or send fixes back through the same `session_id`), and a fixed
+PR body (what / how verified / not verified / save data / Harmony). The lead enabled GABS
+for opencode on 2026-09-23, so it deploys and drives the game itself. There is **one game
+and one deploy target for both clones**: do not touch the game while a delegated task that
+tests in game is running, and after one finishes, check which branch it left deployed
+before you test anything of your own.

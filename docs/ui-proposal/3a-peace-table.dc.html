@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The peace table</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&amp;family=EB+Garamond:wght@400;500;600&amp;display=swap">
+  <style>
+    body { margin: 0; font-family: 'EB Garamond', Georgia, serif; background: #15100c; }
+    a { color: #d9a441; } a:hover { color: #e6c87f; }
+  </style>
+</helmet>
+
+<div style="width: 1280px; height: 720px; box-sizing: border-box; background: #0d0a07; display: flex; align-items: center; justify-content: center; padding: 22px;">
+
+  <div style="width: 1000px; height: 664px; box-sizing: border-box; background: #201a13; border: 1px solid #6b5a3e; border-radius: 5px; display: flex; flex-direction: column; color: #ddd0b8;">
+
+    <!-- Header -->
+    <div style="padding: 16px 26px 13px 26px; border-bottom: 1px solid #4a3c2a; display: flex; align-items: center; gap: 16px;">
+      <span style="width: 26px; height: 33px; background: #2e7d6e; border: 1px solid #0f0b08;"></span>
+      <div style="flex-grow: 1;">
+        <div style="font-family: 'Cinzel', serif; font-size: 23px; color: #e6c87f;">Peace with Northern Empire</div>
+        <div style="font-size: 16px; color: #a89878; margin-top: 2px;">War over ReclaimAncestralLand · 74 days · their condition: <span style="color: #c9b184;">Exhausted — will accept a white peace</span></div>
+      </div>
+      <span style="width: 26px; height: 33px; background: #6b4a8a; border: 1px solid #0f0b08;"></span>
+    </div>
+
+    <!-- Budget -->
+    <div style="padding: 15px 26px 14px 26px; background: #241c15; border-bottom: 1px solid #4a3c2a;">
+      <div style="display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px;">
+        <span style="font-size: 14px; letter-spacing: 0.1em; color: #a89878; text-transform: uppercase;">What this war has earned</span>
+        <span style="font-family: 'Cinzel', serif; font-size: 21px; color: #e6c87f;">122</span>
+        <span style="margin-left: auto; font-size: 17px; color: {{spentColor}};">{{spentText}}</span>
+      </div>
+      <div style="position: relative; height: 20px; background: #14100b; border: 1px solid #3a2f24;">
+        <div style="position: absolute; left: 0; top: 0; bottom: 0; width: {{fillPct}}%; background: {{fillColor}};"></div>
+        <div style="position: absolute; top: -4px; bottom: -4px; left: 61.5%; width: 2px; background: #e6c87f;"></div>
+        <div style="position: absolute; top: -21px; left: 61.5%; font-size: 14px; color: #e6c87f; transform: translateX(-50%); white-space: nowrap;">the cliff — 75</div>
+      </div>
+      <div style="margin-top: 7px; font-size: 15px; color: #7e6f56; font-style: italic;">Above the cliff a winner asks for standing, not coin. Below it, only for what coin can buy.</div>
+    </div>
+
+    <!-- Terms -->
+    <div style="flex-grow: 1; padding: 12px 26px 0 26px; min-height: 0;">
+      <div style="display: flex; font-size: 14px; letter-spacing: 0.1em; color: #a89878; text-transform: uppercase; padding-bottom: 7px; border-bottom: 1px solid #3a2f24;">
+        <span style="flex-grow: 1;">What you demand</span>
+        <span style="width: 74px; text-align: right;">price</span>
+      </div>
+
+      <sc-for list="{{rows}}" as="t" hint-placeholder-count="7">
+        <button onClick="{{t.toggle}}" disabled="{{t.disabled}}" style="width: 100%; text-align: left; cursor: pointer; font-family: 'EB Garamond', Georgia, serif; display: flex; align-items: center; gap: 13px; padding: 9px 10px; background: {{t.bg}}; border: none; border-bottom: 1px solid #2a2118;">
+          <span style="width: 19px; height: 19px; flex-shrink: 0; border: 1px solid {{t.boxBorder}}; background: {{t.boxFill}}; border-radius: 2px; display: flex; align-items: center; justify-content: center;">
+            <sc-if value="{{t.on}}" hint-placeholder-val="{{true}}">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#15100c" stroke-width="3.5" aria-hidden="true"><path d="M4 12l6 6L20 6"></path></svg>
+            </sc-if>
+          </span>
+          <span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0;">
+            <span style="font-size: 18px; color: {{t.nameColor}};">{{t.name}}</span>
+            <span style="font-size: 15px; color: {{t.descColor}}; line-height: 1.3;">{{t.desc}}</span>
+          </span>
+          <span style="width: 74px; text-align: right; font-family: 'Cinzel', serif; font-size: 19px; color: {{t.priceColor}};">{{t.price}}</span>
+        </button>
+      </sc-for>
+    </div>
+
+    <!-- Verdict + buttons -->
+    <div style="border-top: 1px solid #4a3c2a; background: #1b1510; padding: 14px 26px 16px 26px; display: flex; align-items: center; gap: 20px;">
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="width: 11px; height: 11px; border-radius: 50%; background: {{verdictColor}};"></span>
+          <span style="font-family: 'Cinzel', serif; font-size: 20px; color: {{verdictColor}};">{{verdict}}</span>
+        </div>
+        <div style="font-size: 16px; color: #a89878; padding-left: 21px;">{{verdictWhy}}</div>
+      </div>
+
+      <button style="height: 42px; padding: 0 20px; cursor: pointer; font-family: 'Cinzel', serif; font-size: 17px; color: #e0cfa8; background: #33281c; border: 1px solid #6b5a3e; border-radius: 3px;">White peace</button>
+      <button disabled="{{offerDisabled}}" style="height: 42px; padding: 0 30px; cursor: pointer; font-family: 'Cinzel', serif; font-size: 18px; color: {{offerText}}; background: {{offerBg}}; border: 1px solid {{offerBorder}}; border-radius: 3px;">Offer these terms</button>
+      <button style="height: 42px; padding: 0 20px; cursor: pointer; font-family: 'Cinzel', serif; font-size: 17px; color: #a89878; background: #241c15; border: 1px solid #4a3c2a; border-radius: 3px;">Cancel</button>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":720}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { on: { captives: true, land: true } };
+  }
+
+  terms() {
+    return [
+      { id: 'captives', name: 'Their captives returned', cost: 12,
+        desc: 'Every lord of yours they hold walks free.' },
+      { id: 'indemnity', name: 'An indemnity of 7,500 denars', cost: 24,
+        desc: 'Sized from the war score, not from what their treasury happens to hold.' },
+      { id: 'tribute', name: 'Tribute, 500 per period', cost: 45, excludes: ['submission'],
+        desc: 'They buy the peace. They owe you no army.' },
+      { id: 'land', name: 'Epinosa Castle', cost: 60,
+        desc: 'Your ReclaimAncestralLand claim is what entitles you to ask for land at all.' },
+      { id: 'dissolve', name: 'They release their vassals', cost: 70, excludes: ['submission'],
+        desc: 'Vlandia and Southern Empire walk free, and their sphere ends with them.' },
+      { id: 'submission', name: 'Their submission as your vassal', cost: 75, excludes: ['tribute', 'dissolve'],
+        desc: 'They kneel: tribute, and their army answers your call. Only above the cliff.' },
+      { id: 'capital', name: 'Vostrum, their capital', cost: 0, disabled: true,
+        desc: 'You hold no claim on it, and a capital is never on the table.' }
+    ];
+  }
+
+  toggle(id) {
+    const t = this.terms().find((x) => x.id === id);
+    const next = Object.assign({}, this.state.on);
+    if (next[id]) {
+      delete next[id];
+    } else {
+      next[id] = true;
+      (t.excludes || []).forEach((other) => { delete next[other]; });
+    }
+    this.setState({ on: next });
+  }
+
+  renderVals() {
+    const budget = 122;
+    const on = this.state.on;
+    const terms = this.terms();
+    const total = terms.reduce((sum, t) => (on[t.id] ? sum + t.cost : sum), 0);
+    const over = total > budget;
+    const left = budget - total;
+
+    const rows = terms.map((t) => {
+      const isOn = !!on[t.id];
+      const locked = !!t.disabled;
+      return {
+        name: t.name,
+        desc: t.desc,
+        price: locked ? '—' : String(t.cost),
+        on: isOn,
+        disabled: locked,
+        toggle: locked ? () => {} : () => this.toggle(t.id),
+        bg: isOn ? '#2c2619' : 'transparent',
+        boxBorder: locked ? '#3a2f24' : (isOn ? '#9ac26a' : '#6b5a3e'),
+        boxFill: isOn ? '#9ac26a' : 'transparent',
+        nameColor: locked ? '#6f6250' : (isOn ? '#e6c87f' : '#ddd0b8'),
+        descColor: locked ? '#5f5342' : '#a89878',
+        priceColor: locked ? '#5f5342' : (isOn ? '#e6c87f' : '#a89878')
+      };
+    });
+
+    return {
+      rows: rows,
+      fillPct: Math.min(100, Math.round((total / budget) * 100)),
+      fillColor: over ? '#a3452f' : '#4d7f52',
+      spentText: total + ' committed · ' + (over ? Math.abs(left) + ' over' : left + ' unspent'),
+      spentColor: over ? '#e08070' : '#9ac26a',
+      verdict: over ? 'They refuse' : 'They will sign',
+      verdictColor: over ? '#e08070' : '#9ac26a',
+      verdictWhy: over
+        ? 'You are asking ' + Math.abs(left) + ' more than this war has earned. Drop a term, or fight on.'
+        : 'Every term here is inside what the war has earned. ' + left + ' left unspent.',
+      offerDisabled: over,
+      offerBg: over ? '#231c15' : '#3a4a26',
+      offerBorder: over ? '#3a2f24' : '#7a9a46',
+      offerText: over ? '#6f6250' : '#e2eec9'
+    };
+  }
+}
+</script>
+</body>
+</html>

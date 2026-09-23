@@ -25,3 +25,6 @@ artifacts/
 
 # Node tooling dependencies (the bridges)
 node_modules/
+
+# opencode local config (each clone has its own)
+opencode.jsonc
