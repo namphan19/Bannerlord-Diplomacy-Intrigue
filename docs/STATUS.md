@@ -203,6 +203,49 @@ A bug caught by reading the output: `diplomacy.loyalty` still printed "the crown
 term is inert until 2.4" while showing a live -2.0 in the same block. Fixed, along with the
 same staleness in `diplomacy.blocs`.
 
+### 2.3b bloc voting is built and verified live, 2026-09-23
+
+The third Harmony patch in the project, and the first since Phase 1.
+`Patches/KingdomDecision_DetermineSupportOption_Patch.cs`.
+
+**Why the obvious target was the wrong one**, found with `tools/CallSites` before a line was
+written: `KingdomDecision.DetermineSupport(Clan, DecisionOutcome)` is overridden by **every**
+decision type - DeclareWar, MakePeace, KingdomPolicy, SettlementClaimant and the rest - so a
+patch on the base would have missed almost every vote in the game while appearing to work.
+`DetermineSupportOption` is declared once, overridden nowhere, and is the funnel all of them
+pass through. One patch, whole game.
+
+Verified on `di_grievance_test`. **0 errors, 0 warnings**, Harmony applied cleanly.
+
+| Check | Result |
+|---|---|
+| A bloc actually overrides a member | Khergit wanted **No** on its own and voted **Yes**, because Arkit - the Hawks leader - wanted Yes |
+| **Loyalty beats agenda** | raising Khergit's relation with the ruler took its loyalty **32.7 -> 82.2**, past the reliable band, and the override **stopped**: `alone: No, votes: No`. Same clan, same decision, same bloc, same leader; only loyalty changed |
+| The bloc cache does not lie under a frozen clock | `tick_days 300` with `CampaignTime.Now` unmoved took Khuzait from Hawks 7 / Autonomists 2 to a single Doves bloc. A cache keyed on the day alone would have served the stale split - see below |
+
+`diplomacy.test_vote` was written for this: there is no console command in v1.4.8 that opens a
+kingdom decision, and the AI raises them on its own schedule, so the vote path could not be
+observed at all otherwise. It builds a real `KingdomPolicyDecision`, drives the real
+`DetermineSupportOption`, and applies nothing.
+
+**The cache, and the trap it nearly reintroduced.** Bloc membership is read once per clan per
+outcome during a vote, and each read walks every clan and every grievance, so it is memoised
+per kingdom. The obvious key is the campaign day - and that would have been a **lie under
+`diplomacy.tick_days`**, where the clock never moves: grievances decay, legitimacy shifts, and
+the cache keeps serving the world as it was before the command ran. Exactly the trap CLAUDE.md
+§1 records. The key is the day **and** a generation counter bumped by every write that can move
+a loyalty.
+
+**Two behaviours found by running it**, now in the patch header rather than left implicit:
+
+- An **abstaining member is left abstaining**. A null answer from the engine means the clan
+  declined to take a side; turning that into a vote would be manufacturing one.
+- The bloc follows its leader's **preference**, not its leader's cast vote. Observed live:
+  Southern Empire's Autonomist leader abstained while its bloc voted Yes. Following the cast
+  vote would let an indifferent leader silence its whole bloc, which makes blocs weaker rather
+  than more united. Worth revisiting if a balance run shows blocs carrying votes their leaders
+  visibly did not want.
+
 ### What to do next
 
 1. ~~**2.1 - the grievance ledger.**~~ **Done and verified above.** Originally: A new savable type at class id **10**, with its container

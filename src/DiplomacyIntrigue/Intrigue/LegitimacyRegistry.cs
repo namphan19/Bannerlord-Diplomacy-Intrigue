@@ -54,6 +54,9 @@ namespace DiplomacyIntrigue.Intrigue
             var before = record.Value;
             record.Adjust(amount, reason);
 
+            // Legitimacy is a term in every loyalty in the kingdom, so the bloc memo is stale.
+            BlocModel.Invalidate();
+
             Log.Info("Legitimacy", kingdom.Name + " " + (amount > 0f ? "+" : "")
                                    + amount.ToString("0.0") + " -> " + record.Value.ToString("0.0")
                                    + " (" + reason + ", was " + before.ToString("0.0") + ")");

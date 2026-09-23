@@ -94,6 +94,7 @@ namespace DiplomacyIntrigue.Intrigue
                 if (existing.Type != type || !existing.Is(holder, target)) continue;
 
                 existing.Renew(value);
+                BlocModel.Invalidate();
                 Log.Info("Grievance", holder.Name + " renews " + type + " against " + target.Name
                                       + " at " + existing.Weight.ToString("0.0")
                                       + (reason == null ? "" : " (" + reason + ")"));
@@ -101,6 +102,7 @@ namespace DiplomacyIntrigue.Intrigue
             }
 
             state.Grievances.Add(new Grievance(holder, target, type, value));
+            BlocModel.Invalidate();
             Log.Info("Grievance", holder.Name + " now holds " + type + " against " + target.Name
                                   + " at " + value.ToString("0.0")
                                   + (reason == null ? "" : " (" + reason + ")"));
@@ -117,8 +119,11 @@ namespace DiplomacyIntrigue.Intrigue
 
             var removed = state.Grievances.RemoveAll(g => g.Is(holder, target));
             if (removed > 0)
+            {
+                BlocModel.Invalidate();
                 Log.Info("Grievance", holder.Name + " sets aside " + removed
                                       + " grievance(s) against " + target.Name + ".");
+            }
             return removed;
         }
 
@@ -136,6 +141,9 @@ namespace DiplomacyIntrigue.Intrigue
 
             for (var i = 0; i < state.Grievances.Count; i++)
                 state.Grievances[i].Decay(IntrigueConstants.GrievanceDecayPerDay);
+
+            // Decay moves every loyalty in the world, so the bloc memo is stale from here.
+            BlocModel.Invalidate();
 
             // Dropping spent records keeps the save from growing without bound across a long
             // campaign; a grievance at zero weighs nothing anywhere that reads it.

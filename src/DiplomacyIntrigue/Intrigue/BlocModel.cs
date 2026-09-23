@@ -104,12 +104,82 @@ namespace DiplomacyIntrigue.Intrigue
             return result;
         }
 
+        // ----- Caching --------------------------------------------------------
+        //
+        // Bloc membership is read once per clan per outcome while a kingdom votes, and each
+        // read walks every clan and every grievance. Recomputing it each time is affordable
+        // for a diagnostic and not for a vote, so the result is memoised per kingdom.
+        //
+        // The key is the campaign day AND a generation counter, not the day alone. A day
+        // stamp on its own would be a lie under `diplomacy.tick_days`, where the clock never
+        // moves: grievances would decay, legitimacy would shift, and the cache would keep
+        // serving the state of the world as it was before the command ran. That is exactly
+        // the trap CLAUDE.md §1 records about diagnostics that drive part of a tick, and it
+        // would have been reintroduced here by a one-line cache.
+
+        private sealed class CachedBlocs
+        {
+            public int Day;
+            public int Generation;
+            public List<CourtBloc> Blocs;
+        }
+
+        private static readonly Dictionary<Kingdom, CachedBlocs> Cache =
+            new Dictionary<Kingdom, CachedBlocs>();
+
+        private static int _generation;
+
+        /// <summary>
+        /// Called by anything that moves a number loyalty reads - a grievance recorded or
+        /// decayed, a legitimacy adjustment. Cheap on purpose: one integer, no allocation.
+        /// </summary>
+        public static void Invalidate() => _generation++;
+
+        /// <summary>Drops everything. For session start, where the old kingdoms are gone.</summary>
+        public static void Reset()
+        {
+            Cache.Clear();
+            _generation++;
+        }
+
+        /// <summary>
+        /// The bloc a clan belongs to, or null. The vote path's entry point, so it reads the
+        /// cache rather than rebuilding the court.
+        /// </summary>
+        public static CourtBloc BlocOf(ModState state, Clan clan)
+        {
+            var kingdom = clan?.Kingdom;
+            if (kingdom == null) return null;
+
+            var blocs = BlocsOf(state, kingdom);
+            for (var i = 0; i < blocs.Count; i++)
+                if (blocs[i].Members.Contains(clan)) return blocs[i];
+            return null;
+        }
+
         /// <summary>
         /// The court grouped into blocs, strongest first. A bloc's power is the sum of its
         /// members' influence and its leader is the most influential of them, both straight
         /// from design 02 §3.
         /// </summary>
         public static List<CourtBloc> BlocsOf(ModState state, Kingdom kingdom)
+        {
+            if (state != null && kingdom != null)
+            {
+                var today = (int)CampaignTime.Now.ToDays;
+                if (Cache.TryGetValue(kingdom, out var cached)
+                    && cached.Day == today && cached.Generation == _generation)
+                    return cached.Blocs;
+
+                var fresh = BuildBlocs(state, kingdom);
+                Cache[kingdom] = new CachedBlocs { Day = today, Generation = _generation, Blocs = fresh };
+                return fresh;
+            }
+
+            return new List<CourtBloc>();
+        }
+
+        private static List<CourtBloc> BuildBlocs(ModState state, Kingdom kingdom)
         {
             var blocs = new List<CourtBloc>();
             if (state == null || kingdom?.Clans == null) return blocs;

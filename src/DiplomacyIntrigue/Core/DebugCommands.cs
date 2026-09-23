@@ -6,6 +6,7 @@ using DiplomacyIntrigue.Diplomacy;
 using DiplomacyIntrigue.Intrigue;
 using DiplomacyIntrigue.Models;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Election;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 using TaleWorlds.Library;
@@ -256,6 +257,97 @@ namespace DiplomacyIntrigue.Core
             }
             var text = sb.ToString();
             return text.Length == 0 ? "No trust records involving that kingdom." : text;
+        }
+
+        /// <summary>
+        /// Asks every clan of a kingdom how it would vote on a real policy decision, and shows
+        /// where a bloc overrode a clan's own preference.
+        ///
+        /// Builds a genuine <c>KingdomPolicyDecision</c> and drives the same
+        /// <c>DetermineSupportOption</c> the engine drives, so the bloc patch is exercised
+        /// rather than simulated - but **nothing is applied**: the decision is never submitted
+        /// and no vote is cast. There is no console command in v1.4.8 that opens a kingdom
+        /// decision for real, and the AI only raises them on its own schedule, so without this
+        /// the vote path could not be observed at all.
+        ///
+        /// Usage: diplomacy.test_vote            (the player's kingdom)
+        ///        diplomacy.test_vote Khuzait
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_vote", "diplomacy")]
+        public static string TestVote(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var kingdom = Clan.PlayerClan?.Kingdom;
+            if (args != null && args.Count > 0)
+            {
+                var wanted = string.Join(" ", args);
+                kingdom = FindKingdom(wanted);
+                if (kingdom == null) return "No kingdom matching \"" + wanted + "\".";
+            }
+            if (kingdom?.RulingClan == null) return "That kingdom has no ruling clan.";
+
+            try
+            {
+                var decision = new KingdomPolicyDecision(kingdom.RulingClan, DefaultPolicies.SacredMajesty, false);
+                var outcomes = new MBList<DecisionOutcome>();
+                foreach (var outcome in decision.DetermineInitialCandidates()) outcomes.Add(outcome);
+                if (outcomes.Count < 2) return "That decision offered fewer than two outcomes.";
+
+                var sb = new StringBuilder();
+                sb.AppendLine("Mock vote in " + kingdom.Name + " on enacting Sacred Majesty."
+                              + " Nothing is applied.");
+
+                var redirected = 0;
+                for (var i = 0; i < kingdom.Clans.Count; i++)
+                {
+                    var clan = kingdom.Clans[i];
+                    if (clan == null || clan.IsEliminated || clan == kingdom.RulingClan) continue;
+
+                    // What the clan wants on its own: the outcome it supports most.
+                    DecisionOutcome own = null;
+                    var bestOwn = float.MinValue;
+                    for (var o = 0; o < outcomes.Count; o++)
+                    {
+                        var support = decision.DetermineSupport(clan, outcomes[o]);
+                        if (support <= bestOwn) continue;
+                        bestOwn = support;
+                        own = outcomes[o];
+                    }
+
+                    // What it actually votes: this runs through the patched funnel.
+                    var cast = decision.DetermineSupportOption(new Supporter(clan), outcomes,
+                        out _, false);
+
+                    var bloc = BlocModel.BlocOf(state, clan);
+                    var moved = own != null && cast != null && own != cast;
+                    if (moved) redirected++;
+
+                    sb.AppendLine("    " + clan.Name
+                                  + "  bloc " + (bloc == null ? "none" : bloc.Agenda.ToString())
+                                  + (bloc?.Leader == clan ? " (leader)" : "")
+                                  + ", loyalty " + LoyaltyModel.Of(state, clan).ToString("0.0")
+                                  + "  | alone: " + Describe(own)
+                                  + "  | votes: " + Describe(cast)
+                                  + (moved ? "   <- BLOC OVERRODE IT" : ""));
+                }
+
+                sb.AppendLine(redirected + " clan(s) voted against their own preference because"
+                              + " their bloc leader wanted otherwise.");
+                return sb.ToString();
+            }
+            catch (Exception ex)
+            {
+                return "Mock vote failed: " + ex.Message;
+            }
+        }
+
+        private static string Describe(DecisionOutcome outcome)
+        {
+            if (outcome == null) return "?";
+            var text = outcome.GetDecisionTitle();
+            return text == null ? outcome.ToString() : text.ToString();
         }
 
         /// <summary>

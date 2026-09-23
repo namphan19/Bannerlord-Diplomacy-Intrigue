@@ -25,6 +25,7 @@ namespace DiplomacyIntrigue.Behaviors
     {
         public override void RegisterEvents()
         {
+            CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
             CampaignEvents.WeeklyTickEvent.AddNonSerializedListener(this, OnWeeklyTick);
             CampaignEvents.WarDeclared.AddNonSerializedListener(this, OnWarDeclared);
@@ -33,6 +34,23 @@ namespace DiplomacyIntrigue.Behaviors
 
         // Grievances live in ModState, owned by CoreBehavior.
         public override void SyncData(IDataStore dataStore) { }
+
+        /// <summary>
+        /// The bloc memo holds Kingdom references from whatever campaign was loaded before
+        /// this one. Dropping them on session start keeps a stale court from being served to
+        /// a fresh world.
+        /// </summary>
+        private void OnSessionLaunched(CampaignGameStarter starter)
+        {
+            try
+            {
+                BlocModel.Reset();
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Intrigue", "Resetting the bloc cache failed.", ex);
+            }
+        }
 
         private void OnDailyTick()
         {
