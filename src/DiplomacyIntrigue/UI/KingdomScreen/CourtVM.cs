@@ -50,6 +50,8 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         private string _successionTitle = string.Empty;
         private string _successionDetail = string.Empty;
         private bool _hasBlocs;
+        private bool _isAtWar;
+        private DiCivilWarVM _civilWar;
         private DiCourtClanVM _selected;
         private MBBindingList<DiCourtBlocVM> _blocs = new MBBindingList<DiCourtBlocVM>();
         private MBBindingList<DiCourtClanVM> _clans = new MBBindingList<DiCourtClanVM>();
@@ -76,6 +78,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         /// <summary>Selects a clan by name, as a row click would. Test hook; see <see cref="Current"/>.</summary>
         internal string SelectByName(string name)
         {
+            // In a civil war the court is shown split by side, and the rows are the war's.
+            if (_isAtWar && _civilWar != null) return _civilWar.SelectByName(name);
+
             for (var i = 0; i < _clans.Count; i++)
             {
                 if (_clans[i].Clan.Name.ToString() != name) continue;
@@ -190,6 +195,26 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         }
 
         [DataSourceProperty] public bool NoBlocs => !_hasBlocs;
+
+        /// <summary>
+        /// The player's kingdom is at war with itself: the court is shown as the war shows it -
+        /// two sides, the prices, conceding - instead of as blocs and loyalty (design 07 §6).
+        /// </summary>
+        [DataSourceProperty]
+        public bool IsAtWar
+        {
+            get => _isAtWar;
+            set { if (value == _isAtWar) return; _isAtWar = value; OnPropertyChangedWithValue(value, nameof(IsAtWar)); OnPropertyChangedWithValue(!value, nameof(IsAtPeace)); }
+        }
+
+        [DataSourceProperty] public bool IsAtPeace => !_isAtWar;
+
+        [DataSourceProperty]
+        public DiCivilWarVM CivilWar
+        {
+            get => _civilWar;
+            set { if (value == _civilWar) return; _civilWar = value; OnPropertyChangedWithValue(value, nameof(CivilWar)); }
+        }
 
         [DataSourceProperty]
         public DiCourtClanVM Selected
@@ -315,8 +340,16 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 Selected = null;
                 Terms = new MBBindingList<DiCourtTermVM>();
                 Grievances = new MBBindingList<DiCourtGrievanceVM>();
+                IsAtWar = false;
+                CivilWar = null;
                 return;
             }
+
+            // A civil war replaces the body of the tab. The header - realm, crown legitimacy -
+            // is the same in both.
+            var war = Settings.Current.EnableIntrigue ? InternalWars.OngoingIn(state, kingdom) : null;
+            CivilWar = war == null ? null : new DiCivilWarVM(state, war, Rebuild);
+            IsAtWar = war != null;
 
             var ruling = kingdom.RulingClan;
             var playerRules = ruling == Clan.PlayerClan;

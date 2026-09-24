@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using DiplomacyIntrigue.Behaviors;
 using DiplomacyIntrigue.Core;
 using DiplomacyIntrigue.Diplomacy;
+using DiplomacyIntrigue.Intrigue;
 using DiplomacyIntrigue.Models;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Library;
@@ -39,6 +40,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         /// <summary>Hides the five vanilla categories; supplied by the management mixin.</summary>
         private readonly Action _onShow;
 
+        /// <summary>Switches to the Court tab, where a civil war is shown; supplied by the management mixin.</summary>
+        private readonly Action _openCourt;
+
         private bool _show;
         private bool _tabVisible;
         private string _tabText = "Realm";
@@ -64,11 +68,12 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         private MBBindingList<DiRealmFabricationVM> _fabrications = new MBBindingList<DiRealmFabricationVM>();
         private MBBindingList<DiRealmAgreementVM> _agreements = new MBBindingList<DiRealmAgreementVM>();
 
-        public DiRealmVM(Action onShow)
+        public DiRealmVM(Action onShow, Action openCourt = null)
         {
             _standingColor = GoldColor;
             _greedColor = MutedColor;
             _onShow = onShow;
+            _openCourt = openCourt;
             RefreshTabGate();
             Rebuild();
         }
@@ -508,6 +513,24 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 StandingDetail = "no kingdom answers to you, and you answer to none";
             }
 
+            // A realm at war with itself says so first (design 07 §6). What it is abroad is kept
+            // in the detail line: a divided hegemon is still a hegemon.
+            var civil = Settings.Current.EnableIntrigue ? InternalWars.OngoingIn(state, us) : null;
+            if (civil != null)
+            {
+                var held = civil.Faction?.Fiefs.Count ?? 0;
+                StandingTitle = "Divided";
+                StandingColor = NegativeColor;
+                StandingDetail = SideChange.SideName(civil, true) + " holds " + held + " of the realm's "
+                                 + us.Fiefs.Count + " fiefs"
+                                 + (patron != null ? ", and the realm still answers to " + patron.Name
+                                    : vassalCount > 0 ? ", and " + vassalCount + (vassalCount == 1 ? " kingdom still answers" : " kingdoms still answer") + " to you"
+                                    : string.Empty);
+                StandingNote = civil.IsRebel(Clan.PlayerClan)
+                    ? "You fight under " + SideChange.SideName(civil, true) + ": the realm's foreign wars are the crown's, not yours."
+                    : "The houses of the rising keep their seats and votes while they fight.";
+            }
+
             var sphereHead = Hegemony.SphereHead(state, us);
             SphereStrengthText = "sphere " + Hegemony.SphereStrength(state, sphereHead).ToString("0");
             var dominance = Power.Dominance(us);
@@ -536,6 +559,33 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
         private void ComposeWars(ModState state, Kingdom us, MBBindingList<DiRealmWarVM> wars)
         {
+            // A civil war heads the strip, and only points to the Court tab, where it is shown in
+            // full: sides, prices, conceding (design 07 §6). It has no war score and no peace table.
+            var civil = Settings.Current.EnableIntrigue ? InternalWars.OngoingIn(state, us) : null;
+            var playerRebel = civil != null && civil.IsRebel(Clan.PlayerClan);
+            if (civil != null)
+            {
+                var ours = playerRebel ? civil.RebelExhaustion : civil.CrownExhaustion;
+                var theirs = playerRebel ? civil.CrownExhaustion : civil.RebelExhaustion;
+                var against = 0;
+                foreach (var clan in Court.MembersOf(us))
+                    if (civil.IsRebel(clan) != playerRebel) against++;
+
+                wars.Add(new DiRealmWarVM(
+                    playerRebel ? "Civil war: against the crown" : "Civil war: " + SideChange.SideName(civil, true),
+                    ((int)civil.StartedOn.ElapsedDaysUntilNow) + " days, for the throne",
+                    "our exhaustion " + ours.ToString("0.0") + "   -   theirs " + theirs.ToString("0.0")
+                        + "   -   " + against + (against == 1 ? " house" : " houses") + " against us",
+                    string.Empty,
+                    MutedColor,
+                    civil.Faction == null ? NegativeColor : Color.FromUint(civil.Faction.Color),
+                    "Open the court",
+                    "Sides, prices and conceding are on the Court tab.",
+                    "The civil war is shown on the Court tab: both sides, what each house would cost to change sides, and how it ends.",
+                    () => _openCourt?.Invoke(),
+                    string.Empty));
+            }
+
             foreach (var war in state.OngoingWarsOf(us))
             {
                 var enemy = war.Other(us);
@@ -558,7 +608,10 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                             ? ", no claim on record"
                             : " over " + war.Justification)
                         + (war.IsObligationWar && war.CalledBy != null
-                            ? "   -   called in by " + war.CalledBy.Name : ""),
+                            ? "   -   called in by " + war.CalledBy.Name : "")
+                        // The rising is at war with the crown and nobody else, so a rebel's
+                        // parties are not in this war at all.
+                        + (playerRebel ? "   -   the crown's war, not yours" : ""),
                     "our exhaustion " + war.ExhaustionOf(us).ToString("0.0")
                         + "   -   their condition "
                         + ExhaustionBands.Condition(war.ExhaustionOf(enemy)),
@@ -848,11 +901,13 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
         public DiRealmWarVM(string name, string detail, string conditionText,
             string scoreText, Color scoreColor, Color accentColor,
-            string buttonLabel, string buttonExplanation, string buttonHint, Action negotiate)
+            string buttonLabel, string buttonExplanation, string buttonHint, Action negotiate,
+            string scoreCaption = "war score")
         {
             Name = name;
             Detail = detail;
             ConditionText = conditionText;
+            ScoreCaption = scoreCaption;
             ScoreText = scoreText;
             ScoreColor = scoreColor;
             AccentColor = accentColor;
@@ -865,6 +920,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         [DataSourceProperty] public string Name { get; }
         [DataSourceProperty] public string Detail { get; }
         [DataSourceProperty] public string ConditionText { get; }
+
+        /// <summary>"war score" for a war between kingdoms; empty for a civil war, which has none.</summary>
+        [DataSourceProperty] public string ScoreCaption { get; }
         [DataSourceProperty] public string ScoreText { get; }
         [DataSourceProperty] public Color ScoreColor { get; }
         [DataSourceProperty] public Color AccentColor { get; }

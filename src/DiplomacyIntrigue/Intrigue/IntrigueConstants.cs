@@ -318,6 +318,64 @@ namespace DiplomacyIntrigue.Intrigue
         /// </summary>
         public const float InternalWarPlayerAskAgainDays = 30f;
 
+        // ----- Conceding, and changing sides for gold (design 07 §6, Phase 2.6c) --------
+        //
+        // The lead decided the acts on 2026-09-24 and left the scale to us. Every number below
+        // is a first guess: none has been compared with the purses lords actually carry.
+
+        /// <summary>
+        /// An AI leader concedes once its own side's exhaustion reaches this, while the other
+        /// side's is below <see cref="InternalWarConcedeOtherBelow"/>. UN-TUNED.
+        /// </summary>
+        public const float InternalWarConcedeExhaustion = 75f;
+
+        /// <summary>
+        /// The other half of the AI's concession rule. UN-TUNED. Kept at the stalemate line
+        /// on purpose, so the two endings can never both apply: a stalemate needs both sides
+        /// past 40, a concession needs one of them under it.
+        /// </summary>
+        public const float InternalWarConcedeOtherBelow = 40f;
+
+        /// <summary>What any house costs before its men and its land are counted. UN-TUNED.</summary>
+        public const float SideChangeBaseGold = 2000f;
+
+        /// <summary>
+        /// Denars per point of <c>Clan.CurrentTotalStrength</c>. UN-TUNED. Chosen so a typical
+        /// house (strength 300-650 in the balance runs) prices its men at 4,500-10,000.
+        /// </summary>
+        public const float SideChangeGoldPerStrength = 15f;
+
+        /// <summary>Denars per town the house would bring with it. UN-TUNED.</summary>
+        public const float SideChangeGoldPerTown = 4000f;
+
+        /// <summary>Denars per castle the house would bring with it. UN-TUNED.</summary>
+        public const float SideChangeGoldPerCastle = 2000f;
+
+        /// <summary>No house changes sides for less. UN-TUNED.</summary>
+        public const int SideChangeMinimumPrice = 1000;
+
+        /// <summary>
+        /// The limits on the war-momentum factor. UN-TUNED. Joining the side that is losing
+        /// costs up to half as much again; joining the side that is winning, down to 0.7.
+        /// </summary>
+        public const float SideChangeMomentumMin = 0.7f;
+        public const float SideChangeMomentumMax = 1.5f;
+
+        /// <summary>
+        /// The most of its own purse an AI leader spends on one house. UN-TUNED. Also the test
+        /// an AI leader's offer to the player's house has to pass - the same rule either way.
+        /// </summary>
+        public const float AiSideChangeBudgetShare = 0.5f;
+
+        /// <summary>Relation lost between a house's head and the leader they walked out on. UN-TUNED.</summary>
+        public const int SideChangeRelationPenalty = -20;
+
+        /// <summary>
+        /// Days before an AI leader offers again to a player who refused it. UN-TUNED. Not saved:
+        /// a reload may bring the offer back sooner, a nuisance rather than a wrong answer.
+        /// </summary>
+        public const float SideChangeOfferAgainDays = 30f;
+
         // ----- A house divided (design 07 §5, Phase 2.6b) ----------------------
 
         /// <summary>

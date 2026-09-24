@@ -615,7 +615,7 @@ namespace DiplomacyIntrigue.Intrigue
             // sides, and the rising already holds its castles.
             RebuildIndex(state);
             SyncFaction(war);
-            SeparateArmies(kingdom, war);
+            SeparateArmies(war);
 
             DeclareWarAction.ApplyByDefault(faction, kingdom);
 
@@ -677,10 +677,7 @@ namespace DiplomacyIntrigue.Intrigue
                     {
                         _askingPlayer = false;
                         if (!war.IsOngoing || Clan.PlayerClan?.Kingdom != war.Kingdom) return;
-                        war.Rebels.Add(new InternalWarMember(Clan.PlayerClan));
-                        RebuildIndex(state);
-                        SyncFaction(war);
-                        SeparateArmies(war.Kingdom, war);
+                        JoinRising(state, war, Clan.PlayerClan);
                         Log.Info("InternalWar", war.Kingdom.Name + ": the player's clan joined the rebellion.");
                     }
                     catch (Exception ex)
@@ -692,18 +689,28 @@ namespace DiplomacyIntrigue.Intrigue
         }
 
         /// <summary>
-        /// Splits the realm's standing armies along the new line. An army that exists when the
-        /// war starts belongs to the realm (`Army.Kingdom`), so one led by a rebel is disbanded
-        /// rather than handed to the rising, and a rebel party in a loyalist army is sent out of
-        /// it. From then on each side raises its own - the AI raises an army under its party's
-        /// map faction, which for a rebel is the rising - and `ModArmyManagementModel` keeps
-        /// either side's call from reaching the other.
+        /// Splits the standing armies along the line between the two sides. An army belongs to
+        /// a kingdom (`Army.Kingdom`), so one led from the other side is disbanded rather than
+        /// handed across, and a party of the other side in an army is sent out of it. From then
+        /// on each side raises its own - the AI raises an army under its party's map faction,
+        /// which for a rebel is the rising - and `ModArmyManagementModel` keeps either side's
+        /// call from reaching the other.
+        ///
+        /// Both kingdoms are walked. When the war starts the rising has no armies and only the
+        /// realm's matter; once a house can change sides mid-war (2.6c), a house bought back by
+        /// the crown can be standing in one of the rising's.
         /// </summary>
-        private static void SeparateArmies(Kingdom kingdom, InternalWar war)
+        private static void SeparateArmies(InternalWar war)
         {
-            if (kingdom?.Armies == null) return;
+            SplitArmies(war, war.Kingdom, rebelSide: false);
+            SplitArmies(war, war.Faction, rebelSide: true);
+        }
 
-            var armies = new List<Army>(kingdom.Armies);
+        private static void SplitArmies(InternalWar war, Kingdom owner, bool rebelSide)
+        {
+            if (owner?.Armies == null) return;
+
+            var armies = new List<Army>(owner.Armies);
             for (var i = 0; i < armies.Count; i++)
             {
                 var army = armies[i];
@@ -712,7 +719,7 @@ namespace DiplomacyIntrigue.Intrigue
                     var leader = army?.LeaderParty?.ActualClan;
                     if (leader == null) continue;
 
-                    if (war.IsRebel(leader))
+                    if (war.IsRebel(leader) != rebelSide)
                     {
                         DisbandArmyAction.ApplyByUnknownReason(army);
                         continue;
@@ -722,15 +729,87 @@ namespace DiplomacyIntrigue.Intrigue
                     for (var p = 0; p < parties.Count; p++)
                     {
                         var party = parties[p];
-                        if (party == null || party == army.LeaderParty) continue;
-                        if (war.IsRebel(party.ActualClan)) party.Army = null;
+                        if (party?.ActualClan == null || party == army.LeaderParty) continue;
+                        if (war.IsRebel(party.ActualClan) != rebelSide) party.Army = null;
                     }
                 }
                 catch (Exception ex)
                 {
-                    Log.Error("InternalWar", "Separating an army of " + kingdom.Name + " failed.", ex);
+                    Log.Error("InternalWar", "Separating an army of " + owner.Name + " failed.", ex);
                 }
             }
+        }
+
+        // ----- The two acts of 2.6c (design 07 §6) ------------------------------
+
+        /// <summary>
+        /// Who speaks for a side: the claimant for the rising, the ruler for the crown. The only
+        /// two heroes who can concede, and the two who pay for a house that comes over.
+        /// </summary>
+        public static Hero LeaderOf(InternalWar war, bool risingSide)
+            => war == null ? null : risingSide ? war.Claimant : war.Kingdom?.Leader;
+
+        /// <summary>
+        /// A house takes the rising's side as the war begins - the side-choice prompt's answer.
+        /// Not a change of sides: nothing is paid and nothing is recorded in
+        /// <see cref="InternalWar.SideChanges"/>, so the house can still be bought later.
+        /// </summary>
+        internal static void JoinRising(ModState state, InternalWar war, Clan clan)
+        {
+            if (!war.IsRebel(clan)) war.Rebels.Add(new InternalWarMember(clan));
+            RebuildIndex(state);
+            SyncFaction(war);
+            SeparateArmies(war);
+        }
+
+        /// <summary>
+        /// A house goes over to the other side, mid-war. The record, then the same three steps
+        /// the side-choice prompt takes when a house joins at the start: the map-faction index,
+        /// the rising's lists, the armies. The price and who may change are
+        /// <see cref="SideChange"/>'s; this only moves the house.
+        /// </summary>
+        internal static void ChangeSide(ModState state, InternalWar war, Clan clan, bool toRising)
+        {
+            war.MoveSide(clan, toRising);
+            RebuildIndex(state);
+            SyncFaction(war);
+            SeparateArmies(war);
+            BlocModel.Invalidate();
+        }
+
+        /// <summary>
+        /// The side's leader gives up. Ends the war exactly as that side reaching exhaustion 100
+        /// would: the crown conceding is a rebel win, the rising conceding a crown win - no new
+        /// outcome (design 07 §6).
+        /// </summary>
+        public static bool Concede(ModState state, InternalWar war, bool risingSide, out string failed)
+        {
+            failed = null;
+            if (war == null || !war.IsOngoing) { failed = "The war is already over."; return false; }
+
+            var leader = LeaderOf(war, risingSide);
+            if (leader == null || !leader.IsAlive) { failed = "That side has nobody to concede for it."; return false; }
+
+            End(state, war, risingSide ? InternalWarOutcome.CrownWon : InternalWarOutcome.RebelsWon,
+                leader.Name + " conceded");
+            return true;
+        }
+
+        /// <summary>
+        /// The AI's concession rule: its own side at <see cref="IntrigueConstants.InternalWarConcedeExhaustion"/>
+        /// or more while the other side is still under <see cref="IntrigueConstants.InternalWarConcedeOtherBelow"/>.
+        /// A player leader is never conceded for: they are shown the same numbers and decide,
+        /// as a player claimant decides whether to rise (design 02 §9.2).
+        /// </summary>
+        private static bool AiWouldConcede(InternalWar war, bool risingSide)
+        {
+            var leader = LeaderOf(war, risingSide);
+            if (leader == null || leader == Hero.MainHero) return false;
+
+            var own = risingSide ? war.RebelExhaustion : war.CrownExhaustion;
+            var other = risingSide ? war.CrownExhaustion : war.RebelExhaustion;
+            return own >= IntrigueConstants.InternalWarConcedeExhaustion
+                   && other < IntrigueConstants.InternalWarConcedeOtherBelow;
         }
 
         private static float CrownShare(Kingdom kingdom, List<Clan> rebels)
@@ -821,6 +900,12 @@ namespace DiplomacyIntrigue.Intrigue
                 End(state, war, InternalWarOutcome.CrownWon, "the rebellion is exhausted");
             else if (war.CrownExhaustion >= IntrigueConstants.InternalWarCollapseExhaustion)
                 End(state, war, InternalWarOutcome.RebelsWon, "the crown's side is exhausted");
+            // A concession cannot overlap the stalemate below: it needs the other side under
+            // the line the stalemate needs both sides past.
+            else if (AiWouldConcede(war, risingSide: true))
+                End(state, war, InternalWarOutcome.CrownWon, war.Claimant.Name + " conceded");
+            else if (AiWouldConcede(war, risingSide: false))
+                End(state, war, InternalWarOutcome.RebelsWon, kingdom.Leader?.Name + " conceded");
             else if (war.RebelExhaustion >= IntrigueConstants.InternalWarStalemateExhaustion
                      && war.CrownExhaustion >= IntrigueConstants.InternalWarStalemateExhaustion)
                 End(state, war, InternalWarOutcome.Stalemate, "both sides are worn out");

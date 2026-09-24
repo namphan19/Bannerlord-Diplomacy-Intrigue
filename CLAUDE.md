@@ -226,10 +226,15 @@ link's hold and the terms pulling it), `diplomacy.submission_value A | B`,
 route rather than fabricating a treaty), `diplomacy.war_value`, `diplomacy.peace_allowance`.
 Court intrigue: `diplomacy.grievances`, `loyalty`, `blocs`, `legitimacy`, `pretenders` (with
 who would stand at the next succession), and `court_bands` (a court exactly as its
-Encyclopedia page describes it, bands only).
+Encyclopedia page describes it, bands only). Civil war: `diplomacy.internal_wars`, and
+`civil_war_prices <kingdom>` (every house's price to change sides, line by line, and whether the
+other leader would pay it).
 Test-only levers for reaching a state: `diplomacy.test_set_speed <1-50>` (see §1),
 `diplomacy.test_set_player_age`, `diplomacy.sign_treaty`, and for UI the screen openers
-`test_open_kingdom`, `test_open_encyclopedia <kingdom>` and `test_court_select <clan>`. Note that `sign_treaty` with
+`test_open_kingdom`, `test_open_encyclopedia <kingdom>` and `test_court_select <clan>`. For a
+civil war: `test_start_internal_war`, `test_end_internal_war`, `test_change_side <clan> [| unpaid]`,
+`test_concede <kingdom> | crown|rising`, and `test_player_side <kingdom> | crown|rising|ruler`,
+which puts the player's house where the Court tab can be seen from each side. Note that `sign_treaty` with
 `Vassalage` calls `TreatyRegistry.Sign` **directly** — it skips `Hegemony.Submit`, so the link
 it makes has no starting Hold, no call to arms and no sibling reconciliation. It is a treaty
 row, not a submission, and it cannot be used to test anything downstream of `Submit`.
@@ -276,8 +281,8 @@ properties **1-14** (11 `Grievances`, 12 `Legitimacy`, 13 `Pretenders`, 14 `Inte
 next free **15**. The definer's class ids run to **14** (10 `Grievance`, 11 `KingdomLegitimacy`,
 12 `Pretender`, 13 `InternalWar`, 14 `InternalWarMember`), next free **15**; enums are **20-27**
 (26 `GrievanceType`, 27 `InternalWarOutcome`), next free **28**. `Grievance` uses
-properties 1-5, `KingdomLegitimacy` 1-5, `Pretender` 1-4, `InternalWar` 1-13 (13 `Faction`),
-`InternalWarMember` 1. A new *value* on an enum the definer
+properties 1-5, `KingdomLegitimacy` 1-5, `Pretender` 1-4, `InternalWar` 1-14 (13 `Faction`,
+14 `SideChanges`, next free **15**), `InternalWarMember` 1. A new *value* on an enum the definer
 already registers is safe (`GrievanceType.SuccessionPassedOver = 9` was added that way);
 renumbering or reusing one is not. Adding a new savable type means a class definition
 **and** a container definition in `ModSaveDefiner` — a missing container definition crashes

@@ -7,7 +7,8 @@ Module version 0.1.0. Save schema **v4**, definer base id **2749100**.
 Save ids in use: `Treaty` 1-17, `TrustRecord` 1-6, `ModState` 1-14, definer class ids to 14
 (`InternalWarMember`), enums 20-27. Next free: class id **15**, `ModState` property **15**, enum
 **28** (CLAUDE.md §3 has the per-type detail). The 2.6 ids (13, 14, 27, property 14) are on
-`development` since 2026-09-24. 2.6c plans `InternalWar` property 14 (design/07 §6); not yet taken.
+`development` since 2026-09-24. 2.6c takes `InternalWar` property 14 (`SideChanges`) on branch
+`feature/phase-2.6c-civil-war-ui`, not yet merged; next free there is 15.
 Last completed measurement: **balance run 07** — [docs/balance/run-07.md](balance/run-07.md).
 
 ## Start here — handoff, 2026-09-23
@@ -18,9 +19,13 @@ Last completed measurement: **balance run 07** — [docs/balance/run-07.md](bala
 `feature/phase-2.6-civil-war`, merged into `development` on 2026-09-24.
 [design/07 §3d and §5](design/07-internal-politics.md) have the result tables.
 
-**Next: 2.6c, the civil war on screen.** Decided with the lead on 2026-09-24, not built:
-either leader can concede; a house can change sides mid-war for gold, the player's included;
-the war is shown on the Court tab, with a pointer on the Realm tab.
+**2.6c, the civil war on screen: built, not yet run in a game.** Decided with the lead on
+2026-09-24, and built the same day on `feature/phase-2.6c-civil-war-ui`. Either leader can
+concede. A house can change sides mid-war for gold, the player's included. The war is shown on
+the Court tab, with a pointer on the Realm tab, and the rising is kept off the Diplomacy tab.
+Verified so far: it builds clean and passes LoadProbe, nothing more. The lead plans one test
+run covering this and the merged Phase 1 UI together; the checklist is in design/07 §6, "What
+was built".
 [design/07 §6](design/07-internal-politics.md) has the rules and the price formula. The mockup
 is the "Civil war" row of the court canvas (https://claude.ai/artifact/1FrpG5in328WYfNi6sP8Pf).
 
