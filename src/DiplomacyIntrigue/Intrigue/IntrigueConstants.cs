@@ -330,9 +330,14 @@ namespace DiplomacyIntrigue.Intrigue
 
         /// <summary>
         /// Below this relation with the new head, a close runner-up will not serve and leaves.
-        /// UN-TUNED. How warm family relations run in a real campaign is not yet measured.
+        /// UN-TUNED, but no longer a blind guess. The first value was 10, and `diplomacy.heirs`
+        /// on `di_civilwar_test` (2026-09-23) showed **22 of ~70 houses** would divide at their
+        /// head's death. Most heirs sit at relation **0** with each other, which in Bannerlord
+        /// means "never interacted", not "dislikes". A threshold above zero counted
+        /// indifference as a feud. At -10 the same world gives about 6 houses (~8%) - a
+        /// division every year or two across the map, not one succession in three.
         /// </summary>
-        public const int ClanSuccessionDisputeRelation = 10;
+        public const int ClanSuccessionDisputeRelation = -10;
 
         /// <summary>Relation lost between the two heads when a house divides. UN-TUNED.</summary>
         public const int ClanSuccessionRelationPenalty = 20;

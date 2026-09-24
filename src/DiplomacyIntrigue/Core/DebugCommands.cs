@@ -1780,6 +1780,11 @@ namespace DiplomacyIntrigue.Core
             sb.AppendLine(dividing + " house(s) would divide at their head's death today. Thresholds: within "
                           + IntrigueConstants.ClanSuccessionContestMargin + " heir points, relation below "
                           + IntrigueConstants.ClanSuccessionDisputeRelation + ".");
+            // Measured on the first live deaths: vanilla adjusts every hero's relation with the
+            // new head during the succession itself (ChangeClanLeaderAction, before SetLeader),
+            // and in both cases it warmed them - Sevin -38 to -24, Patyr -48 to -12.
+            sb.AppendLine("Relations shown are today's. Vanilla moves them at the succession, so a"
+                          + " prediction near the threshold may not hold.");
             return sb.ToString();
         }
 

@@ -9,13 +9,13 @@ namespace DiplomacyIntrigue.Patches
     /// <summary>
     /// WHAT: while a hero's clan is a rebel in an internal war, <c>Hero.MapFaction</c> returns
     /// the war's rising - the same answer <see cref="Clan_MapFaction_Patch"/> gives for the
-    /// clan itself.
+    /// clan itself. The partner of that patch; neither is complete without the other.
     ///
     /// ALSO LOAD-BEARING FOR THE RISING'S SURVIVAL: vanilla's
     /// `ClanVariablesCampaignBehavior.OnSessionLaunched` destroys any kingdom whose
     /// `Leader.MapFaction` is not itself. The rising's leader is the claimant, whose clan is in
     /// the parent realm; only this postfix makes the check pass, so the index it reads is
-    /// rebuilt in `CoreBehavior.SyncData`, before session launch. The partner of that patch; neither is complete without the other.
+    /// rebuilt in `CoreBehavior.SyncData`, before session launch.
     ///
     /// WHY A SECOND PATCH: design 07 §1.3 expected one getter to move the whole engine. Reading
     /// the IL of every map-faction getter before writing the first one showed it does not:

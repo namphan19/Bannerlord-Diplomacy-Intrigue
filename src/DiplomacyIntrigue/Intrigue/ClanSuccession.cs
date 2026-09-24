@@ -24,13 +24,14 @@ namespace DiplomacyIntrigue.Intrigue
     /// lord's clan out of a hero (`Clan.CreateCompanionToLordClan`, minus the fief). Nothing new
     /// is saved: the cadet branch is an ordinary clan, and everything downstream already exists.
     ///
-    /// **The ruling house is the case that matters most, and needs nothing extra.** A runner-up
-    /// who splits from the ruling clan is now a clan leader and a child or sibling of the late
-    /// ruler, which is exactly who <see cref="SuccessionModel"/>'s blood claim admits. The next
-    /// daily succession watch counts them as a claimant, tallies the court, and makes them a
-    /// standing pretender if they hold 30% - after which the Pretenders bloc and the internal war
-    /// (2.6) follow by their own rules. A second claimant path here would be a second resolver
-    /// for the same question, which is the thing CLAUDE.md §3 forbids.
+    /// **The ruling house is the case that matters most.** A runner-up who splits from the
+    /// ruling clan is a rival for the throne. <see cref="SuccessionModel"/> still decides who
+    /// claims it and tallies the court - this file only notes who left the house at this
+    /// succession (<see cref="SuccessionModel.NoteBranchedHeir"/>), because the blood rule reads
+    /// house membership and the founder just gave theirs up. At 30% of the court they become a
+    /// standing pretender, and the Pretenders bloc and the internal war (2.6) follow by their own
+    /// rules. An earlier version said this path needed nothing extra, assuming a runner-up is
+    /// always the late ruler's child or sibling; the first live test disproved it.
     ///
     /// **The player's house is under the same rule.** Vanilla lets the player pick their heir
     /// rather than scoring one, so there the successor is a choice - and passing over an heir
@@ -86,7 +87,12 @@ namespace DiplomacyIntrigue.Intrigue
             }
 
             var comesOfAge = Campaign.Current.Models.AgeModel.HeroComesOfAge;
-            Hero maxSkillHero = null;
+
+            // Seeded with the dead head, exactly as `GetHeirApparents` seeds it (IL: `stloc` of
+            // `Clan.Leader` before the loop). The model compares each candidate's skills against
+            // this hero, so a null seed throws inside vanilla - the first version of this file
+            // did, and `diplomacy.heirs` caught it before a real death could.
+            var maxSkillHero = deadLeader;
             var points = new Dictionary<Hero, int>();
             for (var i = 0; i < clan.Heroes.Count; i++)
             {
@@ -94,7 +100,9 @@ namespace DiplomacyIntrigue.Intrigue
                 if (!IsEligible(hero, deadLeader, comesOfAge)) continue;
                 points[hero] = model.CalculateHeirSelectionPoint(hero, deadLeader, ref maxSkillHero);
             }
-            if (maxSkillHero != null && points.ContainsKey(maxSkillHero))
+            // The bonus goes to the most skilled heir only if that is not the dead head - also
+            // vanilla's own condition.
+            if (maxSkillHero != deadLeader && maxSkillHero != null && points.ContainsKey(maxSkillHero))
                 points[maxSkillHero] += model.HighestSkillPoint;
 
             foreach (var pair in points)
@@ -172,11 +180,17 @@ namespace DiplomacyIntrigue.Intrigue
         /// <summary>
         /// `OnClanLeaderChanged`. Only a death divides a house: a retirement is the old head's
         /// own choice of successor, and there is no one to have been passed over by it.
+        ///
+        /// "A death" is read from the death mark, not from `IsAlive`. `KillCharacterAction`
+        /// marks the hero, replaces the clan head, and only then makes the hero dead (IL order:
+        /// `AddDeathMark`, `ChangeClanLeaderAction`, `MakeDead`), so when this event arrives the
+        /// old head is still alive. The first version checked `IsAlive`, and the first real death
+        /// in a live test divided nothing without a word in the log.
         /// </summary>
         public static void OnClanLeaderChanged(ModState state, Hero oldLeader, Hero newLeader)
         {
             if (state == null || oldLeader == null || newLeader == null) return;
-            if (oldLeader.IsAlive) return;
+            if (oldLeader.IsAlive && oldLeader.DeathMark == KillCharacterAction.KillCharacterActionDetail.None) return;
 
             var clan = newLeader.Clan;
             if (clan == null || clan.IsEliminated || !clan.IsNoble || clan.IsMinorFaction) return;
@@ -234,10 +248,26 @@ namespace DiplomacyIntrigue.Intrigue
             cadet.IsNoble = true;
             cadet.AddRenown(parent.Renown * IntrigueConstants.ClanSuccessionCadetRenownShare, false);
 
+            // What the fief grant would have done. Vanilla computes a clan's mid-settlement when
+            // it gains a fortification, and every clan vanilla creates this way is handed one -
+            // so a landless cadet branch kept a null `FactionMidSettlement` until the next load.
+            // The first live test crashed on it: Southern Empire took a castle, the fief vote
+            // valued it for every clan at court, and `GeographicalAdvantageForFaction` read the
+            // cadet's null mid-settlement. With no fiefs, vanilla's own rule falls back to the
+            // home settlement.
+            cadet.CalculateMidSettlement();
+            cadet.UpdateCurrentStrength();
+
             CampaignEventDispatcher.Instance.OnClanCreated(cadet, false);
 
             ChangeRelationAction.ApplyRelationChangeBetweenHeroes(founder, a.Successor,
                 -IntrigueConstants.ClanSuccessionRelationPenalty, false);
+
+            // A split in the ruling house is a rival for the throne. The succession model decides
+            // who claims it; this only tells it who left the house at this succession, since the
+            // blood rule reads house membership and the founder no longer has it.
+            if (parent.Kingdom != null && parent.Kingdom.RulingClan == parent)
+                SuccessionModel.NoteBranchedHeir(parent.Kingdom, founder);
 
             BlocModel.Invalidate();
 
@@ -267,15 +297,24 @@ namespace DiplomacyIntrigue.Intrigue
         {
             var list = new List<Hero> { founder };
             var spouse = founder.Spouse;
-            if (spouse != null && spouse.IsAlive && spouse.Clan == parent) list.Add(spouse);
+            if (Living(spouse) && spouse.Clan == parent) list.Add(spouse);
 
             for (var i = 0; i < founder.Children.Count; i++)
             {
                 var child = founder.Children[i];
-                if (child != null && child.IsAlive && child.IsChild && child.Clan == parent) list.Add(child);
+                if (Living(child) && child.IsChild && child.Clan == parent) list.Add(child);
             }
             return list;
         }
+
+        /// <summary>
+        /// Alive and not on the way out. `IsAlive` alone is not enough here: this runs inside
+        /// `KillCharacterAction`, between the death mark and the death, so the head who just died
+        /// still reads as alive. The first live test moved a dead head into their widow's new
+        /// house for exactly that reason.
+        /// </summary>
+        private static bool Living(Hero hero)
+            => hero != null && hero.IsAlive && hero.DeathMark == KillCharacterAction.KillCharacterActionDetail.None;
 
         /// <summary>The parent house's own icon, so the cadet banner reads as a branch of it.</summary>
         private static int IconOf(Clan parent)

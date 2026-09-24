@@ -692,10 +692,12 @@ namespace DiplomacyIntrigue.Intrigue
         }
 
         /// <summary>
-        /// Rebels form no armies and join none in v1 (design 07 §3a): what vanilla's army code
-        /// makes of a rebel leading the parent kingdom's army is untested. An army led by a
-        /// rebel is disbanded; a rebel party in a loyalist army is sent out of it. The army
-        /// model keeps them apart afterwards.
+        /// Splits the realm's standing armies along the new line. An army that exists when the
+        /// war starts belongs to the realm (`Army.Kingdom`), so one led by a rebel is disbanded
+        /// rather than handed to the rising, and a rebel party in a loyalist army is sent out of
+        /// it. From then on each side raises its own - the AI raises an army under its party's
+        /// map faction, which for a rebel is the rising - and `ModArmyManagementModel` keeps
+        /// either side's call from reaching the other.
         /// </summary>
         private static void SeparateArmies(Kingdom kingdom, InternalWar war)
         {
@@ -1003,6 +1005,12 @@ namespace DiplomacyIntrigue.Intrigue
 
             try
             {
+                // The rising's armies go first. An army is the kingdom's (`Army.Kingdom`), and one
+                // left standing under a destroyed kingdom is a state vanilla never produces.
+                if (faction != null)
+                    foreach (var army in new List<Army>(faction.Armies))
+                        DisbandArmyAction.ApplyByUnknownReason(army);
+
                 SyncFaction(war, empty: true);
             }
             catch (Exception ex)

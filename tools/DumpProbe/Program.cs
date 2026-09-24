@@ -13,19 +13,24 @@ using Microsoft.Diagnostics.Runtime;
 //
 // Usage: dotnet run --project tools/DumpProbe -- [path-to.dmp]
 //        with no path, reads the newest Bannerlord dump in %LOCALAPPDATA%\CrashDumps.
+//        dotnet run --project tools/DumpProbe -- --pid <game pid>
+//        reads a live game instead. One sitting on its crash-report dialog still holds the
+//        exception on the faulting thread, and no dump exists until that dialog is closed.
+//        Read-only: the process is snapshotted, not debugged, and carries on as it was.
 
-var path = args.Length > 0 ? args[0] : NewestDump();
-if (path == null || !File.Exists(path))
+var livePid = args.Length > 1 && args[0] == "--pid" ? int.Parse(args[1]) : 0;
+var path = livePid != 0 ? null : (args.Length > 0 ? args[0] : NewestDump());
+if (livePid == 0 && (path == null || !File.Exists(path)))
 {
     Console.WriteLine("No dump found. Pass a path, or check %LOCALAPPDATA%\\CrashDumps.");
     return 1;
 }
-Console.WriteLine("Dump: " + path + "  (" + File.GetLastWriteTime(path) + ")");
+Console.WriteLine(livePid != 0 ? "Live process: " + livePid : "Dump: " + path + "  (" + File.GetLastWriteTime(path) + ")");
 
 // The game runs on .NET Framework 4.x; its DAC ships with Windows.
 const string Dac = @"C:\Windows\Microsoft.NET\Framework64\v4.0.30319\mscordacwks.dll";
 
-using var target = DataTarget.LoadDump(path);
+using var target = livePid != 0 ? DataTarget.AttachToProcess(livePid, suspend: false) : DataTarget.LoadDump(path);
 if (target.ClrVersions.Length == 0)
 {
     Console.WriteLine("No CLR in this dump - a purely native crash. Read rgl_log_errors_<pid>.txt instead.");
