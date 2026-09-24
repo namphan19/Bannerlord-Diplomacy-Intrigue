@@ -4,6 +4,17 @@ using TaleWorlds.CampaignSystem.Settlements;
 
 namespace DiplomacyIntrigue.Models
 {
+    /// <summary>One tickable line of a peace package, in the terms the model stores.</summary>
+    public enum PeaceTermKind
+    {
+        Captives,
+        Indemnity,
+        Tribute,
+        Land,
+        Dissolution,
+        Submission,
+    }
+
     /// <summary>
     /// A proposed peace settlement: who is conceding what.
     ///
@@ -15,6 +26,23 @@ namespace DiplomacyIntrigue.Models
     /// </summary>
     public sealed class PeaceTerms
     {
+        /// <summary>
+        /// Demand kinds that cannot share one package. Submission *is* the tribute (the oath
+        /// carries its own payment) and the top rung has two faces but only ever one at a
+        /// time, so ticking one of a pair must untick the other. The rule lives here rather
+        /// than in the negotiation screen so there is one answer to "what conflicts" for
+        /// every caller, UI or AI.
+        /// </summary>
+        public static bool AreExclusive(PeaceTermKind a, PeaceTermKind b)
+        {
+            if (a == b) return false;
+            var pair = (a == PeaceTermKind.Submission && b == PeaceTermKind.Tribute)
+                       || (a == PeaceTermKind.Tribute && b == PeaceTermKind.Submission)
+                       || (a == PeaceTermKind.Submission && b == PeaceTermKind.Dissolution)
+                       || (a == PeaceTermKind.Dissolution && b == PeaceTermKind.Submission);
+            return pair;
+        }
+
         /// <summary>The side making demands. For a white peace either party will do.</summary>
         public Kingdom Winner { get; }
 

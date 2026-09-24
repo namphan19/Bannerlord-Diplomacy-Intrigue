@@ -1463,6 +1463,123 @@ namespace DiplomacyIntrigue.Core
             }
         }
 
+        /// <summary>
+        /// Sets war score from the first kingdom's point of view, so the peace table can be
+        /// opened without fighting a war to a budget. Mirrors <c>set_smoothed_strength</c>:
+        /// test only, never save over a real campaign.
+        ///
+        /// The record keeps one raw figure from the aggressor's side and
+        /// <see cref="WarRecord.ScoreFor"/> negates it for the defender, so the delta is
+        /// flipped when the first kingdom defends - without that, asking +90 for a
+        /// defender set it to -90 (the first live pass hit exactly that).
+        /// Usage: diplomacy.set_war_score Khuzait | Northern Empire | 50
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("set_war_score", "diplomacy")]
+        public static string SetWarScore(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var parts = SplitOnPipe(args);
+            if (parts.Count < 3 || !float.TryParse(parts[2], System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out var score))
+                return "Usage: diplomacy.set_war_score <kingdom> | <kingdom> | <score for the first>";
+
+            var a = FindKingdom(parts[0]);
+            var b = FindKingdom(parts[1]);
+            if (a == null || b == null) return "Kingdom not found.";
+
+            var war = state.OngoingWarBetween(a, b);
+            if (war == null) return a.Name + " and " + b.Name + " are not at war.";
+
+            var delta = score - war.ScoreFor(a);
+            war.AddWarScore(a == war.Aggressor ? delta : -delta);
+            return a.Name + " war score set to " + war.ScoreFor(a).ToString("0.0")
+                   + " (" + war.Aggressor.Name + " is the aggressor, raw "
+                   + war.WarScore.ToString("0.0") + "). Test only - do not save.";
+        }
+
+        /// <summary>
+        /// Opens the peace table for one side of a war through the real entry point
+        /// (<see cref="UI.DiplomacyMenu.ShowPeace"/>), for verifying the screen without
+        /// hunting a live budget: the demand face when that side is ahead, the offer face
+        /// when it is behind.
+        /// Usage: diplomacy.test_open_peace Khuzait | Northern Empire
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_open_peace", "diplomacy")]
+        public static string TestOpenPeace(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var parts = SplitOnPipe(args);
+            if (parts.Count < 2) return "Usage: diplomacy.test_open_peace <us> | <them>";
+
+            var us = FindKingdom(parts[0]);
+            var them = FindKingdom(parts[1]);
+            if (us == null || them == null) return "Kingdom not found.";
+
+            try
+            {
+                UI.DiplomacyMenu.ShowPeace(state, us, them);
+                return "Opened the peace path for " + us.Name + " vs " + them.Name + ".";
+            }
+            catch (Exception ex)
+            {
+                return "Could not open the peace table: " + ex.Message;
+            }
+        }
+
+        /// <summary>
+        /// Opens the incoming face of the peace table - an AI court's offer to <c>us</c> -
+        /// with the callbacks disarmed, so the screen can be read and its buttons pressed
+        /// without signing anything.
+        ///
+        /// The package is oriented the way the AI's own two paths orient it, decided by
+        /// the war score: an offerer that is behind concedes (<c>TryBuyPeace</c> - we are
+        /// the winner, and our captives come home), one that is ahead collects
+        /// (<c>TryCollectPeace</c> - they are the winner, and we free theirs). The first
+        /// version always made the offerer the winner, which for a losing offerer built a
+        /// package no live path ever produces.
+        /// Usage: diplomacy.test_open_incoming Northern Empire | Khuzait
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_open_incoming", "diplomacy")]
+        public static string TestOpenIncoming(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var parts = SplitOnPipe(args);
+            if (parts.Count < 2) return "Usage: diplomacy.test_open_incoming <offerer> | <us>";
+
+            var offerer = FindKingdom(parts[0]);
+            var us = FindKingdom(parts[1]);
+            if (offerer == null || us == null) return "Kingdom not found.";
+
+            var war = state.OngoingWarBetween(offerer, us);
+            if (war == null) return offerer.Name + " and " + us.Name + " are not at war.";
+
+            try
+            {
+                var offererAhead = war.ScoreFor(offerer) > 0f;
+                var winner = offererAhead ? offerer : us;
+                var loser = offererAhead ? us : offerer;
+                var terms = new PeaceTerms(winner, loser) { ReleasePrisoners = true };
+                if (!PeaceTable.IsDemandable(state, war, terms, out _))
+                    terms = new PeaceTerms(winner, loser);
+                UI.Negotiation.PeaceTablePopup.ShowIncoming(state, war, us, offerer, terms,
+                    () => { }, () => { });
+                return "Opened " + offerer.Name + "'s offer as the "
+                       + (offererAhead ? "winner collecting" : "loser conceding")
+                       + " (test callbacks do nothing)."
+                       + (terms.IsWhitePeace ? " White peace." : " Package: " + terms + ".");
+            }
+            catch (Exception ex)
+            {
+                return "Could not open the incoming table: " + ex.Message;
+            }
+        }
+
         [CommandLineFunctionality.CommandLineArgumentFunction("strength", "diplomacy")]
         public static string StrengthCommand(List<string> args)
         {

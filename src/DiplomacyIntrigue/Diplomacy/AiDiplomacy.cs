@@ -288,9 +288,71 @@ namespace DiplomacyIntrigue.Diplomacy
         /// decided which package was worth sending; the player's half of it is then asked
         /// rather than computed, so a refusal is a real choice with a cost - the war goes
         /// on and the refusal is remembered - not a rounding of the formula.
+        ///
+        /// The peace table screen (the mockup's board 3b) shows the package read-only;
+        /// if that screen cannot come up the plain inquiry below still asks the same
+        /// question, because a lost offer is a war nobody chose.
         /// </summary>
         private static bool OfferPeaceToPlayer(ModState state, WarRecord war, Kingdom offerer,
             Kingdom player, PeaceTerms terms)
+        {
+            try
+            {
+                UI.Negotiation.PeaceTablePopup.ShowIncoming(state, war, player, offerer, terms,
+                    () => AcceptPeaceOffer(state, war, offerer, player, terms),
+                    () => RefusePeaceOffer(state, war, offerer, player, terms));
+            }
+            catch (System.Exception ex)
+            {
+                Log.Error("AI", "The peace table could not open; falling back to the inquiry.", ex);
+                OfferPeaceToPlayerInquiry(state, war, offerer, player, terms);
+            }
+
+            // The week's move was spent putting the offer on the table: the only
+            // signature left is the player's.
+            return true;
+        }
+
+        /// <summary>Accept half of the offer: re-checked, then applied.</summary>
+        private static void AcceptPeaceOffer(ModState state, WarRecord war, Kingdom offerer,
+            Kingdom player, PeaceTerms terms)
+        {
+            // Re-asked rather than trusted: the table sat open while the rest of the
+            // week's evaluation ran, so both signatures are checked again before
+            // anything is signed in our name.
+            if (!PeaceTable.BothWouldSign(state, war, terms, out var lapsed))
+            {
+                Log.Notify("The moment has passed - " + lapsed, Colors.Red);
+                return;
+            }
+
+            if (!PeaceTable.Apply(state, war, terms, out var failed))
+            {
+                Log.Notify("Could not make peace: " + failed, Colors.Red);
+                return;
+            }
+
+            Log.Notify("Peace signed with " + offerer.Name + ": " + terms + ".",
+                Colors.Green);
+            Log.Info("AI", "The player accepted " + offerer.Name
+                           + "'s peace offer: " + terms + ".");
+        }
+
+        /// <summary>Refuse half of the offer: the war goes on and the answer is remembered.</summary>
+        private static void RefusePeaceOffer(ModState state, WarRecord war, Kingdom offerer,
+            Kingdom player, PeaceTerms terms)
+        {
+            Log.Info("AI", "The player refused " + offerer.Name
+                           + "'s peace offer (" + terms + ").");
+            TrustRegistry.OnOfferRefused(state, offerer, player,
+                "refused our peace offer");
+            Log.Notify("We refused " + offerer.Name
+                       + "'s terms. The war continues.", Colors.Red);
+        }
+
+        /// <summary>The pre-screen inquiry, kept as the fallback path.</summary>
+        private static void OfferPeaceToPlayerInquiry(ModState state, WarRecord war,
+            Kingdom offerer, Kingdom player, PeaceTerms terms)
         {
             var weAreLoser = terms.Loser == player;
 
@@ -370,10 +432,6 @@ namespace DiplomacyIntrigue.Diplomacy
             {
                 Log.Error("AI", "Could not show the peace offer.", ex);
             }
-
-            // The week's move was spent putting the offer on the table: the only
-            // signature left is the player's.
-            return true;
         }
 
         /// <summary>

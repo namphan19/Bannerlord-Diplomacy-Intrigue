@@ -16,8 +16,8 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
     /// Standing, our wars with their scores, our vassals with the state of each bond,
     /// the other spheres on the map, our claims and our agreements - the same
     /// information the Ctrl+D menu walks through one question at a time, laid out the
-    /// way the design proposal asked for it. The tab lives inside the game's own
-    /// Kingdom screen as a sixth header button; see
+    /// way the design proposal asked for it (docs/ui-proposal/2-realm-tab.dc.html).
+    /// The tab lives inside the game's own Kingdom screen as a sixth header button; see
     /// <see cref="KingdomManagementVMMixin"/> for how it shares the panel area with the
     /// five vanilla categories.
     ///
@@ -34,7 +34,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         internal static readonly Color NegativeColor = Color.ConvertStringToColor("#E08070FF");
         internal static readonly Color NeutralColor = Color.ConvertStringToColor("#E0CFA8FF");
         internal static readonly Color MutedColor = Color.ConvertStringToColor("#A89878FF");
-        internal static readonly Color GoldColor = Color.ConvertStringToColor("#E6C87FFF");
+        internal static readonly Color GoldColor = Color.ConvertStringToColor("#D9A441FF");
 
         /// <summary>Hides the five vanilla categories; supplied by the management mixin.</summary>
         private readonly Action _onShow;
@@ -44,21 +44,30 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         private string _tabText = "Realm";
         private string _standingTitle = string.Empty;
         private string _standingDetail = string.Empty;
+        private string _standingNote = string.Empty;
         private string _patronLine = string.Empty;
         private string _sphereStrengthText = string.Empty;
         private string _dominanceText = string.Empty;
         private string _ambitionText = string.Empty;
         private string _greedText = string.Empty;
-        private Color _standingColor = GoldColor;
-        private Color _greedColor = MutedColor;
+        private Color _standingColor;
+        private Color _greedColor;
+        private string _warsCountText = string.Empty;
+        private string _vassalNote = string.Empty;
+        private string _sphereGapNote = string.Empty;
+        private string _claimsCountText = string.Empty;
+        private string _tributeText = string.Empty;
         private MBBindingList<DiRealmWarVM> _wars = new MBBindingList<DiRealmWarVM>();
         private MBBindingList<DiRealmVassalVM> _vassals = new MBBindingList<DiRealmVassalVM>();
         private MBBindingList<DiRealmSphereVM> _spheres = new MBBindingList<DiRealmSphereVM>();
-        private MBBindingList<DiRealmClaimVM> _claims = new MBBindingList<DiRealmClaimVM>();
+        private MBBindingList<DiRealmClaimGroupVM> _claimGroups = new MBBindingList<DiRealmClaimGroupVM>();
+        private MBBindingList<DiRealmFabricationVM> _fabrications = new MBBindingList<DiRealmFabricationVM>();
         private MBBindingList<DiRealmAgreementVM> _agreements = new MBBindingList<DiRealmAgreementVM>();
 
         public DiRealmVM(Action onShow)
         {
+            _standingColor = GoldColor;
+            _greedColor = MutedColor;
             _onShow = onShow;
             RefreshTabGate();
             Rebuild();
@@ -118,6 +127,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             }
         }
 
+        /// <summary>How the realm answers to us, or we to it - the mockup's dash line.</summary>
         [DataSourceProperty]
         public string StandingDetail
         {
@@ -129,6 +139,21 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 OnPropertyChangedWithValue(value, nameof(StandingDetail));
             }
         }
+
+        /// <summary>"A hegemon is derived, never stored." - only while we are one.</summary>
+        [DataSourceProperty]
+        public string StandingNote
+        {
+            get => _standingNote;
+            set
+            {
+                if (value == _standingNote) return;
+                _standingNote = value;
+                OnPropertyChangedWithValue(value, nameof(StandingNote));
+            }
+        }
+
+        [DataSourceProperty] public bool HasStandingNote => !string.IsNullOrEmpty(_standingNote);
 
         [DataSourceProperty]
         public string SphereStrengthText
@@ -205,6 +230,18 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         [DataSourceProperty] public bool HasPatronLine => !string.IsNullOrEmpty(_patronLine);
 
         [DataSourceProperty]
+        public string WarsCountText
+        {
+            get => _warsCountText;
+            set
+            {
+                if (value == _warsCountText) return;
+                _warsCountText = value;
+                OnPropertyChangedWithValue(value, nameof(WarsCountText));
+            }
+        }
+
+        [DataSourceProperty]
         public MBBindingList<DiRealmWarVM> Wars
         {
             get => _wars;
@@ -232,6 +269,21 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
         [DataSourceProperty] public bool HasVassals => _vassals.Count > 0;
 
+        /// <summary>The mockup's line under the sphere card: what protection costs.</summary>
+        [DataSourceProperty]
+        public string VassalNote
+        {
+            get => _vassalNote;
+            set
+            {
+                if (value == _vassalNote) return;
+                _vassalNote = value;
+                OnPropertyChangedWithValue(value, nameof(VassalNote));
+            }
+        }
+
+        [DataSourceProperty] public bool HasVassalNote => !string.IsNullOrEmpty(_vassalNote);
+
         [DataSourceProperty]
         public MBBindingList<DiRealmSphereVM> Spheres
         {
@@ -246,19 +298,60 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
         [DataSourceProperty] public bool HasSpheres => _spheres.Count > 0;
 
+        /// <summary>How the biggest rival sphere compares with ours.</summary>
         [DataSourceProperty]
-        public MBBindingList<DiRealmClaimVM> Claims
+        public string SphereGapNote
         {
-            get => _claims;
+            get => _sphereGapNote;
             set
             {
-                if (value == _claims) return;
-                _claims = value;
-                OnPropertyChangedWithValue(value, nameof(Claims));
+                if (value == _sphereGapNote) return;
+                _sphereGapNote = value;
+                OnPropertyChangedWithValue(value, nameof(SphereGapNote));
             }
         }
 
-        [DataSourceProperty] public bool HasClaims => _claims.Count > 0;
+        [DataSourceProperty] public bool HasSphereGapNote => !string.IsNullOrEmpty(_sphereGapNote);
+
+        [DataSourceProperty]
+        public string ClaimsCountText
+        {
+            get => _claimsCountText;
+            set
+            {
+                if (value == _claimsCountText) return;
+                _claimsCountText = value;
+                OnPropertyChangedWithValue(value, nameof(ClaimsCountText));
+            }
+        }
+
+        [DataSourceProperty]
+        public MBBindingList<DiRealmClaimGroupVM> ClaimGroups
+        {
+            get => _claimGroups;
+            set
+            {
+                if (value == _claimGroups) return;
+                _claimGroups = value;
+                OnPropertyChangedWithValue(value, nameof(ClaimGroups));
+            }
+        }
+
+        [DataSourceProperty] public bool HasClaims => _claimGroups.Count > 0;
+
+        [DataSourceProperty]
+        public MBBindingList<DiRealmFabricationVM> Fabrications
+        {
+            get => _fabrications;
+            set
+            {
+                if (value == _fabrications) return;
+                _fabrications = value;
+                OnPropertyChangedWithValue(value, nameof(Fabrications));
+            }
+        }
+
+        [DataSourceProperty] public bool HasFabrications => _fabrications.Count > 0;
 
         [DataSourceProperty]
         public MBBindingList<DiRealmAgreementVM> Agreements
@@ -273,6 +366,21 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         }
 
         [DataSourceProperty] public bool HasAgreements => _agreements.Count > 0;
+
+        /// <summary>What the standing pacts would move per period, in and out.</summary>
+        [DataSourceProperty]
+        public string TributeText
+        {
+            get => _tributeText;
+            set
+            {
+                if (value == _tributeText) return;
+                _tributeText = value;
+                OnPropertyChangedWithValue(value, nameof(TributeText));
+            }
+        }
+
+        [DataSourceProperty] public bool HasTribute => !string.IsNullOrEmpty(_tributeText);
 
         // ----- commands --------------------------------------------------------
 
@@ -330,16 +438,23 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             StandingTitle = "No realm";
             StandingColor = MutedColor;
             StandingDetail = string.Empty;
+            StandingNote = string.Empty;
             SphereStrengthText = string.Empty;
             DominanceText = string.Empty;
             AmbitionText = string.Empty;
             GreedText = string.Empty;
             GreedColor = MutedColor;
             PatronLine = string.Empty;
+            WarsCountText = string.Empty;
+            VassalNote = string.Empty;
+            SphereGapNote = string.Empty;
+            ClaimsCountText = string.Empty;
+            TributeText = string.Empty;
             var wars = new MBBindingList<DiRealmWarVM>();
             var vassals = new MBBindingList<DiRealmVassalVM>();
             var spheres = new MBBindingList<DiRealmSphereVM>();
-            var claims = new MBBindingList<DiRealmClaimVM>();
+            var groups = new MBBindingList<DiRealmClaimGroupVM>();
+            var fabrications = new MBBindingList<DiRealmFabricationVM>();
             var agreements = new MBBindingList<DiRealmAgreementVM>();
 
             var state = CoreBehavior.State;
@@ -347,18 +462,53 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             if (!SubModule.Healthy || !Settings.Current.EnableDiplomacy || state == null || us == null)
             {
                 Wars = wars; Vassals = vassals; Spheres = spheres;
-                Claims = claims; Agreements = agreements;
+                ClaimGroups = groups; Fabrications = fabrications; Agreements = agreements;
                 return;
             }
 
+            ComposeStanding(state, us);
+            ComposeWars(state, us, wars);
+            ComposeVassals(state, us, vassals);
+            ComposeSpheres(state, us, spheres);
+            ComposeClaims(state, us, groups, fabrications);
+            ComposeAgreements(state, us, agreements);
+
+            Wars = wars; Vassals = vassals; Spheres = spheres;
+            ClaimGroups = groups; Fabrications = fabrications; Agreements = agreements;
+        }
+
+        // ----- the standing strip ---------------------------------------------
+
+        private void ComposeStanding(ModState state, Kingdom us)
+        {
             var patron = Hegemony.PatronOf(state, us);
             var vassalCount = Hegemony.VassalCount(state, us);
-            StandingTitle = patron != null ? "Vassal of " + patron.Name
-                : vassalCount > 0 ? "Hegemon over " + vassalCount + " kingdom(s)"
-                : "Independent";
-            StandingColor = patron != null ? NegativeColor : vassalCount > 0 ? GoldColor : MutedColor;
+
+            if (patron != null)
+            {
+                StandingTitle = "Vassal of " + patron.Name;
+                StandingColor = NegativeColor;
+                StandingDetail = "one kingdom answers to " + patron.Name;
+            }
+            else if (vassalCount > 0)
+            {
+                StandingTitle = "Hegemon";
+                StandingColor = GoldColor;
+                StandingDetail = vassalCount == 1
+                    ? "one kingdom answers to you"
+                    : vassalCount + " kingdoms answer to you";
+                // The mockup's right-hand note. A hegemon is derived from its vassalage
+                // links, so the note is the truth about the title rather than flavour.
+                StandingNote = "A hegemon is derived, never stored.";
+            }
+            else
+            {
+                StandingTitle = "Independent";
+                StandingColor = MutedColor;
+                StandingDetail = "no kingdom answers to you, and you answer to none";
+            }
+
             var sphereHead = Hegemony.SphereHead(state, us);
-            StandingDetail = Power.Describe(state, us);
             SphereStrengthText = "sphere " + Hegemony.SphereStrength(state, sphereHead).ToString("0");
             var dominance = Power.Dominance(us);
             var ambition = Power.Ambition(us);
@@ -380,29 +530,53 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 if (ourLink.DefianceMarks > 0)
                     PatronLine += "   -   we have defied them " + ourLink.DefianceMarks + " time(s)";
             }
+        }
 
+        // ----- the wars strip --------------------------------------------------
+
+        private void ComposeWars(ModState state, Kingdom us, MBBindingList<DiRealmWarVM> wars)
+        {
             foreach (var war in state.OngoingWarsOf(us))
             {
                 var enemy = war.Other(us);
                 if (enemy == null) continue;
                 var target = enemy;
                 var score = war.ScoreFor(us);
+                var budget = PeaceTable.BudgetFor(war, us);
+                var allowance = PeaceTable.DescribeAllowance(state, war, us);
+                // The mockup's button label and sub differ by what the war has earned, and
+                // for whom: our own table when it earned us something, the loser's table
+                // when it earned them something (ShowPeace opens that one too), a white
+                // peace only when neither side has anything to ask.
+                var theirBudget = PeaceTable.BudgetFor(war, enemy);
+                var label = DiplomacyMenu.PeaceButtonLabel(budget, theirBudget);
+                var sub = DiplomacyMenu.PeaceButtonSub(budget, theirBudget, enemy);
                 wars.Add(new DiRealmWarVM(
-                    "vs " + enemy.Name,
+                    enemy.Name.ToString(),
                     war.DaysElapsed.ToString("0") + " days"
                         + (war.Justification == CasusBelliType.None
                             ? ", no claim on record"
                             : " over " + war.Justification)
                         + (war.IsObligationWar && war.CalledBy != null
                             ? "   -   called in by " + war.CalledBy.Name : ""),
-                    "our exhaustion " + war.ExhaustionOf(us).ToString("0.0"),
-                    "they are " + ExhaustionBands.Describe(war.ExhaustionOf(enemy)),
+                    "our exhaustion " + war.ExhaustionOf(us).ToString("0.0")
+                        + "   -   their condition "
+                        + ExhaustionBands.Condition(war.ExhaustionOf(enemy)),
                     (score >= 0f ? "+" : "") + score.ToString("0"),
                     score >= 0f ? PositiveColor : NegativeColor,
                     Color.FromUint(enemy.Color),
+                    label,
+                    sub,
+                    "Opens the peace table: what this war has earned, and what they will sign. " + allowance,
                     () => DiplomacyMenu.ShowPeace(state, us, target)));
             }
+            WarsCountText = wars.Count.ToString("0");
+        }
 
+        // ----- column 1: our sphere --------------------------------------------
+
+        private void ComposeVassals(ModState state, Kingdom us, MBBindingList<DiRealmVassalVM> vassals)
+        {
             var links = new List<Treaty>();
             Hegemony.CollectVassalages(state, us, links);
             for (var i = 0; i < links.Count; i++)
@@ -417,20 +591,70 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                     subordinate != null ? Color.FromUint(subordinate.Color) : GoldColor,
                     (int)hold,
                     (int)(threshold < 0f ? 0f : threshold > 100f ? 100f : threshold),
-                    "hold " + hold.ToString("0"),
-                    DriftText(hold, target),
-                    target > hold + 1f ? PositiveColor : target < hold - 1f ? NegativeColor : MutedColor,
+                    (int)(target < 0f ? 0f : target > 100f ? 100f : target),
+                    "hold " + hold.ToString("0") + "  ->  " + DriftWord(hold, target)
+                        + " " + target.ToString("0"),
                     "revolts below " + threshold.ToString("0"),
-                    link.DefianceMarks > 0 ? "defied x" + link.DefianceMarks : string.Empty,
+                    link.DefianceMarks,
                     link.TributeAmount + " per period",
-                    TermLeft(link)));
+                    "renews in " + TermLeft(link),
+                    BuildTermChips(state, link)));
             }
 
-            // A rival's bond is described, never numbered: the exact hold is the sort
-            // of thing Phase 3 espionage is meant to sell.
+            if (vassals.Count > 0)
+            {
+                var first = links[0].SubordinateParty;
+                VassalNote = "Protection is the half of the bargain you owe: answer "
+                             + first.Name + " when it is attacked, or watch this bar fall.";
+            }
+        }
+        /// <summary>
+        /// The hold terms as chips, signed the way the hold formula sums them - the same
+        /// numbers <see cref="Hegemony.HoldTarget"/> writes into its explanation.
+        /// </summary>
+        private static MBBindingList<DiRealmTermVM> BuildTermChips(ModState state, Treaty link)
+        {
+            var chips = new MBBindingList<DiRealmTermVM>();
+            var t = Hegemony.HoldTermsOf(state, link);
+            AddChip(chips, "protection", t.Protection);
+            AddChip(chips, "fear", t.Fear);
+            AddChip(chips, "trust", t.Trust);
+            AddChip(chips, "tribute", -t.Tribute);
+            AddChip(chips, "wars", -t.Wars);
+            AddChip(chips, "rival", -t.Rival);
+            AddChip(chips, "culture", -t.Culture);
+            AddChip(chips, "dread", -t.Dread);
+            return chips;
+        }
+
+        private static void AddChip(MBBindingList<DiRealmTermVM> chips, string name, float value)
+        {
+            var rounded = (float)Math.Round(value, 1);
+            chips.Add(new DiRealmTermVM(
+                name + " " + (rounded > 0f ? "+" : "") + rounded.ToString("0.0"),
+                rounded > 0f ? PositiveColor : rounded < 0f ? NegativeColor : MutedColor));
+        }
+
+        private static string DriftWord(float hold, float target)
+        {
+            if (target > hold + 1f) return "drifting up to";
+            if (target < hold - 1f) return "drifting down to";
+            return "steady at";
+        }
+
+        private void ComposeSpheres(ModState state, Kingdom us, MBBindingList<DiRealmSphereVM> spheres)
+        {
+            // Rival spheres are shown as the mockup shows them - who answers to whom and
+            // how strong the sphere is. A rival's bond is described in words, never
+            // numbered: the exact hold is what Phase 3's espionage sells.
+            DiRealmSphereVM ours = null;
+            DiRealmSphereVM biggestRival = null;
+            var biggestRivalStrength = 0f;
+            var ourStrength = Hegemony.SphereStrength(state, Hegemony.SphereHead(state, us));
+
             foreach (var other in Kingdom.All)
             {
-                if (other == us || !other.IsRealm() || !Hegemony.IsHegemon(state, other)) continue;
+                if (!other.IsRealm() || !Hegemony.IsHegemon(state, other)) continue;
                 var held = new List<Treaty>();
                 Hegemony.CollectVassalages(state, other, held);
                 if (held.Count == 0) continue;
@@ -439,18 +663,47 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 for (var i = 0; i < held.Count; i++)
                     names.Add(held[i].SubordinateParty.Name + " (" + DiplomacyMenu.HoldMeaning(state, held[i]) + ")");
 
-                spheres.Add(new DiRealmSphereVM(
+                var strength = Hegemony.SphereStrength(state, other);
+                var row = new DiRealmSphereVM(
                     Color.FromUint(other.Color),
-                    other.Name + " holds " + held.Count + ":",
+                    other == us ? other.Name + "  -  us" : other.Name.ToString(),
                     string.Join(", ", names.ToArray()),
-                    "sphere " + Hegemony.SphereStrength(state, other).ToString("0")));
+                    strength.ToString("0"));
+                spheres.Add(row);
+
+                if (other == us) ours = row;
+                else if (strength > biggestRivalStrength)
+                {
+                    biggestRivalStrength = strength;
+                    biggestRival = row;
+                }
             }
 
+            // The mockup's gap line: how the biggest rival sphere reads against ours.
+            if (biggestRival != null)
+            {
+                var gap = Math.Abs(biggestRivalStrength - ourStrength);
+                SphereGapNote = biggestRivalStrength >= ourStrength
+                    ? biggestRival.HeadText + "'s sphere outweighs yours by " + gap.ToString("0")
+                      + ". Every court that belongs to neither reads that gap when it decides whom to pact with."
+                    : "Your sphere outweighs " + biggestRival.HeadText + " by " + gap.ToString("0")
+                      + ". Every court that belongs to neither reads that gap when it decides whom to pact with.";
+            }
+        }
+
+        // ----- column 2: our claims --------------------------------------------
+
+        private void ComposeClaims(ModState state, Kingdom us,
+            MBBindingList<DiRealmClaimGroupVM> groups, MBBindingList<DiRealmFabricationVM> fabrications)
+        {
+            var live = 0;
             foreach (var other in Kingdom.All)
             {
                 if (other == us || !other.IsRealm()) continue;
+                var rows = new MBBindingList<DiRealmClaimVM>();
                 foreach (var claim in ClaimRegistry.LiveClaims(state, us, other))
                 {
+                    live++;
                     var footer = claim.AllowsFiefDemands ? "entitles land" : string.Empty;
                     if (claim.ExpiresOn != CampaignTime.Never)
                     {
@@ -458,18 +711,27 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                         var expiry = "ages out in " + Math.Max(0, (int)daysLeft) + " days";
                         footer = footer.Length > 0 ? footer + "   -   " + expiry : expiry;
                     }
-                    claims.Add(new DiRealmClaimVM(
-                        other.Name.ToString(),
-                        Color.FromUint(other.Color),
+                    // A broken-treaty claim carries its own story: the mockup's line under
+                    // the claim name, with the year the pact died from the claim's record.
+                    var note = claim.Type == CasusBelliType.BrokenTreaty
+                        ? "They tore up a pact in " + claim.AcquiredOn.GetYear
+                          + ". A war on this needs no excuse."
+                        : string.Empty;
+                    rows.Add(new DiRealmClaimVM(
                         claim.Type.ToString(),
                         claim.Legitimacy.ToString("0.00"),
                         claim.Legitimacy >= 0.5f ? PositiveColor : NegativeColor,
                         claim.AllowsFiefDemands,
-                        false,
-                        0,
-                        footer));
+                        footer,
+                        note));
                 }
+                if (rows.Count == 0) continue;
+                groups.Add(new DiRealmClaimGroupVM(
+                    other.Name.ToString(),
+                    Color.FromUint(other.Color),
+                    rows));
             }
+
             for (var i = 0; i < state.Fabrications.Count; i++)
             {
                 var f = state.Fabrications[i];
@@ -478,17 +740,23 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 if (progress < 0) progress = 0;
                 if (progress > 100) progress = 100;
                 var targetKingdom = f.TargetKingdom;
-                claims.Add(new DiRealmClaimVM(
+                fabrications.Add(new DiRealmFabricationVM(
                     targetKingdom == null ? "?" : targetKingdom.Name.ToString(),
                     targetKingdom != null ? Color.FromUint(targetKingdom.Color) : MutedColor,
-                    "fabricating" + (f.Target == null ? "" : " over " + f.Target.Name),
-                    string.Empty,
-                    MutedColor,
-                    false,
-                    true,
-                    progress,
-                    f.DaysRemaining.ToString("0") + " days left"));
+                    f.DaysRemaining.ToString("0") + " days left",
+                    progress));
             }
+
+            ClaimsCountText = live + " live   -   " + fabrications.Count + " being fabricated";
+        }
+
+        // ----- column 3: our agreements ----------------------------------------
+
+        private void ComposeAgreements(ModState state, Kingdom us,
+            MBBindingList<DiRealmAgreementVM> agreements)
+        {
+            var tributeIn = 0;
+            var tributeOut = 0;
 
             foreach (var treaty in state.ActiveTreatiesOf(us))
             {
@@ -503,22 +771,36 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                     TermLeft(treaty),
                     daysLeft >= 0f && daysLeft < 60f ? NegativeColor : MutedColor,
                     AgreementDetail(treaty, us, other)));
+
+                if (treaty.TributeAmount > 0 && treaty.TributePayer != null)
+                {
+                    if (treaty.TributePayer == us) tributeOut += treaty.TributeAmount;
+                    else tributeIn += treaty.TributeAmount;
+                }
             }
 
-            Wars = wars; Vassals = vassals; Spheres = spheres;
-            Claims = claims; Agreements = agreements;
-        }
-
-        private static string DriftText(float hold, float target)
-        {
-            if (target > hold + 1f) return "rising to " + target.ToString("0");
-            if (target < hold - 1f) return "falling to " + target.ToString("0");
-            return "steady";
+            // The mockup's tribute card: what the standing pacts move per period. The
+            // "last paid" day is a payment-history question this card does not answer,
+            // so it is left out rather than guessed.
+            if (tributeIn > 0 || tributeOut > 0)
+                TributeText = "+" + tributeIn.ToString("0") + " in   /   " + tributeOut.ToString("0") + " out";
         }
 
         private static string TermLeft(Treaty treaty)
         {
-            return treaty.ExpiresOn == CampaignTime.Never ? "open-ended" : "term ends " + treaty.ExpiresOn;
+            return treaty.ExpiresOn == CampaignTime.Never ? "open-ended" : Duration(treaty);
+        }
+
+        /// <summary>Compact duration the mockup uses: "1y 40d", "6y", "45d".</summary>
+        private static string Duration(Treaty treaty)
+        {
+            var days = (float)(treaty.ExpiresOn - CampaignTime.Now).ToDays;
+            if (days <= 0f) return "expired";
+            // The campaign year is 84 days (four seasons of 21).
+            var years = (int)(days / 84f);
+            var rem = (int)(days - years * 84f);
+            if (years <= 0f) return rem + "d";
+            return rem > 0 ? years + "y " + rem + "d" : years + "y";
         }
 
         private static string TreatyLabel(TreatyType type)
@@ -564,28 +846,31 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
     {
         private readonly Action _negotiate;
 
-        public DiRealmWarVM(string name, string detail, string ourText, string theirText,
-            string scoreText, Color scoreColor, Color accentColor, Action negotiate)
+        public DiRealmWarVM(string name, string detail, string conditionText,
+            string scoreText, Color scoreColor, Color accentColor,
+            string buttonLabel, string buttonExplanation, string buttonHint, Action negotiate)
         {
             Name = name;
             Detail = detail;
-            OurText = ourText;
-            TheirText = theirText;
-            ConditionText = ourText + "   -   " + theirText;
+            ConditionText = conditionText;
             ScoreText = scoreText;
             ScoreColor = scoreColor;
             AccentColor = accentColor;
+            ButtonLabel = buttonLabel;
+            ButtonExplanation = buttonExplanation;
+            ButtonHint = new TaleWorlds.Core.ViewModelCollection.Information.BasicTooltipViewModel(() => buttonHint);
             _negotiate = negotiate;
         }
 
         [DataSourceProperty] public string Name { get; }
         [DataSourceProperty] public string Detail { get; }
-        [DataSourceProperty] public string OurText { get; }
-        [DataSourceProperty] public string TheirText { get; }
         [DataSourceProperty] public string ConditionText { get; }
         [DataSourceProperty] public string ScoreText { get; }
         [DataSourceProperty] public Color ScoreColor { get; }
         [DataSourceProperty] public Color AccentColor { get; }
+        [DataSourceProperty] public string ButtonLabel { get; }
+        [DataSourceProperty] public string ButtonExplanation { get; }
+        [DataSourceProperty] public TaleWorlds.Core.ViewModelCollection.Information.BasicTooltipViewModel ButtonHint { get; }
 
         public void ExecuteNegotiate()
         {
@@ -600,30 +885,56 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         }
     }
 
+    /// <summary>One chip of a hold term: its signed contribution and its meaning colour.</summary>
+    internal sealed class DiRealmTermVM : ViewModel
+    {
+        public DiRealmTermVM(string text, Color color)
+        {
+            Text = text;
+            Color = color;
+        }
+
+        [DataSourceProperty] public string Text { get; }
+        [DataSourceProperty] public Color Color { get; }
+    }
+
     /// <summary>
-    /// One of our vassals: the hold figure as a bar and a number, where it is drifting,
-    /// the line it revolts under, its defiance marks, its tribute and its term.
+    /// One of our vassals: the hold figure as a bar with its drift mark and revolt line,
+    /// the terms pulling it, its defiance marks, its tribute and its renewal.
     /// </summary>
     internal sealed class DiRealmVassalVM : ViewModel
     {
+        private const int BarWidth = 160;
+
+        private static readonly Color EmptyDotColor = Color.ConvertStringToColor("#3A2F24FF");
+        private static readonly Color GoldColor = Color.ConvertStringToColor("#D9A441FF");
+
         public DiRealmVassalVM(string name, Color accentColor, int holdValue, int thresholdValue,
-            string holdText, string driftText, Color driftColor, string thresholdText, string marksText,
-            string tributeText, string termText)
+            int driftValue, string holdText, string thresholdText, int defianceMarks,
+            string tributeText, string termText, MBBindingList<DiRealmTermVM> terms)
         {
-            const int barWidth = 160;
             Name = name;
             AccentColor = accentColor;
             HoldValue = Clamp(holdValue);
             ThresholdValue = Clamp(thresholdValue);
-            ThresholdPixelWidth = (int)(ThresholdValue / 100f * barWidth);
+            ThresholdPixelWidth = (int)(ThresholdValue / 100f * BarWidth);
+            DriftPixelOffset = (int)(Clamp(driftValue) / 100f * BarWidth);
             HoldText = holdText;
-            DriftText = driftText;
-            DriftColor = driftColor;
             ThresholdText = thresholdText;
-            MarksText = marksText;
+            DefianceMarks = defianceMarks;
+            HasDefiance = defianceMarks > 0;
+            // The mockup's defiance line: how many marks, and what the next ones cost.
+            DefianceText = defianceMarks > 0
+                ? "defiance: " + defianceMarks + " mark(s)"
+                : "defiance: none - " + DiplomacyConstants.DefianceMarksToLapse
+                  + " marks and the link does not renew";
+            // One slot per mark the bond can take before it lapses, filled as they land.
+            Dot1Color = defianceMarks >= 1 ? GoldColor : EmptyDotColor;
+            Dot2Color = defianceMarks >= 2 ? GoldColor : EmptyDotColor;
+            Dot3Color = defianceMarks >= 3 ? GoldColor : EmptyDotColor;
             TributeText = tributeText;
             TermText = termText;
-            HasMarks = !string.IsNullOrEmpty(marksText);
+            Terms = terms;
         }
 
         private static int Clamp(int v) => v < 0 ? 0 : v > 100 ? 100 : v;
@@ -633,17 +944,22 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         [DataSourceProperty] public int HoldValue { get; }
         [DataSourceProperty] public int ThresholdValue { get; }
         [DataSourceProperty] public int ThresholdPixelWidth { get; }
+        [DataSourceProperty] public int DriftPixelOffset { get; }
         [DataSourceProperty] public string HoldText { get; }
-        [DataSourceProperty] public string DriftText { get; }
-        [DataSourceProperty] public Color DriftColor { get; }
         [DataSourceProperty] public string ThresholdText { get; }
-        [DataSourceProperty] public string MarksText { get; }
-        [DataSourceProperty] public bool HasMarks { get; }
+        [DataSourceProperty] public int DefianceMarks { get; }
+        [DataSourceProperty] public bool HasDefiance { get; }
+        [DataSourceProperty] public string DefianceText { get; }
+        [DataSourceProperty] public Color Dot1Color { get; }
+        [DataSourceProperty] public Color Dot2Color { get; }
+        [DataSourceProperty] public Color Dot3Color { get; }
         [DataSourceProperty] public string TributeText { get; }
         [DataSourceProperty] public string TermText { get; }
+        [DataSourceProperty] public MBBindingList<DiRealmTermVM> Terms { get; }
+        [DataSourceProperty] public bool HasTerms => Terms != null && Terms.Count > 0;
     }
 
-    /// <summary>Another hegemon's sphere: who answers to it and how that bond behaves.</summary>
+    /// <summary>Another hegemon's sphere: who answers to it and how strong it is.</summary>
     internal sealed class DiRealmSphereVM : ViewModel
     {
         public DiRealmSphereVM(Color accentColor, string headText, string vassalsText, string strengthText)
@@ -660,36 +976,65 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         [DataSourceProperty] public string StrengthText { get; }
     }
 
-    /// <summary>One claim against another kingdom, live or still being fabricated.</summary>
+    /// <summary>One row inside a claim card: the claim type, its legitimacy, its footer.</summary>
     internal sealed class DiRealmClaimVM : ViewModel
     {
-        public DiRealmClaimVM(string kingdomText, Color accentColor, string typeText, string legitimacyText,
-            Color legitimacyColor, bool isLand, bool isFabricating, int progress, string footerText)
+        public DiRealmClaimVM(string typeText, string legitimacyText, Color legitimacyColor,
+            bool isLand, string footerText, string noteText)
         {
-            KingdomText = kingdomText;
-            AccentColor = accentColor;
             TypeText = typeText;
             LegitimacyText = legitimacyText;
             LegitimacyColor = legitimacyColor;
             IsLand = isLand;
-            IsFabricating = isFabricating;
-            HasLegitimacy = !isFabricating;
-            Progress = progress < 0 ? 0 : progress > 100 ? 100 : progress;
             FooterText = footerText;
             HasFooter = !string.IsNullOrEmpty(footerText);
+            NoteText = noteText;
+            HasNote = !string.IsNullOrEmpty(noteText);
+        }
+
+        [DataSourceProperty] public string TypeText { get; }
+        [DataSourceProperty] public string LegitimacyText { get; }
+        [DataSourceProperty] public Color LegitimacyColor { get; }
+        [DataSourceProperty] public bool IsLand { get; }
+        [DataSourceProperty] public string FooterText { get; }
+        [DataSourceProperty] public bool HasFooter { get; }
+
+        /// <summary>The mockup's story line under a broken-treaty claim.</summary>
+        [DataSourceProperty] public string NoteText { get; }
+        [DataSourceProperty] public bool HasNote { get; }
+    }
+
+    /// <summary>A claim card: one target kingdom and every claim we hold on it.</summary>
+    internal sealed class DiRealmClaimGroupVM : ViewModel
+    {
+        public DiRealmClaimGroupVM(string kingdomText, Color accentColor,
+            MBBindingList<DiRealmClaimVM> rows)
+        {
+            KingdomText = kingdomText;
+            AccentColor = accentColor;
+            Rows = rows;
         }
 
         [DataSourceProperty] public string KingdomText { get; }
         [DataSourceProperty] public Color AccentColor { get; }
-        [DataSourceProperty] public string TypeText { get; }
-        [DataSourceProperty] public string LegitimacyText { get; }
-        [DataSourceProperty] public Color LegitimacyColor { get; }
-        [DataSourceProperty] public bool HasLegitimacy { get; }
-        [DataSourceProperty] public bool IsLand { get; }
-        [DataSourceProperty] public bool IsFabricating { get; }
+        [DataSourceProperty] public MBBindingList<DiRealmClaimVM> Rows { get; }
+    }
+
+    /// <summary>A claim still being fabricated: against whom, and how far along.</summary>
+    internal sealed class DiRealmFabricationVM : ViewModel
+    {
+        public DiRealmFabricationVM(string kingdomText, Color accentColor, string detailText, int progress)
+        {
+            KingdomText = kingdomText;
+            AccentColor = accentColor;
+            DetailText = detailText;
+            Progress = progress < 0 ? 0 : progress > 100 ? 100 : progress;
+        }
+
+        [DataSourceProperty] public string KingdomText { get; }
+        [DataSourceProperty] public Color AccentColor { get; }
+        [DataSourceProperty] public string DetailText { get; }
         [DataSourceProperty] public int Progress { get; }
-        [DataSourceProperty] public string FooterText { get; }
-        [DataSourceProperty] public bool HasFooter { get; }
     }
 
     /// <summary>One standing agreement: its type, its term, and what it means for us.</summary>

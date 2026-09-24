@@ -93,8 +93,18 @@ namespace DiplomacyIntrigue.Diplomacy
         /// <summary>Band, bar and meaning together - what a rival's war looks like to us.</summary>
         public static string Describe(float exhaustion)
         {
+            return Bar(Of(exhaustion)) + " " + Condition(exhaustion);
+        }
+
+        /// <summary>
+        /// Band and meaning without the text meter - "Exhausted - will accept a white
+        /// peace". For Gauntlet screens: the "[##...]" meter is drawn for the inquiry
+        /// menus and reads as a rendering glitch anywhere else.
+        /// </summary>
+        public static string Condition(float exhaustion)
+        {
             var band = Of(exhaustion);
-            return Bar(band) + " " + Name(band) + " - " + Meaning(band);
+            return Name(band) + " - " + Meaning(band);
         }
     }
 }

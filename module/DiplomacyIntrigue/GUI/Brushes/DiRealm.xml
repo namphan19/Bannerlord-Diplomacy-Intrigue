@@ -48,6 +48,34 @@
     </Styles>
   </Brush>
 
+  <!-- A peace-table term row (DiPeaceTable.xml): clear at rest, the mockup's #2c2619
+       once ticked (bound through IsSelected), a lift on hover. Drawn from
+       BlankWhiteSquare_9 only. The first pass borrowed Kingdom.Item.Tuple, whose
+       SPKingdom sprite is loaded with the Kingdom screen and not otherwise - over the
+       map the rows lost their background and every hover and ticked state with it. -->
+  <Brush Name="DiPeace.Row">
+    <Layers>
+      <BrushLayer Name="Default" Sprite="BlankWhiteSquare_9" Color="#FFFFFFFF" />
+    </Layers>
+    <Styles>
+      <Style Name="Default">
+        <BrushLayer Name="Default" Color="#2C261900" />
+      </Style>
+      <Style Name="Hovered">
+        <BrushLayer Name="Default" Color="#3A2F24AA" />
+      </Style>
+      <Style Name="Selected">
+        <BrushLayer Name="Default" Color="#3A2F1FFF" />
+      </Style>
+      <Style Name="Pressed">
+        <BrushLayer Name="Default" Color="#4A3C2AFF" />
+      </Style>
+      <Style Name="Disabled">
+        <BrushLayer Name="Default" Color="#2C261900" />
+      </Style>
+    </Styles>
+  </Brush>
+
   <Brush Name="DiRealm.Score" Font="Galahad" TextHorizontalAlignment="Right">
     <Styles>
       <Style Name="Default" FontColor="#E0CFA8FF" TextOutlineAmount="0.1" TextGlowRadius="0" TextBlur="0.2" TextShadowOffset="0" FontSize="22" />

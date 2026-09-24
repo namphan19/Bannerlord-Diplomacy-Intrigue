@@ -83,6 +83,45 @@ Each of these rendered wrong or would have failed at load, and none of them prod
 And one that went right and is worth copying: **run the whole checklist in §7 on a second world**.
 The vassal's view, mercenary exclusion and a RELIABLE band only appeared on the second save.
 
+## 0c. Seven more, from the peace table's first live pass (2026-09-24)
+
+The peace table (`UI/PeaceTable/`, the project's one owned Gauntlet surface) built clean, ran
+without a logged error, and was still badly wrong on screen. All seven were caught from
+screenshots, none from the log.
+
+1. **A popup is a layer on the current screen, never a pushed screen.** `ScreenManager.PushScreen`
+   deactivates the screen below, so the table stood alone on black; `new GauntletLayer(name,
+   order, shouldClear: true)` wipes the frame before drawing, which is the same symptom again. And a
+   layer that never calls `InputRestrictions.SetInputRestrictions(true, InputUsageMask.All)` hides
+   the cursor. The shape that works (`PeaceTablePopup`, verified live over the Kingdom screen and
+   the map): `TopScreen.AddLayer`, restrict input, `IsFocusLayer = true` + `ScreenManager.TrySetFocus`, and on
+   close undo each step and hand focus back to the layer that had it. Over the **map**, also
+   `GameStateManager.RegisterActiveStateDisableRequest(this)` - the pause vanilla's inquiries use -
+   and unregister on close; verified: campaign time held while open and resumed after.
+2. **A `ListPanel` shares its free space between every `StretchToParent` child.** A
+   `ScrollablePanel` and its `Standard.VerticalScrollbar` as ListPanel siblings each got half the
+   column's height - the list showed three rows and the scrollbar hung below it. Put them side by
+   side in a plain `Widget`, and leave one stretching child in the ListPanel.
+3. **Widths bind in pixels, never in percent.** `SuggestedWidth="@CliffPercent"` put a mark meant
+   for 83% of a 950px bar at 75px. For a mark at a fraction of a bar, use a transparent
+   `FillBarHorizontalWidget` (`InitialAmount` / `MaxAmount="100"`) and pin the mark to the right
+   edge of its fill widget. The pact chooser's spacer trick only works because its bar is
+   exactly 100px wide.
+4. **A screen's brushes may not render off that screen.** `Kingdom.Item.Tuple` draws
+   `SPKingdom\kingdom_tuple`, a sprite loaded with the Kingdom screen: the same rows had a
+   background over the Kingdom screen and none over the map. For anything that can open in more
+   than one place, build brushes from `BlankWhiteSquare_9` (`DiPeace.Row` in `DiRealm.xml`).
+5. **Row 2 of §0b, again.** "90" and "0 committed" rendered as "900 committed" because the spent
+   text sat in a horizontal ListPanel with `HorizontalAlignment="Right"`. It was already written
+   down above; read §0b before writing a prefab.
+6. **With a popup open, the bridge clicks the screen underneath first.** `ui.click_widget "Cancel"`
+   pressed the Kingdom screen's own hidden Cancel, not the table's. Drive a popup through
+   `ui.call_viewmodel_method` on its own layer (`DiPeaceTableLayer`). Bridge clicks also skip hit
+   testing, so they cannot show whether a real click passes through the dim backdrop.
+7. **Keyboard input could not be sent.** `WScript.Shell.SendKeys("{ESC}")` after `AppActivate`
+   did not close even a freshly opened Kingdom screen, so what Esc does over the table is
+   **unverified**. Try `SendInput` with scan codes before trusting any keyboard result.
+
 ## 1. Mental model of Gauntlet (just enough)
 
 | Piece | What it is |

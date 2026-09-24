@@ -474,9 +474,11 @@ namespace DiplomacyIntrigue.UI
             var cost = DiplomacyConstants.TreatyInfluenceCost(type);
 
             // Their own valuation, shown honestly: this is the number the AI uses to decide.
+            // Truncated, like the Diplomacy tab's chooser: rounding would show 34.6 as "35"
+            // beside a threshold of 35 it has not cleared.
             var theirValue = AiDiplomacy.PactValue(state, them, us);
             var hint = allowed
-                ? cost + " influence. " + them.Name + " values it at " + theirValue.ToString("0")
+                ? cost + " influence. " + them.Name + " values it at " + ((int)theirValue)
                   + " (they need " + ThresholdFor(type).ToString("0") + ")."
                 : reason;
 
@@ -538,7 +540,7 @@ namespace DiplomacyIntrigue.UI
             if (theirValue < ThresholdFor(type))
             {
                 Notify(them.Name + " declines: they value a " + type + " at only "
-                       + theirValue.ToString("0") + ".");
+                       + ((int)theirValue) + ".");
                 return;
             }
 
@@ -841,6 +843,29 @@ namespace DiplomacyIntrigue.UI
         /// losing player reaches the same entry point and gets the offer checklist instead,
         /// because vanilla's peace paths are ours now ([design 05](../../docs/design/05-vanilla-override.md)).
         /// </summary>
+        /// <summary>
+        /// The label on a button that calls <see cref="ShowPeace"/>, from the same two
+        /// budgets it branches on - so the button never promises a white peace and then
+        /// opens the loser's table, which the first live pass caught the Realm tab doing.
+        /// </summary>
+        internal static string PeaceButtonLabel(float ourBudget, float theirBudget)
+        {
+            if (ourBudget > 0f) return "Negotiate peace";
+            if (theirBudget > 0f) return "Sue for peace";
+            return "White peace only";
+        }
+
+        /// <summary>The line under that button, on the same branch.</summary>
+        internal static string PeaceButtonSub(float ourBudget, float theirBudget, Kingdom them)
+        {
+            if (ourBudget > 0f)
+                return "Budget " + ourBudget.ToString("0") + " - see hint for the price list.";
+            if (theirBudget > 0f)
+                return "The war has earned " + them.Name + " " + theirBudget.ToString("0")
+                       + ". Offer what it takes.";
+            return "White peace only - this war has earned nothing yet.";
+        }
+
         internal static void ShowPeace(ModState state, Kingdom us, Kingdom them)
         {
             var war = state.OngoingWarBetween(us, them);
@@ -849,14 +874,46 @@ namespace DiplomacyIntrigue.UI
             var ourBudget = PeaceTable.BudgetFor(war, us);
             var theirBudget = PeaceTable.BudgetFor(war, them);
 
-            if (ourBudget > 0f) { ShowDemandTable(state, war, us, them, ourBudget); return; }
-            if (theirBudget > 0f) { ShowOfferTable(state, war, us, them, theirBudget); return; }
+            try
+            {
+                if (ourBudget > 0f)
+                {
+                    // The winner's table: we price what to take.
+                    UI.Negotiation.PeaceTablePopup.ShowDemand(state, war, us, them, true,
+                        terms => TryPeace(state, war, terms, us),
+                        () => TryPeace(state, war, new PeaceTerms(us, them), us));
+                    return;
+                }
+                if (theirBudget > 0f)
+                {
+                    // The loser's table: we price what to give.
+                    UI.Negotiation.PeaceTablePopup.ShowDemand(state, war, us, them, false,
+                        terms => TryPeace(state, war, terms, us),
+                        () => TryPeace(state, war, new PeaceTerms(them, us), us));
+                    return;
+                }
 
-            Confirm("Peace with " + them.Name,
-                "Neither side has earned enough to ask for anything - a white peace is all this"
-                + " war can produce. Propose it and they sign if the war has worn them too.",
-                "Propose white peace",
-                () => TryPeace(state, war, new PeaceTerms(us, them), us));
+                Confirm("Peace with " + them.Name,
+                    "Neither side has earned enough to ask for anything - a white peace is all this"
+                    + " war can produce. Propose it and they sign if the war has worn them too.",
+                    "Propose white peace",
+                    () => TryPeace(state, war, new PeaceTerms(us, them), us));
+            }
+            catch (Exception ex)
+            {
+                // The screen is the one piece of Gauntlet this project owns; if it cannot
+                // come up, the war still has to be negotiable. The old inquiry tables are
+                // the fallback, not a second implementation of the rules - they price and
+                // decide through the same PeaceTable resolvers.
+                Log.Error("UI", "The peace table could not open; falling back to the checklist.", ex);
+                if (ourBudget > 0f) ShowDemandTable(state, war, us, them, ourBudget);
+                else if (theirBudget > 0f) ShowOfferTable(state, war, us, them, theirBudget);
+                else Confirm("Peace with " + them.Name,
+                    "Neither side has earned enough to ask for anything - a white peace is all this"
+                    + " war can produce. Propose it and they sign if the war has worn them too.",
+                    "Propose white peace",
+                    () => TryPeace(state, war, new PeaceTerms(us, them), us));
+            }
         }
 
         /// <summary>
