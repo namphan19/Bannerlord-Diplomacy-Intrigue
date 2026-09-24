@@ -135,8 +135,8 @@ namespace DiplomacyIntrigue.Intrigue
             }
             if (a.Relation >= IntrigueConstants.ClanSuccessionDisputeRelation)
             {
-                a.Reason = "close, but " + a.RunnerUp.Hero.Name + " is on good terms with the new head ("
-                           + a.Relation + ")";
+                a.Reason = "close, but " + a.RunnerUp.Hero.Name + "'s relation with the new head (" + a.Relation
+                           + ") is not below " + IntrigueConstants.ClanSuccessionDisputeRelation;
                 return a;
             }
             if (a.RunnerUp.Hero.IsPrisoner || a.RunnerUp.Hero.PartyBelongedTo?.MapEvent != null)

@@ -13,20 +13,26 @@ Last completed measurement: **balance run 07** — [docs/balance/run-07.md](bala
 ## Start here — handoff, 2026-09-23
 
 **Phase 1 is accepted and closed. Phase 2, court intrigue, is the work now.**
-2.1-2.5 and 2.7 are built and verified live (sections below). **2.6, the civil war, is built
-and verified live on its main path** on branch `feature/phase-2.6-civil-war`, not yet merged.
-What remains of it is listed under "2.6" below.
+2.1-2.5 and 2.7 are built and verified live (sections below). **2.6, war inside a kingdom, and
+2.6b, a house divided by its succession, are built and verified live** on branch
+`feature/phase-2.6-civil-war`, which is not yet merged or pushed.
+[design/07 §3d and §5](design/07-internal-politics.md) have the result tables.
 
-### Checkpoint, 2026-09-23 late night
+### Checkpoint, 2026-09-24
 
 - **Branch:** `feature/phase-2.6-civil-war`, off `development` at `4ae4ab6`. opencode works in
   its own clone on `feature/phase1-ui-match-mockup`. **One game for both**: check who is running
   it before deploying (CLAUDE.md §7).
-- **Where 2.6 stands:** [design/07 §3d](design/07-internal-politics.md) has the mechanism
-  that shipped and the live-test table. The first build crashed the game, and §3c records why.
-  Both are worth reading before touching `Intrigue/InternalWars.cs`.
-- **New save:** `di_civilwar_test`, Battania mid civil war (Aradwyr's rising, 5 rebel clans,
-  exhaustion ~2/3). Load it to test anything downstream of the war starting.
+- **Verified live:** all three outcomes (rebels win, twice naturally; crown wins; stalemate,
+  with the 365-day cooldown holding), sieges and fiefs changing sides once rebels could raise
+  armies, save and reload mid-war with captured fiefs, and houses dividing at a real death,
+  including two ruling houses. Six sessions; five bugs found and fixed, one of them a crash.
+- **Not verified:** the player prompts (rising as claimant, choosing a side), the captivity
+  end condition, a cadet branch going on to start an internal war, and any long AI-only run.
+- **Saves:** `di_civilwar_test` was **overwritten** on 2026-09-24 by a "Save and Exit" at the
+  end of a session. It now holds Battania mid-war with the rebels at 11 fiefs, plus two cadet
+  houses (Oburit of Sevin, Pethros of Patyr). `di_pretender_test` is unchanged and still the
+  clean starting point: Battania rises on the first daily tick.
 - **Test worlds for Phase 2:** `di_pretender_test` (Battania: legitimacy 25, standing claim by
   Aradwyr, Pretenders bloc - the richest court state) and `di_grievance_test` (Khuzait,
   player-ruled, 21 grievances). Neither is precious; `di_phase1_full` still must never be saved over.
@@ -413,21 +419,12 @@ UI-INTEGRATION.md §0b.
 
 ### What to do next
 
-1. **Finish verifying 2.6**, [design/07 §3d](design/07-internal-politics.md). From
-   `di_civilwar_test`, with the game to ourselves:
-   - `diplomacy.test_end_internal_war Battania | crown`, then `| stalemate` after a reload.
-     Only the rebel win has been seen.
-   - After any ending, ask the game: the rising `di_rising` eliminated, and all five rebel
-     clans alive and still in Battania (`bannerlord.kingdom.get_kingdom`).
-   - A fief changing hands between the sides. Let the war run at `test_set_speed 50` until a
-     siege lands; the log line `passed from ... the rising now holds N fiefs` is the check.
-   - Both player prompts. The player is Khuzait in that save, so this needs a world where the
-     player is a Battanian vassal, or a pretender.
-2. **Verify 2.6b, a house divided**, [design/07 §5](design/07-internal-politics.md). It is
-   built and has **not run in a game**. `diplomacy.heirs` finds a house one death away from
-   splitting. `diplomacy.test_divide_clan` tests the split mechanics. Then kill a real head
-   with `bannerlord.hero.kill_hero` to test the event path. Finally a save and reload with the
-   cadet branch in it.
+1. **Review and merge 2.6/2.6b** into `development`: a PR from `feature/phase-2.6-civil-war`,
+   read against CLAUDE.md §3 (two new Harmony patches, save ids 13/14/27 and property 14).
+2. **A long AI-only run with internal wars in it**, the balance question 2.6 leaves open. How
+   often do internal wars start, how often do houses divide, and does a realm recover from a
+   lost civil war followed by foreign wars? Both of the first run's neighbours declared war on
+   Battania the day its war ended. Fold it into run 08.
 3. **Court tab gaps**: no scrolling past ~13 sworn clans; the physical row click is unverified.
 4. **The `AiDiplomacy.TryDemandTribute` revisit** planned for 2.2 was never done: it still
    accepts on strength ratio and trust alone, with no sense of the target court's willingness.

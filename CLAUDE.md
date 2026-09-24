@@ -81,6 +81,16 @@ places have the real answer:
   local .NET Framework DAC. It took the 2026-09-23 crash from "unknown" to the exact vanilla
   method and cast in one run.
 
+Two things to know about the dialog itself:
+
+- **The exception can be read while the dialog is still up.** Run
+  `dotnet run --project tools/DumpProbe -- --pid <pid>`: a game sitting on its crash dialog still
+  holds the exception on the faulting thread, and no dump exists until the dialog closes.
+- **Closing the dialog is not a force-kill, and it must not upload anything.** It is a `#32770`
+  window titled `*_*`, owned by the game's pid, asking *"Would you like to upload these files
+  now?"*. Answer **No**, by posting `WM_COMMAND` with `IDNO` (7) to it. The process then exits on
+  its own and Windows writes the dump. Never answer Yes: that sends files to TaleWorlds.
+
 `InstallCrashLogging` still catches exceptions on other threads, and faults that happen before
 the module loads.
 
@@ -225,6 +235,21 @@ it makes has no starting Hold, no call to arms and no sibling reconciliation. It
 row, not a submission, and it cannot be used to test anything downstream of `Submit`.
 
 Saves used for testing: `di_phase1_full` (richest state), `di_treaty_test`, `di_phase0_test`.
+
+**An inquiry addressed to the player stops the clock**, and a long run then looks stalled: the
+mod log goes quiet with no error. On 2026-09-24 it was an AI peace offer to the player's kingdom.
+Check with `bannerlord.core.check_blockers` (`inquiry_active`), read it with `ui/get_inquiry`,
+and answer with `ui/answer_inquiry`. If the log also stops and the bridge times out, it is a
+crash, not an inquiry (§1).
+
+**"Save and Exit" writes over the save that was loaded.** `di_civilwar_test` was overwritten
+this way on 2026-09-24, at the moment a session was closed from the game's own menu.
+`games_stop` does not save. Load a test save expecting that the last person who played it may
+have saved over it.
+
+`bannerlord.kingdom.get_clan` fails on v1.4.8 (*Method not found:
+`Clan.get_CommanderLimit()`*). Use `bannerlord.kingdom.get_kingdom`, or the mod's own
+`diplomacy.loyalty <kingdom>`, which lists a court's clans.
 
 **What the bridge has not been shown to do:** click buttons inside a `MultiSelectionInquiry`.
 An earlier version of this said GABS only indexes map-layer widgets and that any menu past the

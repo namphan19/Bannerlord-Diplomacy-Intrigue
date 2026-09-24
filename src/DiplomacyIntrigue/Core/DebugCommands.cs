@@ -1774,7 +1774,8 @@ namespace DiplomacyIntrigue.Core
                     if (only != null)
                         for (var i = 0; i < a.Heirs.Count; i++)
                             sb.AppendLine("    " + a.Heirs[i].Hero.Name + "  " + a.Heirs[i].Points
-                                          + "  age " + a.Heirs[i].Hero.Age.ToString("0"));
+                                          + "  age " + a.Heirs[i].Hero.Age.ToString("0")
+                                          + "  " + KinTo(a.Heirs[i].Hero, clan.Leader));
                 }
             }
             sb.AppendLine(dividing + " house(s) would divide at their head's death today. Thresholds: within "
@@ -1789,19 +1790,37 @@ namespace DiplomacyIntrigue.Core
         }
 
         /// <summary>
+        /// How a hero is related to a clan head, in the terms the succession blood claim reads
+        /// (`SuccessionModel.HasBloodClaim`): child, parent, sibling - or other, which the blood
+        /// claim does not admit once the hero has left the house.
+        /// </summary>
+        private static string KinTo(Hero hero, Hero head)
+        {
+            if (hero == null || head == null) return "";
+            if (hero.Father == head || hero.Mother == head) return "child";
+            if (head.Father == hero || head.Mother == hero) return "parent";
+            foreach (var sibling in hero.Siblings) if (sibling == head) return "sibling";
+            if (hero.Spouse == head) return "spouse";
+            return "other kin";
+        }
+
+        /// <summary>
         /// Divides a house now, as if its head had died and the runner-up walked out - skipping
-        /// the closeness and relation thresholds, not the mechanics. Test saves only.
-        /// Usage: diplomacy.test_divide_clan fen Eingal
+        /// the closeness and relation thresholds, not the mechanics. Test saves only. The founder
+        /// is the best-scoring heir, or the one named after a bar.
+        /// Usage: diplomacy.test_divide_clan fen Eingal   or   diplomacy.test_divide_clan Gundaroving | Simir
         /// </summary>
         [CommandLineFunctionality.CommandLineArgumentFunction("test_divide_clan", "diplomacy")]
         public static string TestDivideClan(List<string> args)
         {
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
-            if (args == null || args.Count == 0) return "Usage: diplomacy.test_divide_clan <clan>";
+            if (args == null || args.Count == 0) return "Usage: diplomacy.test_divide_clan <clan> [| <hero>]";
 
-            var clan = FindClan(string.Join(" ", args));
-            if (clan == null) return "No clan matching \"" + string.Join(" ", args) + "\".";
+            var parts = string.Join(" ", args).Split('|');
+            var clan = FindClan(parts[0].Trim());
+            if (clan == null) return "No clan matching \"" + parts[0].Trim() + "\".";
+            var wanted = parts.Length > 1 ? parts[1].Trim() : null;
 
             // The head stays alive here, so the "successor" is the head itself and the runner-up
             // is the best-scoring heir: the split mechanics are exercised, the death is not.
@@ -1809,6 +1828,14 @@ namespace DiplomacyIntrigue.Core
             if (a.Heirs.Count == 0) return clan.Name + ": no eligible heir to leave.";
             a.RunnerUp = a.Heirs[0];
             if (a.RunnerUp.Hero == clan.Leader.Spouse && a.Heirs.Count > 1) a.RunnerUp = a.Heirs[1];
+            if (wanted != null)
+            {
+                a.RunnerUp = null;
+                for (var i = 0; i < a.Heirs.Count; i++)
+                    if (string.Equals(a.Heirs[i].Hero.Name?.ToString(), wanted, StringComparison.OrdinalIgnoreCase))
+                        a.RunnerUp = a.Heirs[i];
+                if (a.RunnerUp == null) return clan.Name + ": no eligible heir named " + wanted + ".";
+            }
 
             var cadet = ClanSuccession.Divide(state, a);
             if (cadet == null) return clan.Name + ": the division did not happen - see the log.";

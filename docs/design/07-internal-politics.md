@@ -1,6 +1,6 @@
 # Design 07 — Internal politics: war inside a kingdom
 
-Status: **built; verified live on the rebel-win path** (§3d). Phase 2, sitting beside
+Status: **built and verified live**: all three outcomes, sieges, save/reload (§3d), and a house divided (§5). Phase 2, sitting beside
 [02-intrigue.md](02-intrigue.md) rather than replacing it.
 
 The project lead's brief, 2026-09-23: vanilla's internal politics is too simple. Clans should
@@ -236,7 +236,9 @@ three outcomes in Q1, not a budget of terms. That matches Q1's scope and can gro
 - **`Army` requires a `Kingdom`** (`.ctor(Kingdom, MobileParty, ArmyTypes)`, from ApiDump). A
   rebel army would be an army *of the parent kingdom*, and what the map makes of that is untested.
   Expected default for v1: **rebels fight as separate parties and form no armies**, unless the
-  first live test shows vanilla's army code tolerates it.
+  first live test shows vanilla's army code tolerates it. *Superseded (§3d): once the rising
+  became a kingdom, rebel armies are raised under it, and allowing them is what gave the war
+  its sieges.*
 - The trigger thresholds in 02 §6 (bloc ≥ 40% of influence, legitimacy < 35, two clans < 25)
   stay as the defaults. Decision 02 §9.4 already marks them as guesses.
 
@@ -264,9 +266,10 @@ ends only by §3a's rules. That is a model override, not a patch.
 
 **A loyalist marshal would have summoned the rebels.** An army belongs to the kingdom and the
 rebels are still in it. `GameModels/ModArmyManagementModel.cs` (a model, not a patch) keeps them
-apart: a rebel cannot raise an army, cannot be called into one, and is filtered out of a loyalist
-lord's call. When the war starts, an army led by a rebel is disbanded and rebel parties are sent
-out of loyalist armies.
+apart: neither side's call to arms can reach the other's parties. When the war starts, a
+realm army led by a rebel is disbanded and rebel parties are sent out of loyalist armies. (The
+first build also forbade rebel armies outright; the live test showed that cost the war every
+siege, and it was lifted - §3d.)
 
 Two consequences of the mechanism, now written down as design:
 
@@ -355,14 +358,31 @@ overrides (`ModArmyManagementModel`, the peace guard in `ModDiplomacyModel`).
 | Natural end | The crown's side reached exhaustion 100 first (rebels 35.6): **rebels won**. Aradwyr's clan took the throne, legitimacy −15 (12 → 0), and Muinser was deposed but kept as a pretender at the 39% his side held. Aradwyr's own claim lapsed on taking the throne |
 | Bug found and fixed | `Collection was modified` from iterating `Kingdom.All` while the war created the rising in it. Caught by the handler's `try/catch`, not a crash; fixed by iterating a copy and verified on the second run |
 
-**Not yet verified:**
+### Second round of live tests, 2026-09-23/24: six sessions, five bugs, all fixed
 
-- The crown-win and stalemate outcomes. Only the rebel win happened.
-- A fief changing hands between the two sides. It happened 0 times, so the settlement-change sync never ran live.
-- That the 5 rebel clans still exist after the rising was destroyed, and that the rising is eliminated. The log shows no error, but the game was not asked.
-- Either player prompt: rising as the claimant, or choosing a side.
-- The captivity end condition.
-- A balance signal, recorded and not acted on: the day the war ended, Sturgia and Vlandia **both** declared war on Battania, which was now at legitimacy 0 and worn out. Plausible, and a civil war probably should invite this, but a realm that loses a civil war and two foreign wars in a week may not recover.
+| Check | Result |
+|---|---|
+| **Crown wins** (`test_end_internal_war ... | crown`) | All 8 clans still in Battania, every map faction back to Battania, at peace. Legitimacy 25 → 37 (+12). Aradwyr's claim retired. The rising `isEliminated`, with its clan list emptied first |
+| **Stalemate** | Legitimacy unchanged, the claim still standing, the rising eliminated. **The cooldown held**: Battania still met all three conditions the next day and did not rise again ("365 days to go") |
+| **Rebels win, naturally, a second time** | Crown exhausted first. fen Eingal took the throne, the rising was eliminated with no armies and no clans left, and all 8 clans were still in Battania. The castles the rebels took stayed with them |
+| **Sieges and fiefs changing sides** | 0 in the first two runs, because the AI besieges only with armies and v1 barred rebel armies. With the ban lifted: 3 sieges in one session. Llanoc Hen and Rhemtoil castles and the town of Pen Cannoc went to the rebels, and the rising's fief list followed each capture at once (8 → 11) |
+| **Save and reload with captured fiefs and cadet houses** | The rising came back holding all 11 fiefs, including the three it took; both cadet branches were still at their courts |
+
+Bugs found this way, each fixed and re-run: rebel armies banned (no sieges); a null skill seed
+in heir scoring; the death check reading `IsAlive` inside `KillCharacterAction`; a dead head
+moved into the new house; a landless cadet's null mid-settlement, which **crashed the game**
+at the next fief vote in its realm. That last one was read out of the live process with
+`tools/DumpProbe --pid`, because the crash dialog holds the exception.
+
+**Still not verified:**
+
+- Either player prompt: rising as the claimant, or choosing a side. The test saves have the
+  player in Khuzait.
+- The captivity end condition. Every war so far ended on exhaustion.
+- A long AI-only run. How often internal wars start, and whether a realm recovers from one, is
+  unmeasured. A signal from the first run is recorded and not acted on: the day the war
+  ended, Sturgia and Vlandia **both** declared war on Battania, which was at legitimacy 0 and
+  worn out.
 
 ---
 
@@ -402,8 +422,8 @@ clan that vanilla saves.
 ### The rule
 
 When a head dies, if the runner-up heir came within **5 points** of the successor
-(`ClanSuccessionContestMargin`) **and** their relation with the successor is below **10**
-(`ClanSuccessionDisputeRelation`), the house divides. The runner-up leaves with their spouse
+(`ClanSuccessionContestMargin`) **and** their relation with the successor is below **−10**
+(`ClanSuccessionDisputeRelation`; first shipped at 10, see the live test below), the house divides. The runner-up leaves with their spouse
 and their children who have not come of age, and founds **a cadet branch in the same realm**.
 It has no fief, starts with a quarter of the parent house's renown, and flies the parent's icon
 in its colours. Relation between the two heads drops by 20. All four numbers are UN-TUNED.
@@ -425,15 +445,33 @@ Passing over a higher-scoring heir who dislikes the choice can split the player'
 
 - `diplomacy.heirs [clan]` shows, for every house or one, what would happen if its head died
   today. It prints `ClanSuccession.Predict`, the resolver the event uses.
-- `diplomacy.test_divide_clan <clan>` splits a house now, skipping the thresholds but not the
-  mechanics. It is for testing the split itself.
+- `diplomacy.test_divide_clan <clan> [| <hero>]` splits a house now, skipping the thresholds
+  but not the mechanics, optionally with a named founder. It is for testing the split itself.
 
-### Not yet verified — nothing here has run in a game
+### Live test, 2026-09-23/24
 
-- The split mechanics: the new clan exists, is in the realm, is noble, has the household, the
-  founder is out of their old party, and the clan survives a save and reload.
-- A real death: the event path (`bannerlord.hero.kill_hero` on a head that `diplomacy.heirs`
-  marks WOULD DIVIDE).
-- The ruling-house path: that the next succession watch counts the cadet leader as a claimant.
-- How often it fires. The relation threshold in particular is a guess until warm family
-  relations in a real campaign are measured.
+| Check | Result |
+|---|---|
+| **A real death divides a house** | Gusukan, head of Oburit (Khuzait), killed: Altu succeeded, and Sevin (15 points to 20, relation −24) founded **Oburit of Sevin**, tier 1, at the Khuzait court |
+| **A ruling house divides** | Queen Rhagaea of Southern Empire killed: Ulbos took the throne, and Patyr (20 to 25, relation −12) founded **Pethros of Patyr**, tier 4, with his spouse Verina |
+| **The founder is a claimant** | In Sturgia, Lilizha, who is *not* the late king's child or sibling, split from the ruling house, then King Raganvad died. The tally read "Vidar 85% (7 clans), **Lilizha 15%** (3 clans)". She counted, and at 15% did not become a pretender, which is the rule |
+| Save and reload | Both cadet branches still at their courts after a reload |
+| **How often it fires** | Measured on `di_civilwar_test`: at the first threshold (relation < 10), **22 of ~70** houses would divide at their head's death, because most heirs sit at relation 0 ("never met"). Moved to < −10, about 6 (~8%) |
+
+Four things running it showed that reading the code did not:
+
+- **Vanilla moves relations at the succession.** Every hero's relation with the new head is
+  adjusted inside `ChangeClanLeaderAction`, and in all three cases it warmed: Sevin −38 → −24,
+  Patyr −48 → −12, Simir −9 → 2. `diplomacy.heirs` predicts from today's relations and says so.
+- **The head is replaced before the head dies.** `KillCharacterAction` marks the hero, changes
+  the clan head, and only then kills them, so the death is read from the death mark.
+- **A runner-up is often not the late ruler's child or sibling.** Vanilla's heirs include
+  nephews and in-laws. In Sturgia the heir apparent himself is neither. The succession model
+  now counts anyone who left the ruling house at this succession (`NoteBranchedHeir`).
+- **The throne watch missed a death straight after a load.** It seeded itself on the first
+  daily tick, so a ruler who died before that tick was recorded as their heir's first
+  sighting. It now seeds at session start.
+
+**Still not verified:** the player's own house dividing, and a cadet branch going on to become
+a standing pretender and start an internal war. Both follow from verified pieces, but the full
+chain has not been seen end to end.
