@@ -1,7 +1,7 @@
 # Design 07 — Internal politics: war inside a kingdom
 
 Status: **built and verified live**: all three outcomes, sieges, save/reload (§3d), and a house divided (§5).
-**2.6c, conceding and changing sides for gold, built and not yet run in a game (§6).** Phase 2, sitting beside
+**2.6c, conceding and changing sides for gold, built and run live (§6).** Phase 2, sitting beside
 [02-intrigue.md](02-intrigue.md) rather than replacing it.
 
 The project lead's brief, 2026-09-23: vanilla's internal politics is too simple. Clans should
@@ -487,8 +487,8 @@ what each ending does. This section is the answer: two new acts, and where the w
 Mockup: the "Civil war — Phase 2.6 UI" row of the court canvas
 (https://claude.ai/artifact/1FrpG5in328WYfNi6sP8Pf, boards `CivilWar`, `ChangeSides`,
 `RealmCivilWar`). Its figures are sample, not live. **Built on 2026-09-24 on branch
-`feature/phase-2.6c-civil-war-ui`: it compiles and passes LoadProbe, and none of it has run in a
-game yet.** "What was built" at the end of this section says what exists and what to test.
+`feature/phase-2.6c-civil-war-ui`, and run live the same day** - see "The first live run" at the
+end of this section.
 
 ### What the lead decided
 
@@ -532,7 +532,7 @@ price = (2,000 + 15 x strength + 4,000 per town + 2,000 per castle)
         x relation  x bond  x momentum          rounded to 100, never below 1,000
 
 strength  = Clan.CurrentTotalStrength (the engine's own figure; 300-650 for most houses in the
-            balance runs)
+            balance runs, 92-975 across Battania's houses on 2026-09-24)
 relation  = 1 - rel(buyer, house head) / 200                          0.5 - 1.5
 bond      = 0.5 + tie / 100, where tie is how firmly the house holds  0.5 - 1.5
             to its current side: on the crown's side its loyalty
@@ -640,7 +640,48 @@ moved to `RefreshDiplomacyList`.
   Court tab can be seen from each place a player can stand.
 - `diplomacy.test_court_select <clan>` selects a row in civil-war mode as well.
 
-**What the first run must check:**
+### The first live run, 2026-09-24, `di_civilwar_test`, 0 errors
+
+Four sessions, after the fixes listed below. The player's house was put on each side with
+`test_player_side`.
+
+| Check | Result |
+|---|---|
+| Court tab, civil-war mode, 1920x1080 | Renders as the mockup: both cards with the 40 mark, the three endings, the court split by side with prices, the price column line by line |
+| The rising off the Diplomacy tab | "At War (1)": Western Empire only, the count corrected |
+| Realm tab | "Divided", the civil war first with "Open the court", which opens the Court tab; no "war score" caption on it |
+| **The player buys a house (as ruler)** | Paid 16,900 for fen Caernacht; its clan, head, party and castle all answer to Battania afterwards (`test_map_faction`) |
+| **The player's house goes over (as a rebel)** | Received 33,700 from Muinser; relation with the claimant's house -20; the house marked "changed sides" |
+| **The AI buys** | `ai_week 1`: Muinser, losing, bought fen Uvain for 37,100, the best strength per denar on offer |
+| "Not ahead" holds | Aradwyr, winning, bought nobody; the player's "Go over" to him was disabled with that reason |
+| **The player concedes (as ruler)** | Peace, the rising destroyed, Aradwyr on the throne, legitimacy 25 -> 10, the player kept as a pretender at 39% |
+| **The AI concedes** | Left running at speed: Muinser conceded when the crown reached 75.8 with the rising at 34.8 |
+| Save and reload | `SideChanges` survived: the bought house was refused a second change after a reload |
+
+**What the purses showed.** Muinser held 452,986 and Aradwyr 144,075, against prices from 2,100
+to 45,900. The half-purse limit almost never binds between two rulers of this size: the "not
+ahead" rule is the one doing the work. Worth knowing before tuning either.
+
+**Fixed during the run:**
+- The Kingdom screen's own header - kingdom name, leader portrait, "Abdicate Leadership" - is
+  built from the player's map faction when the screen opens, and nothing of ours rebuilds it.
+  After the player conceded the throne it still offered abdication; after the player's house went
+  over it still read "Aradwyr's Rising". Both acts now close the screen, as vanilla's Done does.
+- The succession footer said "Okhon claims your throne" to Okhon. It now words itself for the
+  ruler, a vassal or the claimant.
+- A leader's house showed an empty price card; the card is hidden.
+- A leader held by a foreign enemy read as "free".
+- A purchase lost the selection; the bought house stays selected.
+
+**Found, not fixed - for the lead:** a player among the rebels sees the **vanilla** parts of the
+Kingdom screen (header, Clans, Fiefs, Policies, Armies) as the rising, because vanilla reads
+the player's map faction. The Realm and Court tabs show the realm. This is 2.6's behaviour, not
+2.6c's; whether the rising is the right thing for those tabs to show is a design question.
+
+**Still not seen live:** an AI leader's offer to the player's house (the inquiry), and the player
+as the claimant.
+
+**What the first run had to check** (kept as it was written before the run):
 - The Court tab renders in both modes at 1920x1080.
 - The rising is gone from the Diplomacy tab.
 - A purchase moves the house's parties and fiefs to the other side on the map.

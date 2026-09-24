@@ -341,7 +341,8 @@ namespace DiplomacyIntrigue.Intrigue
 
         /// <summary>
         /// Denars per point of <c>Clan.CurrentTotalStrength</c>. UN-TUNED. Chosen so a typical
-        /// house (strength 300-650 in the balance runs) prices its men at 4,500-10,000.
+        /// house (strength 300-650 in the balance runs) prices its men at 4,500-10,000. Battania's
+        /// houses measured 92-975 on 2026-09-24, so the top of that range was an underestimate.
         /// </summary>
         public const float SideChangeGoldPerStrength = 15f;
 

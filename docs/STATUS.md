@@ -19,13 +19,15 @@ Last completed measurement: **balance run 07** — [docs/balance/run-07.md](bala
 `feature/phase-2.6-civil-war`, merged into `development` on 2026-09-24.
 [design/07 §3d and §5](design/07-internal-politics.md) have the result tables.
 
-**2.6c, the civil war on screen: built, not yet run in a game.** Decided with the lead on
+**2.6c, the civil war on screen: built and run live, not yet merged.** Decided with the lead on
 2026-09-24, and built the same day on `feature/phase-2.6c-civil-war-ui`. Either leader can
 concede. A house can change sides mid-war for gold, the player's included. The war is shown on
 the Court tab, with a pointer on the Realm tab, and the rising is kept off the Diplomacy tab.
-Verified so far: it builds clean and passes LoadProbe, nothing more. The lead plans one test
-run covering this and the merged Phase 1 UI together; the checklist is in design/07 §6, "What
-was built".
+Run live on 2026-09-24 on `di_civilwar_test`, from all three places a player can stand, with 0
+errors. Five display bugs were found and fixed. Not yet seen: an AI leader's offer to the player's
+house, and the player as claimant. One design question is open for the lead: a rebel player
+sees vanilla's Kingdom-screen tabs as the rising. Details are in design/07 §6, "The first live
+run".
 [design/07 §6](design/07-internal-politics.md) has the rules and the price formula. The mockup
 is the "Civil war" row of the court canvas (https://claude.ai/artifact/1FrpG5in328WYfNi6sP8Pf).
 

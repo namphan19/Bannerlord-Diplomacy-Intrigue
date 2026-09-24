@@ -348,7 +348,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             // A civil war replaces the body of the tab. The header - realm, crown legitimacy -
             // is the same in both.
             var war = Settings.Current.EnableIntrigue ? InternalWars.OngoingIn(state, kingdom) : null;
-            CivilWar = war == null ? null : new DiCivilWarVM(state, war, Rebuild);
+            CivilWar = war == null ? null : new DiCivilWarVM(state, war, Rebuild, _civilWar?.SelectedClan);
             IsAtWar = war != null;
 
             var ruling = kingdom.RulingClan;
@@ -406,13 +406,21 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             var claims = SuccessionModel.PretendersTo(state, kingdom);
             if (claims.Count > 0)
             {
+                // Worded for whoever is reading: the ruler, a vassal, or the claimant. The
+                // second-person version was the only one until a live test on 2026-09-24 put the
+                // player among the claimants and the footer told them they claimed their own throne.
+                var throne = playerRules ? "your throne" : "the throne";
+                var playerClaims = false;
+                for (var i = 0; i < claims.Count; i++)
+                    if (claims[i].Claimant == Hero.MainHero) playerClaims = true;
                 SuccessionTitle = claims.Count == 1
-                    ? claims[0].Claimant.Name + " claims your throne."
-                    : claims.Count + " houses claim your throne.";
+                    ? (playerClaims ? "You claim the throne." : claims[0].Claimant.Name + " claims " + throne + ".")
+                    : claims.Count + " houses claim " + throne + (playerClaims ? ", yours among them." : ".");
+                var standingWord = playerRules ? "Your standing" : "The crown's standing";
                 SuccessionDetail = LegitimacyRegistry.IsWeak(state, kingdom)
-                    ? "Your standing is low enough that their faction can gather openly."
-                    : "While your standing holds above " + IntrigueConstants.LegitimacyPretenderThreshold.ToString("0")
-                      + ", no faction dares rally to the claim.";
+                    ? standingWord + " is low enough that a claimant's faction can gather openly."
+                    : "While " + standingWord.ToLowerInvariant() + " holds above " + IntrigueConstants.LegitimacyPretenderThreshold.ToString("0")
+                      + ", no faction dares rally to a claim.";
             }
             else if (standing > 0)
             {

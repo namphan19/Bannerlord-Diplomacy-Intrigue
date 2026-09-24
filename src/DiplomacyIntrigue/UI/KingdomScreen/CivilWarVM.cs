@@ -4,6 +4,8 @@ using DiplomacyIntrigue.Core;
 using DiplomacyIntrigue.Intrigue;
 using DiplomacyIntrigue.Models;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.GameState;
+using TaleWorlds.Core;
 using TaleWorlds.Library;
 
 namespace DiplomacyIntrigue.UI.KingdomScreen
@@ -40,14 +42,24 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         private string _actionNote = string.Empty;
         private string _concedeButtonText = string.Empty;
         private MBBindingList<DiCivilPriceLineVM> _priceLines = new MBBindingList<DiCivilPriceLineVM>();
+        private bool _hasPrice;
+        private readonly Clan _keepSelected;
 
-        public DiCivilWarVM(ModState state, InternalWar war, Action onChanged)
+        /// <param name="keepSelected">
+        /// The house selected before the court was rebuilt, kept selected when it is still in
+        /// the war - so a purchase leaves the player looking at the house they just bought.
+        /// </param>
+        public DiCivilWarVM(ModState state, InternalWar war, Action onChanged, Clan keepSelected = null)
         {
             _state = state;
             _war = war;
             _onChanged = onChanged;
+            _keepSelected = keepSelected;
             Compose();
         }
+
+        /// <summary>The house selected now, for the court to hand back after a rebuild.</summary>
+        internal Clan SelectedClan => _selected?.Clan;
 
         // ----- the war band ------------------------------------------------------
 
@@ -97,6 +109,10 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         [DataSourceProperty]
         public MBBindingList<DiCivilPriceLineVM> PriceLines { get => _priceLines; private set => SetField(ref _priceLines, value, nameof(PriceLines)); }
 
+        /// <summary>False for the two leaders' own houses, which have no price: the price card is hidden.</summary>
+        [DataSourceProperty]
+        public bool HasPrice { get => _hasPrice; private set => SetField(ref _hasPrice, value, nameof(HasPrice)); }
+
         [DataSourceProperty]
         public bool ActionVisible { get => _actionVisible; private set => SetField(ref _actionVisible, value, nameof(ActionVisible)); }
 
@@ -145,7 +161,22 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 }
 
                 if (!SideChange.Execute(_state, _war, clan, paid: true, out var failed))
+                {
                     Log.Notify("Could not change sides: " + failed, Colors.Red);
+                    _onChanged?.Invoke();
+                    return;
+                }
+
+                // The player's own house changed its map faction. The Kingdom screen's vanilla
+                // header and tabs were built from the old one (a rebel's read "Aradwyr's Rising"
+                // and kept reading it after going over, live 2026-09-24), so the screen closes,
+                // as it does after a ruler concedes. Buying another house changes nothing of ours.
+                if (clan == Clan.PlayerClan)
+                {
+                    var states = Game.Current?.GameStateManager;
+                    if (states?.ActiveState is KingdomState) states.PopState();
+                    return;
+                }
                 _onChanged?.Invoke();
             }
             catch (Exception ex)
@@ -173,7 +204,23 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
                 var rising = InternalWars.LeaderOf(_war, true) == Hero.MainHero;
                 if (!InternalWars.Concede(_state, _war, rising, out var failed))
+                {
                     Log.Notify("Could not concede: " + failed, Colors.Red);
+                    _onChanged?.Invoke();
+                    return;
+                }
+
+                // A ruler who concedes is no longer the ruler, and the Kingdom screen's own
+                // header - the leader's portrait, "Abdicate Leadership" - was built for a ruler
+                // and is not rebuilt by anything of ours. Seen live on 2026-09-24. The screen
+                // closes, as vanilla's Done does, rather than stay open showing a throne the
+                // player no longer holds.
+                if (!rising)
+                {
+                    var states = Game.Current?.GameStateManager;
+                    if (states?.ActiveState is KingdomState) states.PopState();
+                    return;
+                }
                 _onChanged?.Invoke();
             }
             catch (Exception ex)
@@ -296,14 +343,19 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             // A house that is not a leader starts on itself: its own choice is the one it has.
             // A leader starts on the first house it could buy.
             DiCivilHouseVM first = null;
+            if (_keepSelected != null)
+                foreach (var list in new[] { CrownHouses, RisingHouses })
+                    for (var i = 0; i < list.Count && first == null; i++)
+                        if (list[i].Clan == _keepSelected) first = list[i];
+
             var mine = playerLeadsCrown ? RisingHouses : playerLeadsRising ? CrownHouses : null;
-            if (mine == null)
+            if (first == null && mine == null)
             {
                 foreach (var list in new[] { CrownHouses, RisingHouses })
                     for (var i = 0; i < list.Count && first == null; i++)
                         if (list[i].Clan == Clan.PlayerClan) first = list[i];
             }
-            else if (mine.Count > 0) first = mine[0];
+            else if (first == null && mine.Count > 0) first = mine[0];
             if (first == null) first = CrownHouses.Count > 0 ? CrownHouses[0] : RisingHouses.Count > 0 ? RisingHouses[0] : null;
             if (first != null) Select(first);
         }
@@ -353,6 +405,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             ActionText = string.Empty;
             ActionNote = string.Empty;
 
+            HasPrice = false;
             if (q == null)
             {
                 SelectedTitle = string.Empty;
@@ -374,6 +427,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 return;
             }
 
+            HasPrice = true;
             for (var i = 0; i < q.Lines.Count; i++)
                 lines.Add(new DiCivilPriceLineVM(q.Lines[i].Key, q.Lines[i].Value, i < q.BaseLineCount));
             PriceLines = lines;
@@ -450,9 +504,12 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             var who = leader == null ? "Nobody" : leader == Hero.MainHero ? "You" : leader.Name.ToString();
             var verb = leader == Hero.MainHero ? " are " : " is ";
             var limit = IntrigueConstants.InternalWarCaptiveDays;
-            return daysHeld > 0
-                ? who + verb + "held - " + daysHeld + " of " + limit + " days"
-                : who + verb + "free - 0 of " + limit + " days held";
+            if (daysHeld > 0) return who + verb + "held - " + daysHeld + " of " + limit + " days";
+            // Only captivity at the other side's hands counts toward the 30 days
+            // (InternalWars.HeldBy); a leader taken by a foreign enemy is not free either.
+            if (leader != null && leader.IsPrisoner)
+                return who + verb + "a prisoner, but not of the other side - it does not count";
+            return who + verb + "free - 0 of " + limit + " days held";
         }
 
         /// <summary>Gold under the stalemate line, orange past it, red once a concession is in reach.</summary>

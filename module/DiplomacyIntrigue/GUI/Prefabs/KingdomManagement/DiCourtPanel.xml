@@ -717,7 +717,8 @@
                                 HeightSizePolicy="CoverChildren" MarginBottom="6" Brush="DiRealm.Title"
                                 IsEnabled="false" Text="@SelectedTitle" />
 
-                            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="196">
+                            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="196"
+                                IsVisible="@HasPrice">
                               <Children>
                                 <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
                                     Sprite="BlankWhiteSquare_9" Color="#201A1388" />
