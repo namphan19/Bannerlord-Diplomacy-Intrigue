@@ -453,8 +453,12 @@ UI-INTEGRATION.md §0b.
 
 ### What to do next
 
-1. **Review and merge 2.6/2.6b** into `development`: a PR from `feature/phase-2.6-civil-war`,
-   read against CLAUDE.md §3 (two new Harmony patches, save ids 13/14/27 and property 14).
+1. **In flight, 2026-09-24: a side branch delegated to opencode**,
+   `feature/side-civil-war-gaps-tribute-court`. It covers the 2.6c verification gaps (an AI
+   leader's offer to the player's house, and the player as claimant) and item 4 below, the
+   tribute revisit. It includes a fault found while writing the brief: `TryDemandTribute` signs
+   a tributary pact **on behalf of a player-ruled target** without asking. Every other AI path
+   that proposes to a player-ruled kingdom hands the signature over (`IsPlayerRuled`).
 2. **A long AI-only run with internal wars in it**, the balance question 2.6 leaves open. How
    often do internal wars start, how often do houses divide, and does a realm recover from a
    lost civil war followed by foreign wars? Both of the first run's neighbours declared war on
@@ -552,7 +556,7 @@ Two things were added because of this, independent of the cause:
 |---|---|
 | **0 — Foundation** | ✅ done, verified in a live campaign |
 | **1 — Diplomacy core (1.1–1.12)** | ✅ **accepted by the lead, 2026-09-23**. Code complete including submission and hegemony (1.9/1.10), the vanilla takeover (1.11) and power (1.12). Measured over runs 01–07; the §13 rework under it is smoke-tested only, and the carried debt is listed in [ROADMAP.md](ROADMAP.md#phase-1--accepted-by-the-project-lead-2026-09-23) |
-| **2 — Court intrigue** | 🔄 2.1-2.5 and 2.7 built and verified live; **2.6 civil war** built and verified on its main path, on `feature/phase-2.6-civil-war`; 2.6b (a house divided) built, not yet run in a game |
+| **2 — Court intrigue** | 🔄 2.1-2.7 built and verified live on their main paths, all on `development` (2.6/2.6b and 2.6c merged 2026-09-24). What is still unverified is listed in the checkpoint at the top |
 | **3 — Espionage** | ⬜ spec written and reviewed, no code |
 | **4 — Integration, balance, release** | 🔄 runs 01-07 archived. **Run 07** (2026-09-20) is the current reference — [balance/run-07.md](balance/run-07.md). **Run 08 is owed** and closes the §13 questions |
 
