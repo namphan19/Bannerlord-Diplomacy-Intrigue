@@ -649,8 +649,8 @@ namespace DiplomacyIntrigue.UI
 
         /// <summary>
         /// The demand of tribute the AI runs weekly, handed to the player for the pair they
-        /// picked: claim, overwhelming strength, the target's trust - and the target's
-        /// consent lives in those gates, exactly as it does for the AI.
+        /// picked: claim, overwhelming strength, the target's trust and its court - and the
+        /// target's consent lives in those gates, exactly as it does for the AI.
         /// </summary>
         internal static void DemandTribute(ModState state, Kingdom us, Kingdom them)
         {

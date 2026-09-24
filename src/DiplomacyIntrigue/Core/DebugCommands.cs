@@ -1179,6 +1179,69 @@ namespace DiplomacyIntrigue.Core
         }
 
         /// <summary>
+        /// Whether a kingdom could demand tribute of another, gate by gate, with the target's
+        /// court house by house - printed from <see cref="AiDiplomacy.EvaluateTribute"/>, the
+        /// answer the weekly scan and the player's button both act on.
+        /// Usage: diplomacy.tribute_value Vlandia | Battania
+        /// With one kingdom named, reports it as the demander against every other.
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("tribute_value", "diplomacy")]
+        public static string TributeValue(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var parts = SplitOnPipe(args);
+            if (parts.Count < 1) return "Usage: diplomacy.tribute_value <demander> [| <target>]";
+
+            var a = FindKingdom(parts[0]);
+            if (a == null) return "No kingdom matching \"" + parts[0] + "\".";
+
+            if (parts.Count >= 2)
+            {
+                var b = FindKingdom(parts[1]);
+                if (b == null) return "No kingdom matching \"" + parts[1] + "\".";
+                return AiDiplomacy.ExplainTributeValue(state, a, b);
+            }
+
+            var sb = new StringBuilder();
+            foreach (var other in Kingdom.All)
+            {
+                if (other == a || !other.IsRealm()) continue;
+                sb.AppendLine(AiDiplomacy.ExplainTributeValue(state, a, other));
+            }
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Puts one demand for tribute through <see cref="AiDiplomacy.DemandTributeOf"/> now -
+        /// the body the weekly scan runs for each target - so a demand on a player-ruled realm
+        /// can be seen without waiting for the scan to pick it. Every gate still applies.
+        /// Test saves only: an accepted demand signs a real pact.
+        /// Usage: diplomacy.test_demand_tribute Vlandia | Battania
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_demand_tribute", "diplomacy")]
+        public static string TestDemandTribute(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var parts = SplitOnPipe(args);
+            if (parts.Count < 2) return "Usage: diplomacy.test_demand_tribute <demander> | <target>";
+            var a = FindKingdom(parts[0]);
+            if (a == null) return "No kingdom matching \"" + parts[0] + "\".";
+            var b = FindKingdom(parts[1]);
+            if (b == null) return "No kingdom matching \"" + parts[1] + "\".";
+
+            var before = AiDiplomacy.EvaluateTribute(state, a, b);
+            if (!AiDiplomacy.DemandTributeOf(state, a, b))
+                return "No demand made: " + (before.Blocked ?? "the demand was not sent - see the log.");
+            return b.Leader == Hero.MainHero
+                ? "Demand put to the player: answer the inquiry."
+                : b.Name + " pays tribute to " + a.Name + " now.";
+        }
+
+        /// <summary>
         /// Prints the exhaustion bands with their edges and what each one means.
         ///
         /// This is how a rival's war exhaustion is shown to the player - a band, never a
