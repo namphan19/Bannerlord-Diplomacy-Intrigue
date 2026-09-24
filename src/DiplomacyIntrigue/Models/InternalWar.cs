@@ -18,7 +18,7 @@ namespace DiplomacyIntrigue.Models
     /// Kept after it ends, with its outcome, because "this kingdom fought a civil war two years
     /// ago" is what stops the next one being declared the day after a stalemate.
     ///
-    /// Save ids are frozen. This type is definer class id 13 and uses properties 1-13;
+    /// Save ids are frozen. This type is definer class id 13 and uses properties 1-14;
     /// <see cref="InternalWarMember"/> is class id 14; next free class id is 15.
     /// </summary>
     public sealed class InternalWar
@@ -36,8 +36,9 @@ namespace DiplomacyIntrigue.Models
         [SaveableProperty(3)] public Clan Banner { get; private set; }
 
         /// <summary>
-        /// Every clan on the rebel side, the banner included. Fixed at the start (design 07
-        /// §3a Q2): clans do not change sides mid-war in v1.
+        /// Every clan on the rebel side, the banner included. Set at the start (design 07
+        /// §3a Q2), and changed since 2.6c only by a house bought over to the other side
+        /// (design 07 §6), which <see cref="SideChanges"/> records.
         ///
         /// A list of a wrapper type rather than a `List&lt;Clan&gt;`: that container belongs to
         /// the base game's definer, and whether registering it a second time from a mod is
@@ -84,6 +85,16 @@ namespace DiplomacyIntrigue.Models
         /// </summary>
         [SaveableProperty(13)] public Kingdom Faction { get; private set; }
 
+        /// <summary>
+        /// Every house that has changed sides in this war, in either direction (design 07 §6).
+        /// A house changes sides once per war; this is how that survives a reload.
+        ///
+        /// The same wrapper as <see cref="Rebels"/>, so no new class or container definition:
+        /// `List&lt;InternalWarMember&gt;` is already registered. Null on a save written before
+        /// 2.6c, and created in <see cref="AfterLoad"/>.
+        /// </summary>
+        [SaveableProperty(14)] public List<InternalWarMember> SideChanges { get; private set; }
+
         internal InternalWar() { }
 
         internal InternalWar(Kingdom kingdom, Hero claimant, Clan banner, Kingdom faction,
@@ -98,6 +109,7 @@ namespace DiplomacyIntrigue.Models
             StartedOn = CampaignTime.Now;
             EndedOn = CampaignTime.Never;
             CrownShareAtStart = crownShareAtStart;
+            SideChanges = new List<InternalWarMember>();
         }
 
         public bool IsOngoing => Outcome == InternalWarOutcome.Ongoing;
@@ -110,10 +122,39 @@ namespace DiplomacyIntrigue.Models
             return false;
         }
 
+        /// <summary>True once this house has changed sides in this war. It cannot do so again.</summary>
+        public bool HasChangedSides(Clan clan)
+        {
+            if (clan == null || SideChanges == null) return false;
+            for (var i = 0; i < SideChanges.Count; i++)
+                if (SideChanges[i].Clan == clan) return true;
+            return false;
+        }
+
         internal void AfterLoad()
         {
             if (Rebels == null) Rebels = new List<InternalWarMember>();
             Rebels.RemoveAll(r => r == null || r.Clan == null);
+            if (SideChanges == null) SideChanges = new List<InternalWarMember>();
+            SideChanges.RemoveAll(r => r == null || r.Clan == null);
+        }
+
+        /// <summary>
+        /// Moves a house to the other side and records that it did. The record only: the
+        /// map-faction index, the rising's lists and the armies are <c>InternalWars.ChangeSide</c>'s.
+        /// </summary>
+        internal void MoveSide(Clan clan, bool toRising)
+        {
+            if (clan == null) return;
+            if (toRising)
+            {
+                if (!IsRebel(clan)) Rebels.Add(new InternalWarMember(clan));
+            }
+            else
+            {
+                Rebels.RemoveAll(r => r.Clan == clan);
+            }
+            if (!HasChangedSides(clan)) SideChanges.Add(new InternalWarMember(clan));
         }
 
         internal void AddExhaustion(bool rebelSide, float amount)

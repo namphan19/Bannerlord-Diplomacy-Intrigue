@@ -6,6 +6,7 @@ using DiplomacyIntrigue.Diplomacy;
 using DiplomacyIntrigue.Intrigue;
 using DiplomacyIntrigue.Models;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.Election;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
@@ -1053,6 +1054,10 @@ namespace DiplomacyIntrigue.Core
                 // permanently discouraged by wars it finished years ago.
                 for (var day = 0; day < 7; day++) RunDailyUpkeep(state);
 
+                // A civil war's leaders buy houses weekly (design 07 §6). Left out, a week here
+                // would show every internal war fought with its sides frozen.
+                SideChange.WeeklyTick(state);
+
                 foreach (var kingdom in Kingdom.All)
                 {
                     if (!kingdom.IsRealm()) continue;
@@ -1779,6 +1784,158 @@ namespace DiplomacyIntrigue.Core
             return "Ended: " + war + Environment.NewLine + "Ruler now " + kingdom.Leader?.Name + " of "
                    + kingdom.RulingClan?.Name + ", legitimacy " + LegitimacyRegistry.Of(state, kingdom).ToString("0.0")
                    + Environment.NewLine + MapFactionReport(state, kingdom);
+        }
+
+        /// <summary>
+        /// Every house of a kingdom at war with itself, with its price to change sides line by
+        /// line, whether it can, and whether the other side's leader would pay - printed from
+        /// <see cref="SideChange.QuoteFor"/> and <see cref="SideChange.AiWouldPay"/>, the same
+        /// answers the Court tab and the weekly AI read.
+        /// Usage: diplomacy.civil_war_prices Battania
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("civil_war_prices", "diplomacy")]
+        public static string CivilWarPrices(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+            if (args == null || args.Count == 0) return "Usage: diplomacy.civil_war_prices <kingdom>";
+
+            var kingdom = FindKingdom(string.Join(" ", args));
+            if (kingdom == null) return "No kingdom matching \"" + string.Join(" ", args) + "\".";
+            var war = InternalWars.OngoingIn(state, kingdom);
+            if (war == null) return kingdom.Name + " is not at war with itself.";
+
+            var sb = new StringBuilder();
+            sb.AppendLine(war.ToString());
+            for (var side = 0; side < 2; side++)
+            {
+                var rising = side == 1;
+                var leader = InternalWars.LeaderOf(war, rising);
+                sb.AppendLine();
+                sb.AppendLine("-- " + SideChange.SideName(war, rising) + ", led by " + leader?.Name
+                              + " (purse " + (leader?.Gold ?? 0).ToString("N0") + ") --");
+                foreach (var clan in Court.MembersOf(kingdom))
+                {
+                    if (war.IsRebel(clan) != rising) continue;
+                    var q = SideChange.QuoteFor(state, war, clan);
+                    if (q == null) continue;
+                    sb.Append("  " + clan.Name + ": " + q.Price.ToString("N0") + " to " + SideChange.SideName(war, q.ToRising)
+                              + " [strength " + q.Strength.ToString("0") + ", " + q.Towns + "T/" + q.Castles + "C, relation x"
+                              + q.RelationFactor.ToString("0.00") + ", bond x" + q.BondFactor.ToString("0.00")
+                              + ", momentum x" + q.MomentumFactor.ToString("0.00") + "]");
+                    if (!q.Eligible) sb.AppendLine("  CANNOT: " + q.Reason);
+                    else sb.AppendLine(SideChange.AiWouldPay(q, out var why) ? "  - would be paid" : "  - not paid: " + why);
+                    for (var i = 0; i < q.Lines.Count; i++)
+                        sb.AppendLine("      " + q.Lines[i].Key + ": " + q.Lines[i].Value.ToString("+#,0;-#,0;0"));
+                }
+            }
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Moves a house to the other side of its kingdom's civil war now, through the same
+        /// <see cref="SideChange.Execute"/> the Court tab and the AI use: eligibility still
+        /// applies, the AI's budget rule does not. With <c>| unpaid</c> nobody pays - for a
+        /// buyer whose purse the test cannot wait for. Test saves only.
+        /// Usage: diplomacy.test_change_side fen Gruffendoc   or   ... | unpaid
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_change_side", "diplomacy")]
+        public static string TestChangeSide(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var parts = string.Join(" ", args ?? new List<string>()).Split('|');
+            var clan = FindClan(parts[0].Trim());
+            if (clan == null) return "Usage: diplomacy.test_change_side <clan> [| unpaid]";
+            var paid = !(parts.Length > 1 && parts[1].Trim().Equals("unpaid", StringComparison.OrdinalIgnoreCase));
+
+            var war = InternalWars.OngoingIn(state, clan.Kingdom);
+            if (war == null) return clan.Name + "'s kingdom is not at war with itself.";
+
+            var before = SideChange.QuoteFor(state, war, clan);
+            if (!SideChange.Execute(state, war, clan, paid, out var failed)) return clan.Name + ": " + failed;
+            return clan.Name + " went over to " + SideChange.SideName(war, before.ToRising)
+                   + (paid ? " for " + before.Price.ToString("N0") : " unpaid") + ". Now: " + war
+                   + Environment.NewLine + MapFactionReport(state, war.Kingdom);
+        }
+
+        /// <summary>
+        /// Puts the player's house into a kingdom at war with itself, on a chosen side, so the
+        /// Court tab can be seen from each of the three places a player can stand: a sworn house
+        /// of the crown, a house of the rising, or the ruler. Joining the rising here is the start
+        /// prompt's path, not a change of sides, so the house can still be bought afterwards.
+        /// "ruler" hands the throne to the player's house with vanilla's
+        /// <c>ChangeRulingClanAction</c>, which the succession watch will see as a change of
+        /// ruler. Test saves only - this rewrites the player's allegiance.
+        /// Usage: diplomacy.test_player_side Battania | crown     (crown, rising or ruler)
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_player_side", "diplomacy")]
+        public static string TestPlayerSide(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var parts = string.Join(" ", args ?? new List<string>()).Split('|');
+            if (parts.Length != 2) return "Usage: diplomacy.test_player_side <kingdom> | crown|rising|ruler";
+            var kingdom = FindKingdom(parts[0].Trim());
+            if (kingdom == null) return "No kingdom matching \"" + parts[0].Trim() + "\".";
+            var war = InternalWars.OngoingIn(state, kingdom);
+            if (war == null) return kingdom.Name + " is not at war with itself.";
+
+            var side = parts[1].Trim().ToLowerInvariant();
+            if (side != "crown" && side != "rising" && side != "ruler") return "The side must be crown, rising or ruler.";
+
+            var player = Clan.PlayerClan;
+            if (player == null) return "No player clan.";
+            if (player == kingdom.RulingClan || player == war.Banner) return "The player's house already leads a side.";
+
+            if (player.Kingdom != kingdom)
+            {
+                if (player.Kingdom == null) ChangeKingdomAction.ApplyByJoinToKingdom(player, kingdom, default(CampaignTime), true);
+                else ChangeKingdomAction.ApplyByJoinToKingdomByDefection(player, player.Kingdom, kingdom, default(CampaignTime), true);
+            }
+            if (player.Kingdom != kingdom) return "The player's house could not join " + kingdom.Name + ".";
+
+            if (side == "rising")
+            {
+                if (!war.IsRebel(player)) InternalWars.JoinRising(state, war, player);
+            }
+            else
+            {
+                if (war.IsRebel(player)) return "The player's house is already with the rising; this lever does not move it back.";
+                if (side == "ruler") ChangeRulingClanAction.Apply(kingdom, player);
+            }
+
+            return "The player's house is now " + (side == "ruler" ? "ruling " + kingdom.Name
+                       : side == "rising" ? "with " + SideChange.SideName(war, true) : "with the crown of " + kingdom.Name)
+                   + ". " + war + Environment.NewLine + MapFactionReport(state, kingdom);
+        }
+
+        /// <summary>
+        /// One side of a civil war concedes now, through <see cref="InternalWars.Concede"/> - the
+        /// Court tab's button. Test saves only.
+        /// Usage: diplomacy.test_concede Battania | crown     (crown or rising: the side that gives up)
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_concede", "diplomacy")]
+        public static string TestConcede(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var parts = string.Join(" ", args ?? new List<string>()).Split('|');
+            if (parts.Length != 2) return "Usage: diplomacy.test_concede <kingdom> | crown|rising";
+            var kingdom = FindKingdom(parts[0].Trim());
+            if (kingdom == null) return "No kingdom matching \"" + parts[0].Trim() + "\".";
+            var war = InternalWars.OngoingIn(state, kingdom);
+            if (war == null) return kingdom.Name + " is not at war with itself.";
+
+            var which = parts[1].Trim().ToLowerInvariant();
+            if (which != "crown" && which != "rising") return "The side must be crown or rising.";
+
+            if (!InternalWars.Concede(state, war, which == "rising", out var failed)) return failed;
+            return "Conceded: " + war + Environment.NewLine + "Ruler now " + kingdom.Leader?.Name + " of "
+                   + kingdom.RulingClan?.Name + ", legitimacy " + LegitimacyRegistry.Of(state, kingdom).ToString("0.0");
         }
 
         /// <summary>

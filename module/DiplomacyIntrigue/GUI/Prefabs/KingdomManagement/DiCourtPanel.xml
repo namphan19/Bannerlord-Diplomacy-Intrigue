@@ -84,9 +84,16 @@
               </Children>
             </Widget>
 
+            <!-- The body has two faces: the court at peace, and the court at war with itself
+                 (Phase 2.6c). Both sit in one plain Widget, which overlaps its children, so the
+                 vertical list above holds a single StretchToParent child: a ListPanel shares its
+                 free space between every stretching child, hidden or not (UI-INTEGRATION.md 0c.2). -->
+            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent">
+              <Children>
+
             <!-- ================= Body: blocs | the court | the selected clan ================= -->
             <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
-                MarginTop="12" MarginLeft="24" MarginRight="24" MarginBottom="8">
+                MarginTop="12" MarginLeft="24" MarginRight="24" MarginBottom="8" IsVisible="@IsAtPeace">
               <Children>
 
                 <!-- Column 1: court blocs -->
@@ -387,9 +394,446 @@
               </Children>
             </ListPanel>
 
+            <!-- ================= Civil war (Phase 2.6c, design 07 section 6) =================
+                 The court canvas's "Civil war" row, board "Your court at war". The outer Widget
+                 reads IsAtWar from the court; everything inside reads DiCivilWarVM through
+                 DataSource="{CivilWar}". A binding on the DataSource widget itself would resolve
+                 against CivilWar, which is why the visibility sits one level up. -->
+            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                MarginTop="12" MarginLeft="24" MarginRight="24" MarginBottom="16" IsVisible="@IsAtWar">
+              <Children>
+                <ListPanel DataSource="{CivilWar}" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                    StackLayout.LayoutMethod="VerticalTopToBottom">
+                  <Children>
+
+                    <!-- ===== The war band: the crown | how it ends | the rising ===== -->
+                    <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="160">
+                      <Children>
+
+                        <!-- The crown -->
+                        <Widget WidthSizePolicy="Fixed" SuggestedWidth="360" HeightSizePolicy="StretchToParent">
+                          <Children>
+                            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                                Sprite="BlankWhiteSquare_9" Color="#201A1388" />
+                            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="3"
+                                VerticalAlignment="Top" Sprite="BlankWhiteSquare_9" Color="#8FB35EFF" />
+                            <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                MarginLeft="14" MarginRight="14" MarginTop="12" StackLayout.LayoutMethod="VerticalTopToBottom">
+                              <Children>
+                                <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren">
+                                  <Children>
+                                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
+                                        HeightSizePolicy="CoverChildren" Brush="DiRealm.Title" IsEnabled="false"
+                                        Text="THE CROWN" />
+                                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
+                                        HeightSizePolicy="CoverChildren" MarginLeft="10" VerticalAlignment="Bottom"
+                                        Brush="DiRealm.Small" Brush.FontColor="#8FB35EFF" IsEnabled="false"
+                                        Text="@CrownSideNote" />
+                                  </Children>
+                                </ListPanel>
+                                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                                    HeightSizePolicy="CoverChildren" MarginTop="2" Brush="DiRealm.Label"
+                                    IsEnabled="false" Text="@CrownLedBy" />
+                                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                                    HeightSizePolicy="CoverChildren" MarginTop="2" Brush="DiRealm.Label"
+                                    IsEnabled="false" Text="@CrownCounts" />
+                                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="22" MarginTop="6">
+                                  <Children>
+                                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
+                                        HeightSizePolicy="CoverChildren" HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                                        Brush="DiRealm.Label" IsEnabled="false" Text="EXHAUSTION" />
+                                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
+                                        HeightSizePolicy="CoverChildren" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                        Brush="DiRealm.Value" Brush.FontColor="@CrownExhaustionColor" IsEnabled="false"
+                                        Text="@CrownExhaustionText" />
+                                  </Children>
+                                </Widget>
+                                <!-- 332px bar: the stalemate line at 40 sits at 132 -->
+                                <Widget WidthSizePolicy="Fixed" SuggestedWidth="332" HeightSizePolicy="Fixed"
+                                    SuggestedHeight="10" MarginTop="4">
+                                  <Children>
+                                    <FillBarHorizontalWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                                        Sprite="BlankWhiteSquare_9" Color="#0D0A07CC" FillWidget="FillWidget"
+                                        InitialAmount="@CrownExhaustionAmount" IsDirectionRightward="true" MaxAmount="100">
+                                      <Children>
+                                        <Widget Id="FillWidget" WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent"
+                                            Sprite="BlankWhiteSquare_9" Color="@CrownExhaustionColor" />
+                                      </Children>
+                                    </FillBarHorizontalWidget>
+                                    <Widget WidthSizePolicy="Fixed" SuggestedWidth="2" HeightSizePolicy="Fixed"
+                                        SuggestedHeight="18" HorizontalAlignment="Left" VerticalAlignment="Center"
+                                        PositionXOffset="132" Sprite="BlankWhiteSquare_9" Color="#D9B54AFF" />
+                                  </Children>
+                                </Widget>
+                                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                                    HeightSizePolicy="CoverChildren" MarginTop="6" Brush="DiRealm.Small"
+                                    IsEnabled="false" Text="@CrownHeldText" />
+                              </Children>
+                            </ListPanel>
+                          </Children>
+                        </Widget>
+
+                        <!-- How it ends -->
+                        <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                            MarginLeft="16" MarginRight="16" StackLayout.LayoutMethod="VerticalTopToBottom">
+                          <Children>
+                            <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
+                                HeightSizePolicy="CoverChildren" MarginBottom="6" Brush="DiRealm.Title"
+                                Brush.FontColor="#D9695AFF" IsEnabled="false" Text="@DayText" />
+
+                            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="38" MarginBottom="4">
+                              <Children>
+                                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                                    Sprite="BlankWhiteSquare_9" Color="#201A1388" />
+                                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="250"
+                                    HeightSizePolicy="StretchToParent" MarginLeft="10" HorizontalAlignment="Left"
+                                    Brush="DiRealm.Small" IsEnabled="false" Text="@CrownLosesWhen" />
+                                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="170"
+                                    HeightSizePolicy="StretchToParent" MarginRight="10" HorizontalAlignment="Right"
+                                    Brush="DiRealm.Body" Brush.FontColor="#D9695AFF" Brush.TextHorizontalAlignment="Right"
+                                    IsEnabled="false" Text="@CrownLosesResult" />
+                              </Children>
+                            </Widget>
+                            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="38" MarginBottom="4">
+                              <Children>
+                                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                                    Sprite="BlankWhiteSquare_9" Color="#201A1388" />
+                                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="250"
+                                    HeightSizePolicy="StretchToParent" MarginLeft="10" HorizontalAlignment="Left"
+                                    Brush="DiRealm.Small" IsEnabled="false" Text="@RisingLosesWhen" />
+                                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="170"
+                                    HeightSizePolicy="StretchToParent" MarginRight="10" HorizontalAlignment="Right"
+                                    Brush="DiRealm.Body" Brush.FontColor="#8FB35EFF" Brush.TextHorizontalAlignment="Right"
+                                    IsEnabled="false" Text="@RisingLosesResult" />
+                              </Children>
+                            </Widget>
+                            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="38">
+                              <Children>
+                                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                                    Sprite="BlankWhiteSquare_9" Color="#201A1388" />
+                                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="250"
+                                    HeightSizePolicy="StretchToParent" MarginLeft="10" HorizontalAlignment="Left"
+                                    Brush="DiRealm.Small" IsEnabled="false" Text="@StalemateWhen" />
+                                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="170"
+                                    HeightSizePolicy="StretchToParent" MarginRight="10" HorizontalAlignment="Right"
+                                    Brush="DiRealm.Body" Brush.FontColor="#D9B54AFF" Brush.TextHorizontalAlignment="Right"
+                                    IsEnabled="false" Text="Stalemate" />
+                              </Children>
+                            </Widget>
+                          </Children>
+                        </ListPanel>
+
+                        <!-- The rising -->
+                        <Widget WidthSizePolicy="Fixed" SuggestedWidth="360" HeightSizePolicy="StretchToParent">
+                          <Children>
+                            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                                Sprite="BlankWhiteSquare_9" Color="#201A1388" />
+                            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="3"
+                                VerticalAlignment="Top" Sprite="BlankWhiteSquare_9" Color="#D9695AFF" />
+                            <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                MarginLeft="14" MarginRight="14" MarginTop="12" StackLayout.LayoutMethod="VerticalTopToBottom">
+                              <Children>
+                                <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren">
+                                  <Children>
+                                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
+                                        HeightSizePolicy="CoverChildren" Brush="DiRealm.Title" IsEnabled="false"
+                                        Text="@RisingTitle" />
+                                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
+                                        HeightSizePolicy="CoverChildren" MarginLeft="10" VerticalAlignment="Bottom"
+                                        Brush="DiRealm.Small" Brush.FontColor="#D9695AFF" IsEnabled="false"
+                                        Text="@RisingSideNote" />
+                                  </Children>
+                                </ListPanel>
+                                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                                    HeightSizePolicy="CoverChildren" MarginTop="2" Brush="DiRealm.Label"
+                                    IsEnabled="false" Text="@RisingLedBy" />
+                                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                                    HeightSizePolicy="CoverChildren" MarginTop="2" Brush="DiRealm.Label"
+                                    IsEnabled="false" Text="@RisingCounts" />
+                                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="22" MarginTop="6">
+                                  <Children>
+                                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
+                                        HeightSizePolicy="CoverChildren" HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                                        Brush="DiRealm.Label" IsEnabled="false" Text="EXHAUSTION" />
+                                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
+                                        HeightSizePolicy="CoverChildren" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                        Brush="DiRealm.Value" Brush.FontColor="@RisingExhaustionColor" IsEnabled="false"
+                                        Text="@RisingExhaustionText" />
+                                  </Children>
+                                </Widget>
+                                <Widget WidthSizePolicy="Fixed" SuggestedWidth="332" HeightSizePolicy="Fixed"
+                                    SuggestedHeight="10" MarginTop="4">
+                                  <Children>
+                                    <FillBarHorizontalWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                                        Sprite="BlankWhiteSquare_9" Color="#0D0A07CC" FillWidget="FillWidget"
+                                        InitialAmount="@RisingExhaustionAmount" IsDirectionRightward="true" MaxAmount="100">
+                                      <Children>
+                                        <Widget Id="FillWidget" WidthSizePolicy="Fixed" HeightSizePolicy="StretchToParent"
+                                            Sprite="BlankWhiteSquare_9" Color="@RisingExhaustionColor" />
+                                      </Children>
+                                    </FillBarHorizontalWidget>
+                                    <Widget WidthSizePolicy="Fixed" SuggestedWidth="2" HeightSizePolicy="Fixed"
+                                        SuggestedHeight="18" HorizontalAlignment="Left" VerticalAlignment="Center"
+                                        PositionXOffset="132" Sprite="BlankWhiteSquare_9" Color="#D9B54AFF" />
+                                  </Children>
+                                </Widget>
+                                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                                    HeightSizePolicy="CoverChildren" MarginTop="6" Brush="DiRealm.Small"
+                                    IsEnabled="false" Text="@RisingHeldText" />
+                              </Children>
+                            </ListPanel>
+                          </Children>
+                        </Widget>
+                      </Children>
+                    </ListPanel>
+
+                    <!-- ===== Body: the court divided | the selected house ===== -->
+                    <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent" MarginTop="12">
+                      <Children>
+
+                        <!-- The court divided, scrollable: a big court does not fit two lists at once.
+                             The scroll panel and its scrollbar sit side by side in a plain Widget
+                             (UI-INTEGRATION.md 0c.2). -->
+                        <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                            StackLayout.LayoutMethod="VerticalTopToBottom">
+                          <Children>
+                            <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="24">
+                              <Children>
+                                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="190"
+                                    HeightSizePolicy="StretchToParent" MarginLeft="10" Brush="DiRealm.Small"
+                                    IsEnabled="false" Text="HOUSE" />
+                                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="50"
+                                    HeightSizePolicy="StretchToParent" Brush="DiRealm.Small" IsEnabled="false"
+                                    Text="FIEFS" />
+                                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="70"
+                                    HeightSizePolicy="StretchToParent" Brush="DiRealm.Small" IsEnabled="false"
+                                    Text="LOYALTY" />
+                                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="90"
+                                    HeightSizePolicy="StretchToParent" Brush="DiRealm.Small" IsEnabled="false"
+                                    Text="PRICE" />
+                                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                                    HeightSizePolicy="StretchToParent" Brush="DiRealm.Small" IsEnabled="false"
+                                    Text="" />
+                              </Children>
+                            </ListPanel>
+
+                            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent">
+                              <Children>
+                                <ScrollablePanel WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                                    MarginRight="16" AutoHideScrollBars="true" ClipRect="CivilClipRect"
+                                    InnerPanel="CivilClipRect\CivilList" VerticalScrollbar="..\CivilScrollbar\Scrollbar">
+                                  <Children>
+                                    <Widget Id="CivilClipRect" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                                        ClipContents="true">
+                                      <Children>
+                                        <ListPanel Id="CivilList" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                            StackLayout.LayoutMethod="VerticalTopToBottom">
+                                          <Children>
+
+                                            <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                                                HeightSizePolicy="Fixed" SuggestedHeight="24" MarginLeft="10"
+                                                Brush="DiRealm.Small" Brush.FontColor="#8FB35EFF" IsEnabled="false"
+                                                Text="@CrownHeading" />
+                                            <ListPanel DataSource="{CrownHouses}" WidthSizePolicy="StretchToParent"
+                                                HeightSizePolicy="CoverChildren" StackLayout.LayoutMethod="VerticalTopToBottom">
+                                              <ItemTemplate>
+                                                <ButtonWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="32"
+                                                    MarginBottom="2" Brush="Kingdom.Item.Tuple" DoNotPassEventsToChildren="true"
+                                                    Command.Click="OnSelect" IsSelected="@IsSelected" UpdateChildrenStates="true">
+                                                  <Children>
+                                                    <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent">
+                                                      <Children>
+                                                        <TextWidget WidthSizePolicy="Fixed" SuggestedWidth="190" HeightSizePolicy="StretchToParent"
+                                                            MarginLeft="10" Brush="DiRealm.Body" Text="@Name" />
+                                                        <TextWidget WidthSizePolicy="Fixed" SuggestedWidth="50" HeightSizePolicy="StretchToParent"
+                                                            Brush="DiRealm.Body" Text="@FiefsText" />
+                                                        <TextWidget WidthSizePolicy="Fixed" SuggestedWidth="70" HeightSizePolicy="StretchToParent"
+                                                            Brush="DiRealm.Body" Brush.FontColor="@LoyaltyColor" Text="@LoyaltyText" />
+                                                        <TextWidget WidthSizePolicy="Fixed" SuggestedWidth="90" HeightSizePolicy="StretchToParent"
+                                                            Brush="DiRealm.Body" Text="@PriceText" />
+                                                        <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                                                            MarginRight="10" Brush="DiRealm.Small" Brush.FontColor="@NoteColor"
+                                                            Text="@NoteText" />
+                                                      </Children>
+                                                    </ListPanel>
+                                                  </Children>
+                                                </ButtonWidget>
+                                              </ItemTemplate>
+                                            </ListPanel>
+
+                                            <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                                                HeightSizePolicy="Fixed" SuggestedHeight="24" MarginTop="8" MarginLeft="10"
+                                                Brush="DiRealm.Small" Brush.FontColor="#D9695AFF" IsEnabled="false"
+                                                Text="@RisingHeading" />
+                                            <ListPanel DataSource="{RisingHouses}" WidthSizePolicy="StretchToParent"
+                                                HeightSizePolicy="CoverChildren" StackLayout.LayoutMethod="VerticalTopToBottom">
+                                              <ItemTemplate>
+                                                <ButtonWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="32"
+                                                    MarginBottom="2" Brush="Kingdom.Item.Tuple" DoNotPassEventsToChildren="true"
+                                                    Command.Click="OnSelect" IsSelected="@IsSelected" UpdateChildrenStates="true">
+                                                  <Children>
+                                                    <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent">
+                                                      <Children>
+                                                        <TextWidget WidthSizePolicy="Fixed" SuggestedWidth="190" HeightSizePolicy="StretchToParent"
+                                                            MarginLeft="10" Brush="DiRealm.Body" Text="@Name" />
+                                                        <TextWidget WidthSizePolicy="Fixed" SuggestedWidth="50" HeightSizePolicy="StretchToParent"
+                                                            Brush="DiRealm.Body" Text="@FiefsText" />
+                                                        <TextWidget WidthSizePolicy="Fixed" SuggestedWidth="70" HeightSizePolicy="StretchToParent"
+                                                            Brush="DiRealm.Body" Brush.FontColor="@LoyaltyColor" Text="@LoyaltyText" />
+                                                        <TextWidget WidthSizePolicy="Fixed" SuggestedWidth="90" HeightSizePolicy="StretchToParent"
+                                                            Brush="DiRealm.Body" Text="@PriceText" />
+                                                        <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                                                            MarginRight="10" Brush="DiRealm.Small" Brush.FontColor="@NoteColor"
+                                                            Text="@NoteText" />
+                                                      </Children>
+                                                    </ListPanel>
+                                                  </Children>
+                                                </ButtonWidget>
+                                              </ItemTemplate>
+                                            </ListPanel>
+
+                                            <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                                                HeightSizePolicy="CoverChildren" MarginTop="8" MarginLeft="10" Brush="DiRealm.Small"
+                                                IsEnabled="false"
+                                                Text="A house changes sides once in a war, and takes its fiefs with it. The price is paid from the leader's own purse to the house's head." />
+                                          </Children>
+                                        </ListPanel>
+                                      </Children>
+                                    </Widget>
+                                  </Children>
+                                </ScrollablePanel>
+                                <Standard.VerticalScrollbar Id="CivilScrollbar" HeightSizePolicy="StretchToParent"
+                                    HorizontalAlignment="Right" MarginLeft="2" MarginRight="2" />
+                              </Children>
+                            </Widget>
+                          </Children>
+                        </ListPanel>
+
+                        <!-- The selected house, priced; then conceding -->
+                        <ListPanel WidthSizePolicy="Fixed" SuggestedWidth="340" HeightSizePolicy="StretchToParent"
+                            MarginLeft="18" StackLayout.LayoutMethod="VerticalTopToBottom">
+                          <Children>
+                            <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                                HeightSizePolicy="CoverChildren" MarginBottom="6" Brush="DiRealm.Title"
+                                IsEnabled="false" Text="@SelectedTitle" />
+
+                            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="196"
+                                IsVisible="@HasPrice">
+                              <Children>
+                                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                                    Sprite="BlankWhiteSquare_9" Color="#201A1388" />
+                                <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                    MarginLeft="14" MarginRight="14" MarginTop="10" StackLayout.LayoutMethod="VerticalTopToBottom">
+                                  <Children>
+                                    <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="34">
+                                      <Children>
+                                        <ListPanel WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
+                                            HorizontalAlignment="Left" VerticalAlignment="Bottom">
+                                          <Children>
+                                            <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
+                                                HeightSizePolicy="CoverChildren" Brush="DiRealm.Score"
+                                                Brush.TextHorizontalAlignment="Left" IsEnabled="false" Text="@PriceText" />
+                                            <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
+                                                HeightSizePolicy="CoverChildren" MarginLeft="6" VerticalAlignment="Bottom"
+                                                Brush="DiRealm.Label" IsEnabled="false" Text="denars" />
+                                          </Children>
+                                        </ListPanel>
+                                        <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
+                                            HeightSizePolicy="CoverChildren" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                            Brush="DiRealm.Small" IsEnabled="false" Text="@PurseText" />
+                                      </Children>
+                                    </Widget>
+                                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
+                                        HeightSizePolicy="CoverChildren" MarginTop="8" MarginBottom="4" Brush="DiRealm.Label"
+                                        IsEnabled="false" Text="WHY THAT MUCH" />
+                                    <ListPanel DataSource="{PriceLines}" WidthSizePolicy="StretchToParent"
+                                        HeightSizePolicy="CoverChildren" StackLayout.LayoutMethod="VerticalTopToBottom">
+                                      <ItemTemplate>
+                                        <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginBottom="2">
+                                          <Children>
+                                            <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                                                HeightSizePolicy="CoverChildren" Brush="DiRealm.Body" Text="@Label" />
+                                            <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="72"
+                                                HeightSizePolicy="CoverChildren" Brush="DiRealm.Body" Brush.FontColor="@ValueColor"
+                                                Brush.TextHorizontalAlignment="Right" Text="@ValueText" />
+                                          </Children>
+                                        </ListPanel>
+                                      </ItemTemplate>
+                                    </ListPanel>
+                                  </Children>
+                                </ListPanel>
+                              </Children>
+                            </Widget>
+
+                            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="38"
+                                MarginTop="8" IsVisible="@ActionVisible">
+                              <Children>
+                                <ButtonWidget DoNotPassEventsToChildren="true" WidthSizePolicy="StretchToParent"
+                                    HeightSizePolicy="StretchToParent" Brush="ButtonBrush2" UpdateChildrenStates="true"
+                                    IsEnabled="@ActionEnabled" Command.Click="ExecuteSideAction">
+                                  <Children>
+                                    <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                                        Brush="Kingdom.GeneralButtons.Text" Text="@ActionText" />
+                                  </Children>
+                                </ButtonWidget>
+                              </Children>
+                            </Widget>
+                            <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                                HeightSizePolicy="CoverChildren" MarginTop="4" Brush="DiRealm.Small"
+                                IsEnabled="false" Text="@ActionNote" />
+
+                            <!-- Conceding: the ruler and the claimant only -->
+                            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="168"
+                                MarginTop="10" IsVisible="@CanConcede">
+                              <Children>
+                                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                                    Sprite="BlankWhiteSquare_9" Color="#201A1388" />
+                                <Widget WidthSizePolicy="Fixed" SuggestedWidth="3" HeightSizePolicy="StretchToParent"
+                                    Sprite="BlankWhiteSquare_9" Color="#D9695AFF" />
+                                <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                    MarginLeft="14" MarginRight="12" MarginTop="10" StackLayout.LayoutMethod="VerticalTopToBottom">
+                                  <Children>
+                                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
+                                        HeightSizePolicy="CoverChildren" Brush="DiRealm.Label" IsEnabled="false"
+                                        Text="CONCEDE THE WAR" />
+                                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                                        HeightSizePolicy="CoverChildren" MarginTop="4" Brush="DiRealm.Small"
+                                        IsEnabled="false" Text="@ConcedeBody" />
+                                    <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="34" MarginTop="8">
+                                      <Children>
+                                        <ButtonWidget DoNotPassEventsToChildren="true" WidthSizePolicy="StretchToParent"
+                                            HeightSizePolicy="StretchToParent" Brush="ButtonBrush2" UpdateChildrenStates="true"
+                                            Command.Click="ExecuteConcede">
+                                          <Children>
+                                            <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                                                Brush="Kingdom.GeneralButtons.Text" Brush.FontColor="#E8A99CFF"
+                                                Text="@ConcedeButtonText" />
+                                          </Children>
+                                        </ButtonWidget>
+                                      </Children>
+                                    </Widget>
+                                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                                        HeightSizePolicy="CoverChildren" MarginTop="4" Brush="DiRealm.Small"
+                                        IsEnabled="false" Text="@ConcedeRuleNote" />
+                                  </Children>
+                                </ListPanel>
+                              </Children>
+                            </Widget>
+                          </Children>
+                        </ListPanel>
+                      </Children>
+                    </ListPanel>
+                  </Children>
+                </ListPanel>
+              </Children>
+            </Widget>
+
+              </Children>
+            </Widget>
+
             <!-- ================= Footer: the succession watch ================= -->
             <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="58"
-                MarginLeft="24" MarginRight="24" MarginBottom="16">
+                MarginLeft="24" MarginRight="24" MarginBottom="16" IsVisible="@IsAtPeace">
               <Children>
                 <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
                     Sprite="BlankWhiteSquare_9" Color="#24201888" />

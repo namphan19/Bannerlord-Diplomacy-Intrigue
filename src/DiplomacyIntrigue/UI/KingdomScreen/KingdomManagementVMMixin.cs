@@ -37,7 +37,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             // Each of our tabs clears everything else when it opens: the five vanilla
             // categories AND the other one of ours. The lambdas read the fields at call time,
             // so the order these two are constructed in does not matter.
-            _realm = new DiRealmVM(() => { HideVanillaCategories(); if (_court != null) _court.Show = false; });
+            // The Realm tab's civil-war row opens the Court tab, where that war is shown (design 07 §6).
+            _realm = new DiRealmVM(() => { HideVanillaCategories(); if (_court != null) _court.Show = false; },
+                () => _court?.ExecuteShow());
             _court = new DiCourtVM(() => { HideVanillaCategories(); if (_realm != null) _realm.Show = false; });
             DiRealm = _realm;
             DiCourt = _court;

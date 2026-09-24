@@ -54,6 +54,7 @@ namespace DiplomacyIntrigue.Behaviors
                 BlocModel.Reset();
                 SuccessionModel.Reset();
                 InternalWars.Reset();
+                SideChange.Reset();
                 InternalWars.RebuildIndex(CoreBehavior.State);
 
                 // The engine never saves a kingdom's clan and fief lists, so a rising comes back
@@ -90,7 +91,8 @@ namespace DiplomacyIntrigue.Behaviors
 
         /// <summary>
         /// The sources that are conditions rather than moments - a tribute being paid, a
-        /// relative still held. See <see cref="GrievanceSources.WeeklyScan"/>.
+        /// relative still held. See <see cref="GrievanceSources.WeeklyScan"/>. Then each AI
+        /// leader of a civil war considers buying a house (<see cref="SideChange.WeeklyTick"/>).
         /// </summary>
         private void OnWeeklyTick()
         {
@@ -104,6 +106,16 @@ namespace DiplomacyIntrigue.Behaviors
             catch (Exception ex)
             {
                 Log.Error("Intrigue", "Weekly grievance scan failed.", ex);
+            }
+
+            // Its own try: a failure buying a house must not be read as a failed grievance scan.
+            try
+            {
+                SideChange.WeeklyTick(state);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Intrigue", "Weekly side changes failed.", ex);
             }
         }
 

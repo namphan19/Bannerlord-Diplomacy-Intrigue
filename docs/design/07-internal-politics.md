@@ -1,7 +1,7 @@
 # Design 07 — Internal politics: war inside a kingdom
 
 Status: **built and verified live**: all three outcomes, sieges, save/reload (§3d), and a house divided (§5).
-**2.6c, conceding and changing sides for gold, decided and not built (§6).** Phase 2, sitting beside
+**2.6c, conceding and changing sides for gold, built and run live (§6).** Phase 2, sitting beside
 [02-intrigue.md](02-intrigue.md) rather than replacing it.
 
 The project lead's brief, 2026-09-23: vanilla's internal politics is too simple. Clans should
@@ -486,7 +486,9 @@ notice when it starts and another when it ends, and no screen shows the sides, t
 what each ending does. This section is the answer: two new acts, and where the war is shown.
 Mockup: the "Civil war — Phase 2.6 UI" row of the court canvas
 (https://claude.ai/artifact/1FrpG5in328WYfNi6sP8Pf, boards `CivilWar`, `ChangeSides`,
-`RealmCivilWar`). Its figures are sample, not live. **Nothing in this section is built yet.**
+`RealmCivilWar`). Its figures are sample, not live. **Built on 2026-09-24 on branch
+`feature/phase-2.6c-civil-war-ui`, and run live the same day** - see "The first live run" at the
+end of this section.
 
 ### What the lead decided
 
@@ -530,7 +532,7 @@ price = (2,000 + 15 x strength + 4,000 per town + 2,000 per castle)
         x relation  x bond  x momentum          rounded to 100, never below 1,000
 
 strength  = Clan.CurrentTotalStrength (the engine's own figure; 300-650 for most houses in the
-            balance runs)
+            balance runs, 92-975 across Battania's houses on 2026-09-24)
 relation  = 1 - rel(buyer, house head) / 200                          0.5 - 1.5
 bond      = 0.5 + tie / 100, where tie is how firmly the house holds  0.5 - 1.5
             to its current side: on the crown's side its loyalty
@@ -550,15 +552,24 @@ with the claimant, exhaustion 62.4 against 35.6) comes to 10,000 × 1.06 × 1.04
 The mockup shows 13,800, a sample figure drawn before the formula was fixed.
 
 The panel lists the three base parts, then each factor as the gold it adds or removes, so the
-lines sum to the price. **One resolver** computes it (a `SideChange.PriceOf(state, war, clan,
-buyer)`). The panel, the AI and the player's own offer read the same figure.
+lines sum to the price. **One resolver** computes it: `SideChange.QuoteFor(state, war, clan)`,
+which also answers whether the house can change at all. The panel, the AI and the player's own
+offer read the same figure.
 
 ### Changing sides: when the AI buys
 
 Weekly, each AI leader considers the houses on the other side that it can buy, and buys the one
-with the most strength per denar, if the price is at most **half its purse**
-(`AiSideChangeBudgetShare = 0.5`, UN-TUNED). One house per leader per week. The house accepts:
-the price is its asking price.
+with the most strength per denar, if **its own side is not ahead** (its exhaustion is not below
+the other side's) and the price is at most **half its purse** (`AiSideChangeBudgetShare = 0.5`,
+UN-TUNED). One house per leader per week. The house accepts: the price is its asking price.
+One resolver, `SideChange.AiWouldPay`, holds both conditions.
+
+"Not ahead" was added by Claude while building, after the lead had seen the rule without it.
+Without it, a rich ruler who is already winning buys a house a week, at the discount the momentum
+factor gives the winning side, and a civil war is settled by purse rather than by arms. With it,
+buying is the losing side's way back, and it pays the losing side's premium for it. It is the
+same test for both sides and for the player's house, and it is the first rule to revisit if
+houses change sides too rarely.
 
 **The player's house under the same rule.** When an AI leader's pick is the player's house, the
 player gets the offer and can accept (and is paid) or refuse. A refusal stops that leader
@@ -575,10 +586,10 @@ A player who leads a side buys houses from the Court tab, with the same price an
 - The head's relation with the leader they left drops by **20** (UN-TUNED).
 - The house stays a sworn house of the kingdom throughout. Nothing here moves `Clan.Kingdom`.
 
-**Save data.** "Has changed sides in this war" must survive a reload. Planned: `InternalWar`
-property **14**, a `List<InternalWarMember>` of houses that changed sides. That reuses a class
-and container already defined (class id 14), so no new definer entry. The id is recorded in
-CLAUDE.md §3 only when it ships.
+**Save data.** "Has changed sides in this war" must survive a reload: `InternalWar` property
+**14**, `SideChanges`, a `List<InternalWarMember>` of houses that changed sides. That reuses a
+class and container already defined (class id 14), so there is no new definer entry. A save
+written before 2.6c has no property 14 and gets an empty list on load.
 
 ### Where it is shown
 
@@ -603,6 +614,81 @@ it lives on the **Court tab**:
 - No action is needed anywhere else. Every act here is internal, so all of them sit on the Court
   tab, which the test bridge can click. Lord dialogue and inquiries would put them where it
   cannot.
+
+### What was built, 2026-09-24
+
+| Piece | Where |
+|---|---|
+| The price, eligibility and the AI's paying rule | `Intrigue/SideChange.cs`: `QuoteFor`, `AiWouldPay`, `Execute`, `WeeklyTick` |
+| Moving a house, conceding, the AI's concession | `InternalWars.ChangeSide`, `Concede`, and the rule in `Advance` |
+| Armies split on both kingdoms, not only the realm | `InternalWars.SeparateArmies` (a house bought back can stand in a rising's army) |
+| Court tab in civil-war mode | `UI/KingdomScreen/CivilWarVM.cs`, and the civil-war block of `DiCourtPanel.xml` |
+| Realm tab: "Divided", and the civil war first in the wars strip | `RealmVM.ComposeStanding`, `ComposeWars` |
+| The rising kept off the Diplomacy tab | `KingdomDiplomacyVMMixin`, now hooked on `RefreshDiplomacyList` |
+
+**Checked in the IL before writing, v1.4.8:** vanilla builds the Diplomacy tab's war list from
+`_playerKingdom.FactionsAtWarWith`, keeping any entry whose two sides are kingdoms, so the rising
+*was* listed there as an enemy. `RefreshValues` does not rebuild that list, which is why the mixin
+moved to `RefreshDiplomacyList`.
+
+**Test levers:**
+- `diplomacy.civil_war_prices <kingdom>` prints every house's quote, line by line, and whether
+  the other leader would pay it.
+- `diplomacy.test_change_side <clan> [| unpaid]` moves a house through `Execute`.
+- `diplomacy.test_concede <kingdom> | crown|rising` concedes for a side.
+- `diplomacy.test_player_side <kingdom> | crown|rising|ruler` puts the player's house where the
+  Court tab can be seen from each place a player can stand.
+- `diplomacy.test_court_select <clan>` selects a row in civil-war mode as well.
+
+### The first live run, 2026-09-24, `di_civilwar_test`, 0 errors
+
+Four sessions, after the fixes listed below. The player's house was put on each side with
+`test_player_side`.
+
+| Check | Result |
+|---|---|
+| Court tab, civil-war mode, 1920x1080 | Renders as the mockup: both cards with the 40 mark, the three endings, the court split by side with prices, the price column line by line |
+| The rising off the Diplomacy tab | "At War (1)": Western Empire only, the count corrected |
+| Realm tab | "Divided", the civil war first with "Open the court", which opens the Court tab; no "war score" caption on it |
+| **The player buys a house (as ruler)** | Paid 16,900 for fen Caernacht; its clan, head, party and castle all answer to Battania afterwards (`test_map_faction`) |
+| **The player's house goes over (as a rebel)** | Received 33,700 from Muinser; relation with the claimant's house -20; the house marked "changed sides" |
+| **The AI buys** | `ai_week 1`: Muinser, losing, bought fen Uvain for 37,100, the best strength per denar on offer |
+| "Not ahead" holds | Aradwyr, winning, bought nobody; the player's "Go over" to him was disabled with that reason |
+| **The player concedes (as ruler)** | Peace, the rising destroyed, Aradwyr on the throne, legitimacy 25 -> 10, the player kept as a pretender at 39% |
+| **The AI concedes** | Left running at speed: Muinser conceded when the crown reached 75.8 with the rising at 34.8 |
+| Save and reload | `SideChanges` survived: the bought house was refused a second change after a reload |
+
+**What the purses showed.** Muinser held 452,986 and Aradwyr 144,075, against prices from 2,100
+to 45,900. The half-purse limit almost never binds between two rulers of this size: the "not
+ahead" rule is the one doing the work. Worth knowing before tuning either.
+
+**Fixed during the run:**
+- The Kingdom screen's own header - kingdom name, leader portrait, "Abdicate Leadership" - is
+  built from the player's map faction when the screen opens, and nothing of ours rebuilds it.
+  After the player conceded the throne it still offered abdication; after the player's house went
+  over it still read "Aradwyr's Rising". Both acts now close the screen, as vanilla's Done does.
+- The succession footer said "Okhon claims your throne" to Okhon. It now words itself for the
+  ruler, a vassal or the claimant.
+- A leader's house showed an empty price card; the card is hidden.
+- A leader held by a foreign enemy read as "free".
+- A purchase lost the selection; the bought house stays selected.
+
+**Found, not fixed - for the lead:** a player among the rebels sees the **vanilla** parts of the
+Kingdom screen (header, Clans, Fiefs, Policies, Armies) as the rising, because vanilla reads
+the player's map faction. The Realm and Court tabs show the realm. This is 2.6's behaviour, not
+2.6c's; whether the rising is the right thing for those tabs to show is a design question.
+
+**Still not seen live:** an AI leader's offer to the player's house (the inquiry), and the player
+as the claimant.
+
+**What the first run had to check** (kept as it was written before the run):
+- The Court tab renders in both modes at 1920x1080.
+- The rising is gone from the Diplomacy tab.
+- A purchase moves the house's parties and fiefs to the other side on the map.
+- A concession by the player as ruler, with the Kingdom screen still open, changes the ruler
+  cleanly.
+- A save and reload keeps `SideChanges`.
+- A week of `ai_week`, and how the prices compare with real purses.
 
 ### Not decided yet
 

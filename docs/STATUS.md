@@ -7,7 +7,8 @@ Module version 0.1.0. Save schema **v4**, definer base id **2749100**.
 Save ids in use: `Treaty` 1-17, `TrustRecord` 1-6, `ModState` 1-14, definer class ids to 14
 (`InternalWarMember`), enums 20-27. Next free: class id **15**, `ModState` property **15**, enum
 **28** (CLAUDE.md §3 has the per-type detail). The 2.6 ids (13, 14, 27, property 14) are on
-`development` since 2026-09-24. 2.6c plans `InternalWar` property 14 (design/07 §6); not yet taken.
+`development` since 2026-09-24, and so is 2.6c's `InternalWar` property 14 (`SideChanges`);
+next free on `InternalWar` is 15.
 Last completed measurement: **balance run 07** — [docs/balance/run-07.md](balance/run-07.md).
 
 ## Start here — handoff, 2026-09-23
@@ -18,25 +19,50 @@ Last completed measurement: **balance run 07** — [docs/balance/run-07.md](bala
 `feature/phase-2.6-civil-war`, merged into `development` on 2026-09-24.
 [design/07 §3d and §5](design/07-internal-politics.md) have the result tables.
 
-**Next: 2.6c, the civil war on screen.** Decided with the lead on 2026-09-24, not built:
-either leader can concede; a house can change sides mid-war for gold, the player's included;
-the war is shown on the Court tab, with a pointer on the Realm tab.
+**2.6c, the civil war on screen: built, run live, merged into `development`.** Decided with the lead on
+2026-09-24, and built the same day on `feature/phase-2.6c-civil-war-ui`. Either leader can
+concede. A house can change sides mid-war for gold, the player's included. The war is shown on
+the Court tab, with a pointer on the Realm tab, and the rising is kept off the Diplomacy tab.
+Run live on 2026-09-24 on `di_civilwar_test`, from all three places a player can stand, with 0
+errors. Five display bugs were found and fixed. Not yet seen: an AI leader's offer to the player's
+house, and the player as claimant. One design question is open for the lead: a rebel player
+sees vanilla's Kingdom-screen tabs as the rising. Details are in design/07 §6, "The first live
+run".
 [design/07 §6](design/07-internal-politics.md) has the rules and the price formula. The mockup
 is the "Civil war" row of the court canvas (https://claude.ai/artifact/1FrpG5in328WYfNi6sP8Pf).
 
 ### Checkpoint, 2026-09-24
 
-- **Branch:** `development` at `7f1c7e8` holds both 2.6/2.6b and opencode's Phase 1 UI
+- **Branch:** `development` holds 2.6/2.6b, opencode's Phase 1 UI
   (`feature/phase1-ui-match-mockup`: the tabs matched to the mockup, and the peace table as its
-  own popup), merged 2026-09-24. Two conflicts in `RealmVM`/`DiplomacyItemMixin` were resolved
-  by hand, and **that combination has not been run in game with an internal war going.**
-  **One game for both clones**: check who is running it before deploying (CLAUDE.md §7).
+  own popup) and 2.6c, all merged 2026-09-24. The two hand-resolved conflicts in
+  `RealmVM`/`DiplomacyItemMixin` were run in game with an internal war going during the 2.6c
+  test: the Realm tab rendered with no error. The `IsRealm` filter those conflicts kept was not
+  really exercised, since the rising held no vassal and nobody had a claim on it. **One game for both clones**: check who is running it before deploying
+  (CLAUDE.md §7).
 - **Verified live:** all three outcomes (rebels win, twice naturally; crown wins; stalemate,
   with the 365-day cooldown holding), sieges and fiefs changing sides once rebels could raise
   armies, save and reload mid-war with captured fiefs, and houses dividing at a real death,
   including two ruling houses. Six sessions; five bugs found and fixed, one of them a crash.
-- **Not verified:** the player prompts (rising as claimant, choosing a side), the captivity
-  end condition, a cadet branch going on to start an internal war, and any long AI-only run.
+- **Not verified - the whole civil-war line, in one place:**
+  - *2.6c:* an AI leader's offer to the player's house (the inquiry, `SideChange.OfferToPlayer`),
+    and the player as the claimant: conceding as the claimant, or buying houses as the claimant.
+    Both follow the paths verified from the other sides, but neither has been seen.
+  - *2.6, carried:* the player prompts at the start of a war (rising as the claimant, choosing a
+    side), the 30-day captivity ending, and a cadet branch going on to start an internal war.
+  - *Balance, never measured:* how often houses change sides over a long AI-only run, whether
+    concession at 75 ends wars too early (the one live war conceded a few days after load), and
+    how prices compare with purses across more than one kingdom. Rulers held 144k-453k against
+    prices of 2k-46k in the one war measured.
+  - *Phase 1 UI (opencode's merge):* the peace table was verified by opencode over the Kingdom
+    screen and the map. Not re-run in this session. What Esc does over it is unverified
+    (UI-INTEGRATION.md §0c.7).
+- **Open for the lead:** a player among the rebels sees vanilla's Kingdom-screen header and tabs
+  (Clans, Fiefs, Policies, Armies) as the rising, because vanilla reads the player's map faction;
+  the Realm and Court tabs show the realm. 2.6's behaviour, not 2.6c's.
+- **Saves:** `di_civilwar_2_6c` (2026-09-24) is `di_civilwar_test` with the player's house as
+  Battania's ruler and fen Caernacht bought back by the crown. It is the save for checking
+  `SideChanges` after a reload.
 - **Saves:** `di_civilwar_test` was **overwritten** on 2026-09-24 by a "Save and Exit" at the
   end of a session. It now holds Battania mid-war with the rebels at 11 fiefs, plus two cadet
   houses (Oburit of Sevin, Pethros of Patyr). `di_pretender_test` is unchanged and still the
