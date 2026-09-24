@@ -31,6 +31,12 @@ run".
 [design/07 §6](design/07-internal-politics.md) has the rules and the price formula. The mockup
 is the "Civil war" row of the court canvas (https://claude.ai/artifact/1FrpG5in328WYfNi6sP8Pf).
 
+**A game-design review of the mechanics, 2026-09-24:**
+[reviews/2026-09-24-game-mechanics-review.md](reviews/2026-09-24-game-mechanics-review.md).
+Its headline is that the court never feeds back into the AI's foreign policy and gives the player
+almost no verbs. It ends with ten decisions for the lead. Nothing in it has been acted on; it
+changed no code or constant.
+
 ### Checkpoint, 2026-09-24
 
 - **Branch:** `development` holds 2.6/2.6b, opencode's Phase 1 UI
