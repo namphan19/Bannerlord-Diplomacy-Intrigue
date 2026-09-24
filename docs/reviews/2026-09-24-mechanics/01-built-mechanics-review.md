@@ -1,4 +1,8 @@
-# Game-mechanics review — 2026-09-24
+# 01 — Review of the built mechanics
+
+> **Part of** [the 2026-09-24 mechanics review](README.md). **Decisions** live in
+> [decisions.md](decisions.md), not here: this file names each one by its id (`R-1` …) and the
+> register holds its status. **Code paths** are relative to `src/DiplomacyIntrigue/`.
 
 A game-design review of the mod's mechanics as they stand on `development` (Phase 1 accepted,
 Phase 2 through 2.6c merged, Phase 3 not started). Asked for by the lead; written from a
@@ -298,7 +302,8 @@ Symmetric, and one term in an existing gate.
 
 ### J. Espionage, before it is built
 
-Two notes for when Phase 3 starts:
+The full discussion of Phase 3 is in [02-unbuilt-mechanics.md](02-unbuilt-mechanics.md) §3.
+Two notes belong here because they follow from what is already built:
 - Bands already say what a court will *do*, so `ReadCourt` is worth buying only if it sells what
   a band cannot: **the trend and a forecast** ("about 20 days to Exhausted"). Design 03 mentions
   the trend; it should be the centre of the mission, not a footnote.
@@ -320,18 +325,23 @@ Two notes for when Phase 3 starts:
 
 ## 5. Decisions this leaves for the lead
 
-| # | Question | Recommendation |
-|---|---|---|
-| 1 | Should court state feed the AI's foreign policy (A)? | Yes, starting with the three hooks in A |
-| 2 | Which court and patron verbs, and at what cost (B)? | Appease, patronage, per-vassal tribute |
-| 3 | Should a bloc's agenda bias its vote (C)? | Yes; and add a Crown party |
-| 4 | Flat peace dividend or mean reversion (D)? And should the dividend require a real year of peace, as the spec says, or any peaceful day, as the code does? | Mean reversion; then the second question matters less |
-| 5 | Rally round the flag for a divided realm under attack (D)? | Yes, after run 08 confirms the spiral |
-| 6 | Fiefs in internal-war exhaustion; redistribution on a crown win (E)? | Yes to both |
-| 7 | Price in share-of-purse or in influence (F)? | Share of income for tribute; influence for side changes |
-| 8 | Margin on `IsStrongEnoughToHold` (G, run-07 §7.1)? | 1.25× |
-| 9 | Relax the pact trust floor under a balancing threat (I)? | Defensive pacts only |
-| 10 | Assassination (J)? | Non-rulers only |
+Tracked in [decisions.md](decisions.md) as **R-1 to R-10**, with the question, the
+recommendation and the status. Which finding raised which:
+
+| Finding | Decisions |
+|---|---|
+| A — one-way coupling | R-1 |
+| B — no verbs | R-2 (see also U-1, U-2 in [02](02-unbuilt-mechanics.md)) |
+| C — agendas do not vote | R-3 |
+| D — death spiral | R-4, R-5 |
+| E — civil-war exhaustion | R-6 |
+| F — money | R-7 |
+| G — cliff and doomed links | R-8 |
+| I — trust floor | R-9 |
+| J — assassination | R-10 (same question as U-4) |
+
+Skills, perks and personality traits were not part of this review; they were discussed after
+it and are in [03-skills-and-traits.md](03-skills-and-traits.md).
 
 ## 6. What this review did not do
 

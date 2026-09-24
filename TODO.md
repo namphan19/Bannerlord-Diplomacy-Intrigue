@@ -27,6 +27,15 @@ the evidence in [balance/run-07.md](docs/balance/run-07.md).
 
 ## Decisions for the lead
 
+### 0. The 2026-09-24 mechanics review
+
+Nineteen open questions (R-1 to R-10, U-1 to U-9) and three decisions already taken (S-1 to
+S-3) are kept in one register:
+[docs/reviews/2026-09-24-mechanics/decisions.md](docs/reviews/2026-09-24-mechanics/decisions.md).
+Status lives there only. R-8 is the same question as decision 1 below.
+
+- [ ] Answer U-1 to U-4, put to the lead on 2026-09-24.
+
 ### 1. The strength margin — deliberately deferred on 2026-09-20
 
 `Hegemony.IsStrongEnoughToHold` is a strict inequality with no margin, so a patron **1.2%**

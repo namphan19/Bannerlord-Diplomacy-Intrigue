@@ -32,10 +32,13 @@ run".
 is the "Civil war" row of the court canvas (https://claude.ai/artifact/1FrpG5in328WYfNi6sP8Pf).
 
 **A game-design review of the mechanics, 2026-09-24:**
-[reviews/2026-09-24-game-mechanics-review.md](reviews/2026-09-24-game-mechanics-review.md).
-Its headline is that the court never feeds back into the AI's foreign policy and gives the player
-almost no verbs. It ends with ten decisions for the lead. Nothing in it has been acted on; it
-changed no code or constant.
+[reviews/2026-09-24-mechanics/](reviews/2026-09-24-mechanics/README.md): the built mechanics,
+the unbuilt ones, and hero skills and traits. Its headline is that the court never feeds back
+into the AI's foreign policy and gives the player almost no verbs, so Phase 2's own acceptance
+line cannot be met yet. **Three decisions were taken** (S-1 to S-3: political acts award skill
+experience, traits shape courts and reputation, no cap on skill effects); every other item is
+open in its [decision register](reviews/2026-09-24-mechanics/decisions.md). It changed no code
+or constant.
 
 ### Checkpoint, 2026-09-24
 
