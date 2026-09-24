@@ -66,6 +66,33 @@ namespace DiplomacyIntrigue.Intrigue
             return list;
         }
 
+        /// <summary>
+        /// How much <see cref="Add"/> would raise what <paramref name="holder"/> holds against
+        /// <paramref name="target"/>, without adding anything. For a decision that has to weigh
+        /// a slight before causing it - a court asked to pay tribute.
+        ///
+        /// Mirrors the renew rule rather than assuming a fresh record: a clan that already holds
+        /// this grievance at full weight gains nothing from a repeat, and one whose record has
+        /// decayed gains only the difference. Read from here so the two cannot drift apart.
+        /// </summary>
+        public static float WouldAdd(ModState state, Clan holder, Clan target, GrievanceType type,
+                                     float weight = -1f)
+        {
+            if (state == null || holder == null || target == null || holder == target) return 0f;
+            if (type == GrievanceType.None) return 0f;
+
+            var value = weight >= 0f ? weight : IntrigueConstants.WeightOf(type);
+            if (value <= 0f) return 0f;
+
+            for (var i = 0; i < state.Grievances.Count; i++)
+            {
+                var existing = state.Grievances[i];
+                if (existing.Type != type || !existing.Is(holder, target)) continue;
+                return value > existing.Weight ? value - existing.Weight : 0f;
+            }
+            return value;
+        }
+
         // ----- Writing --------------------------------------------------------
 
         /// <summary>

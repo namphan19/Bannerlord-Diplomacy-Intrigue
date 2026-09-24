@@ -32,6 +32,23 @@ namespace DiplomacyIntrigue.Intrigue
 
         public static LoyaltyBand BandOf(ModState state, Clan clan) => Band(Of(state, clan));
 
+        /// <summary>
+        /// Loyalty as it would stand if this clan took a grievance of <paramref name="type"/>
+        /// against its crown now - the same sum, with the grievance term moved by exactly what
+        /// <see cref="GrievanceRegistry.Add"/> would add. For a crown weighing a humiliation
+        /// before accepting it, so the projection cannot use a different factor from the
+        /// loyalty it projects.
+        /// </summary>
+        public static float IfAggrieved(ModState state, Clan clan, GrievanceType type)
+        {
+            var explained = Explain(state, clan);
+            if (!explained.Applies) return explained.Total;
+
+            var added = GrievanceRegistry.WouldAdd(state, clan, clan.Kingdom.RulingClan, type);
+            explained.Grievances -= added * IntrigueConstants.LoyaltyGrievanceFactor;
+            return explained.Total;
+        }
+
         public static LoyaltyBand Band(float loyalty)
         {
             if (loyalty >= IntrigueConstants.LoyaltyReliable) return LoyaltyBand.Reliable;
