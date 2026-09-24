@@ -69,7 +69,7 @@ namespace DiplomacyIntrigue.Diplomacy
             foreach (var observer in Kingdom.All)
             {
                 if (observer == subject || observer == alsoExclude) continue;
-                if (observer.IsEliminated) continue;
+                if (!observer.IsRealm()) continue;
                 Adjust(state, observer, subject, amount, reason);
             }
         }

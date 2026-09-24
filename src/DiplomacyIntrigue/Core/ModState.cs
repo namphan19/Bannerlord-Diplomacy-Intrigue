@@ -56,6 +56,13 @@ namespace DiplomacyIntrigue.Core
         /// </summary>
         [SaveableProperty(13)] public List<Pretender> Pretenders { get; private set; }
 
+        /// <summary>
+        /// Wars inside a kingdom (Phase 2.6, design 07), ongoing and ended. Added without a
+        /// schema bump: a save that predates it loads with the list empty, which is correct -
+        /// no kingdom had fought one.
+        /// </summary>
+        [SaveableProperty(14)] public List<InternalWar> InternalWars { get; private set; }
+
         public ModState()
         {
             SchemaVersion = CurrentSchemaVersion;
@@ -70,6 +77,7 @@ namespace DiplomacyIntrigue.Core
             Grievances = new List<Grievance>();
             Legitimacy = new List<KingdomLegitimacy>();
             Pretenders = new List<Pretender>();
+            InternalWars = new List<InternalWar>();
             NextTreatyId = 1;
         }
 
@@ -90,6 +98,7 @@ namespace DiplomacyIntrigue.Core
             if (Grievances == null) Grievances = new List<Grievance>();
             if (Legitimacy == null) Legitimacy = new List<KingdomLegitimacy>();
             if (Pretenders == null) Pretenders = new List<Pretender>();
+            if (InternalWars == null) InternalWars = new List<InternalWar>();
             if (NextTreatyId < 1) NextTreatyId = 1;
 
             Migrate();
@@ -107,6 +116,8 @@ namespace DiplomacyIntrigue.Core
             Grievances.RemoveAll(g => g == null || g.Holder == null || g.Target == null);
             Legitimacy.RemoveAll(l => l == null || l.Kingdom == null);
             Pretenders.RemoveAll(p => p == null || p.Kingdom == null || p.Claimant == null);
+            InternalWars.RemoveAll(w => w == null || w.Kingdom == null || w.Banner == null);
+            for (var i = 0; i < InternalWars.Count; i++) InternalWars[i].AfterLoad();
 
             Log.Info("State", "Loaded: " + Treaties.Count + " treaties, " + Wars.Count
                               + " war records, " + Weariness.Count + " weariness entries, "
@@ -114,7 +125,8 @@ namespace DiplomacyIntrigue.Core
                               + Trust.Count + " trust records, " + Grievances.Count
                               + " grievances, " + Legitimacy.Count
                               + " legitimacy pools, " + Pretenders.Count
-                              + " pretenders, schema v" + SchemaVersion + ".");
+                              + " pretenders, " + InternalWars.Count
+                              + " internal wars, schema v" + SchemaVersion + ".");
         }
 
         private void Migrate()

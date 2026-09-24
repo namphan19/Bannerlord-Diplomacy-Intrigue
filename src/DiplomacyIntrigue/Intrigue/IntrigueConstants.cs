@@ -264,6 +264,90 @@ namespace DiplomacyIntrigue.Intrigue
         /// <summary>At or above: votes against the ruler but stays. Below: defection risk. UN-TUNED.</summary>
         public const float LoyaltyDisaffected = 25f;
 
+        // ----- Internal war (design 02 §6, design 07 §3a) ---------------------
+        //
+        // The three trigger conditions are design 02 §6's, which decision 02 §9.4 already
+        // marks as guesses deferred to a long AI-only run. The end conditions are design 07
+        // §3a's defaults, adopted by the lead for a first build on 2026-09-23 - also guesses.
+
+        /// <summary>The pretender bloc's share of the court's influence to take up arms. UN-TUNED.</summary>
+        public const float InternalWarBlocShare = 0.40f;
+
+        /// <summary>
+        /// Crown legitimacy below which a pretender bloc may take up arms. UN-TUNED. Below the
+        /// 40 at which the bloc can form at all (<see cref="LegitimacyPretenderThreshold"/>), so
+        /// a bloc exists for a while as a political party before it becomes an army - the
+        /// ladder's "political contest" rung (design 07 §2).
+        /// </summary>
+        public const float InternalWarLegitimacy = 35f;
+
+        /// <summary>
+        /// Clans below the defection line needed before an internal war can begin. UN-TUNED.
+        /// Design 02 §6: "at least two clans have loyalty &lt; 25".
+        /// </summary>
+        public const int InternalWarDisloyalClans = 2;
+
+        /// <summary>
+        /// Days a leader must be held by the other side before their side loses. UN-TUNED.
+        /// Not the day of capture: vanilla captures lords in ordinary battles and frees them
+        /// within days, so ending a war on the capture itself would end most of them by accident.
+        /// </summary>
+        public const int InternalWarCaptiveDays = 30;
+
+        /// <summary>
+        /// Both sides past this and the war ends in a stalemate. UN-TUNED. Reads the same edge
+        /// as the court's dove threshold (<c>DiplomacyConstants.ExhaustionCourtPressure</c>),
+        /// deliberately: a court that wants peace abroad at 40 wants it at home too.
+        /// </summary>
+        public const float InternalWarStalemateExhaustion = 40f;
+
+        /// <summary>A side at this exhaustion has lost. UN-TUNED.</summary>
+        public const float InternalWarCollapseExhaustion = 100f;
+
+        /// <summary>
+        /// Days after an internal war ends before the same kingdom can start another. UN-TUNED.
+        /// Without it a stalemate - which leaves the claim standing and the court as divided as
+        /// it was - would re-trigger the war the next morning.
+        /// </summary>
+        public const float InternalWarCooldownDays = 365f;
+
+        /// <summary>
+        /// Days before the player, as a claimant, is asked again after declining to raise the
+        /// banner. UN-TUNED. Not saved: a reload may ask again sooner, which is a nuisance, not
+        /// a wrong answer.
+        /// </summary>
+        public const float InternalWarPlayerAskAgainDays = 30f;
+
+        // ----- A house divided (design 07 §5, Phase 2.6b) ----------------------
+
+        /// <summary>
+        /// Heir points (vanilla's `HeirSelectionCalculationModel` scale) within which a runner-up
+        /// counts as having nearly had it. UN-TUNED. Vanilla gives +10 for the direct line, +10
+        /// for sex and ±5 for age, so 5 is "one age step apart": an eldest son against a younger
+        /// son who is the most skilled of the family, not a son against a cousin.
+        /// </summary>
+        public const int ClanSuccessionContestMargin = 5;
+
+        /// <summary>
+        /// Below this relation with the new head, a close runner-up will not serve and leaves.
+        /// UN-TUNED, but no longer a blind guess. The first value was 10, and `diplomacy.heirs`
+        /// on `di_civilwar_test` (2026-09-23) showed **22 of ~70 houses** would divide at their
+        /// head's death. Most heirs sit at relation **0** with each other, which in Bannerlord
+        /// means "never interacted", not "dislikes". A threshold above zero counted
+        /// indifference as a feud. At -10 the same world gives about 6 houses (~8%) - a
+        /// division every year or two across the map, not one succession in three.
+        /// </summary>
+        public const int ClanSuccessionDisputeRelation = -10;
+
+        /// <summary>Relation lost between the two heads when a house divides. UN-TUNED.</summary>
+        public const int ClanSuccessionRelationPenalty = 20;
+
+        /// <summary>
+        /// Share of the parent house's renown a cadet branch starts with, which sets its tier.
+        /// UN-TUNED. A younger son of a great house starts above a freed companion.
+        /// </summary>
+        public const float ClanSuccessionCadetRenownShare = 0.25f;
+
         /// <summary>
         /// The starting weight for a type. One place, so a source cannot disagree with the
         /// ledger about what a slight is worth.

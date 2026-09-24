@@ -151,6 +151,10 @@ namespace DiplomacyIntrigue
 
             try
             {
+                // The internal-war index is static and keyed by clan objects; a campaign loaded
+                // after another must not inherit its rebels. The load itself rebuilds it.
+                Intrigue.InternalWars.ClearIndex();
+
                 var starter = (CampaignGameStarter)gameStarterObject;
                 RegisterModels(starter);
                 RegisterBehaviors(starter);
@@ -180,8 +184,13 @@ namespace DiplomacyIntrigue
             starter.AddModel(new ModDiplomacyModel());
             starter.AddModel(new ModAllianceModel());
             starter.AddModel(new ModTradeAgreementModel());
-            Log.Info("SubModule", "Diplomacy game models registered: kingdom decisions, peace, "
-                                  + "alliances, trade agreements.");
+
+            // Court intrigue's one model: keeps the two sides of an internal war out of each
+            // other's armies. Inert while no internal war runs, so registered unconditionally
+            // like the diplomacy models above.
+            starter.AddModel(new ModArmyManagementModel());
+            Log.Info("SubModule", "Game models registered: kingdom decisions, peace, alliances, "
+                                  + "trade agreements, armies.");
         }
 
         private static void RegisterBehaviors(CampaignGameStarter starter)

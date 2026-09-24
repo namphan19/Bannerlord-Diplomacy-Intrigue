@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using DiplomacyIntrigue.Core;
 using DiplomacyIntrigue.Models;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Actions;
 
 namespace DiplomacyIntrigue.Intrigue
 {
@@ -30,8 +31,94 @@ namespace DiplomacyIntrigue.Intrigue
         /// </summary>
         private static readonly Dictionary<Kingdom, Hero> LastKnownRulers = new Dictionary<Kingdom, Hero>();
 
-        /// <summary>Drops the watch list. Session start, where the kingdoms belong to another campaign.</summary>
-        public static void Reset() => LastKnownRulers.Clear();
+        /// <summary>
+        /// Drops the watch list and records who sits on every throne now. Session start, where
+        /// the kingdoms belong to another campaign.
+        ///
+        /// Seeded here rather than on the first daily tick, which is what the first version did.
+        /// A ruler who died between the load and that tick was then recorded as the *first*
+        /// sighting of their heir, and the succession passed without politics: found live on
+        /// 2026-09-23, when a queen killed straight after a load left no trace in the log.
+        /// </summary>
+        public static void Reset()
+        {
+            LastKnownRulers.Clear();
+            BranchedAtSuccession.Clear();
+            foreach (var kingdom in Kingdom.All)
+                if (kingdom.IsRealm() && kingdom.Leader != null) LastKnownRulers[kingdom] = kingdom.Leader;
+        }
+
+        /// <summary>
+        /// Set while an internal war puts its claimant on the throne. `ChangeRulingClanAction`
+        /// raises `RulingClanChanged` synchronously, and without this the succession politics
+        /// below would run a second time on a change the war has already priced: the contested
+        /// succession's -15 on top of the war's own -15, and grievances for "backing the loser"
+        /// handed to the loyalists who just lost a war.
+        /// </summary>
+        private static Kingdom _installingByArms;
+
+        /// <summary>
+        /// Heirs who walked out of the late ruler's own house at this succession and founded a
+        /// cadet branch (2.6b, <see cref="ClanSuccession"/>). They were members of the ruling
+        /// house when the ruler died, which is the blood claim's first rule, but by the time the
+        /// court is tallied they lead a different clan and the rule no longer sees them.
+        ///
+        /// Found by running it: the first live test assumed a runner-up is always the late
+        /// ruler's child or sibling. Vanilla's heirs include nephews and in-laws, and Patyr - who
+        /// split from Southern Empire's ruling house when its queen died - was neither, so the
+        /// tally left him out. Not saved: it is read by the very next resolution, which in the
+        /// engine's own order comes after the split and before the next save.
+        /// </summary>
+        private static readonly Dictionary<Kingdom, List<Hero>> BranchedAtSuccession =
+            new Dictionary<Kingdom, List<Hero>>();
+
+        /// <summary>Records a founder of a cadet branch of the ruling house. Called by <see cref="ClanSuccession"/>.</summary>
+        public static void NoteBranchedHeir(Kingdom kingdom, Hero founder)
+        {
+            if (kingdom == null || founder == null) return;
+            if (!BranchedAtSuccession.TryGetValue(kingdom, out var list))
+                BranchedAtSuccession[kingdom] = list = new List<Hero>();
+            if (!list.Contains(founder)) list.Add(founder);
+        }
+
+        /// <summary>
+        /// Crowns a clan that won an internal war (design 07 §3a Q1). The throne changes hands
+        /// through vanilla's own action; this only keeps the succession watch from treating it
+        /// as an ordinary succession.
+        /// </summary>
+        public static void InstallByArms(ModState state, Kingdom kingdom, Clan clan)
+        {
+            if (kingdom == null || clan == null) return;
+
+            _installingByArms = kingdom;
+            try
+            {
+                ChangeRulingClanAction.Apply(kingdom, clan);
+            }
+            finally
+            {
+                _installingByArms = null;
+            }
+
+            if (kingdom.Leader != null) LastKnownRulers[kingdom] = kingdom.Leader;
+            RetireSpentClaims(state);
+        }
+
+        /// <summary>
+        /// Drops a claim that was fought for and lost (design 07 §3a Q1). A claim otherwise
+        /// only ends when its holder dies, takes the throne or leaves - losing a war over it is
+        /// the one ending that is a decision rather than a fact.
+        /// </summary>
+        public static void RetireClaim(ModState state, Kingdom kingdom, Hero claimant, string reason)
+        {
+            if (state == null || kingdom == null || claimant == null) return;
+
+            var removed = state.Pretenders.RemoveAll(p => p.Kingdom == kingdom && p.Claimant == claimant);
+            if (removed == 0) return;
+
+            BlocModel.Invalidate();
+            Log.Info("Succession", kingdom.Name + ": " + claimant.Name + "'s claim is retired - " + reason + ".");
+        }
 
         /// <summary>
         /// Notices that a throne changed hands, by watching who sits on it rather than by
@@ -54,7 +141,7 @@ namespace DiplomacyIntrigue.Intrigue
 
             foreach (var kingdom in Kingdom.All)
             {
-                if (kingdom == null || kingdom.IsEliminated) continue;
+                if (!kingdom.IsRealm()) continue;
 
                 var ruler = kingdom.Leader;
                 if (ruler == null) continue;
@@ -92,6 +179,14 @@ namespace DiplomacyIntrigue.Intrigue
             var ruler = kingdom.Leader;
             if (ruler == null) return;
 
+            if (kingdom == _installingByArms)
+            {
+                // An internal war's outcome, already priced by the war. Record the new ruler
+                // so the daily watch does not see a change tomorrow either.
+                LastKnownRulers[kingdom] = ruler;
+                return;
+            }
+
             if (LastKnownRulers.TryGetValue(kingdom, out var previous))
             {
                 if (previous == ruler) return;   // the watch already handled it
@@ -120,6 +215,17 @@ namespace DiplomacyIntrigue.Intrigue
 
             // A claim against a throne nobody holds any more is not a claim.
             RetireSpentClaims(state);
+
+            // A ruler who dies mid-civil-war is succeeded by vanilla's heir without a second
+            // contest (design 07 §3a Q3): the war already is the contest, and running the
+            // succession politics beside it would mint pretenders and grievances for a court
+            // whose sides are already drawn. If the heir is a rebel, the war sees that tomorrow.
+            if (InternalWars.OngoingIn(state, kingdom) != null)
+            {
+                Log.Info("Succession", kingdom.Name + ": " + incumbent.Name
+                                       + " took the throne during a civil war - the war decides the rest.");
+                return;
+            }
 
             var claimants = Claimants(state, kingdom, incumbent, oldRulingClan, lateRuler);
             if (claimants.Count < 2)
@@ -271,9 +377,13 @@ namespace DiplomacyIntrigue.Intrigue
                 if (claimants.Contains(leader)) continue;
 
                 if (HasBloodClaim(leader, lateRuler, oldRulingClan)
+                    || BranchedFromRulingHouse(kingdom, leader)
                     || HasPowerClaim(state, clan, kingdom))
                     claimants.Add(leader);
             }
+
+            // Used once: the note describes this succession, not the house forever after.
+            BranchedAtSuccession.Remove(kingdom);
             return claimants;
         }
 
@@ -283,6 +393,9 @@ namespace DiplomacyIntrigue.Intrigue
         /// Bannerlord's genealogy is shallow and a looser rule would make half a kingdom a
         /// claimant, which is a different design rather than a more generous one.
         /// </summary>
+        private static bool BranchedFromRulingHouse(Kingdom kingdom, Hero candidate)
+            => BranchedAtSuccession.TryGetValue(kingdom, out var list) && list.Contains(candidate);
+
         private static bool HasBloodClaim(Hero candidate, Hero lateRuler, Clan oldRulingClan)
         {
             if (candidate == null) return false;

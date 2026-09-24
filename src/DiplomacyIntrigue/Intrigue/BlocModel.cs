@@ -265,7 +265,7 @@ namespace DiplomacyIntrigue.Intrigue
 
             foreach (var other in Kingdom.All)
             {
-                if (other == null || other == kingdom || other.IsEliminated) continue;
+                if (other == null || other == kingdom || !other.IsRealm()) continue;
                 if (other.Settlements == null || other.Settlements.Count == 0) continue;
 
                 if (Power.Smoothed(state, other) < ours * IntrigueConstants.HawkWeakNeighbourRatio)

@@ -42,7 +42,9 @@ namespace DiplomacyIntrigue.Behaviors
                     var mySlot = index++ % SlotCount;
                     if (mySlot != slot) continue;
 
-                    if (kingdom.IsEliminated) continue;
+                    // After the slot, not before: skipping first would shift every later
+                    // kingdom's evaluation day whenever a rising appears or disappears.
+                    if (!kingdom.IsRealm()) continue;
                     if (IsPlayerRuled(kingdom)) continue;
 
                     var move = AiDiplomacy.Evaluate(state, kingdom);

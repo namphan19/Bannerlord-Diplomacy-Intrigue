@@ -364,7 +364,7 @@ namespace DiplomacyIntrigue.Core
 
             foreach (var kingdom in Kingdom.All)
             {
-                if (kingdom == null || kingdom.IsEliminated) continue;
+                if (!kingdom.IsRealm()) continue;
 
                 var claims = SuccessionModel.PretendersTo(state, kingdom);
                 var weak = LegitimacyRegistry.IsWeak(state, kingdom);
@@ -385,7 +385,7 @@ namespace DiplomacyIntrigue.Core
             sb.AppendLine("-- who would stand at the next succession --");
             foreach (var kingdom in Kingdom.All)
             {
-                if (kingdom == null || kingdom.IsEliminated || kingdom.RulingClan == null) continue;
+                if (!kingdom.IsRealm() || kingdom.RulingClan == null) continue;
 
                 var standing = 0;
                 var lines = new StringBuilder();
@@ -459,7 +459,7 @@ namespace DiplomacyIntrigue.Core
             foreach (var kingdom in Kingdom.All)
             {
                 if (filter != null && kingdom != filter) continue;
-                if (filter == null && kingdom.IsEliminated) continue;
+                if (filter == null && !kingdom.IsRealm()) continue;
                 sb.AppendLine();
                 sb.AppendLine("== " + kingdom.Name + " ==");
                 sb.Append(new UI.EncyclopediaPages.DiEncyclopediaCourtVM(kingdom).Describe());
@@ -507,7 +507,7 @@ namespace DiplomacyIntrigue.Core
             var sb = new StringBuilder();
             foreach (var kingdom in Kingdom.All)
             {
-                if (kingdom == null || kingdom.IsEliminated) continue;
+                if (!kingdom.IsRealm()) continue;
 
                 var value = LegitimacyRegistry.Of(state, kingdom);
                 var weak = LegitimacyRegistry.IsWeak(state, kingdom);
@@ -556,7 +556,7 @@ namespace DiplomacyIntrigue.Core
             var sb = new StringBuilder();
             foreach (var kingdom in Kingdom.All)
             {
-                if (kingdom == null || kingdom.IsEliminated) continue;
+                if (!kingdom.IsRealm()) continue;
                 if (filter != null && kingdom != filter) continue;
 
                 var blocs = BlocModel.BlocsOf(state, kingdom);
@@ -642,7 +642,7 @@ namespace DiplomacyIntrigue.Core
             var rows = new List<KeyValuePair<Clan, LoyaltyBreakdown>>();
             foreach (var kingdom in Kingdom.All)
             {
-                if (kingdom == null || kingdom.IsEliminated) continue;
+                if (!kingdom.IsRealm()) continue;
                 if (filter != null && kingdom != filter) continue;
 
                 for (var i = 0; i < kingdom.Clans.Count; i++)
@@ -1015,6 +1015,10 @@ namespace DiplomacyIntrigue.Core
             // ruler was killed, which read as a broken system and was a missing line.
             SuccessionModel.DailyWatch(state);
             SuccessionModel.RetireSpentClaims(state);
+
+            // Advances every internal war and looks for a new one. Exhaustion accrues here; the
+            // cooldown after a war is measured in dates and, like the peace dividend, cannot.
+            InternalWars.DailyTick(state);
         }
 
         private static readonly char[] CommaSeparator = { ',' };
@@ -1051,7 +1055,7 @@ namespace DiplomacyIntrigue.Core
 
                 foreach (var kingdom in Kingdom.All)
                 {
-                    if (kingdom.IsEliminated) continue;
+                    if (!kingdom.IsRealm()) continue;
                     if (Hero.MainHero != null && kingdom.Leader == Hero.MainHero) continue;
 
                     var move = AiDiplomacy.Evaluate(state, kingdom);
@@ -1163,7 +1167,7 @@ namespace DiplomacyIntrigue.Core
             var sb = new StringBuilder();
             foreach (var other in Kingdom.All)
             {
-                if (other == a || other.IsEliminated) continue;
+                if (other == a || !other.IsRealm()) continue;
                 sb.AppendLine(AiDiplomacy.ExplainWarValue(state, a, other));
             }
             return sb.ToString();
@@ -1276,7 +1280,7 @@ namespace DiplomacyIntrigue.Core
 
             foreach (var patron in Kingdom.All)
             {
-                if (patron.IsEliminated || !Hegemony.IsHegemon(state, patron)) continue;
+                if (!patron.IsRealm() || !Hegemony.IsHegemon(state, patron)) continue;
 
                 var held = new List<Models.Treaty>();
                 Hegemony.CollectVassalages(state, patron, held);
@@ -1469,7 +1473,7 @@ namespace DiplomacyIntrigue.Core
             var total = 0f;
             foreach (var kingdom in Kingdom.All)
             {
-                if (kingdom.IsEliminated) continue;
+                if (!kingdom.IsRealm()) continue;
                 kingdoms.Add(kingdom);
                 total += kingdom.CurrentTotalStrength;
             }
@@ -1543,6 +1547,323 @@ namespace DiplomacyIntrigue.Core
         }
 
         private static readonly char[] PipeSeparator = { '|' };
+
+        // ----- Internal war (Phase 2.6) ---------------------------------------
+
+        /// <summary>
+        /// Every internal war, running and ended, then every kingdom against design 02 §6's
+        /// three conditions - printed from <see cref="InternalWars.Assess"/>, the same answer
+        /// the daily tick acts on.
+        /// Usage: diplomacy.internal_wars
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("internal_wars", "diplomacy")]
+        public static string InternalWarsReport(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var sb = new StringBuilder();
+            sb.AppendLine("Map-faction index active: " + InternalWars.Any);
+
+            if (state.InternalWars.Count == 0) sb.AppendLine("No internal war has been fought.");
+            for (var i = 0; i < state.InternalWars.Count; i++)
+            {
+                var war = state.InternalWars[i];
+                sb.AppendLine((war.IsOngoing ? "RUNNING  " : "ended    ") + war);
+                sb.AppendLine("    started " + war.StartedOn + (war.IsOngoing ? "" : ", ended " + war.EndedOn)
+                              + "; captive days: claimant " + war.ClaimantCaptiveDays + ", ruler "
+                              + war.RulerCaptiveDays + "; crown side held "
+                              + (war.CrownShareAtStart * 100f).ToString("0") + "% at the start");
+                var names = new StringBuilder();
+                for (var r = 0; r < war.Rebels.Count; r++)
+                {
+                    if (names.Length > 0) names.Append(", ");
+                    names.Append(war.Rebels[r].Clan?.Name);
+                }
+                sb.AppendLine("    rebels: " + names);
+            }
+
+            sb.AppendLine();
+            sb.AppendLine("-- every kingdom against the trigger (bloc >= "
+                          + (IntrigueConstants.InternalWarBlocShare * 100f).ToString("0") + "%, legitimacy < "
+                          + IntrigueConstants.InternalWarLegitimacy.ToString("0") + ", >= "
+                          + IntrigueConstants.InternalWarDisloyalClans + " clans below "
+                          + IntrigueConstants.LoyaltyDisaffected.ToString("0") + ") --");
+            foreach (var kingdom in Kingdom.All)
+            {
+                if (!kingdom.IsRealm()) continue;
+                var a = InternalWars.Assess(state, kingdom);
+                sb.AppendLine(kingdom.Name + ": " + (a.Ready ? "READY" : "no") + " - " + a.Reason
+                              + "  [bloc " + (a.BlocShare * 100f).ToString("0") + "%, legitimacy "
+                              + a.Legitimacy.ToString("0.0") + ", disloyal " + a.DisloyalClans
+                              + (a.Claim == null ? "" : ", claimant " + a.Claim.Claimant.Name
+                                                        + ", would rise with " + a.Rebels.Count + " clan(s)")
+                              + (a.PlayerWouldRebel ? ", the player would be asked" : "") + "]");
+            }
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Starts an internal war now, skipping the three thresholds but not the claimant: the
+        /// kingdom still needs a standing pretender in a pretender bloc, since a war has to be
+        /// fought for someone. Test saves only.
+        /// Usage: diplomacy.test_start_internal_war Battania
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_start_internal_war", "diplomacy")]
+        public static string TestStartInternalWar(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+            if (args == null || args.Count == 0) return "Usage: diplomacy.test_start_internal_war <kingdom>";
+
+            var kingdom = FindKingdom(string.Join(" ", args));
+            if (kingdom == null) return "No kingdom matching \"" + string.Join(" ", args) + "\".";
+
+            var a = InternalWars.Assess(state, kingdom);
+            if (a.Claim == null) return kingdom.Name + ": cannot start - " + a.Reason + ".";
+
+            var war = InternalWars.Start(state, a, "forced by test_start_internal_war; thresholds "
+                                                   + (a.Ready ? "were met" : "NOT met: " + a.Reason));
+            return war == null
+                ? kingdom.Name + ": the war did not start - see the log."
+                : "Started: " + war + Environment.NewLine + MapFactionReport(state, kingdom);
+        }
+
+        /// <summary>
+        /// Ends a running internal war with a chosen outcome, through the same code the daily
+        /// tick uses. Test saves only.
+        /// Usage: diplomacy.test_end_internal_war Battania | crown     (crown, rebels, stalemate)
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_end_internal_war", "diplomacy")]
+        public static string TestEndInternalWar(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var parts = string.Join(" ", args ?? new List<string>()).Split('|');
+            if (parts.Length != 2) return "Usage: diplomacy.test_end_internal_war <kingdom> | crown|rebels|stalemate";
+
+            var kingdom = FindKingdom(parts[0].Trim());
+            if (kingdom == null) return "No kingdom matching \"" + parts[0].Trim() + "\".";
+
+            var war = InternalWars.OngoingIn(state, kingdom);
+            if (war == null) return kingdom.Name + " is not at war with itself.";
+
+            InternalWarOutcome outcome;
+            switch (parts[1].Trim().ToLowerInvariant())
+            {
+                case "crown": outcome = InternalWarOutcome.CrownWon; break;
+                case "rebels": outcome = InternalWarOutcome.RebelsWon; break;
+                case "stalemate": outcome = InternalWarOutcome.Stalemate; break;
+                default: return "Outcome must be crown, rebels or stalemate.";
+            }
+
+            InternalWars.End(state, war, outcome, "forced by test_end_internal_war");
+            return "Ended: " + war + Environment.NewLine + "Ruler now " + kingdom.Leader?.Name + " of "
+                   + kingdom.RulingClan?.Name + ", legitimacy " + LegitimacyRegistry.Of(state, kingdom).ToString("0.0")
+                   + Environment.NewLine + MapFactionReport(state, kingdom);
+        }
+
+        /// <summary>
+        /// What the engine's own code answers for every clan of a kingdom: the clan's map
+        /// faction, its leader's, one of its parties' and one of its towns', and whether that
+        /// party is at war with the ruler's party.
+        ///
+        /// The party and town columns are the real test of the MapFaction patches. Asking the
+        /// clan only proves the postfix runs when *we* call the getter; `MobileParty.MapFaction`
+        /// and `Town.MapFaction` call it from inside the game's assembly, where a getter this
+        /// small could have been inlined out of the patch's reach.
+        /// Usage: diplomacy.test_map_faction Battania
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_map_faction", "diplomacy")]
+        public static string TestMapFaction(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+            if (args == null || args.Count == 0) return "Usage: diplomacy.test_map_faction <kingdom>";
+
+            var kingdom = FindKingdom(string.Join(" ", args));
+            if (kingdom == null) return "No kingdom matching \"" + string.Join(" ", args) + "\".";
+
+            return MapFactionReport(state, kingdom);
+        }
+
+        private static string MapFactionReport(ModState state, Kingdom kingdom)
+        {
+            var sb = new StringBuilder();
+            var war = InternalWars.OngoingIn(state, kingdom);
+            sb.AppendLine(kingdom.Name + (war == null ? " - no internal war" : " - internal war, rising " + war.Faction?.Name + " (" + war.Faction?.StringId + ")")
+                          + "; index active " + InternalWars.Any);
+
+            sb.AppendLine("  clan | clan.MapFaction | leader.MapFaction | party.MapFaction | town.MapFaction | party's faction vs the crown");
+
+            for (var i = 0; i < kingdom.Clans.Count; i++)
+            {
+                var clan = kingdom.Clans[i];
+                if (clan == null || clan.IsEliminated) continue;
+
+                TaleWorlds.CampaignSystem.Party.MobileParty party = null;
+                for (var p = 0; p < clan.WarPartyComponents.Count; p++)
+                {
+                    party = clan.WarPartyComponents[p]?.MobileParty;
+                    if (party != null) break;
+                }
+
+                Settlement town = null;
+                for (var s = 0; s < clan.Settlements.Count; s++)
+                    if (clan.Settlements[s].IsFortification) { town = clan.Settlements[s]; break; }
+
+                // Asked through the engine's own stance check, with the party's map faction as
+                // the engine computes it - not with anything this mod holds.
+                var hostile = party == null ? "-"
+                    : FactionManager.IsAtWarAgainstFaction(party.MapFaction, kingdom) ? "WAR" : "peace";
+
+                sb.AppendLine("  " + clan.Name
+                              + (war != null && war.IsRebel(clan) ? " [rebel]" : "")
+                              + (clan == kingdom.RulingClan ? " [crown]" : "")
+                              + " | " + clan.MapFaction?.Name
+                              + " | " + clan.Leader?.MapFaction?.Name
+                              + " | " + (party == null ? "-" : party.MapFaction?.Name?.ToString())
+                              + " | " + (town == null ? "-" : town.Name + "->" + town.MapFaction?.Name)
+                              + " | " + hostile);
+            }
+            return sb.ToString();
+        }
+
+        // ----- A house divided (Phase 2.6b) ---------------------------------------
+
+        /// <summary>
+        /// For every court house (or one), what would happen if its head died today: the heirs
+        /// as vanilla scores them, who would succeed, and whether the house would divide -
+        /// printed from <see cref="ClanSuccession.Predict"/>, the same resolver the event uses.
+        /// Usage: diplomacy.heirs   or   diplomacy.heirs fen Eingal
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("heirs", "diplomacy")]
+        public static string Heirs(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            Clan only = null;
+            if (args != null && args.Count > 0)
+            {
+                only = FindClan(string.Join(" ", args));
+                if (only == null) return "No clan matching \"" + string.Join(" ", args) + "\".";
+            }
+
+            var sb = new StringBuilder();
+            var dividing = 0;
+            foreach (var kingdom in Kingdom.All)
+            {
+                if (!kingdom.IsRealm()) continue;
+                foreach (var clan in Court.MembersOf(kingdom))
+                {
+                    if (only != null && clan != only) continue;
+                    if (!clan.IsNoble || clan.Leader == null) continue;
+
+                    var a = ClanSuccession.Predict(state, clan);
+                    if (a.Divides) dividing++;
+                    if (only == null && !a.Divides && a.RunnerUp == null) continue;
+
+                    sb.AppendLine(kingdom.Name + " / " + clan.Name + (clan == kingdom.RulingClan ? " [ruling]" : "")
+                                  + ": head " + clan.Leader.Name + " -> " + (a.Successor?.Name?.ToString() ?? "?")
+                                  + " (" + a.SuccessorPoints + ")"
+                                  + (a.RunnerUp == null ? "" : ", runner-up " + a.RunnerUp.Hero.Name + " (" + a.RunnerUp.Points
+                                                               + ", relation " + a.Relation + ")")
+                                  + " => " + (a.Divides ? "WOULD DIVIDE" : "holds") + " - " + a.Reason);
+                    if (only != null)
+                        for (var i = 0; i < a.Heirs.Count; i++)
+                            sb.AppendLine("    " + a.Heirs[i].Hero.Name + "  " + a.Heirs[i].Points
+                                          + "  age " + a.Heirs[i].Hero.Age.ToString("0")
+                                          + "  " + KinTo(a.Heirs[i].Hero, clan.Leader));
+                }
+            }
+            sb.AppendLine(dividing + " house(s) would divide at their head's death today. Thresholds: within "
+                          + IntrigueConstants.ClanSuccessionContestMargin + " heir points, relation below "
+                          + IntrigueConstants.ClanSuccessionDisputeRelation + ".");
+            // Measured on the first live deaths: vanilla adjusts every hero's relation with the
+            // new head during the succession itself (ChangeClanLeaderAction, before SetLeader),
+            // and in both cases it warmed them - Sevin -38 to -24, Patyr -48 to -12.
+            sb.AppendLine("Relations shown are today's. Vanilla moves them at the succession, so a"
+                          + " prediction near the threshold may not hold.");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// How a hero is related to a clan head, in the terms the succession blood claim reads
+        /// (`SuccessionModel.HasBloodClaim`): child, parent, sibling - or other, which the blood
+        /// claim does not admit once the hero has left the house.
+        /// </summary>
+        private static string KinTo(Hero hero, Hero head)
+        {
+            if (hero == null || head == null) return "";
+            if (hero.Father == head || hero.Mother == head) return "child";
+            if (head.Father == hero || head.Mother == hero) return "parent";
+            foreach (var sibling in hero.Siblings) if (sibling == head) return "sibling";
+            if (hero.Spouse == head) return "spouse";
+            return "other kin";
+        }
+
+        /// <summary>
+        /// Divides a house now, as if its head had died and the runner-up walked out - skipping
+        /// the closeness and relation thresholds, not the mechanics. Test saves only. The founder
+        /// is the best-scoring heir, or the one named after a bar.
+        /// Usage: diplomacy.test_divide_clan fen Eingal   or   diplomacy.test_divide_clan Gundaroving | Simir
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_divide_clan", "diplomacy")]
+        public static string TestDivideClan(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+            if (args == null || args.Count == 0) return "Usage: diplomacy.test_divide_clan <clan> [| <hero>]";
+
+            var parts = string.Join(" ", args).Split('|');
+            var clan = FindClan(parts[0].Trim());
+            if (clan == null) return "No clan matching \"" + parts[0].Trim() + "\".";
+            var wanted = parts.Length > 1 ? parts[1].Trim() : null;
+
+            // The head stays alive here, so the "successor" is the head itself and the runner-up
+            // is the best-scoring heir: the split mechanics are exercised, the death is not.
+            var a = ClanSuccession.Assess(state, clan, clan.Leader, clan.Leader);
+            if (a.Heirs.Count == 0) return clan.Name + ": no eligible heir to leave.";
+            a.RunnerUp = a.Heirs[0];
+            if (a.RunnerUp.Hero == clan.Leader.Spouse && a.Heirs.Count > 1) a.RunnerUp = a.Heirs[1];
+            if (wanted != null)
+            {
+                a.RunnerUp = null;
+                for (var i = 0; i < a.Heirs.Count; i++)
+                    if (string.Equals(a.Heirs[i].Hero.Name?.ToString(), wanted, StringComparison.OrdinalIgnoreCase))
+                        a.RunnerUp = a.Heirs[i];
+                if (a.RunnerUp == null) return clan.Name + ": no eligible heir named " + wanted + ".";
+            }
+
+            var cadet = ClanSuccession.Divide(state, a);
+            if (cadet == null) return clan.Name + ": the division did not happen - see the log.";
+
+            var sb = new StringBuilder();
+            sb.AppendLine(clan.Name + " divided: " + cadet.Name + " (" + cadet.StringId + "), tier " + cadet.Tier
+                          + ", led by " + cadet.Leader?.Name + ", in " + cadet.Kingdom?.Name
+                          + ", home " + cadet.HomeSettlement?.Name + ".");
+            for (var i = 0; i < cadet.Heroes.Count; i++)
+                sb.AppendLine("    " + cadet.Heroes[i].Name + "  party: "
+                              + (cadet.Heroes[i].PartyBelongedTo?.Name?.ToString() ?? "none")
+                              + "  settlement: " + (cadet.Heroes[i].CurrentSettlement?.Name?.ToString() ?? "none"));
+            sb.AppendLine(clan.Name + " keeps " + clan.Heroes.Count + " hero(es); relation between the heads now "
+                          + cadet.Leader?.GetRelation(clan.Leader) + ".");
+            return sb.ToString();
+        }
+
+        private static Clan FindClan(string name)
+        {
+            foreach (var clan in Clan.All)
+                if (string.Equals(clan.Name?.ToString(), name, StringComparison.OrdinalIgnoreCase)) return clan;
+            foreach (var clan in Clan.All)
+            {
+                var clanName = clan.Name?.ToString();
+                if (clanName != null && clanName.StartsWith(name, StringComparison.OrdinalIgnoreCase)) return clan;
+            }
+            return null;
+        }
 
         private static Kingdom FindKingdom(string name)
         {

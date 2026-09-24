@@ -46,6 +46,12 @@ namespace DiplomacyIntrigue.GameModels
         {
             try
             {
+                // An internal war (Phase 2.6) ends by its own rules, never by a vanilla peace:
+                // the kingdom's at-war list holds the rebel banner like any other enemy, so
+                // vanilla's decision and barter paths would otherwise offer it one.
+                if (Intrigue.InternalWars.IsInternalWarPair(factionDeclaresPeace, factionDeclaredPeace))
+                    return false;
+
                 if (VanillaDiplomacy.Active
                     && VanillaDiplomacy.BothKingdoms(factionDeclaresPeace, factionDeclaredPeace))
                 {
@@ -65,6 +71,9 @@ namespace DiplomacyIntrigue.GameModels
         {
             try
             {
+                if (Intrigue.InternalWars.IsInternalWarPair(factionDeclaresPeace, factionDeclaredPeace))
+                    return Forbidden;
+
                 if (VanillaDiplomacy.Active
                     && VanillaDiplomacy.BothKingdoms(factionDeclaresPeace, factionDeclaredPeace))
                     return Forbidden;
@@ -86,6 +95,12 @@ namespace DiplomacyIntrigue.GameModels
         {
             try
             {
+                if (Intrigue.InternalWars.IsInternalWarPair(factionDeclaresPeace, factionDeclaredPeace))
+                {
+                    reason = includeReason ? new TextObject("A civil war is not ended by a barter.") : null;
+                    return Forbidden;
+                }
+
                 if (VanillaDiplomacy.Active
                     && VanillaDiplomacy.BothKingdoms(factionDeclaresPeace, factionDeclaredPeace))
                 {

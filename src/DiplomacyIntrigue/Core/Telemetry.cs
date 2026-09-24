@@ -179,7 +179,7 @@ namespace DiplomacyIntrigue.Core
                 var atWar = 0;
                 foreach (var kingdom in Kingdom.All)
                 {
-                    if (kingdom.IsEliminated) continue;
+                    if (!kingdom.IsRealm()) continue;
                     kingdoms++;
 
                     var fighting = false;
@@ -243,7 +243,7 @@ namespace DiplomacyIntrigue.Core
                 var greedy = 0;
                 foreach (var kingdom in Kingdom.All)
                 {
-                    if (kingdom.IsEliminated) continue;
+                    if (!kingdom.IsRealm()) continue;
                     var dominance = Power.Dominance(kingdom);
                     if (dominance > topDominance)
                     {
@@ -318,7 +318,7 @@ namespace DiplomacyIntrigue.Core
             {
                 foreach (var kingdom in Kingdom.All)
                 {
-                    if (kingdom.IsEliminated) continue;
+                    if (!kingdom.IsRealm()) continue;
                     Log.Info("Telemetry", KingdomLine(state, kingdom));
                 }
 
@@ -328,7 +328,7 @@ namespace DiplomacyIntrigue.Core
 
                 foreach (var kingdom in Kingdom.All)
                 {
-                    if (kingdom.IsEliminated) continue;
+                    if (!kingdom.IsRealm()) continue;
                     var line = SubmitLine(state, kingdom);
                     if (line != null) Log.Info("Telemetry", line);
                 }
@@ -388,7 +388,7 @@ namespace DiplomacyIntrigue.Core
             var others = 0;
             foreach (var other in Kingdom.All)
             {
-                if (other == k || other.IsEliminated) continue;
+                if (other == k || !other.IsRealm()) continue;
                 trustIn += TrustRegistry.Get(state, other, k);
                 trustOut += TrustRegistry.Get(state, k, other);
                 others++;
@@ -462,7 +462,7 @@ namespace DiplomacyIntrigue.Core
 
             foreach (var patron in Kingdom.All)
             {
-                if (patron == candidate || patron.IsEliminated) continue;
+                if (patron == candidate || !patron.IsRealm()) continue;
                 if (!TreatyRegistry.CanSign(state, patron, candidate, TreatyType.Vassalage, out _,
                         settlesWar: patron.IsAtWarWith(candidate))) continue;
 
@@ -554,7 +554,7 @@ namespace DiplomacyIntrigue.Core
 
                 var names = new List<string>();
                 foreach (var kingdom in Kingdom.All)
-                    if (!kingdom.IsEliminated) names.Add(Value(kingdom));
+                    if (kingdom.IsRealm()) names.Add(Value(kingdom));
 
                 var line = new StringBuilder(RunPrefix);
                 AppendWhen(line);

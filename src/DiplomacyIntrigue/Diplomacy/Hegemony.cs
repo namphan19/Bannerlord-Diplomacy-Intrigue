@@ -212,7 +212,7 @@ namespace DiplomacyIntrigue.Diplomacy
             var best = 0f;
             foreach (var other in Kingdom.All)
             {
-                if (other == patron || other == vassal || other.IsEliminated) continue;
+                if (other == patron || other == vassal || !other.IsRealm()) continue;
                 if (other.IsAtWarWith(vassal)) continue;
                 if (!IsHegemon(state, other)) continue;
 
@@ -858,7 +858,7 @@ namespace DiplomacyIntrigue.Diplomacy
             var coverable = 0f;
             foreach (var other in Kingdom.All)
             {
-                if (other == candidate || other.IsEliminated) continue;
+                if (other == candidate || !other.IsRealm()) continue;
                 if (!other.IsAtWarWith(candidate)) continue;
 
                 var strength = other.CurrentTotalStrength;
@@ -897,7 +897,7 @@ namespace DiplomacyIntrigue.Diplomacy
             var strongestNeighbour = 1f;
             foreach (var other in Kingdom.All)
             {
-                if (other == candidate || other.IsEliminated) continue;
+                if (other == candidate || !other.IsRealm()) continue;
                 if (other.CurrentTotalStrength > strongestNeighbour) strongestNeighbour = other.CurrentTotalStrength;
             }
             var prideTerm = Clamp(ownStrength / strongestNeighbour, 0f, 1f) * DiplomacyConstants.SubmissionPrideWeight;
@@ -1304,7 +1304,7 @@ namespace DiplomacyIntrigue.Diplomacy
         {
             var count = 0;
             foreach (var kingdom in Kingdom.All)
-                if (!kingdom.IsEliminated && IsHegemon(state, kingdom)) count++;
+                if (kingdom.IsRealm() && IsHegemon(state, kingdom)) count++;
             return count;
         }
 

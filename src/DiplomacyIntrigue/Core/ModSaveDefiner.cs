@@ -31,6 +31,8 @@ namespace DiplomacyIntrigue.Core
             AddClassDefinition(typeof(Grievance), 10);
             AddClassDefinition(typeof(KingdomLegitimacy), 11);
             AddClassDefinition(typeof(Pretender), 12);
+            AddClassDefinition(typeof(InternalWar), 13);
+            AddClassDefinition(typeof(InternalWarMember), 14);
         }
 
         protected override void DefineEnumTypes()
@@ -42,6 +44,7 @@ namespace DiplomacyIntrigue.Core
             AddEnumDefinition(typeof(SpyMissionType), 24);
             AddEnumDefinition(typeof(MissionOutcome), 25);
             AddEnumDefinition(typeof(GrievanceType), 26);
+            AddEnumDefinition(typeof(InternalWarOutcome), 27);
         }
 
         protected override void DefineContainerDefinitions()
@@ -57,6 +60,8 @@ namespace DiplomacyIntrigue.Core
             ConstructContainerDefinition(typeof(List<Grievance>));
             ConstructContainerDefinition(typeof(List<KingdomLegitimacy>));
             ConstructContainerDefinition(typeof(List<Pretender>));
+            ConstructContainerDefinition(typeof(List<InternalWar>));
+            ConstructContainerDefinition(typeof(List<InternalWarMember>));
         }
     }
 }

@@ -427,7 +427,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             // rest of what Power describes: ambition and greed are public knowledge.
             var living = 0;
             foreach (var kingdom in Kingdom.All)
-                if (!kingdom.IsEliminated) living++;
+                if (kingdom.IsRealm()) living++;
             if (living > 0)
             {
                 var share1 = (int)(Power.Dominance(faction1) / living * 100f);

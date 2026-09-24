@@ -430,7 +430,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             // of thing Phase 3 espionage is meant to sell.
             foreach (var other in Kingdom.All)
             {
-                if (other == us || other.IsEliminated || !Hegemony.IsHegemon(state, other)) continue;
+                if (other == us || !other.IsRealm() || !Hegemony.IsHegemon(state, other)) continue;
                 var held = new List<Treaty>();
                 Hegemony.CollectVassalages(state, other, held);
                 if (held.Count == 0) continue;
@@ -448,7 +448,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
             foreach (var other in Kingdom.All)
             {
-                if (other == us || other.IsEliminated) continue;
+                if (other == us || !other.IsRealm()) continue;
                 foreach (var claim in ClaimRegistry.LiveClaims(state, us, other))
                 {
                     var footer = claim.AllowsFiefDemands ? "entitles land" : string.Empty;

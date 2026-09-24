@@ -196,7 +196,7 @@ namespace DiplomacyIntrigue.UI
             var otherSpheres = 0;
             foreach (var other in Kingdom.All)
             {
-                if (other == kingdom || other.IsEliminated) continue;
+                if (other == kingdom || !other.IsRealm()) continue;
                 if (!Hegemony.IsHegemon(state, other)) continue;
 
                 var held = new List<Treaty>();
@@ -275,7 +275,7 @@ namespace DiplomacyIntrigue.UI
 
             foreach (var other in Kingdom.All)
             {
-                if (other == kingdom || other.IsEliminated) continue;
+                if (other == kingdom || !other.IsRealm()) continue;
                 foreach (var claim in ClaimRegistry.LiveClaims(state, kingdom, other))
                 {
                     any = true;
@@ -304,7 +304,7 @@ namespace DiplomacyIntrigue.UI
 
             foreach (var other in Kingdom.All)
             {
-                if (other == kingdom || other.IsEliminated) continue;
+                if (other == kingdom || !other.IsRealm()) continue;
 
                 var atWar = kingdom.IsAtWarWith(other);
                 var trust = TrustRegistry.Get(state, kingdom, other);

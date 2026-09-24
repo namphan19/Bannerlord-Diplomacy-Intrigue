@@ -151,7 +151,7 @@ namespace DiplomacyIntrigue.Intrigue
 
             foreach (var kingdom in Kingdom.All)
             {
-                if (kingdom == null || kingdom.IsEliminated) continue;
+                if (!kingdom.IsRealm()) continue;
                 if (IsAtWar(state, kingdom)) continue;
 
                 var record = RecordFor(state, kingdom);
@@ -163,10 +163,14 @@ namespace DiplomacyIntrigue.Intrigue
             }
         }
 
+        /// <summary>
+        /// At war abroad, or with itself. An internal war has no `WarRecord` (design 07 §3a Q4),
+        /// so reading the war ledger alone would pay a realm in civil war its peace dividend.
+        /// </summary>
         private static bool IsAtWar(ModState state, Kingdom kingdom)
         {
             foreach (var war in state.OngoingWarsOf(kingdom)) return true;
-            return false;
+            return InternalWars.OngoingIn(state, kingdom) != null;
         }
     }
 }
