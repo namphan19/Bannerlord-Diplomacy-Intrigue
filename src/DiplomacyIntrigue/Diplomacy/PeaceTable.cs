@@ -237,16 +237,17 @@ namespace DiplomacyIntrigue.Diplomacy
             // A package cannot contradict itself. The negotiation screen asks
             // PeaceTerms.AreExclusive to untick conflicting lines before they are ever
             // priced, but a hand-built package (the AI, a console command) reaches this
-            // point directly and has to be refused here or the rule lives nowhere.
-            if (terms.ImposeVassalage && terms.ImposeTributaryPact)
+            // point directly and has to be refused here or the rule lives nowhere. Which
+            // pairs conflict, and why, is AreExclusive's answer - not restated here.
+            var kinds = (PeaceTermKind[])System.Enum.GetValues(typeof(PeaceTermKind));
+            for (var i = 0; i < kinds.Length; i++)
             {
-                reason = "A vassalage carries its own tribute; a separate tributary pact would charge twice.";
-                return false;
-            }
-            if (terms.ImposeVassalage && terms.DissolveHegemony)
-            {
-                reason = "One package cannot both submit a kingdom and break up its sphere.";
-                return false;
+                if (!terms.Includes(kinds[i])) continue;
+                for (var j = i + 1; j < kinds.Length; j++)
+                {
+                    if (terms.Includes(kinds[j]) && PeaceTerms.AreExclusive(kinds[i], kinds[j], out reason))
+                        return false;
+                }
             }
 
             if (!war.Involves(terms.Winner) || !war.Involves(terms.Loser))

@@ -34,13 +34,36 @@ namespace DiplomacyIntrigue.Models
         /// every caller, UI or AI.
         /// </summary>
         public static bool AreExclusive(PeaceTermKind a, PeaceTermKind b)
+            => AreExclusive(a, b, out _);
+
+        /// <summary><see cref="AreExclusive(PeaceTermKind, PeaceTermKind)"/>, with the reason a refusal gives.</summary>
+        public static bool AreExclusive(PeaceTermKind a, PeaceTermKind b, out string reason)
         {
+            reason = null;
             if (a == b) return false;
-            var pair = (a == PeaceTermKind.Submission && b == PeaceTermKind.Tribute)
-                       || (a == PeaceTermKind.Tribute && b == PeaceTermKind.Submission)
-                       || (a == PeaceTermKind.Submission && b == PeaceTermKind.Dissolution)
-                       || (a == PeaceTermKind.Dissolution && b == PeaceTermKind.Submission);
-            return pair;
+            if (Pair(a, b, PeaceTermKind.Submission, PeaceTermKind.Tribute))
+                reason = "A vassalage carries its own tribute; a separate tributary pact would charge twice.";
+            else if (Pair(a, b, PeaceTermKind.Submission, PeaceTermKind.Dissolution))
+                reason = "One package cannot both submit a kingdom and break up its sphere.";
+            return reason != null;
+        }
+
+        private static bool Pair(PeaceTermKind a, PeaceTermKind b, PeaceTermKind x, PeaceTermKind y)
+            => (a == x && b == y) || (a == y && b == x);
+
+        /// <summary>Whether this package carries a line of the given kind.</summary>
+        public bool Includes(PeaceTermKind kind)
+        {
+            switch (kind)
+            {
+                case PeaceTermKind.Captives: return ReleasePrisoners;
+                case PeaceTermKind.Indemnity: return IndemnityGold > 0;
+                case PeaceTermKind.Tribute: return ImposeTributaryPact;
+                case PeaceTermKind.Land: return FiefsCeded.Count > 0;
+                case PeaceTermKind.Dissolution: return DissolveHegemony;
+                case PeaceTermKind.Submission: return ImposeVassalage;
+                default: return false;
+            }
         }
 
         /// <summary>The side making demands. For a white peace either party will do.</summary>

@@ -837,13 +837,6 @@ namespace DiplomacyIntrigue.UI
         }
 
         /// <summary>
-        /// The peace table. One native multi-select checklist rather than a ladder of menus:
-        /// every term carries its price, the budget sits in the description, and ticking
-        /// nothing offers a white peace. Which table shows depends on who is winning - the
-        /// losing player reaches the same entry point and gets the offer checklist instead,
-        /// because vanilla's peace paths are ours now ([design 05](../../docs/design/05-vanilla-override.md)).
-        /// </summary>
-        /// <summary>
         /// The label on a button that calls <see cref="ShowPeace"/>, from the same two
         /// budgets it branches on - so the button never promises a white peace and then
         /// opens the loser's table, which the first live pass caught the Realm tab doing.
@@ -866,6 +859,14 @@ namespace DiplomacyIntrigue.UI
             return "White peace only - this war has earned nothing yet.";
         }
 
+        /// <summary>
+        /// The peace table. The negotiation screen (<see cref="UI.Negotiation.PeaceTablePopup"/>)
+        /// is the way in: every term carries its price against a live budget, and a white
+        /// peace is one button. Which face shows depends on who is winning - the losing
+        /// player reaches the same entry point and gets the offer face instead, because
+        /// vanilla's peace paths are ours now ([design 05](../../docs/design/05-vanilla-override.md)).
+        /// If the screen cannot open, the older multi-select checklists stand in.
+        /// </summary>
         internal static void ShowPeace(ModState state, Kingdom us, Kingdom them)
         {
             var war = state.OngoingWarBetween(us, them);
