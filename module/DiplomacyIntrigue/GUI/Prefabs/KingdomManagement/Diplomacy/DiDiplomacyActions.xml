@@ -3,8 +3,11 @@
     <!-- Sibling after the game's own proposal list, inside the same bottom strip.
          DataSource narrows to the selected item; IsAcceptableItemSelected lives on the
          panel VM and must not be asked for here (wrong data context, silently false).
-         A grid, not a horizontal stack: up to eight buttons can be up at once now, and a
-         single row of 230px columns would run off the pane. Four columns wraps them.
+         A grid, not a horizontal stack: up to eight buttons can be up at once, and a
+         single row of 240px columns would run off the pane. Five columns (1200px of a
+         pane about 1260 wide) keep the common case on one row - at peace a ruler has five
+         actions (propose, declare war, demand tribute, kneel, fabricate), and four
+         columns pushed the fifth under the first. Six or more still wrap.
          The button label carries the mockup's kind colour (green is good for us, red is
          bad for us, gold is a threshold): a label colour binds, a button background
          does not. -->
@@ -13,9 +16,9 @@
         HorizontalAlignment="Center" MarginTop="8"
         IsVisible="@DiHasHeadline">
       <Children>
-        <NavigatableGridWidget DataSource="{DiActions}" WidthSizePolicy="Fixed" SuggestedWidth="960"
+        <NavigatableGridWidget DataSource="{DiActions}" WidthSizePolicy="Fixed" SuggestedWidth="1200"
             HeightSizePolicy="CoverChildren" HorizontalAlignment="Center"
-            DefaultCellWidth="240" DefaultCellHeight="110" ColumnCount="4"
+            DefaultCellWidth="240" DefaultCellHeight="110" ColumnCount="5"
             LayoutImp.VerticalLayoutMethod="TopToBottom">
           <ItemTemplate>
             <ListPanel WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
@@ -45,8 +48,11 @@
                     </ButtonWidget>
                   </Children>
                 </Widget>
+                <!-- Fixed height even when there is no price, as in the mockup: the
+                     cells align to the bottom, so a cost row that collapsed to nothing
+                     left priced buttons standing higher than unpriced ones. -->
                 <ListPanel DoNotAcceptEvents="true" DoNotPassEventsToChildren="true"
-                    WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
+                    WidthSizePolicy="CoverChildren" HeightSizePolicy="Fixed" SuggestedHeight="27"
                     HorizontalAlignment="Center">
                   <Children>
                     <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"

@@ -726,10 +726,11 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         }
 
         // ----- buttons ---------------------------------------------------------
-        // The strip these sit in is narrow: every explanation must fit its own
-        // column (~220px, about 32 characters) or it bleeds into the neighbour's.
-        // Anything longer lives in the hover hint instead - the numbers there are the
-        // same ones the AI uses, so nothing is hidden, only shortened on the surface.
+        // Each explanation wraps inside its own 220px column. A refusal shows its
+        // reason there in full, as the mockup does ("A vassalage already binds the two
+        // of you.") - an earlier pass printed "Cannot (see hint)." and left the reason
+        // to a hover the player had no cue to try. Price lists and long arithmetic
+        // still live in the hint; the numbers there are the ones the AI uses.
 
         private void BuildActions(ModState state, Kingdom us, Kingdom them, WarRecord war,
             ICollection<DiplomacyActionVM> into)
@@ -740,9 +741,10 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             {
                 var allowance = PeaceTable.DescribeAllowance(state, war, us);
                 var budget = PeaceTable.BudgetFor(war, us);
-                into.Add(new DiplomacyActionVM("Negotiate peace",
-                    budget <= 0f ? "White peace only - this war has earned nothing yet."
-                        : "Budget " + budget.ToString("0") + " - see hint for the price list.",
+                var theirBudget = PeaceTable.BudgetFor(war, them);
+                into.Add(new DiplomacyActionVM(
+                    DiplomacyMenu.PeaceButtonLabel(budget, theirBudget),
+                    DiplomacyMenu.PeaceButtonSub(budget, theirBudget, them),
                     0, true,
                     "Opens the peace table: what this war has earned, and what they will sign. " + allowance,
                     () => DiplomacyMenu.ShowPeace(state, us, them),
@@ -754,13 +756,13 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 {
                     var can = AiDiplomacy.CanSubmitTo(state, us, them, out var why, out _);
                     into.Add(new DiplomacyActionVM("Kneel to them",
-                        can ? "Ends this war as our submission." : "Cannot (see hint).",
+                        can ? "Ends this war as our submission." : why ?? "Not possible now.",
                         0, can,
                         can
                             ? "The oath is the peace: the war ends, we keep our ruler and lands,"
                               + " and they owe us protection. Tribute "
                               + DiplomacyConstants.AiDefaultTributePerPeriod + " per period."
-                            : why,
+                            : why ?? "Not possible now.",
                         () => DiplomacyMenu.OfferSubmission(state, us, them),
                         DiplomacyActionVM.DangerText));
                 }
@@ -768,13 +770,13 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 {
                     var can = AiDiplomacy.CanDefectToAttacker(state, us, them, out var why, out _);
                     into.Add(new DiplomacyActionVM("Beg their mercy",
-                        can ? "Ends this war as our defection." : "Cannot (see hint).",
+                        can ? "Ends this war as our defection." : why ?? "Not possible now.",
                         0, can,
                         can
                             ? "We abandon " + ourLink.DominantParty.Name + ", which would not"
                               + " defend us, and kneel to our attacker - they are named the"
                               + " oathbreaker in every court."
-                            : why,
+                            : why ?? "Not possible now.",
                         () => DiplomacyMenu.DefectToAttacker(state, us, them),
                         DiplomacyActionVM.DangerText));
                 }
@@ -815,15 +817,18 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 }
 
                 var block = TreatyEnforcement.WhyWarBlocked(state, us, them);
+                var blockedBecause = block == TreatyEnforcement.Block.None
+                    ? string.Empty
+                    : TreatyEnforcement.Explain(state, us, them, block) + ".";
                 into.Add(new DiplomacyActionVM("Declare war",
                     block == TreatyEnforcement.Block.None
                         ? "Puts it to the court's vote."
-                        : "Blocked (see hint).",
+                        : blockedBecause,
                     0, block == TreatyEnforcement.Block.None,
                     block == TreatyEnforcement.Block.None
                         ? "Proposes a war decision the realm votes on - the same thing the"
                           + " Decisions tab offers. Our treaties are why it may be blocked."
-                        : TreatyEnforcement.Explain(state, us, them, block) + ".",
+                        : blockedBecause,
                     () => DiplomacyMenu.DeclareWar(state, us, them),
                     DiplomacyActionVM.DangerText));
 
@@ -831,25 +836,25 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 into.Add(new DiplomacyActionVM("Demand tribute",
                     canTribute
                         ? DiplomacyConstants.AiDefaultTributePerPeriod + " per period."
-                        : "Cannot (see hint).",
+                        : whyTribute ?? "Not possible now.",
                     0, canTribute,
                     canTribute
                         ? "Coercion, not negotiation: our claim makes the pretext and our"
                           + " strength makes the argument - the same demand the AI makes."
-                        : whyTribute,
+                        : whyTribute ?? "Not possible now.",
                     () => DiplomacyMenu.DemandTribute(state, us, them)));
 
                 if (ourLink == null)
                 {
                     var can = AiDiplomacy.CanSubmitTo(state, us, them, out var why, out _);
                     into.Add(new DiplomacyActionVM("Kneel to them",
-                        can ? "We become their vassal." : "Cannot (see hint).",
+                        can ? "We become their vassal." : why ?? "Not possible now.",
                         0, can,
                         can
                             ? "Their oath for our foreign policy: tribute "
                               + DiplomacyConstants.AiDefaultTributePerPeriod
                               + " per period, troops in their wars, protection owed to us."
-                            : why,
+                            : why ?? "Not possible now.",
                         () => DiplomacyMenu.OfferSubmission(state, us, them),
                         DiplomacyActionVM.DangerText));
                 }
@@ -860,12 +865,12 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 {
                     var can = Hegemony.CanPoach(state, us, theirLink, out var value, out var why);
                     into.Add(new DiplomacyActionVM("Court them",
-                        can ? "Valued at " + value.ToString("0") + "." : "Cannot (see hint).",
+                        can ? "Valued at " + value.ToString("0") + "." : why ?? "Not possible now.",
                         0, can,
                         can
                             ? "They leave " + theirLink.DominantParty.Name + " and kneel to us -"
                               + " which means war with " + theirLink.DominantParty.Name + "."
-                            : why,
+                            : why ?? "Not possible now.",
                         () => DiplomacyMenu.CourtVassal(state, us, them),
                         DiplomacyActionVM.DangerText));
                 }
@@ -889,7 +894,10 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             {
                 var breaking = Hegemony.IsAtBreakingPoint(state, ourLink);
                 into.Add(new DiplomacyActionVM("Declare independence",
-                    breaking ? "A war of independence." : "Not breaking yet (see hint).",
+                    breaking
+                        ? "A war of independence."
+                        : "Hold " + Hegemony.HoldOf(ourLink).ToString("0") + " - it breaks below "
+                          + Hegemony.SecessionThreshold(state, ourLink).ToString("0") + ".",
                     0, breaking,
                     breaking
                         ? "Hold " + Hegemony.HoldOf(ourLink).ToString("0")

@@ -474,9 +474,11 @@ namespace DiplomacyIntrigue.UI
             var cost = DiplomacyConstants.TreatyInfluenceCost(type);
 
             // Their own valuation, shown honestly: this is the number the AI uses to decide.
+            // Truncated, like the Diplomacy tab's chooser: rounding would show 34.6 as "35"
+            // beside a threshold of 35 it has not cleared.
             var theirValue = AiDiplomacy.PactValue(state, them, us);
             var hint = allowed
-                ? cost + " influence. " + them.Name + " values it at " + theirValue.ToString("0")
+                ? cost + " influence. " + them.Name + " values it at " + ((int)theirValue)
                   + " (they need " + ThresholdFor(type).ToString("0") + ")."
                 : reason;
 
@@ -538,7 +540,7 @@ namespace DiplomacyIntrigue.UI
             if (theirValue < ThresholdFor(type))
             {
                 Notify(them.Name + " declines: they value a " + type + " at only "
-                       + theirValue.ToString("0") + ".");
+                       + ((int)theirValue) + ".");
                 return;
             }
 
@@ -841,6 +843,29 @@ namespace DiplomacyIntrigue.UI
         /// losing player reaches the same entry point and gets the offer checklist instead,
         /// because vanilla's peace paths are ours now ([design 05](../../docs/design/05-vanilla-override.md)).
         /// </summary>
+        /// <summary>
+        /// The label on a button that calls <see cref="ShowPeace"/>, from the same two
+        /// budgets it branches on - so the button never promises a white peace and then
+        /// opens the loser's table, which the first live pass caught the Realm tab doing.
+        /// </summary>
+        internal static string PeaceButtonLabel(float ourBudget, float theirBudget)
+        {
+            if (ourBudget > 0f) return "Negotiate peace";
+            if (theirBudget > 0f) return "Sue for peace";
+            return "White peace only";
+        }
+
+        /// <summary>The line under that button, on the same branch.</summary>
+        internal static string PeaceButtonSub(float ourBudget, float theirBudget, Kingdom them)
+        {
+            if (ourBudget > 0f)
+                return "Budget " + ourBudget.ToString("0") + " - see hint for the price list.";
+            if (theirBudget > 0f)
+                return "The war has earned " + them.Name + " " + theirBudget.ToString("0")
+                       + ". Offer what it takes.";
+            return "White peace only - this war has earned nothing yet.";
+        }
+
         internal static void ShowPeace(ModState state, Kingdom us, Kingdom them)
         {
             var war = state.OngoingWarBetween(us, them);
@@ -854,7 +879,7 @@ namespace DiplomacyIntrigue.UI
                 if (ourBudget > 0f)
                 {
                     // The winner's table: we price what to take.
-                    UI.Negotiation.PeaceTableScreen.ShowDemand(state, war, us, them, true,
+                    UI.Negotiation.PeaceTablePopup.ShowDemand(state, war, us, them, true,
                         terms => TryPeace(state, war, terms, us),
                         () => TryPeace(state, war, new PeaceTerms(us, them), us));
                     return;
@@ -862,7 +887,7 @@ namespace DiplomacyIntrigue.UI
                 if (theirBudget > 0f)
                 {
                     // The loser's table: we price what to give.
-                    UI.Negotiation.PeaceTableScreen.ShowDemand(state, war, us, them, false,
+                    UI.Negotiation.PeaceTablePopup.ShowDemand(state, war, us, them, false,
                         terms => TryPeace(state, war, terms, us),
                         () => TryPeace(state, war, new PeaceTerms(them, us), us));
                     return;

@@ -298,7 +298,7 @@ namespace DiplomacyIntrigue.Diplomacy
         {
             try
             {
-                UI.Negotiation.PeaceTableScreen.ShowIncoming(state, war, player, offerer, terms,
+                UI.Negotiation.PeaceTablePopup.ShowIncoming(state, war, player, offerer, terms,
                     () => AcceptPeaceOffer(state, war, offerer, player, terms),
                     () => RefusePeaceOffer(state, war, offerer, player, terms));
             }

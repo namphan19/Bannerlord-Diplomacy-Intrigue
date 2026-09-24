@@ -269,23 +269,33 @@ namespace DiplomacyIntrigue.UI.Negotiation
             TheirColor = Color.FromUint(_them.Color);
 
             var war = _war;
-            var story = "War over " + war.Justification
-                        + "   -   " + war.DaysElapsed.ToString("0") + " days"
+            // Wars the mod did not start have no claim on record; the Diplomacy tab's
+            // headline words it the same way rather than printing "over None".
+            var story = (war.Justification == CasusBelliType.None
+                            ? "War with no claim on record"
+                            : "War over " + war.Justification)
+                        + "   -   " + war.DaysElapsed.ToString("0")
+                        + (war.DaysElapsed.ToString("0") == "1" ? " day" : " days")
                         + (war.IsObligationWar && war.CalledBy != null
                             ? "   -   called in by " + war.CalledBy.Name : "");
 
             if (_incoming != null)
             {
-                Title = _them.Name + " asks for peace";
+                // Two different offers arrive through this face: a losing court buying
+                // its peace with concessions, and a winning court naming the price of
+                // one. The title says which, because every line below reads differently.
+                Title = _weAreWinner
+                    ? _them.Name + " asks for peace"
+                    : _them.Name + " names its price for peace";
                 Subtitle = story + "   -   your own condition: "
-                           + ExhaustionBands.Describe(war.ExhaustionOf(_us));
+                           + ExhaustionBands.Condition(war.ExhaustionOf(_us));
                 BuildIncoming();
             }
             else
             {
                 Title = (_weAreWinner ? "Peace with " : "Sue for peace with ") + _them.Name;
                 Subtitle = story + "   -   their condition: "
-                           + ExhaustionBands.Describe(war.ExhaustionOf(_them));
+                           + ExhaustionBands.Condition(war.ExhaustionOf(_them));
                 BuildEditable();
             }
         }
@@ -336,10 +346,17 @@ namespace DiplomacyIntrigue.UI.Negotiation
             AcceptText = _incoming.IsWhitePeace ? "Make peace" : "Accept these terms";
             OfferColor = PeaceTermRowVM.OnNameColor;
 
+            // _weAreWinner here means the offer is a loser's concession to us (the
+            // mockup's board 3b); otherwise it is a winner's demand of us. The package is
+            // priced the same way either way - CostOf against the winner's BudgetFor - but
+            // what it means to the reader is opposite, so the words follow the side.
+            var conceding = _weAreWinner;
             var winner = _incoming.Winner;
             var cost = PeaceTable.CostOf(_incoming);
             var theirScore = _war.ScoreFor(_them);
-            BudgetLabel = "What " + _them.Name + "'s offer costs them";
+            BudgetLabel = conceding
+                ? "What " + _them.Name + "'s offer costs them"
+                : "What " + _them.Name + " asks of you";
             BudgetText = cost.ToString("0");
             SpentText = "of a war they are " + (theirScore < 0f ? "losing" : "winning")
                         + " at score " + (theirScore >= 0f ? "+" : "") + theirScore.ToString("0");
@@ -349,24 +366,29 @@ namespace DiplomacyIntrigue.UI.Negotiation
                 : (int)Math.Min(100f, cost / budget * 100f);
             FillColor = "#4D7F52FF";
             ShowCliff = false;
-            BudgetNote = "The same formula either side of the table reads: this is what their"
-                         + " own court judged affordable, not a gift.";
-            TermsHeader = "What they offer";
-            PriceHeader = "worth";
+            BudgetNote = conceding
+                ? "The same formula either side of the table reads: this is what their"
+                  + " own court judged affordable, not a gift."
+                : "The same formula either side of the table reads: this is priced against what"
+                  + " the war has earned them, the figure your own table would show them.";
+            TermsHeader = conceding ? "What they offer" : "What they demand";
+            PriceHeader = conceding ? "worth" : "price";
             TableNote = "This is their table, not yours   -   nothing here is editable. What you"
                         + " can change is only whether you sign.";
 
-            // Read only: the rows are the standard catalogue with their package ticked,
-            // and the rest shown as not offered rather than hidden.
+            // Read only: the rows are the standard catalogue with their package ticked.
+            // A line left out says so; a line the model would not allow at all keeps the
+            // model's own reason, so a blank never pretends to be a choice.
+            var notIncluded = conceding ? "Not in their offer." : "Not in their demand.";
             var rows = new MBBindingList<PeaceTermRowVM>();
             foreach (var spec in Catalogue(_incoming.Winner, _incoming.Loser))
             {
-                var offered = Contains(_incoming, spec);
+                var included = Contains(_incoming, spec);
                 var row = new PeaceTermRowVM(spec.Kind, spec.Fief, spec.Name,
-                    offered ? spec.Desc : "Not offered.", spec.Price, offered,
-                    "Not offered   -   this war never earned them enough to ask it of you.",
+                    spec.Desc, spec.Price, included,
+                    spec.Enabled ? notIncluded : spec.DisabledReason,
                     () => { });
-                row.IsOn = offered;
+                row.IsOn = included;
                 rows.Add(row);
             }
             Rows = rows;
@@ -416,13 +438,14 @@ namespace DiplomacyIntrigue.UI.Negotiation
 
             // Land: one line per fortification, claim-gated by the model.
             var claim = ClaimRegistry.Best(_state, winner, loser);
+            var land = new List<Spec>();
             var settlements = loser.Settlements;
             for (var i = 0; i < settlements.Count; i++)
             {
                 var fief = settlements[i];
                 if (!fief.IsFortification) continue;
                 var captured = fief;
-                Add(specs, PeaceTermKind.Land, fief,
+                Add(land, PeaceTermKind.Land, fief,
                     fief.Name.ToString(),
                     _weAreWinner
                         ? "Your " + (claim != null ? claim.Type.ToString() : "claim")
@@ -430,6 +453,7 @@ namespace DiplomacyIntrigue.UI.Negotiation
                         : "Cede it and it changes hands on signing.",
                     winner, loser, t => t.FiefsCeded.Add(captured));
             }
+            specs.AddRange(CollapseRefusedLand(land));
 
             // The top rung, in whichever face applies: a hegemon gives up its sphere, a
             // free kingdom gives up itself. Both faces are shown; the model refuses the
@@ -456,6 +480,38 @@ namespace DiplomacyIntrigue.UI.Negotiation
                 });
 
             return specs;
+        }
+
+        /// <summary>
+        /// When the model refuses every fief for the same reason - usually that the winner
+        /// holds no territorial claim - one grey line says so instead of a grey line per
+        /// castle, which buried the terms that could be asked (the first live pass listed
+        /// fifteen). Any fief the model allows, or any reason that differs from the rest,
+        /// keeps the full list: the player needs to see which land is which.
+        /// </summary>
+        private List<Spec> CollapseRefusedLand(List<Spec> land)
+        {
+            if (land.Count < 2) return land;
+
+            var reason = land[0].DisabledReason;
+            for (var i = 0; i < land.Count; i++)
+                if (land[i].Enabled || land[i].DisabledReason != reason) return land;
+
+            return new List<Spec>
+            {
+                new Spec
+                {
+                    Kind = PeaceTermKind.Land,
+                    Fief = null,
+                    Apply = t => { },
+                    Name = (_weAreWinner ? "Their land" : "Our land")
+                           + " (" + land.Count + " fiefs)",
+                    Desc = reason,
+                    Price = "-",
+                    Enabled = false,
+                    DisabledReason = reason,
+                },
+            };
         }
 
         private void Add(List<Spec> specs, PeaceTermKind kind, Settlement fief,

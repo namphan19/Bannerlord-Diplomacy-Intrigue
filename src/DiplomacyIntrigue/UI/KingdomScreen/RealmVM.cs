@@ -544,10 +544,13 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 var score = war.ScoreFor(us);
                 var budget = PeaceTable.BudgetFor(war, us);
                 var allowance = PeaceTable.DescribeAllowance(state, war, us);
-                // The mockup's button label and sub differ by what the war has earned:
-                // a real negotiation past the cliff, or the white peace that is all that
-                // is on offer.
-                var earned = budget > 0f;
+                // The mockup's button label and sub differ by what the war has earned, and
+                // for whom: our own table when it earned us something, the loser's table
+                // when it earned them something (ShowPeace opens that one too), a white
+                // peace only when neither side has anything to ask.
+                var theirBudget = PeaceTable.BudgetFor(war, enemy);
+                var label = DiplomacyMenu.PeaceButtonLabel(budget, theirBudget);
+                var sub = DiplomacyMenu.PeaceButtonSub(budget, theirBudget, enemy);
                 wars.Add(new DiRealmWarVM(
                     enemy.Name.ToString(),
                     war.DaysElapsed.ToString("0") + " days"
@@ -558,14 +561,12 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                             ? "   -   called in by " + war.CalledBy.Name : ""),
                     "our exhaustion " + war.ExhaustionOf(us).ToString("0.0")
                         + "   -   their condition "
-                        + ExhaustionBands.Describe(war.ExhaustionOf(enemy)),
+                        + ExhaustionBands.Condition(war.ExhaustionOf(enemy)),
                     (score >= 0f ? "+" : "") + score.ToString("0"),
                     score >= 0f ? PositiveColor : NegativeColor,
                     Color.FromUint(enemy.Color),
-                    earned ? "Negotiate peace" : "White peace only",
-                    earned
-                        ? "Budget " + budget.ToString("0") + " - see hint for the price list."
-                        : "White peace only - this war has earned nothing yet.",
+                    label,
+                    sub,
                     "Opens the peace table: what this war has earned, and what they will sign. " + allowance,
                     () => DiplomacyMenu.ShowPeace(state, us, target)));
             }
