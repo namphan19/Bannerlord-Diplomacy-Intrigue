@@ -37,8 +37,8 @@ is the "Civil war" row of the court canvas (https://claude.ai/artifact/1FrpG5in3
   (`feature/phase1-ui-match-mockup`: the tabs matched to the mockup, and the peace table as its
   own popup) and 2.6c, all merged 2026-09-24. The two hand-resolved conflicts in
   `RealmVM`/`DiplomacyItemMixin` were run in game with an internal war going during the 2.6c
-  test: the Realm tab rendered, and the rising appeared neither as a rival sphere nor as a
-  claim target. **One game for both clones**: check who is running it before deploying
+  test: the Realm tab rendered with no error. The `IsRealm` filter those conflicts kept was not
+  really exercised, since the rising held no vassal and nobody had a claim on it. **One game for both clones**: check who is running it before deploying
   (CLAUDE.md §7).
 - **Verified live:** all three outcomes (rebels win, twice naturally; crown wins; stalemate,
   with the 365-day cooldown holding), sieges and fiefs changing sides once rebels could raise
