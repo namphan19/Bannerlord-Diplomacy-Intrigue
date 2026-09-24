@@ -1,4 +1,4 @@
-# Status — 2026-09-23
+# Status — 2026-09-24
 
 Point-in-time state. [CLAUDE.md](../CLAUDE.md) holds the things that are always true; this
 file holds what changes. Update it when you finish a chunk of work.
@@ -7,7 +7,7 @@ Module version 0.1.0. Save schema **v4**, definer base id **2749100**.
 Save ids in use: `Treaty` 1-17, `TrustRecord` 1-6, `ModState` 1-14, definer class ids to 14
 (`InternalWarMember`), enums 20-27. Next free: class id **15**, `ModState` property **15**, enum
 **28** (CLAUDE.md §3 has the per-type detail). The 2.6 ids (13, 14, 27, property 14) are on
-branch `feature/phase-2.6-civil-war` and not yet in any save anyone plays.
+`development` since 2026-09-24. 2.6c plans `InternalWar` property 14 (design/07 §6); not yet taken.
 Last completed measurement: **balance run 07** — [docs/balance/run-07.md](balance/run-07.md).
 
 ## Start here — handoff, 2026-09-23
@@ -15,14 +15,22 @@ Last completed measurement: **balance run 07** — [docs/balance/run-07.md](bala
 **Phase 1 is accepted and closed. Phase 2, court intrigue, is the work now.**
 2.1-2.5 and 2.7 are built and verified live (sections below). **2.6, war inside a kingdom, and
 2.6b, a house divided by its succession, are built and verified live** on branch
-`feature/phase-2.6-civil-war`, which is not yet merged or pushed.
+`feature/phase-2.6-civil-war`, merged into `development` on 2026-09-24.
 [design/07 §3d and §5](design/07-internal-politics.md) have the result tables.
+
+**Next: 2.6c, the civil war on screen.** Decided with the lead on 2026-09-24, not built:
+either leader can concede; a house can change sides mid-war for gold, the player's included;
+the war is shown on the Court tab, with a pointer on the Realm tab.
+[design/07 §6](design/07-internal-politics.md) has the rules and the price formula. The mockup
+is the "Civil war" row of the court canvas (https://claude.ai/artifact/1FrpG5in328WYfNi6sP8Pf).
 
 ### Checkpoint, 2026-09-24
 
-- **Branch:** `feature/phase-2.6-civil-war`, off `development` at `4ae4ab6`. opencode works in
-  its own clone on `feature/phase1-ui-match-mockup`. **One game for both**: check who is running
-  it before deploying (CLAUDE.md §7).
+- **Branch:** `development` at `7f1c7e8` holds both 2.6/2.6b and opencode's Phase 1 UI
+  (`feature/phase1-ui-match-mockup`: the tabs matched to the mockup, and the peace table as its
+  own popup), merged 2026-09-24. Two conflicts in `RealmVM`/`DiplomacyItemMixin` were resolved
+  by hand, and **that combination has not been run in game with an internal war going.**
+  **One game for both clones**: check who is running it before deploying (CLAUDE.md §7).
 - **Verified live:** all three outcomes (rebels win, twice naturally; crown wins; stalemate,
   with the 365-day cooldown holding), sieges and fiefs changing sides once rebels could raise
   armies, save and reload mid-war with captured fiefs, and houses dividing at a real death,

@@ -1,6 +1,7 @@
 # Design 07 — Internal politics: war inside a kingdom
 
-Status: **built and verified live**: all three outcomes, sieges, save/reload (§3d), and a house divided (§5). Phase 2, sitting beside
+Status: **built and verified live**: all three outcomes, sieges, save/reload (§3d), and a house divided (§5).
+**2.6c, conceding and changing sides for gold, decided and not built (§6).** Phase 2, sitting beside
 [02-intrigue.md](02-intrigue.md) rather than replacing it.
 
 The project lead's brief, 2026-09-23: vanilla's internal politics is too simple. Clans should
@@ -475,3 +476,136 @@ Four things running it showed that reading the code did not:
 **Still not verified:** the player's own house dividing, and a cadet branch going on to become
 a standing pretender and start an internal war. Both follow from verified pieces, but the full
 chain has not been seen end to end.
+
+---
+
+## 6. Conceding, and changing sides for gold (2.6c), decided 2026-09-24
+
+2.6 as shipped gives nobody anything to do in a civil war except fight it. The player sees a
+notice when it starts and another when it ends, and no screen shows the sides, the exhaustion or
+what each ending does. This section is the answer: two new acts, and where the war is shown.
+Mockup: the "Civil war — Phase 2.6 UI" row of the court canvas
+(https://claude.ai/artifact/1FrpG5in328WYfNi6sP8Pf, boards `CivilWar`, `ChangeSides`,
+`RealmCivilWar`). Its figures are sample, not live. **Nothing in this section is built yet.**
+
+### What the lead decided
+
+| # | Decision |
+|---|---|
+| 1 | **Either side's leader can concede.** A concession ends the war exactly as if that side had reached exhaustion 100. There are no new outcomes: it reuses §3a Q1 as it stands |
+| 2 | **A house can change sides mid-war, paid in gold.** Gold only for now. Influence and fiefs as currency are not in scope |
+| 3 | **The player's house can be bought** like any other house, and paid, not charged |
+| 4 | The price scale is Claude's call, and may rest on clan strength |
+| 5 | A mockup before any code |
+
+### Conceding
+
+- Only the **ruler** (for the crown) and the **claimant** (for the rising) can concede. A house
+  that merely sides with one of them cannot end the war for it.
+- A concession calls the existing ending with the existing outcome: the crown conceding is a
+  rebel win, and the rising conceding is a crown win. Legitimacy, the pretender left behind, the
+  365-day cooldown: all as §3a Q1.
+- **The AI concedes by rule**, so the act is not the player's alone: a leader concedes when its
+  own side's exhaustion is at **75** or more while the other side's is **under 40**
+  (`InternalWarConcedeExhaustion`, `InternalWarConcedeOtherBelow`, both UN-TUNED). The condition
+  cannot overlap the stalemate, which needs both sides past 40. Checked on the daily tick,
+  beside the existing endings.
+- A player leader is never conceded for automatically. The button needs a second click to
+  confirm, inside the panel rather than in an inquiry, so the test bridge can drive it.
+
+### Changing sides: who
+
+A house can be bought if it is a sworn clan of the kingdom at war with itself, and none of:
+the ruling clan, the claimant's clan, a mercenary, a house that has already changed sides in
+this war, a house whose head is a prisoner or in a battle. **Once per war per house.**
+
+### Changing sides: the price
+
+The side that gains the house pays its head. The payment comes from the leader's own purse (the
+ruler's or the claimant's), not from any treasury. One price, whichever direction. It is what
+the crown pays to win a house back, and what the claimant pays to take one.
+
+```
+price = (2,000 + 15 x strength + 4,000 per town + 2,000 per castle)
+        x relation  x bond  x momentum          rounded to 100, never below 1,000
+
+strength  = Clan.CurrentTotalStrength (the engine's own figure; 300-650 for most houses in the
+            balance runs)
+relation  = 1 - rel(buyer, house head) / 200                          0.5 - 1.5
+bond      = 0.5 + tie / 100, where tie is how firmly the house holds  0.5 - 1.5
+            to its current side: on the crown's side its loyalty
+            (LoyaltyModel.Of, the court's resolver), on the rising's
+            side 50 + rel(house head, claimant) / 2
+momentum  = clamp(1 + (buyer's exhaustion - other side's) / 100,      0.7 - 1.5
+            0.7, 1.5): joining the side that is losing costs more
+```
+
+A typical house (strength 450, one castle, neutral on every factor) costs **10,800**. With
+each factor between 0.8 and 1.3, most houses land between about 6,000 and 25,000. With every
+factor at its limit, the extremes run from the 1,000 floor to about 60,000 (strength 650, a
+town and a castle, all three factors at 1.5). How those prices compare with lords' purses has
+not been measured. That is the first thing to check once it runs. Every constant goes into `IntrigueConstants`, marked UN-TUNED.
+Worked through, the mockup's example (strength 400, one castle, relation −12 with the buyer, +8
+with the claimant, exhaustion 62.4 against 35.6) comes to 10,000 × 1.06 × 1.04 × 1.27 ≈ **14,000**.
+The mockup shows 13,800, a sample figure drawn before the formula was fixed.
+
+The panel lists the three base parts, then each factor as the gold it adds or removes, so the
+lines sum to the price. **One resolver** computes it (a `SideChange.PriceOf(state, war, clan,
+buyer)`). The panel, the AI and the player's own offer read the same figure.
+
+### Changing sides: when the AI buys
+
+Weekly, each AI leader considers the houses on the other side that it can buy, and buys the one
+with the most strength per denar, if the price is at most **half its purse**
+(`AiSideChangeBudgetShare = 0.5`, UN-TUNED). One house per leader per week. The house accepts:
+the price is its asking price.
+
+**The player's house under the same rule.** When an AI leader's pick is the player's house, the
+player gets the offer and can accept (and is paid) or refuse. A refusal stops that leader
+offering again for 30 days. That cooldown is transient and not saved. The player can also go
+over unasked, from the Court tab, whenever the other leader would pay by the same budget test.
+A player who leads a side buys houses from the Court tab, with the same price and eligibility.
+
+### What changing sides does
+
+- The gold moves from the buyer to the house's head (`GiveGoldAction`).
+- The house joins or leaves `InternalWar.Rebels`, and then the path the side-choice prompt
+  already uses runs: `RebuildIndex`, `SyncFaction`, `SeparateArmies`. Its fiefs and parties go
+  with it, because they follow the clan's map faction.
+- The head's relation with the leader they left drops by **20** (UN-TUNED).
+- The house stays a sworn house of the kingdom throughout. Nothing here moves `Clan.Kingdom`.
+
+**Save data.** "Has changed sides in this war" must survive a reload. Planned: `InternalWar`
+property **14**, a `List<InternalWarMember>` of houses that changed sides. That reuses a class
+and container already defined (class id 14), so no new definer entry. The id is recorded in
+CLAUDE.md §3 only when it ships.
+
+### Where it is shown
+
+The rule of one surface per scope decides this. A civil war is a matter inside one realm, so
+it lives on the **Court tab**:
+
+- **The Court tab in civil-war mode**, above the court:
+  - both sides, with their houses, fiefs, share of the court at the start, exhaustion bars
+    marked at 40 and 100, and each leader's days held against 30;
+  - the three endings, each with what triggers it;
+  - the roster split by side, with each house's price;
+  - the selected house's price, line by line;
+  - Concede, for the two leaders only.
+- **Changing sides**, when the player's house is not a leader: where it stands, what the other
+  leader would pay and whether their purse allows it, and what going over means under each ending.
+- **The Realm tab only points there.** The civil war heads the wars strip with "Open the court",
+  and the standing strip reads "Divided". When the player's house is with the rising, the
+  strip says so, and marks the realm's foreign wars as the crown's.
+- **The Diplomacy tab does not list the rising.** It is a `Kingdom` at war with the realm, so
+  vanilla's list would show it as an enemy to negotiate with. There is nothing to negotiate
+  there. Not yet checked in game whether vanilla lists it today.
+- No action is needed anywhere else. Every act here is internal, so all of them sit on the Court
+  tab, which the test bridge can click. Lord dialogue and inquiries would put them where it
+  cannot.
+
+### Not decided yet
+
+- Whether the price should also carry what the house has **won in this war** (fiefs taken). It
+  is left out because "fiefs they would bring" already counts what the house holds now.
+- Influence or fiefs as a currency (lead: later).
