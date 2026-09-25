@@ -210,18 +210,15 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                     return;
                 }
 
-                // A ruler who concedes is no longer the ruler, and the Kingdom screen's own
-                // header - the leader's portrait, "Abdicate Leadership" - was built for a ruler
-                // and is not rebuilt by anything of ours. Seen live on 2026-09-24. The screen
-                // closes, as vanilla's Done does, rather than stay open showing a throne the
-                // player no longer holds.
-                if (!rising)
-                {
-                    var states = Game.Current?.GameStateManager;
-                    if (states?.ActiveState is KingdomState) states.PopState();
-                    return;
-                }
-                _onChanged?.Invoke();
+                // Either concession changes the kingdom the screen was built for, and its vanilla
+                // header - name, leader portrait, "Abdicate Leadership" - is not rebuilt by
+                // anything of ours. A ruler who concedes no longer rules (seen live 2026-09-24);
+                // a claimant who concedes watches the rising it led be destroyed, and the header
+                // went on reading "Okhon's Rising" over a realm that no longer existed (live
+                // 2026-09-25 - this branch once closed the screen for the ruler only). The screen
+                // closes, as vanilla's Done does.
+                var states = Game.Current?.GameStateManager;
+                if (states?.ActiveState is KingdomState) states.PopState();
             }
             catch (Exception ex)
             {
@@ -312,8 +309,10 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             StalemateWhen = "Both sides past " + IntrigueConstants.InternalWarStalemateExhaustion.ToString("0")
                             + " - the mark on each bar - and nothing moves";
 
-            CrownHeading = "WITH THE CROWN - what " + claimantName + " would pay to take them";
-            RisingHeading = "WITH THE RISING - what " + (ruler == null ? "the crown" : ruler.Name.ToString()) + " would pay to win them back";
+            CrownHeading = "WITH THE CROWN - what " + (playerLeadsRising ? "you" : claimantName) + " would pay to take them";
+            RisingHeading = "WITH THE RISING - what "
+                            + (playerLeadsCrown ? "you" : ruler == null ? "the crown" : ruler.Name.ToString())
+                            + " would pay to win them back";
 
             for (var i = 0; i < crown.Count; i++) CrownHouses.Add(Row(crown[i]));
             for (var i = 0; i < rising.Count; i++) RisingHouses.Add(Row(rising[i]));

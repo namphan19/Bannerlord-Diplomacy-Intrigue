@@ -678,8 +678,30 @@ Kingdom screen (header, Clans, Fiefs, Policies, Armies) as the rising, because v
 the player's map faction. The Realm and Court tabs show the realm. This is 2.6's behaviour, not
 2.6c's; whether the rising is the right thing for those tabs to show is a design question.
 
-**Still not seen live:** an AI leader's offer to the player's house (the inquiry), and the player
-as the claimant.
+**Still not seen live** after the first run: an AI leader's offer to the player's house (the
+inquiry), and the player as the claimant. Both were run on 2026-09-25, below.
+
+### The second live run, 2026-09-25, 0 errors
+
+| Check | Result |
+|---|---|
+| **An AI leader's offer, refused** (`di_civilwar_test`, the player's house put with the rising) | `ai_week 1`: Muinser, losing, picked Airit as the best strength per denar (1,375 for 33,700 against fen Uvain's 736 for 37,100) and put the inquiry. Refused: the next `ai_week 1` did not ask again and bought fen Uvain instead |
+| **The same offer, accepted** (reloaded) | Player's purse 0 -> 33,700, Muinser's 452,986 -> 419,286, the house with the crown, relation with Aradwyr -20, and "Has already changed sides once in this war" on its quote |
+| **The player as claimant, by the real path** (`di_civilwar_2_6c`) | The player, ruling, conceded: Aradwyr crowned, legitimacy 10, and the player kept as a pretender at 39% - the deposition rule of §3a Q1. `test_start_internal_war` then raised "Okhon's Rising" with 4 houses |
+| **Buying a house as the claimant** | Paid 9,600 for fen Caernacht from the Court tab: purse 83.1k -> 73.5k, the rising 5 clans and 4 fiefs, the house marked "changed sides" and still selected |
+| **Conceding as the claimant** | Two clicks on "Give up your claim": CrownWon, legitimacy 10 -> 22 (+12), the claim retired, the rising destroyed |
+
+**Fixed during the run:** conceding as the claimant left the Kingdom screen open under a vanilla
+header still reading "Okhon's Rising"; it now closes for either concession. The court line read
+"you serve Aradwyr" to a house in arms against him, and the price headings named the player
+where the rest of the panel says "you".
+
+**Still not seen live:** the "Raise your banner?" prompt for a player claimant (it needs the
+trigger met, which the 365-day cooldown after the first war kept out of reach; the lever starts
+the war without it), the "choose a side" prompt, a claimant's 30 days of captivity, and a cadet
+branch going on to start a war. The price lines still name the player ("How they feel about
+Okhon"): they are built in `SideChange`, which the Intrigue layer keeps free of any "is this the
+player" argument, and are printed by `civil_war_prices` too.
 
 **What the first run had to check** (kept as it was written before the run):
 - The Court tab renders in both modes at 1920x1080.

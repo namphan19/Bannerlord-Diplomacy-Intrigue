@@ -968,6 +968,16 @@ namespace DiplomacyIntrigue.Diplomacy
         /// <summary>Strength advantage at which submission can be demanded instead of war.</summary>
         public const float AiTributeDemandStrengthRatio = 2.0f;
 
+        /// <summary>
+        /// Share of a court, weighed by influence, that paying tribute may leave a defection
+        /// risk before the crown refuses the demand (<c>Intrigue.TributeCourt</c>). At a third,
+        /// the realm is visibly coming apart: enough of its weight would be ready to break that
+        /// a crown fearing the demander has more to fear from its own houses.
+        /// UN-TUNED: chosen by that reasoning, not measured. A long run should say how often
+        /// it refuses, and whether it ever refuses a court that is not already in crisis.
+        /// </summary>
+        public const float AiTributeCourtRefusalShare = 0.34f;
+
         public const float WarValuePerStrengthRatio = 40f;
 
         /// <summary>

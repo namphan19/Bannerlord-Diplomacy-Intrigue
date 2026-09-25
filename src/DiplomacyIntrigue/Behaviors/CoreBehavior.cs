@@ -157,6 +157,7 @@ namespace DiplomacyIntrigue.Behaviors
             try
             {
                 BackfillOngoingWars();
+                AiDiplomacy.ResetSession();
 
                 var unchained = Hegemony.DissolveChains(_state);
                 if (unchained > 0)

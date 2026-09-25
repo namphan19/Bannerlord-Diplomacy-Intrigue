@@ -425,7 +425,7 @@ Playable target: *being a king is a political problem, not just a military one.*
 
 **2.5 Succession crises** — on a ruler's death, competing claims resolve through bloc support rather than a silent assignment.
 
-**2.6 Civil war** — a strong pretender bloc can secede into a rival kingdom, taking its fiefs. The end state of unmanaged internal pressure. *Built instead as war inside the kingdom, which does not split (design/07): **2.6** the internal war and **2.6b** a house divided by its succession, verified live 2026-09-23/24; **2.6c** conceding and changing sides for gold, shown on the Court tab, run live 2026-09-24. Secession stays the last rung of design/07 §2 and is not built. What is still unverified is listed in STATUS.md.*
+**2.6 Civil war** — a strong pretender bloc can secede into a rival kingdom, taking its fiefs. The end state of unmanaged internal pressure. *Built instead as war inside the kingdom, which does not split (design/07): **2.6** the internal war and **2.6b** a house divided by its succession, verified live 2026-09-23/24; **2.6c** conceding and changing sides for gold, shown on the Court tab, run live 2026-09-24, and from the two places left unseen (an AI leader's offer to the player's house, the player as claimant) on 2026-09-25. Secession stays the last rung of design/07 §2 and is not built. What is still unverified is listed in STATUS.md.*
 
 **2.7 Intrigue UI** — court screen: blocs, loyalty, grievance ledger, legitimacy — in full for your own court, as a qualitative band for rivals (§9.1). **Own court: built and verified live 2026-09-23** as a seventh Kingdom-screen tab, "Court" (STATUS.md). **Rival court: built and verified live 2026-09-23** — a bands-only "Court" section on the kingdom's Encyclopedia page, every edge a behavioural threshold (`CourtBands`).
 
@@ -441,7 +441,7 @@ Playable target: *being a king is a political problem, not just a military one.*
 | `EnableIntrigue` settings toggle, already shipped and defaulting on | `Core/ModSettings.cs:31` |
 | The `Hold` formula wants a crown-legitimacy term | [design/04 §1.2](design/04-hegemony.md) |
 | `CourtAgenda`, `SpyMissionType`, `MissionOutcome` — enums written in Phase 0 and already registered at definer ids 23–25 | `Models/Enums.cs`, `Core/ModSaveDefiner.cs` |
-| `AiDiplomacy.TryDemandTribute` accepts on strength ratio and trust alone, with no sense of the target court's willingness | revisit at 2.2 |
+| `AiDiplomacy.TryDemandTribute` accepts on strength ratio and trust alone, with no sense of the target court's willingness | **done 2026-09-25**: the target's court answers (`Intrigue/TributeCourt`), and a player-ruled target is asked instead of signed for. Verified live; STATUS.md |
 
 Two Phase 1 pieces are parked until Phase 2 makes them mean something: **vassal-party
 summons** ([design/04 §8](design/04-hegemony.md) — the most intrusive and least load-bearing

@@ -815,6 +815,39 @@ namespace DiplomacyIntrigue.Core
         }
 
         /// <summary>
+        /// Ends a live treaty as if its term had run out, through the same
+        /// <c>TreatyRegistry.Expire</c> the daily upkeep calls - trust dividend and all. For a
+        /// test that needs a pact gone without the grudge a breach leaves, since
+        /// <c>tick_days</c> cannot move the calendar that expiry reads. Test saves only.
+        /// Usage: diplomacy.test_expire_treaty Khuzait | Northern Empire | TributaryPact
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_expire_treaty", "diplomacy")]
+        public static string TestExpireTreaty(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var parts = SplitOnPipe(args);
+            if (parts.Count < 3)
+                return "Usage: diplomacy.test_expire_treaty <kingdom> | <kingdom> | <type>";
+
+            var a = FindKingdom(parts[0]);
+            var b = FindKingdom(parts[1]);
+            if (a == null) return "No kingdom matching \"" + parts[0] + "\".";
+            if (b == null) return "No kingdom matching \"" + parts[1] + "\".";
+            if (!Enum.TryParse(parts[2], true, out TreatyType type))
+                return "Unknown treaty type \"" + parts[2] + "\".";
+
+            var treaty = state.ActiveTreatyBetween(a, b, type);
+            if (treaty == null) return "No active " + type + " between those kingdoms.";
+
+            TreatyRegistry.Expire(state, treaty);
+            return "Expired, honoured in full: " + treaty + ". Trust now " + a.Name + " -> " + b.Name + " "
+                   + TrustRegistry.Get(state, a, b).ToString("0.0") + ", " + b.Name + " -> " + a.Name + " "
+                   + TrustRegistry.Get(state, b, a).ToString("0.0") + ".";
+        }
+
+        /// <summary>
         /// Reports whether a war would be allowed right now, and why not.
         /// Usage: diplomacy.can_war Vlandia | Battania
         /// </summary>
@@ -1176,6 +1209,70 @@ namespace DiplomacyIntrigue.Core
                 sb.AppendLine(AiDiplomacy.ExplainWarValue(state, a, other));
             }
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// Whether a kingdom could demand tribute of another, gate by gate, with the target's
+        /// court house by house - printed from <see cref="AiDiplomacy.EvaluateTribute"/>, the
+        /// answer the weekly scan and the player's button both act on.
+        /// Usage: diplomacy.tribute_value Vlandia | Battania
+        /// With one kingdom named, reports it as the demander against every other.
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("tribute_value", "diplomacy")]
+        public static string TributeValue(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var parts = SplitOnPipe(args);
+            if (parts.Count < 1) return "Usage: diplomacy.tribute_value <demander> [| <target>]";
+
+            var a = FindKingdom(parts[0]);
+            if (a == null) return "No kingdom matching \"" + parts[0] + "\".";
+
+            if (parts.Count >= 2)
+            {
+                var b = FindKingdom(parts[1]);
+                if (b == null) return "No kingdom matching \"" + parts[1] + "\".";
+                return AiDiplomacy.ExplainTributeValue(state, a, b);
+            }
+
+            var sb = new StringBuilder();
+            foreach (var other in Kingdom.All)
+            {
+                if (other == a || !other.IsRealm()) continue;
+                sb.AppendLine(AiDiplomacy.ExplainTributeValue(state, a, other));
+            }
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Puts one demand for tribute through <see cref="AiDiplomacy.DemandTributeOf"/> now -
+        /// the body the weekly scan runs for each target - so a demand on a player-ruled realm
+        /// can be seen without waiting for the scan to pick it. Every gate still applies.
+        /// Test saves only: an accepted demand signs a real pact.
+        /// Usage: diplomacy.test_demand_tribute Vlandia | Battania
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_demand_tribute", "diplomacy")]
+        public static string TestDemandTribute(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var parts = SplitOnPipe(args);
+            if (parts.Count < 2) return "Usage: diplomacy.test_demand_tribute <demander> | <target>";
+            var a = FindKingdom(parts[0]);
+            if (a == null) return "No kingdom matching \"" + parts[0] + "\".";
+            var b = FindKingdom(parts[1]);
+            if (b == null) return "No kingdom matching \"" + parts[1] + "\".";
+
+            var before = AiDiplomacy.EvaluateTribute(state, a, b);
+            var notAsked = AiDiplomacy.WhyPlayerNotAsked(state, a, b);
+            if (!AiDiplomacy.DemandTributeOf(state, a, b))
+                return "No demand made: " + (before.Blocked ?? notAsked ?? "Sign refused it - see the log.");
+            return b.Leader == Hero.MainHero
+                ? "Demand put to the player: answer the inquiry."
+                : b.Name + " pays tribute to " + a.Name + " now.";
         }
 
         /// <summary>
@@ -1910,6 +2007,49 @@ namespace DiplomacyIntrigue.Core
             return "The player's house is now " + (side == "ruler" ? "ruling " + kingdom.Name
                        : side == "rising" ? "with " + SideChange.SideName(war, true) : "with the crown of " + kingdom.Name)
                    + ". " + war + Environment.NewLine + MapFactionReport(state, kingdom);
+        }
+
+        /// <summary>
+        /// Hands a kingdom's throne to the player's house, joining it first if needed, so a test
+        /// can stand the player where a crown answers for its realm - the target of a demand for
+        /// tribute, or the one making it. The same vanilla <c>ChangeRulingClanAction</c> that
+        /// <c>test_player_side | ruler</c> uses, without needing a civil war; the succession
+        /// watch sees it as a change of ruler, as it would any other. Refused while the player's
+        /// house rules another kingdom, which would leave that realm without its ruling clan.
+        /// Test saves only - this rewrites the player's allegiance and a kingdom's crown.
+        /// Usage: diplomacy.test_player_rule Battania
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_player_rule", "diplomacy")]
+        public static string TestPlayerRule(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+            if (args == null || args.Count == 0) return "Usage: diplomacy.test_player_rule <kingdom>";
+
+            var kingdom = FindKingdom(string.Join(" ", args));
+            if (kingdom == null) return "No kingdom matching \"" + string.Join(" ", args) + "\".";
+            if (!kingdom.IsRealm()) return kingdom.Name + " is not a realm.";
+            if (InternalWars.OngoingIn(state, kingdom) != null)
+                return kingdom.Name + " is at war with itself - use test_player_side, which places the player on a side.";
+
+            var player = Clan.PlayerClan;
+            if (player == null) return "No player clan.";
+            if (kingdom.RulingClan == player) return "The player's house already rules " + kingdom.Name + ".";
+            if (player.Kingdom != null && player.Kingdom != kingdom && player.Kingdom.RulingClan == player)
+                return "The player's house rules " + player.Kingdom.Name + "; it cannot leave that realm without a crown.";
+
+            if (player.Kingdom != kingdom)
+            {
+                if (player.Kingdom == null) ChangeKingdomAction.ApplyByJoinToKingdom(player, kingdom, default(CampaignTime), true);
+                else ChangeKingdomAction.ApplyByJoinToKingdomByDefection(player, player.Kingdom, kingdom, default(CampaignTime), true);
+            }
+            if (player.Kingdom != kingdom) return "The player's house could not join " + kingdom.Name + ".";
+
+            ChangeRulingClanAction.Apply(kingdom, player);
+            return kingdom.RulingClan == player
+                ? "The player's house now rules " + kingdom.Name + " (legitimacy "
+                  + LegitimacyRegistry.Of(state, kingdom).ToString("0.0") + ")."
+                : "ChangeRulingClanAction did not take: " + kingdom.Name + " is ruled by " + kingdom.RulingClan?.Name + ".";
         }
 
         /// <summary>

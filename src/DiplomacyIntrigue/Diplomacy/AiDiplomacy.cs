@@ -1278,93 +1278,401 @@ namespace DiplomacyIntrigue.Diplomacy
             foreach (var target in Kingdom.All)
             {
                 if (!target.IsRealm()) continue;
-                if (!CanDemandTribute(state, kingdom, target, out _)) continue;
-
-                var treaty = TreatyRegistry.Sign(state, kingdom, target, TreatyType.TributaryPact,
-                    out var reason, tributePayer: target,
-                    tributeAmount: DiplomacyConstants.AiDefaultTributePerPeriod);
-
-                if (treaty == null)
-                {
-                    Log.Debug("AI", kingdom.Name + " could not impose tribute on " + target.Name + ": " + reason);
-                    continue;
-                }
-
-                Log.Info("AI", kingdom.Name + " imposed a tributary pact on " + target.Name + ".");
-                Announce(target.Name + " agrees to pay tribute to " + kingdom.Name + ".");
-                return true;
+                if (DemandTributeOf(state, kingdom, target)) return true;
             }
 
             return false;
         }
 
         /// <summary>
+        /// One demand on one target: the body the weekly scan runs for each candidate, and
+        /// what <c>diplomacy.test_demand_tribute</c> runs for a chosen pair, so a test of the
+        /// player's inquiry goes through the code the AI actually runs.
+        /// </summary>
+        public static bool DemandTributeOf(ModState state, Kingdom kingdom, Kingdom target)
+        {
+            var terms = EvaluateTribute(state, kingdom, target);
+            if (!terms.Allowed)
+            {
+                // Only the court's refusals are worth a line: every other gate is the ordinary
+                // shape of the map, but a demand that would otherwise have been made and was
+                // stopped by the target's own houses is what a balance run needs to count.
+                if (terms.CourtBlocked)
+                    Log.Info("AI", kingdom.Name + " would demand tribute of " + target.Name
+                                   + ", but its court would not bear it: " + terms.CourtDetail + ".");
+                return false;
+            }
+
+            if (IsPlayerRuled(target))
+            {
+                if (WhyPlayerNotAsked(state, kingdom, target) != null) return false;
+                AskPlayerForTribute(state, kingdom, target, terms);
+                // The week's move was spent making the demand: the only answer left is the
+                // player's, the same as a peace offer.
+                return true;
+            }
+
+            var treaty = TreatyRegistry.Sign(state, kingdom, target, TreatyType.TributaryPact,
+                out var reason, tributePayer: target,
+                tributeAmount: DiplomacyConstants.AiDefaultTributePerPeriod);
+
+            if (treaty == null)
+            {
+                Log.Debug("AI", kingdom.Name + " could not impose tribute on " + target.Name + ": " + reason);
+                return false;
+            }
+
+            Log.Info("AI", kingdom.Name + " imposed a tributary pact on " + target.Name + ".");
+            Announce(target.Name + " agrees to pay tribute to " + kingdom.Name + ".");
+            return true;
+        }
+
+        /// <summary>
         /// Whether <paramref name="kingdom"/> could impose tributary status on
         /// <paramref name="target"/> right now. The demand is coercion, not negotiation: a
         /// claim gives it a pretext, overwhelming strength makes refusal suicidal, and the
-        /// target's trust in us is what the AI consults instead of an answer. The same gate
-        /// the weekly scan runs, asked of the one pair the player picked.
+        /// target's trust in us and its own court are what the AI consults instead of an
+        /// answer. The same gate the weekly scan runs, asked of the one pair the player picked.
         /// </summary>
         public static bool CanDemandTribute(ModState state, Kingdom kingdom, Kingdom target,
             out string reason)
         {
-            reason = null;
-            if (kingdom == null || target == null || kingdom == target
+            var terms = EvaluateTribute(state, kingdom, target);
+            reason = terms.Blocked;
+            return terms.Allowed;
+        }
+
+        /// <summary>
+        /// Every gate of a tribute demand, and the first that refused. One resolver:
+        /// <see cref="CanDemandTribute"/>, the weekly scan, the player's inquiry and
+        /// <c>diplomacy.tribute_value</c> all read this, so the diagnostic cannot describe a
+        /// rule the AI does not run - the reason <see cref="EvaluateWar"/> exists.
+        ///
+        /// <paramref name="full"/> evaluates every gate even after one has refused, for the
+        /// diagnostic. The decision stops at the first, because the court is the one gate that
+        /// costs something to read.
+        /// </summary>
+        public static TributeDemandTerms EvaluateTribute(ModState state, Kingdom kingdom, Kingdom target,
+            bool full = false)
+        {
+            var t = new TributeDemandTerms { Demander = kingdom, Target = target };
+
+            if (state == null || kingdom == null || target == null || kingdom == target
                 || kingdom.IsEliminated || target.IsEliminated)
             {
-                reason = "Two living, different kingdoms are required.";
-                return false;
+                t.Block("Two living, different kingdoms are required.");
+                return t;
             }
-            if (kingdom.IsAtWarWith(target))
-            {
-                reason = "The war with " + target.Name + " is the demand - end it at the peace table.";
-                return false;
-            }
-            if (WarExhaustion.Worst(state, kingdom) > DiplomacyConstants.AiMaxExhaustionToExpand)
-            {
-                reason = kingdom.Name + " is too exhausted to press anyone (exhaustion "
-                         + WarExhaustion.Worst(state, kingdom).ToString("0") + ").";
-                return false;
-            }
-            if (!ClaimRegistry.HasTerritorialClaim(state, kingdom, target))
-            {
-                reason = kingdom.Name + " holds no territorial claim on " + target.Name
-                         + " - without one the demand is bare extortion.";
-                return false;
-            }
-            if (TreatyRegistry.PatronOf(state, target) != null)
-            {
-                reason = target.Name + " already answers to another kingdom.";
-                return false;
-            }
+
+            t.AtWar = kingdom.IsAtWarWith(target);
+            if (t.AtWar)
+                t.Block("The war with " + target.Name + " is the demand - end it at the peace table.");
+
+            t.Exhaustion = WarExhaustion.Worst(state, kingdom);
+            if (t.Exhaustion > DiplomacyConstants.AiMaxExhaustionToExpand)
+                t.Block(kingdom.Name + " is too exhausted to press anyone (exhaustion "
+                        + t.Exhaustion.ToString("0") + ").");
+
+            t.HasClaim = ClaimRegistry.HasTerritorialClaim(state, kingdom, target);
+            if (!t.HasClaim)
+                t.Block(kingdom.Name + " holds no territorial claim on " + target.Name
+                        + " - without one the demand is bare extortion.");
+
+            t.TargetPatron = TreatyRegistry.PatronOf(state, target);
+            if (t.TargetPatron != null)
+                t.Block(target.Name + " already answers to another kingdom.");
 
             var theirs = target.CurrentTotalStrength;
-            if (theirs <= 0f
-                || kingdom.CurrentTotalStrength / theirs < DiplomacyConstants.AiTributeDemandStrengthRatio)
-            {
-                reason = kingdom.Name + " is not strong enough to cow " + target.Name
-                         + " (needs x" + DiplomacyConstants.AiTributeDemandStrengthRatio.ToString("0.0")
-                         + " their strength).";
-                return false;
-            }
+            t.Ratio = theirs > 0f ? kingdom.CurrentTotalStrength / theirs : 0f;
+            if (t.Ratio < DiplomacyConstants.AiTributeDemandStrengthRatio)
+                t.Block(kingdom.Name + " is not strong enough to cow " + target.Name
+                        + " (needs x" + DiplomacyConstants.AiTributeDemandStrengthRatio.ToString("0.0")
+                        + " their strength).");
 
             // They submit only if the alternative looks worse than paying.
-            if (TrustRegistry.Get(state, target, kingdom) < DiplomacyConstants.TrustFloorForPacts)
+            t.Trust = TrustRegistry.Get(state, target, kingdom);
+            if (t.Trust < DiplomacyConstants.TrustFloorForPacts)
+                t.Block(target.Name + " does not trust " + kingdom.Name
+                        + " enough to accept terms (trust " + t.Trust.ToString("0") + ").");
+
+            if (t.Allowed || full)
             {
-                reason = target.Name + " does not trust " + kingdom.Name
-                         + " enough to accept terms (trust "
-                         + TrustRegistry.Get(state, target, kingdom).ToString("0") + ").";
-                return false;
+                // The court stands in for an AI crown's answer. A player crown answers for
+                // itself, so there it only informs the inquiry - the verdict is still read, so
+                // the player is shown the number an AI crown in the same seat would act on.
+                t.Court = Intrigue.TributeCourt.Assess(state, target);
+                t.CourtAnswers = !IsPlayerRuled(target);
+                if (t.CourtAnswers && t.Court.Refuses)
+                {
+                    t.CourtDetail = t.Court.BreakingNames() + " would be left a defection risk, "
+                                    + (t.Court.ShareBreaking * 100f).ToString("0") + "% of the court (refuses at "
+                                    + (DiplomacyConstants.AiTributeCourtRefusalShare * 100f).ToString("0") + "%)";
+                    // Bands, not figures: this reason reaches the player's button, and a rival
+                    // court is shown only as bands (design 02 §9.1). "Ready to break" is the
+                    // Encyclopedia's name for the same band (CourtBands).
+                    if (t.Block(target.Name + "'s court would not bear it - paying would leave too many"
+                                + " of its houses ready to break."))
+                        t.CourtBlocked = true;
+                }
             }
 
             // The pact itself still has to be signable - an existing tribute between us, or a
             // patron's claim on either side's foreign policy, refuses here. Checked inside the
             // gate rather than left to Sign, so the player's button carries the real reason
             // and the AI's scan skips the same target it would have failed on.
-            if (!TreatyRegistry.CanSign(state, kingdom, target, TreatyType.TributaryPact,
-                    out reason)) return false;
+            if (t.Allowed || full)
+            {
+                t.Signable = TreatyRegistry.CanSign(state, kingdom, target, TreatyType.TributaryPact,
+                    out var unsignable);
+                t.SignReason = unsignable;
+                if (!t.Signable) t.Block(unsignable);
+            }
 
-            return true;
+            return t;
+        }
+
+        /// <summary>
+        /// A tribute demand for one pair, gate by gate, with the target's court house by house.
+        /// Figures throughout: this is a diagnostic, not the rival court the player is shown.
+        /// </summary>
+        public static string ExplainTributeValue(ModState state, Kingdom us, Kingdom them)
+        {
+            var t = EvaluateTribute(state, us, them, full: true);
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine(us.Name + " considering a demand for tribute from " + them.Name);
+            sb.AppendLine("  at war:         " + (t.AtWar ? "yes   BLOCKED" : "no"));
+            sb.AppendLine("  our exhaustion: " + t.Exhaustion.ToString("0.0")
+                          + " (must be <= " + DiplomacyConstants.AiMaxExhaustionToExpand.ToString("0") + ")"
+                          + (t.Exhaustion > DiplomacyConstants.AiMaxExhaustionToExpand ? "   BLOCKED" : ""));
+            sb.AppendLine("  our claim:      " + (t.HasClaim ? "yes" : "none   BLOCKED"));
+            sb.AppendLine("  their patron:   " + (t.TargetPatron == null ? "none" : t.TargetPatron.Name + "   BLOCKED"));
+            sb.AppendLine("  strength ratio: " + t.Ratio.ToString("0.00")
+                          + " (must be >= " + DiplomacyConstants.AiTributeDemandStrengthRatio.ToString("0.00") + ")"
+                          + (t.Ratio < DiplomacyConstants.AiTributeDemandStrengthRatio ? "   BLOCKED" : ""));
+            sb.AppendLine("  their trust:    " + t.Trust.ToString("0.0")
+                          + " (must be >= " + DiplomacyConstants.TrustFloorForPacts.ToString("0") + ")"
+                          + (t.Trust < DiplomacyConstants.TrustFloorForPacts ? "   BLOCKED" : ""));
+
+            var court = t.Court;
+            if (court == null)
+                sb.AppendLine("  their court:    not read");
+            else if (!court.Applies)
+                sb.AppendLine("  their court:    silent - intrigue is switched off");
+            else
+            {
+                sb.AppendLine("  their court:    " + (court.ShareBreaking * 100f).ToString("0.0")
+                              + "% would be left a defection risk (refuses at "
+                              + (DiplomacyConstants.AiTributeCourtRefusalShare * 100f).ToString("0") + "%"
+                              + (court.CountedHouses ? ", counted by heads - no house holds influence" : ", by influence")
+                              + ")"
+                              + (!court.Refuses ? ""
+                                  : t.CourtAnswers ? "   BLOCKED"
+                                  : "   (a player crown answers for itself: shown, not applied)"));
+                sb.AppendLine("      house                      loyalty -> if paying   weight   breaks");
+                for (var i = 0; i < court.Houses.Count; i++)
+                {
+                    var h = court.Houses[i];
+                    sb.AppendLine("      " + h.Clan.Name.ToString().PadRight(26)
+                                  + h.Loyalty.ToString("0.0").PadLeft(7) + " -> "
+                                  + h.Projected.ToString("0.0").PadLeft(6)
+                                  + h.Weight.ToString("0").PadLeft(12)
+                                  + (h.Breaks ? "   yes" : ""));
+                }
+                if (court.Houses.Count == 0) sb.AppendLine("      (no sworn house but the crown's own)");
+            }
+
+            sb.AppendLine("  pact signable:  " + (t.Signable ? "yes" : "no - " + t.SignReason));
+            var notAsked = WhyPlayerNotAsked(state, us, them);
+            sb.AppendLine(!t.Allowed
+                ? "  verdict: refused - " + t.Blocked
+                : !IsPlayerRuled(them)
+                    ? "  verdict: the demand stands"
+                    : notAsked == null
+                        ? "  verdict: the demand stands - it would be put to the player"
+                        : "  verdict: the demand stands, but it would not be sent now - " + notAsked);
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Why a demand that clears every gate would still not be put to a player crown right
+        /// now; null when it would be, or when the target is not player-ruled. The scan and
+        /// <c>diplomacy.tribute_value</c> both read this - the diagnostic once reported "it
+        /// would be put to the player" for a demand the scan was silently skipping.
+        ///
+        /// The refusal window is the one every offer to the player shares
+        /// (<see cref="TrustRegistry.RefusedOfferRecently"/>): a kingdom whose peace, protection
+        /// or tribute the player just turned down does not come back with another request
+        /// the next week, whichever kind it was.
+        /// </summary>
+        public static string WhyPlayerNotAsked(ModState state, Kingdom kingdom, Kingdom target)
+        {
+            if (target == null || !IsPlayerRuled(target)) return null;
+            if (_tributeAskPending) return "another demand for tribute is already in front of the player";
+            if (TrustRegistry.RefusedOfferRecently(state, kingdom, target))
+                return target.Name + " turned down an offer from " + kingdom.Name + " within the last "
+                       + DiplomacyConstants.PlayerOfferRefusalCooldownDays.ToString("0") + " days";
+            return null;
+        }
+
+        /// <summary>
+        /// True while a tribute demand sits in front of the player, so a second kingdom
+        /// evaluated in the same week does not stack another inquiry over it. Session state:
+        /// cleared by <see cref="ResetSession"/>, since an answer lost with a closed campaign
+        /// must not silence every future demand.
+        /// </summary>
+        private static bool _tributeAskPending;
+
+        /// <summary>Drops what the last session left open. Called at session launch.</summary>
+        public static void ResetSession()
+        {
+            _tributeAskPending = false;
+        }
+
+        /// <summary>
+        /// The demand put to a player-ruled target. Before this, the scan signed the pact in the
+        /// player's name: every other AI path that proposes something to a player-ruled realm
+        /// hands the signature over (<see cref="IsPlayerRuled"/>), and this one had been missed.
+        ///
+        /// The player's own court is shown in full - it is their court (design 02 §9.1) - with
+        /// the verdict an AI crown in the same seat would act on.
+        /// </summary>
+        private static void AskPlayerForTribute(ModState state, Kingdom demander, Kingdom player,
+            TributeDemandTerms terms)
+        {
+            var nl = System.Environment.NewLine;
+            var amount = DiplomacyConstants.AiDefaultTributePerPeriod;
+            var body = demander.Name + " demands tribute: " + amount + " denars every "
+                       + DiplomacyConstants.TributePeriodDays + " days for "
+                       + DiplomacyConstants.TributaryPactYears + " years, and in return no war between us."
+                       + nl + "They hold a claim on our land and field " + terms.Ratio.ToString("0.0")
+                       + " times our strength." + nl + nl
+                       + "Every sworn house of ours will resent paying for as long as the pact lasts.";
+
+            var court = terms.Court;
+            if (court != null && court.Applies && court.Houses.Count > 0)
+            {
+                var share = (court.ShareBreaking * 100f).ToString("0");
+                var line = (DiplomacyConstants.AiTributeCourtRefusalShare * 100f).ToString("0");
+                body += nl + (court.BreakingCount == 0
+                    ? "No house would be left ready to break."
+                    : "Paying would leave " + court.BreakingNames() + " ready to break: " + share
+                      + "% of our court.")
+                        + " " + (court.Refuses
+                            ? "A crown that heeded its court would refuse - it does at " + line + "%."
+                            : "A crown that heeded its court would pay - it refuses only at " + line + "%.");
+            }
+
+            body += nl + nl + "If we refuse, " + demander.Name + " will trust us less for it.";
+
+            _tributeAskPending = true;
+            try
+            {
+                InformationManager.ShowInquiry(new InquiryData(
+                    demander.Name + " demands tribute",
+                    body,
+                    true, true,
+                    "Pay the tribute", "Refuse",
+                    () =>
+                    {
+                        // Runs from the UI, outside any campaign handler's try.
+                        try
+                        {
+                            _tributeAskPending = false;
+                            // Re-asked rather than trusted: the answer can come a while later,
+                            // and the demand may no longer stand.
+                            var fresh = EvaluateTribute(state, demander, player);
+                            if (!fresh.Allowed)
+                            {
+                                Log.Notify("The moment has passed - " + fresh.Blocked, Colors.Red);
+                                return;
+                            }
+
+                            var treaty = TreatyRegistry.Sign(state, demander, player, TreatyType.TributaryPact,
+                                out var failed, tributePayer: player, tributeAmount: amount);
+                            if (treaty == null)
+                            {
+                                Log.Notify("Could not agree: " + failed, Colors.Red);
+                                return;
+                            }
+
+                            Log.Info("AI", "The player accepted " + demander.Name + "'s demand for tribute: "
+                                           + player.Name + " pays " + amount + " per period.");
+                            Log.Notify("We pay tribute to " + demander.Name + ".", Colors.Red);
+                        }
+                        catch (System.Exception ex)
+                        {
+                            Log.Error("AI", "Accepting the demand for tribute failed.", ex);
+                        }
+                    },
+                    () =>
+                    {
+                        try
+                        {
+                            _tributeAskPending = false;
+                            Log.Info("AI", "The player refused " + demander.Name + "'s demand for tribute.");
+                            TrustRegistry.OnOfferRefused(state, demander, player, "refused our demand for tribute");
+                            Log.Notify("We refused " + demander.Name + "'s demand.", Colors.Red);
+                        }
+                        catch (System.Exception ex)
+                        {
+                            Log.Error("AI", "Refusing the demand for tribute failed.", ex);
+                        }
+                    }), true);
+                Log.Info("AI", demander.Name + " demanded tribute of the player's realm, " + player.Name + ".");
+            }
+            catch (System.Exception ex)
+            {
+                _tributeAskPending = false;
+                Log.Error("AI", "Could not show the demand for tribute.", ex);
+            }
+        }
+
+        /// <summary>
+        /// Every gate of one tribute demand, read once. <see cref="EvaluateTribute"/> fills it;
+        /// the decision reads <see cref="Allowed"/> and <see cref="Blocked"/>, the diagnostic
+        /// prints the rest. Same arrangement as <see cref="WarValueTerms"/>, for the same reason.
+        /// </summary>
+        public sealed class TributeDemandTerms
+        {
+            public Kingdom Demander;
+            public Kingdom Target;
+
+            /// <summary>The first gate that refused, worded for the player's button. Null when the demand stands.</summary>
+            public string Blocked;
+
+            public bool Allowed => Blocked == null;
+
+            public bool AtWar;
+            public float Exhaustion;
+            public bool HasClaim;
+            public Kingdom TargetPatron;
+            public float Ratio;
+            public float Trust;
+
+            /// <summary>Null when an earlier gate refused and the evaluation was not asked for in full.</summary>
+            public Intrigue.TributeCourtVerdict Court;
+
+            /// <summary>False for a player-ruled target: the player answers, the court only informs.</summary>
+            public bool CourtAnswers;
+
+            /// <summary>The court was the first gate to refuse.</summary>
+            public bool CourtBlocked;
+
+            /// <summary>The court's refusal with its figures, for the log - never shown for a rival court.</summary>
+            public string CourtDetail;
+
+            public bool Signable;
+
+            /// <summary>Why <c>TreatyRegistry.CanSign</c> refused, when it did.</summary>
+            public string SignReason;
+
+            /// <summary>Records a refusal; true when it is the first, so the caller can tell whose it was.</summary>
+            internal bool Block(string reason)
+            {
+                if (Blocked != null) return false;
+                Blocked = reason ?? "Not possible now.";
+                return true;
+            }
         }
 
         // ================= 4. War, as a last resort =============================

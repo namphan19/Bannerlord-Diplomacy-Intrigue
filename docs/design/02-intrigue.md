@@ -149,6 +149,33 @@ negotiation rather than annihilation is the interesting case.
 | Pretender exists (§5) | `SupportClaimant` casus belli for rivals | Phase 1 §2.2 |
 | `BribeLord` mission (Phase 3) | Loyalty penalty, defection on civil war | §6 |
 | `ForgeLetters` mission (Phase 3) | Manufactured grievance | §1 |
+| A demand for tribute (Phase 1) | The target's court answers it | §7.1 |
+
+### 7.1 A demand for tribute asks the target's court (built 2026-09-25)
+
+Phase 1's `AiDiplomacy.CanDemandTribute` let a target pay on strength and trust alone, so a
+realm one humiliation from breaking paid as readily as a steady one. The revisit this spec's
+2.2 owed:
+
+- **The cost weighed is the real one.** A tributary's court takes a `HumiliatingTribute`
+  grievance every week (§1, weight 5). Each sworn house is projected with it added, through
+  `LoyaltyModel.IfAggrieved`, which moves loyalty's own grievance term by loyalty's own factor.
+  A house already holding it (the realm already pays someone) loses nothing more: the projection
+  follows the renew rule, `GrievanceRegistry.WouldAdd`.
+- **An AI crown refuses** when paying would leave `AiTributeCourtRefusalShare` (0.34, UN-TUNED)
+  of its court, weighed by influence as bloc power is, a defection risk.
+- **Legitimacy is not a second term.** It is already inside every house's loyalty (§4).
+- **A player crown is asked**, not signed for. The inquiry shows the player's own court in full
+  (§9.1) and the verdict an AI crown in the same seat would act on. A refusal costs the same trust
+  and starts the same cooldown as a refused peace offer.
+- **The player's own demand** reads the same gate, so a rival court's refusal reaches the button,
+  worded in bands ("too many of its houses ready to break"), never in figures.
+
+Measured on the one test world with real grievances (`di_pretender_test`, 2026-09-25): 3 of 8
+courts would refuse. Two were courts made to be in crisis - Battania (60%) after a contested
+succession, Khuzait (75%, the player's) after unjust wars - but the third was Aserai (43%), whose
+crown read Secure: two of its houses sat at loyalty 0-3 on vanilla relation alone. Whether 0.34
+is too eager is for a long run to say.
 
 ## 8. Implementation order
 
