@@ -170,7 +170,9 @@ session to exactly that. `diplomacy.test_set_player_age` resets both, for test s
 `bannerlord.core.set_time_speed` picks the *mode* and tops out at `UnstoppableFastForward`; the
 factor that mode is multiplied by is a separate property, it defaults to **4**, and no vanilla
 console command sets it (`campaign.set_speed_up_multiplier` and `campaign.set_campaign_speed`
-both do not exist in v1.4.8). `diplomacy.test_set_speed <1-50>` sets it. Measured 2026-09-20 on
+both do not exist in v1.4.8). That last claim may be too strong: on 2026-09-25
+`core/list_commands` listed a `campaign.set_campaign_speed_multiplier`. What it sets has not been
+checked; `test_set_speed` is the lever known to work. `diplomacy.test_set_speed <1-50>` sets it. Measured 2026-09-20 on
 `di_review_0919_b`, from consecutive weekly `[SNAPSHOT]` timestamps:
 
 | Multiplier | In-game days per real minute | One in-game year |

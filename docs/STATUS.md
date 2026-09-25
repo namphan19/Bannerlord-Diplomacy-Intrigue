@@ -1,4 +1,4 @@
-# Status — 2026-09-24
+# Status — 2026-09-25
 
 Point-in-time state. [CLAUDE.md](../CLAUDE.md) holds the things that are always true; this
 file holds what changes. Update it when you finish a chunk of work.
@@ -11,7 +11,28 @@ Save ids in use: `Treaty` 1-17, `TrustRecord` 1-6, `ModState` 1-14, definer clas
 next free on `InternalWar` is 15.
 Last completed measurement: **balance run 07** — [docs/balance/run-07.md](balance/run-07.md).
 
-## Start here — handoff, 2026-09-23
+## Start here — handoff, 2026-09-25
+
+**Phase 2 is built. The lead's next call (2026-09-25): Phase 3, espionage.** Spec:
+[design/03-espionage.md](design/03-espionage.md), written and reviewed, no code yet.
+
+**The side branch of 2026-09-25, `feature/side-civil-war-gaps-tribute-court`, merged into
+`development`.** It was briefed for opencode, but the bridge was broken, so Claude built it.
+0 errors in 11 game sessions.
+- **The tribute revisit that 2.2 owed.** A demand now asks the target's court: an AI crown
+  refuses when paying would leave a third of its court, by influence, a defection risk
+  (design/02 §7.1). **A fault was found and fixed:** the weekly scan signed a tributary pact in the
+  name of a player-ruled target. The player is now asked, with their own court shown in full.
+  Verified live: the AI refusing on its court, the AI imposing, the player's button refused in
+  bands and then accepted, and the player's inquiry refused, re-asked inside the cooldown, and
+  accepted.
+- **2.6c's two unseen places, run.** An AI leader's offer to the player's house, both answers,
+  and the player as claimant: buying a house, and conceding. Three display bugs were fixed
+  (design/07 §6, "The second live run").
+- **New levers:** `tribute_value`, `test_demand_tribute`, `test_player_rule`,
+  `test_expire_treaty` (CLAUDE.md §2).
+
+### The handoff of 2026-09-23, kept for its Phase 2 detail
 
 **Phase 1 is accepted and closed. Phase 2, court intrigue, is the work now.**
 2.1-2.5 and 2.7 are built and verified live (sections below). **2.6, war inside a kingdom, and
@@ -45,11 +66,21 @@ is the "Civil war" row of the court canvas (https://claude.ai/artifact/1FrpG5in3
   armies, save and reload mid-war with captured fiefs, and houses dividing at a real death,
   including two ruling houses. Six sessions; five bugs found and fixed, one of them a crash.
 - **Not verified - the whole civil-war line, in one place:**
-  - *2.6c:* an AI leader's offer to the player's house (the inquiry, `SideChange.OfferToPlayer`),
-    and the player as the claimant: conceding as the claimant, or buying houses as the claimant.
-    Both follow the paths verified from the other sides, but neither has been seen.
+  - *2.6c:* ~~an AI leader's offer to the player's house, and the player as the claimant~~ -
+    **both run live 2026-09-25** (design/07 §6). Left: the price lines name the player rather
+    than saying "you" (they are built in the Intrigue layer).
   - *2.6, carried:* the player prompts at the start of a war (rising as the claimant, choosing a
     side), the 30-day captivity ending, and a cadet branch going on to start an internal war.
+    On 2026-09-25 the player became a claimant by the real path (a ruler deposed and kept as a
+    pretender), but the war was started by lever inside the 365-day cooldown, so the
+    "Raise your banner?" prompt was still not reached.
+  - *Tribute, 2026-09-25:* `AiTributeCourtRefusalShare` 0.34 is untuned. On `di_pretender_test`,
+    3 of 8 courts would refuse, one of them Aserai, whose crown read Secure. How often the weekly
+    demand fires at all in a long run is unmeasured. It found no qualifying pair in three evolved
+    test worlds without levers.
+  - *Found, not fixed:* after the player's own "Demand tribute" succeeds, the Diplomacy tab row
+    still reads "Independent" until the screen is reopened. That is pre-existing: the button
+    path does not refresh the row.
   - *Balance, never measured:* how often houses change sides over a long AI-only run, whether
     concession at 75 ends wars too early (the one live war conceded a few days after load), and
     how prices compare with purses across more than one kingdom. Rulers held 144k-453k against
@@ -453,20 +484,13 @@ UI-INTEGRATION.md §0b.
 
 ### What to do next
 
-1. **In flight, 2026-09-24: a side branch delegated to opencode**,
-   `feature/side-civil-war-gaps-tribute-court`. It covers the 2.6c verification gaps (an AI
-   leader's offer to the player's house, and the player as claimant) and item 4 below, the
-   tribute revisit. It includes a fault found while writing the brief: `TryDemandTribute` signs
-   a tributary pact **on behalf of a player-ruled target** without asking. Every other AI path
-   that proposes to a player-ruled kingdom hands the signature over (`IsPlayerRuled`).
+1. **Phase 3, espionage** - the lead's call on 2026-09-25. Start from design/03.
 2. **A long AI-only run with internal wars in it**, the balance question 2.6 leaves open. How
    often do internal wars start, how often do houses divide, and does a realm recover from a
    lost civil war followed by foreign wars? Both of the first run's neighbours declared war on
    Battania the day its war ended. Fold it into run 08.
 3. **Court tab gaps**: no scrolling past ~13 sworn clans; the physical row click is unverified.
-4. **The `AiDiplomacy.TryDemandTribute` revisit** planned for 2.2 was never done: it still
-   accepts on strength ratio and trust alone, with no sense of the target court's willingness.
-   Loyalty and legitimacy now exist for it to read.
+4. ~~The `AiDiplomacy.TryDemandTribute` revisit~~ - **done 2026-09-25** (design/02 §7.1).
 5. **Fold run 08 in** once Phase 2 work produces a campaign long enough to carry it. Same
    deployment, same telemetry; what it needs is in-game years, which Phase 2 testing
    generates anyway.
@@ -1100,9 +1124,8 @@ not, and never did.
   `ui/click_widget` drove the whole of character creation, so GABS is not limited to the map
   layer. Whether it reaches a `MultiSelectionInquiry` specifically is **untested** — worth ten
   minutes before asking the lead to walk the submenus by hand.
-- **`AiDiplomacy.TryDemandTribute` accepts on a strength ratio and a trust floor only.** It
-  has no notion of the target's willingness beyond that; a weak kingdom with high trust will
-  submit readily. Worth revisiting when Phase 2 gives courts an opinion.
+- ~~`AiDiplomacy.TryDemandTribute` accepts on a strength ratio and a trust floor only~~ - the
+  target's court answers since 2026-09-25 (design/02 §7.1).
 - **A vassal's existing wars are untouched when it submits.** Signing vassalage does not end
   the client's own wars. Since the run-04 review the patron is called into the ones the vassal
   is *defending* (`CallToArms.DefendNewVassal`) and may refuse at the usual price; wars the
