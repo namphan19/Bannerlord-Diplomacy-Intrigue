@@ -63,6 +63,13 @@ namespace DiplomacyIntrigue.Core
         /// </summary>
         [SaveableProperty(14)] public List<InternalWar> InternalWars { get; private set; }
 
+        /// <summary>
+        /// Each clan's spy networks in other realms (Phase 3.1, design 03 §1). Added without a
+        /// schema bump: a save that predates espionage loads with the list empty, which is
+        /// correct - nobody had built one.
+        /// </summary>
+        [SaveableProperty(15)] public List<SpyNetwork> SpyNetworks { get; private set; }
+
         public ModState()
         {
             SchemaVersion = CurrentSchemaVersion;
@@ -78,6 +85,7 @@ namespace DiplomacyIntrigue.Core
             Legitimacy = new List<KingdomLegitimacy>();
             Pretenders = new List<Pretender>();
             InternalWars = new List<InternalWar>();
+            SpyNetworks = new List<SpyNetwork>();
             NextTreatyId = 1;
         }
 
@@ -99,6 +107,7 @@ namespace DiplomacyIntrigue.Core
             if (Legitimacy == null) Legitimacy = new List<KingdomLegitimacy>();
             if (Pretenders == null) Pretenders = new List<Pretender>();
             if (InternalWars == null) InternalWars = new List<InternalWar>();
+            if (SpyNetworks == null) SpyNetworks = new List<SpyNetwork>();
             if (NextTreatyId < 1) NextTreatyId = 1;
 
             Migrate();
@@ -118,6 +127,7 @@ namespace DiplomacyIntrigue.Core
             Pretenders.RemoveAll(p => p == null || p.Kingdom == null || p.Claimant == null);
             InternalWars.RemoveAll(w => w == null || w.Kingdom == null || w.Banner == null);
             for (var i = 0; i < InternalWars.Count; i++) InternalWars[i].AfterLoad();
+            SpyNetworks.RemoveAll(n => n == null || n.Owner == null || n.Target == null);
 
             Log.Info("State", "Loaded: " + Treaties.Count + " treaties, " + Wars.Count
                               + " war records, " + Weariness.Count + " weariness entries, "
@@ -126,7 +136,8 @@ namespace DiplomacyIntrigue.Core
                               + " grievances, " + Legitimacy.Count
                               + " legitimacy pools, " + Pretenders.Count
                               + " pretenders, " + InternalWars.Count
-                              + " internal wars, schema v" + SchemaVersion + ".");
+                              + " internal wars, " + SpyNetworks.Count
+                              + " spy networks, schema v" + SchemaVersion + ".");
         }
 
         private void Migrate()

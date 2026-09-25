@@ -473,7 +473,7 @@ project lead on 2026-09-23; the reasoning is in that section.
 
 Playable target: *information and subversion are a third way to fight.*
 
-**3.1 Spy networks** — per kingdom-pair strength, built up over time, decayed by enemy counter-intelligence.
+**3.1 Spy networks** — per kingdom-pair strength, built up over time, decayed by enemy counter-intelligence. *Owned per clan, not per kingdom pair (the lead's call, design/03 §9). **Built and verified live 2026-09-25**: founding, handlers, the weekly growth paid from the owner's purse, daily decay, save round trip (design/03 §10).*
 
 **3.2 Missions** — the types in `Models/SpyMissionType`: scout armies, read court, sabotage garrison, spread dissent, bribe a lord, forge letters, steal treasury, assassinate. Resolution from network strength + agent skill (Roguery/Charm) vs target counter-intelligence.
 

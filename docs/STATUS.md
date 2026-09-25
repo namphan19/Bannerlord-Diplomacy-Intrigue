@@ -4,8 +4,8 @@ Point-in-time state. [CLAUDE.md](../CLAUDE.md) holds the things that are always 
 file holds what changes. Update it when you finish a chunk of work.
 
 Module version 0.1.0. Save schema **v4**, definer base id **2749100**.
-Save ids in use: `Treaty` 1-17, `TrustRecord` 1-6, `ModState` 1-14, definer class ids to 14
-(`InternalWarMember`), enums 20-27. Next free: class id **15**, `ModState` property **15**, enum
+Save ids in use: `Treaty` 1-17, `TrustRecord` 1-6, `ModState` 1-15, definer class ids to 15
+(`SpyNetwork`, Phase 3.1), enums 20-27. Next free: class id **16**, `ModState` property **16**, enum
 **28** (CLAUDE.md §3 has the per-type detail). The 2.6 ids (13, 14, 27, property 14) are on
 `development` since 2026-09-24, and so is 2.6c's `InternalWar` property 14 (`SideChanges`);
 next free on `InternalWar` is 15.
@@ -13,8 +13,18 @@ Last completed measurement: **balance run 07** — [docs/balance/run-07.md](bala
 
 ## Start here — handoff, 2026-09-25
 
-**Phase 2 is built. The lead's next call (2026-09-25): Phase 3, espionage.** Spec:
-[design/03-espionage.md](design/03-espionage.md), written and reviewed, no code yet.
+**Phase 2 is built. Phase 3, espionage, has started (the lead's call, 2026-09-25).**
+[design/03-espionage.md](design/03-espionage.md) now records the lead's five decisions (§9) and
+what was built (§10).
+
+- **3.1, spy networks: built and verified live**, merged into `development`. A network is owned
+  by a clan and sits in a target realm, run by a handler of that clan stationed in the realm's
+  richest town, and grows weekly out of the owner's purse. Checked by hand against the game,
+  including a save round trip (`di_espionage_test`) and the campaign's own weekly tick.
+- **Found, for 3.6:** vanilla made both AI handlers governors within days. An AI handler has to
+  be kept out of vanilla's appointments before the AI can run networks.
+- **Next: 3.2, missions** (design/03 §2, §4). One gap in the spec to settle there: §4's
+  `missionDifficulty` has no values.
 
 **The side branch of 2026-09-25, `feature/side-civil-war-gaps-tribute-court`, merged into
 `development`.** It was briefed for opencode, but the bridge was broken, so Claude built it.
@@ -484,7 +494,7 @@ UI-INTEGRATION.md §0b.
 
 ### What to do next
 
-1. **Phase 3, espionage** - the lead's call on 2026-09-25. Start from design/03.
+1. **Phase 3, espionage** - 3.1 done; 3.2 missions next (design/03 §8 has the order).
 2. **A long AI-only run with internal wars in it**, the balance question 2.6 leaves open. How
    often do internal wars start, how often do houses divide, and does a realm recover from a
    lost civil war followed by foreign wars? Both of the first run's neighbours declared war on

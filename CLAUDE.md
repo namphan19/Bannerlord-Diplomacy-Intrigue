@@ -285,12 +285,13 @@ reuse a save-definer local id for a different type, never change the definer bas
 (`2749100`, block `2749100`–`2749199`). `Treaty` currently uses ids **1-17** (14 `Hold`, 15
 defiance marks, 16 last defiance, 17 the revolt clock), so the next free id there is **18**. `TrustRecord` uses **1-6** (5 `LastPositiveChange`, 6
 `LastOfferRefused`), next free **7**. `ModState` uses
-properties **1-14** (11 `Grievances`, 12 `Legitimacy`, 13 `Pretenders`, 14 `InternalWars`),
-next free **15**. The definer's class ids run to **14** (10 `Grievance`, 11 `KingdomLegitimacy`,
-12 `Pretender`, 13 `InternalWar`, 14 `InternalWarMember`), next free **15**; enums are **20-27**
+properties **1-15** (11 `Grievances`, 12 `Legitimacy`, 13 `Pretenders`, 14 `InternalWars`,
+15 `SpyNetworks`), next free **16**. The definer's class ids run to **15** (10 `Grievance`,
+11 `KingdomLegitimacy`, 12 `Pretender`, 13 `InternalWar`, 14 `InternalWarMember`, 15 `SpyNetwork`),
+next free **16**; enums are **20-27**
 (26 `GrievanceType`, 27 `InternalWarOutcome`), next free **28**. `Grievance` uses
 properties 1-5, `KingdomLegitimacy` 1-5, `Pretender` 1-4, `InternalWar` 1-14 (13 `Faction`,
-14 `SideChanges`, next free **15**), `InternalWarMember` 1. A new *value* on an enum the definer
+14 `SideChanges`, next free **15**), `InternalWarMember` 1, `SpyNetwork` 1-8 (next free **9**). A new *value* on an enum the definer
 already registers is safe (`GrievanceType.SuccessionPassedOver = 9` was added that way);
 renumbering or reusing one is not. Adding a new savable type means a class definition
 **and** a container definition in `ModSaveDefiner` — a missing container definition crashes
