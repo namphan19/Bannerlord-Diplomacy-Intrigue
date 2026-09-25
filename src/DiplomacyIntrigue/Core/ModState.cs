@@ -70,6 +70,12 @@ namespace DiplomacyIntrigue.Core
         /// </summary>
         [SaveableProperty(15)] public List<SpyNetwork> SpyNetworks { get; private set; }
 
+        /// <summary>
+        /// Covert operations, pending and recently resolved (Phase 3.2, design 03 §2). Added
+        /// without a schema bump, for the same reason as the networks.
+        /// </summary>
+        [SaveableProperty(16)] public List<SpyMission> SpyMissions { get; private set; }
+
         public ModState()
         {
             SchemaVersion = CurrentSchemaVersion;
@@ -86,6 +92,7 @@ namespace DiplomacyIntrigue.Core
             Pretenders = new List<Pretender>();
             InternalWars = new List<InternalWar>();
             SpyNetworks = new List<SpyNetwork>();
+            SpyMissions = new List<SpyMission>();
             NextTreatyId = 1;
         }
 
@@ -108,6 +115,7 @@ namespace DiplomacyIntrigue.Core
             if (Pretenders == null) Pretenders = new List<Pretender>();
             if (InternalWars == null) InternalWars = new List<InternalWar>();
             if (SpyNetworks == null) SpyNetworks = new List<SpyNetwork>();
+            if (SpyMissions == null) SpyMissions = new List<SpyMission>();
             if (NextTreatyId < 1) NextTreatyId = 1;
 
             Migrate();
@@ -128,6 +136,7 @@ namespace DiplomacyIntrigue.Core
             InternalWars.RemoveAll(w => w == null || w.Kingdom == null || w.Banner == null);
             for (var i = 0; i < InternalWars.Count; i++) InternalWars[i].AfterLoad();
             SpyNetworks.RemoveAll(n => n == null || n.Owner == null || n.Target == null);
+            SpyMissions.RemoveAll(m => m == null || m.Owner == null || m.Target == null);
 
             Log.Info("State", "Loaded: " + Treaties.Count + " treaties, " + Wars.Count
                               + " war records, " + Weariness.Count + " weariness entries, "
@@ -137,7 +146,8 @@ namespace DiplomacyIntrigue.Core
                               + " legitimacy pools, " + Pretenders.Count
                               + " pretenders, " + InternalWars.Count
                               + " internal wars, " + SpyNetworks.Count
-                              + " spy networks, schema v" + SchemaVersion + ".");
+                              + " spy networks, " + SpyMissions.Count
+                              + " spy missions, schema v" + SchemaVersion + ".");
         }
 
         private void Migrate()

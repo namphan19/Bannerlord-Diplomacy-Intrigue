@@ -40,6 +40,16 @@ namespace DiplomacyIntrigue.Behaviors
             {
                 Log.Error("Espionage", "Daily espionage upkeep failed.", ex);
             }
+
+            // Its own try: an operation that fails to resolve must not be read as a failed upkeep.
+            try
+            {
+                Missions.DailyTick(state);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Espionage", "Resolving spy missions failed.", ex);
+            }
         }
 
         private void OnWeeklyTick()
