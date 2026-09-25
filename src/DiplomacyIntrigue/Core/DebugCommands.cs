@@ -1105,8 +1105,9 @@ namespace DiplomacyIntrigue.Core
                 // would show every internal war fought with its sides frozen.
                 SideChange.WeeklyTick(state);
 
-                // Spy networks are paid for and grow weekly (Phase 3.1).
-                SpyNetworks.WeeklyTick(state);
+                // The espionage week: counter-intelligence budgets paid, then networks paid for
+                // and grown (Phase 3.1, 3.3) - the campaign's own list, not a copy of it.
+                EspionageUpkeep.Weekly(state);
 
                 foreach (var kingdom in Kingdom.All)
                 {
@@ -2413,8 +2414,9 @@ namespace DiplomacyIntrigue.Core
         }
 
         /// <summary>
-        /// Runs one week of network upkeep now - the weekly half only, so it can be read against
-        /// the prediction diplomacy.networks printed. Pair it with tick_days 7 for a whole week.
+        /// Runs one week of espionage upkeep now - the weekly half only, so it can be read against
+        /// the prediction diplomacy.networks printed: counter-intelligence budgets paid, then the
+        /// networks, through the same list the campaign runs. Pair it with tick_days 7 for a whole week.
         /// Usage: diplomacy.test_network_week
         /// </summary>
         [CommandLineFunctionality.CommandLineArgumentFunction("test_network_week", "diplomacy")]
@@ -2422,8 +2424,66 @@ namespace DiplomacyIntrigue.Core
         {
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
-            SpyNetworks.WeeklyTick(state);
-            return "Ran the weekly network upkeep once (no daily decay)." + Environment.NewLine + Networks(new List<string>());
+            EspionageUpkeep.Weekly(state);
+            return "Ran the weekly espionage upkeep once: counter-intelligence budgets, then networks (no daily decay)."
+                   + Environment.NewLine + Networks(new List<string>())
+                   + CounterIntelligenceReport(new List<string>());
+        }
+
+        /// <summary>
+        /// Every realm's counter-intelligence, term by term - printed from
+        /// <see cref="CounterIntelligence.Explain"/>, the value network growth, mission odds and
+        /// exposure all read. With a kingdom, that realm only.
+        /// Usage: diplomacy.counter_intelligence   or   diplomacy.counter_intelligence <kingdom>
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("counter_intelligence", "diplomacy")]
+        public static string CounterIntelligenceReport(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var filter = args == null || args.Count == 0 ? null : string.Join(" ", args).Trim();
+            Kingdom only = null;
+            if (!string.IsNullOrEmpty(filter))
+            {
+                only = FindKingdom(filter);
+                if (only == null) return "No kingdom matching \"" + filter + "\".";
+            }
+
+            var sb = new StringBuilder();
+            foreach (var kingdom in Kingdom.All)
+            {
+                if (!kingdom.IsRealm() || (only != null && kingdom != only)) continue;
+                sb.AppendLine(kingdom.Name.ToString().PadRight(18) + CounterIntelligence.Explain(state, kingdom)
+                              + ", paid by " + (kingdom.Leader?.Name?.ToString() ?? "nobody")
+                              + " (purse " + (kingdom.Leader?.Gold ?? 0) + ")");
+            }
+            return sb.Length == 0 ? "No realm." : sb.ToString();
+        }
+
+        /// <summary>
+        /// Sets a realm's weekly counter-intelligence budget, through
+        /// <see cref="CounterIntelligence.SetBudget"/> - the ruler pays it at the next weekly
+        /// upkeep. Test saves only until the espionage UI (3.7).
+        /// Usage: diplomacy.test_counter_budget <kingdom> | <weekly denars>
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_counter_budget", "diplomacy")]
+        public static string TestCounterBudget(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var parts = SplitOnPipe(args);
+            if (parts.Count < 2 || !int.TryParse(parts[1], out var weekly))
+                return "Usage: diplomacy.test_counter_budget <kingdom> | <weekly denars>";
+            var kingdom = FindKingdom(parts[0]);
+            if (kingdom == null) return "No kingdom matching \"" + parts[0] + "\".";
+
+            var budget = CounterIntelligence.SetBudget(state, kingdom, weekly, out var reason);
+            return budget == null
+                ? "Refused: " + reason
+                : "Ordered. " + budget + " - paid at the next weekly upkeep (test_network_week runs one now)."
+                  + Environment.NewLine + CounterIntelligenceReport(new List<string> { kingdom.Name.ToString() });
         }
 
         /// <summary>

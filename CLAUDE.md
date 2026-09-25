@@ -241,7 +241,8 @@ Court intrigue: `diplomacy.grievances`, `loyalty`, `blocs`, `legitimacy`, `prete
 who would stand at the next succession), and `court_bands` (a court exactly as its
 Encyclopedia page describes it: bands only, plus the exact ledger while the player's house holds a
 live ReadCourt on that realm). Espionage: `diplomacy.networks`, `mission_odds <clan> | <kingdom>`, `missions`, `bribes` (every
-bribe still on the record and whether it binds anybody), and the levers `test_set_network`,
+bribe still on the record and whether it binds anybody), `counter_intelligence [kingdom]` (every
+realm's defence term by term), and the levers `test_set_network`, `test_counter_budget <kingdom> | <denars>`,
 `test_launch_mission <clan> | <kingdom> | <type> [| settlement or hero]` and
 `test_resolve_mission <clan> | <kingdom> [| success|failure|exposed]`.
 Civil war: `diplomacy.internal_wars`, and
@@ -299,13 +300,17 @@ reuse a save-definer local id for a different type, never change the definer bas
 (`2749100`, block `2749100`–`2749199`). `Treaty` currently uses ids **1-17** (14 `Hold`, 15
 defiance marks, 16 last defiance, 17 the revolt clock), so the next free id there is **18**. `TrustRecord` uses **1-6** (5 `LastPositiveChange`, 6
 `LastOfferRefused`), next free **7**. `ModState` uses
-properties **1-16** (11 `Grievances`, 12 `Legitimacy`, 13 `Pretenders`, 14 `InternalWars`,
-15 `SpyNetworks`, 16 `SpyMissions`), next free **17**. The definer's class ids run to **16**
+properties **1-17** (11 `Grievances`, 12 `Legitimacy`, 13 `Pretenders`, 14 `InternalWars`,
+15 `SpyNetworks`, 16 `SpyMissions`, 17 `CounterIntelligenceBudgets`), next free **18**. The definer's class ids run to **17**
 (10 `Grievance`, 11 `KingdomLegitimacy`, 12 `Pretender`, 13 `InternalWar`, 14 `InternalWarMember`,
-15 `SpyNetwork`, 16 `SpyMission`), next free **17**; enums are **20-27**
+15 `SpyNetwork`, 16 `SpyMission`, 17 `CounterIntelligenceBudget`), next free **18**. **Only 18 and 19
+are left below the enum block**: the definer adds its base to class and enum ids alike, and they are
+believed to share one id space (not verified - the reference assemblies carry no method bodies), so
+the class after 19 takes **28** or above rather than risk 20. Enums are **20-27**
 (26 `GrievanceType`, 27 `InternalWarOutcome`), next free **28**. `Grievance` uses
 properties 1-5, `KingdomLegitimacy` 1-5, `Pretender` 1-4, `InternalWar` 1-14 (13 `Faction`,
-14 `SideChanges`, next free **15**), `InternalWarMember` 1, `SpyNetwork` 1-8 (next free **9**), `SpyMission` 1-11 (next free **12**). A new *value* on an enum the definer
+14 `SideChanges`, next free **15**), `InternalWarMember` 1, `SpyNetwork` 1-8 (next free **9**), `SpyMission` 1-11 (next free **12**),
+`CounterIntelligenceBudget` 1-3 (next free **4**). A new *value* on an enum the definer
 already registers is safe (`GrievanceType.SuccessionPassedOver = 9` and `ForgedLetters = 10` were
 added that way; next free value there is **11**);
 renumbering or reusing one is not. Adding a new savable type means a class definition

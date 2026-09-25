@@ -57,9 +57,11 @@ namespace DiplomacyIntrigue.Behaviors
             var state = CoreBehavior.State;
             if (state == null || !Settings.Current.EnableEspionage) return;
 
+            // Counter-intelligence budgets, then networks - one list, shared with the debug commands.
+            // EspionageUpkeep catches inside; the outer try is the engine boundary's own guard.
             try
             {
-                SpyNetworks.WeeklyTick(state);
+                EspionageUpkeep.Weekly(state);
             }
             catch (Exception ex)
             {

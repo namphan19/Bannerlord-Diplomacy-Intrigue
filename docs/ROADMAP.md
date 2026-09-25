@@ -477,7 +477,7 @@ Playable target: *information and subversion are a third way to fight.*
 
 **3.2 Missions** — the types in `Models/SpyMissionType`: scout armies, read court, sabotage garrison, spread dissent, bribe a lord, forge letters, steal treasury, assassinate. Resolution from network strength + agent skill (Roguery/Charm) vs target counter-intelligence. *Built and verified live 2026-09-25 for six missions; BribeLord and ForgeLetters built with 3.5, not yet run in game (design/03 §10).*
 
-**3.3 Counter-intelligence** — passive defence a kingdom invests in; determines exposure chance.
+**3.3 Counter-intelligence** — passive defence a kingdom invests in; determines exposure chance. *Built 2026-09-25 and compiled clean; **not run in game**. A realm's ruler pays a weekly budget, +1 per 1,500 paid; the "security focus" term is dropped (the lead's calls, design/03 §9 decisions 9-10). AI realms order nothing until 3.6.*
 
 **3.4 Exposure as diplomacy** — a burned network is a *diplomatic incident*: the victim gains the `EspionageExposed` casus belli and trust drops. This is the cross-pillar hinge that keeps espionage from being a free action. *Built with 3.2 and verified live 2026-09-25: a mission that could be caught for free was not worth allowing.*
 

@@ -4,9 +4,10 @@ Point-in-time state. [CLAUDE.md](../CLAUDE.md) holds the things that are always 
 file holds what changes. Update it when you finish a chunk of work.
 
 Module version 0.1.0. Save schema **v4**, definer base id **2749100**.
-Save ids in use: `Treaty` 1-17, `TrustRecord` 1-6, `ModState` 1-16, definer class ids to 16
-(`SpyNetwork` 3.1, `SpyMission` 3.2), enums 20-27. Next free: class id **17**, `ModState` property **17**, enum
-**28** (CLAUDE.md §3 has the per-type detail). The 2.6 ids (13, 14, 27, property 14) are on
+Save ids in use: `Treaty` 1-17, `TrustRecord` 1-6, `ModState` 1-17, definer class ids to 17
+(`SpyNetwork` 3.1, `SpyMission` 3.2, `CounterIntelligenceBudget` 3.3), enums 20-27. Next free: class id **18**,
+`ModState` property **18**, enum **28** (CLAUDE.md §3 has the per-type detail, and the warning that
+class ids run into the enum block after 19). The 2.6 ids (13, 14, 27, property 14) are on
 `development` since 2026-09-24, and so is 2.6c's `InternalWar` property 14 (`SideChanges`);
 next free on `InternalWar` is 15.
 Last completed measurement: **balance run 07** — [docs/balance/run-07.md](balance/run-07.md).
@@ -34,9 +35,16 @@ what was built (§10).
   house head the player picks. ReadCourt: exact figures in the Encyclopedia's "Their ledger" block
   while the reveal lasts. The lead made three calls first (design/03 §9, decisions 6-8). No new
   save ids; one new enum value, `GrievanceType.ForgedLetters = 10`.
-- **Next: run 3.5 in game** - design/03 §10 has the five checks and the levers for each; the first
-  suspect is whether the ledger's TextWidget breaks lines on `\n`. Then 3.3 counter-intelligence
-  budgets, 3.6 the AI, 3.7 the UI.
+- **3.3, counter-intelligence budgets: built, compiled, NOT run in game** (same session). A realm's
+  ruler pays a standing weekly order; +1 counter-intelligence per 1,500 actually paid, clamped to
+  0-100. The lead's calls (design/03 §9, decisions 9-10): the ruler pays, and §3's "security focus"
+  term is dropped. **One new savable type** - `CounterIntelligenceBudget`, class id 17, `ModState`
+  property 17 - so a save round trip in a fresh process is the first check. AI realms order nothing
+  until 3.6.
+- **Next: run 3.5 and 3.3 in game** - design/03 §10 has the checks and levers for each; the first
+  suspects are whether the ledger's TextWidget breaks lines on `\n`, and the new type's save round
+  trip. Then 3.6 the AI (its first problem is still keeping an AI handler out of vanilla's governor
+  and party appointments), 3.7 the UI.
 - **New:** `scripts/compile-check.sh` compiles the module on a box with no game (Linux, a cloud
   session) against BUTR's v1.4.8 reference assemblies from NuGet. It proves the code compiles
   against the real API and nothing more - no LoadProbe, no game.
@@ -509,9 +517,9 @@ UI-INTEGRATION.md §0b.
 
 ### What to do next
 
-1. **Phase 3, espionage** - 3.1, 3.2 and 3.4 done and verified live; 3.5 built and compiled but
-   **not yet run in game** - that run is the next job (design/03 §10, "What to check in game").
-   Then 3.3 (design/03 §8 has the order). Carried:
+1. **Phase 3, espionage** - 3.1, 3.2 and 3.4 done and verified live; 3.5 and 3.3 built and
+   compiled but **not yet run in game** - that run is the next job (design/03 §10, "What to check
+   in game", one list per step). Then 3.6 (design/03 §8 has the order). Carried:
    - **The 3.6 blocker found while testing 3.1/3.2**: vanilla appoints an AI clan's idle heroes
      as governors within days, which pulls a handler off its network mid-run with no warning.
      An AI-run network needs a way to keep its handler out of that pool before 3.6 is worth
@@ -622,7 +630,7 @@ Two things were added because of this, independent of the cause:
 | **0 — Foundation** | ✅ done, verified in a live campaign |
 | **1 — Diplomacy core (1.1–1.12)** | ✅ **accepted by the lead, 2026-09-23**. Code complete including submission and hegemony (1.9/1.10), the vanilla takeover (1.11) and power (1.12). Measured over runs 01–07; the §13 rework under it is smoke-tested only, and the carried debt is listed in [ROADMAP.md](ROADMAP.md#phase-1--accepted-by-the-project-lead-2026-09-23) |
 | **2 — Court intrigue** | 🔄 2.1-2.7 built and verified live on their main paths, all on `development` (2.6/2.6b and 2.6c merged 2026-09-24). What is still unverified is listed in the checkpoint at the top |
-| **3 — Espionage** | 🔄 3.1 (networks), 3.2 (missions) and 3.4 (exposure) built and verified live, 2026-09-25, merged into `development`. 3.5 (cross-pillar effects) built and compiled the same day, **not run in game**. 3.3 (counter-intelligence budgets), 3.6 (AI) and 3.7 (UI) remain — design/03 §10 |
+| **3 — Espionage** | 🔄 3.1 (networks), 3.2 (missions) and 3.4 (exposure) built and verified live, 2026-09-25, merged into `development`. 3.5 (cross-pillar effects) and 3.3 (counter-intelligence budgets) built and compiled the same day, **not run in game**. 3.6 (AI) and 3.7 (UI) remain — design/03 §10 |
 | **4 — Integration, balance, release** | 🔄 runs 01-07 archived. **Run 07** (2026-09-20) is the current reference — [balance/run-07.md](balance/run-07.md). **Run 08 is owed** and closes the §13 questions |
 
 ### Kingdom screen UI — built and verified live, 2026-09-21

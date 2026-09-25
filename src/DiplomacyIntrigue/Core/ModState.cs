@@ -76,6 +76,13 @@ namespace DiplomacyIntrigue.Core
         /// </summary>
         [SaveableProperty(16)] public List<SpyMission> SpyMissions { get; private set; }
 
+        /// <summary>
+        /// Each realm's standing counter-intelligence budget (Phase 3.3, design 03 §3). Added
+        /// without a schema bump: a save that predates it loads with the list empty, which is
+        /// correct - no realm had spent anything, and every realm reads as spending nothing.
+        /// </summary>
+        [SaveableProperty(17)] public List<CounterIntelligenceBudget> CounterIntelligenceBudgets { get; private set; }
+
         public ModState()
         {
             SchemaVersion = CurrentSchemaVersion;
@@ -93,6 +100,7 @@ namespace DiplomacyIntrigue.Core
             InternalWars = new List<InternalWar>();
             SpyNetworks = new List<SpyNetwork>();
             SpyMissions = new List<SpyMission>();
+            CounterIntelligenceBudgets = new List<CounterIntelligenceBudget>();
             NextTreatyId = 1;
         }
 
@@ -116,6 +124,7 @@ namespace DiplomacyIntrigue.Core
             if (InternalWars == null) InternalWars = new List<InternalWar>();
             if (SpyNetworks == null) SpyNetworks = new List<SpyNetwork>();
             if (SpyMissions == null) SpyMissions = new List<SpyMission>();
+            if (CounterIntelligenceBudgets == null) CounterIntelligenceBudgets = new List<CounterIntelligenceBudget>();
             if (NextTreatyId < 1) NextTreatyId = 1;
 
             Migrate();
@@ -137,6 +146,7 @@ namespace DiplomacyIntrigue.Core
             for (var i = 0; i < InternalWars.Count; i++) InternalWars[i].AfterLoad();
             SpyNetworks.RemoveAll(n => n == null || n.Owner == null || n.Target == null);
             SpyMissions.RemoveAll(m => m == null || m.Owner == null || m.Target == null);
+            CounterIntelligenceBudgets.RemoveAll(b => b == null || b.Kingdom == null);
 
             Log.Info("State", "Loaded: " + Treaties.Count + " treaties, " + Wars.Count
                               + " war records, " + Weariness.Count + " weariness entries, "
@@ -147,7 +157,8 @@ namespace DiplomacyIntrigue.Core
                               + " pretenders, " + InternalWars.Count
                               + " internal wars, " + SpyNetworks.Count
                               + " spy networks, " + SpyMissions.Count
-                              + " spy missions, schema v" + SchemaVersion + ".");
+                              + " spy missions, " + CounterIntelligenceBudgets.Count
+                              + " counter-intelligence budgets, schema v" + SchemaVersion + ".");
         }
 
         private void Migrate()

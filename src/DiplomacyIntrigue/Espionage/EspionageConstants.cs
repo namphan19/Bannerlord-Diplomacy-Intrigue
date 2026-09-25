@@ -147,5 +147,16 @@ namespace DiplomacyIntrigue.Espionage
 
         /// <summary>Per point of the realm's average town and castle security. UN-TUNED.</summary>
         public const float CounterIntelligencePerSecurity = 0.05f;
+
+        /// <summary>
+        /// Denars of weekly budget, actually paid, per point of counter-intelligence (design 03 §3).
+        /// 15,000 a week buys +10. Worked on design 03 §10's example (network 80, handler skill 62,
+        /// counter-intelligence 12.6 -> 22.6), overall exposure goes from 3.1% to 6.4% for ScoutArmies
+        /// and from 6.1% to 11.7% for Assassinate - by hand, not measured. UN-TUNED.
+        /// </summary>
+        public const float CounterIntelligenceGoldPerPoint = 1500f;
+
+        /// <summary>The top of §3's 0-100 scale.</summary>
+        public const float CounterIntelligenceMax = 100f;
     }
 }

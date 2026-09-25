@@ -1,7 +1,7 @@
 # Design 03 — Espionage
 
 Status: **decided and in build** - the lead's decisions are §9, what is built is §10 (3.1, 3.2
-and 3.4 on 2026-09-25, verified live; 3.5 the same day, compiled but not yet run in game). Phase 3. Depends on Phase 1 (claims, treaties, trust) and
+and 3.4 on 2026-09-25, verified live; 3.5 and 3.3 the same day, compiled but not yet run in game). Phase 3. Depends on Phase 1 (claims, treaties, trust) and
 Phase 2 (grievances, loyalty) already existing — espionage in this design is mostly a way to
 *reach into* those systems, not a separate scoreboard.
 
@@ -70,6 +70,11 @@ counterIntelligence = 10
                     + rulerClanSecurityFocus × 5      // a policy slot the AI also uses
                     + 0.05 × averageSettlementSecurity
 ```
+
+*As built (3.3, the lead's decisions 9 and 10):* `10 + weekly gold paid / 1500 + 0.05 × average
+security`, clamped to 0-100, the budget paid by whoever rules the realm. The security-focus term is
+dropped - vanilla has no such policy, and the policies that raise security already count through
+the last term.
 
 It suppresses enemy network growth (§1) and raises exposure chance (§4). The AI budgets for
 it out of the same purse as troops, so a realm that over-invests in spies is militarily
@@ -171,6 +176,13 @@ Three more, asked before 3.5's code on 2026-09-25, where §2 left the two Phase 
 | 6 | BribeLord "flips to us if a civil war starts within 2 years": flips to whom? | **The rising.** When an internal war starts in the bribed house's realm inside the window, the house takes the rising's side whatever its bloc or relations say. Not defection to the briber's own realm, which would move fiefs across a border and has nowhere to go for an owner outside any realm |
 | 7 | How long does the -20 loyalty last? | **The same two years, then gone.** One window for both effects, not a second curve to tune |
 | 8 | Whose grievance is a forged letter? | **A lord the player chooses**, as a bribe is paid to one; not the least loyal house picked automatically |
+
+And two before 3.3's, the same day:
+
+| # | Question | Decision |
+|---|---|---|
+| 9 | Who pays a realm's counter-intelligence budget? | **Whoever rules**, from their own purse - the purse that pays the troops, which is §3's trade-off. One budget per realm; it outlives a change of ruler. A vassal cannot contribute |
+| 10 | §3's "security focus × 5, a policy slot the AI also uses" | **Dropped.** Vanilla has no such policy, and the ones that raise security already reach counter-intelligence through the security term; a second term would count them twice |
 
 ### The questions as they were asked
 
@@ -330,3 +342,42 @@ Built in a cloud session with no game. It compiles clean against the v1.4.8 refe
 **Open, for 3.6:** under today's rules an AI network could bribe the player's own house, and the
 player would then be asked at the next internal war as for any other rebel side. Nothing launches
 an AI operation until 3.6, and whether the player should instead be offered the gold is 3.6's call.
+
+### 3.3, counter-intelligence budgets - built and compiled, NOT run in game, 2026-09-25
+
+Built in the same cloud session as 3.5, with no game: 0 warnings against the v1.4.8 reference
+assemblies. **Nothing below has been seen in game.**
+
+| Piece | Where |
+|---|---|
+| A realm's standing order and what was actually paid last week (class id 17, `ModState` property 17) | `Models/CounterIntelligenceBudget.cs` |
+| The budget term in the one resolver, clamped to 0-100; setting a budget; the weekly payment | `Espionage/CounterIntelligence.cs` |
+| One weekly list - budgets paid, then networks grown - for the campaign, `ai_week` and `test_network_week` alike | `Espionage/EspionageUpkeep.cs` |
+| Levers | `diplomacy.counter_intelligence [kingdom]`, `test_counter_budget <kingdom> \| <weekly denars>`; `test_network_week` now runs the whole espionage week |
+
+**Decided in building, not by the lead:**
+- The term reads what was **paid** at the last weekly upkeep, not what was ordered: a ruler with a
+  large order and an empty purse defends at what the purse covered. A new order therefore takes
+  effect at the next weekly upkeep.
+- Budgets are paid **before** networks grow, in one fixed list, so a network meets the defence
+  paid for the same week - and nothing depends on the engine's listener order (CLAUDE.md §1).
+- A player ruler whose purse falls short is told; an AI ruler's shortfall is only logged.
+- A budget with nothing ordered and nothing paid is dropped, so the save does not keep empty rows.
+- **No AI realm orders anything yet.** Every AI realm still defends at its base and its towns until
+  3.6 decides what an AI ruler spends. The player's missions against AI realms therefore see the same
+  counter-intelligence as before 3.3.
+
+**By hand, not measured:** on §10's example (network 80, handler skill 62), 15,000 a week lifts
+counter-intelligence 12.6 -> 22.6, and overall exposure from 3.1% to 6.4% for ScoutArmies and from
+6.1% to 11.7% for Assassinate. That is the push back against §10's balance note that 3.3 was meant
+to provide; whether it is enough is for a run with AI budgets in it, after 3.6.
+
+**What to check in game** (none done yet):
+1. `test_counter_budget <player's realm> | 15000`, then `test_network_week`: the ruler's purse falls
+   by 15,000, and `diplomacy.counter_intelligence` shows `budget +10.0 from 15000 paid`.
+2. The same with a purse below the order: the shortfall paid, the notice shown to a player ruler.
+3. `diplomacy.mission_odds` against that realm before and after: the counter-intelligence term moves,
+   and so do the success and exposure figures.
+4. Save and reload with a budget set: `counter_intelligence` must still read it - **the first run of
+   a new savable type**, so load the save in a fresh process, not only the same session.
+5. The real weekly tick, not the lever: one budget paid on the campaign's own clock.

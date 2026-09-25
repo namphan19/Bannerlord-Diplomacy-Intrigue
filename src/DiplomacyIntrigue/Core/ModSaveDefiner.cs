@@ -35,6 +35,7 @@ namespace DiplomacyIntrigue.Core
             AddClassDefinition(typeof(InternalWarMember), 14);
             AddClassDefinition(typeof(SpyNetwork), 15);
             AddClassDefinition(typeof(SpyMission), 16);
+            AddClassDefinition(typeof(CounterIntelligenceBudget), 17);
         }
 
         protected override void DefineEnumTypes()
@@ -66,6 +67,7 @@ namespace DiplomacyIntrigue.Core
             ConstructContainerDefinition(typeof(List<InternalWarMember>));
             ConstructContainerDefinition(typeof(List<SpyNetwork>));
             ConstructContainerDefinition(typeof(List<SpyMission>));
+            ConstructContainerDefinition(typeof(List<CounterIntelligenceBudget>));
         }
     }
 }
