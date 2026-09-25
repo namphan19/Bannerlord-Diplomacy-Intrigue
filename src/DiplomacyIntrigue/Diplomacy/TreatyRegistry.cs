@@ -402,6 +402,7 @@ namespace DiplomacyIntrigue.Diplomacy
                 }
 
                 GiveGoldAction.ApplyBetweenCharacters(payerLeader, receiverLeader, treaty.TributeAmount, true);
+                Statecraft.SkillXp.TributePaid(payer, receiver, treaty.TributeAmount);
                 TributePaidThisSession++;
                 treaty.AdvanceTributeDate(CampaignTime.DaysFromNow(DiplomacyConstants.TributePeriodDays));
             }

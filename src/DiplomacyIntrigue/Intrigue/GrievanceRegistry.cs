@@ -154,6 +154,14 @@ namespace DiplomacyIntrigue.Intrigue
             return removed;
         }
 
+        /// <summary>
+        /// How fast grievances held against <paramref name="target"/> fade, per day: the base rate
+        /// at that house's steward's pace (design 08 S-6). The upkeep and every display read this.
+        /// </summary>
+        public static float FadePerDay(Clan target)
+            => IntrigueConstants.GrievanceDecayPerDay
+               * (target == null ? 1f : Statecraft.StatecraftTerms.RecoveryFactor(target));
+
         // ----- Upkeep ---------------------------------------------------------
 
         /// <summary>
@@ -166,8 +174,22 @@ namespace DiplomacyIntrigue.Intrigue
         {
             if (state == null || state.Grievances.Count == 0) return;
 
+            // Design 08 S-6: a grievance fades at the pace of the house it is held against - that
+            // house's steward. Read once per house per day, since a court's grievances share one.
+            var fade = new Dictionary<Clan, float>();
             for (var i = 0; i < state.Grievances.Count; i++)
-                state.Grievances[i].Decay(IntrigueConstants.GrievanceDecayPerDay);
+            {
+                var grievance = state.Grievances[i];
+                var target = grievance.Target;
+                float rate;
+                if (target == null) rate = FadePerDay(null);
+                else if (!fade.TryGetValue(target, out rate))
+                {
+                    rate = FadePerDay(target);
+                    fade[target] = rate;
+                }
+                grievance.Decay(rate);
+            }
 
             // Decay moves every loyalty in the world, so the bloc memo is stale from here.
             BlocModel.Invalidate();

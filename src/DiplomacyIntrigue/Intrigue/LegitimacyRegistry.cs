@@ -159,9 +159,18 @@ namespace DiplomacyIntrigue.Intrigue
                     continue;
 
                 record.MarkPeaceDividend();
-                Adjust(state, kingdom, IntrigueConstants.LegitimacyPeaceDividend, "a year of peace");
+                Adjust(state, kingdom, PeaceDividendOf(kingdom), "a year of peace");
+                Statecraft.SkillXp.PeaceDividend(kingdom);
             }
         }
+
+        /// <summary>
+        /// What a year of peace restores to this crown: the base dividend at the pace of the ruling
+        /// house's steward (design 08 S-6). The upkeep and the Court tab's note both read this.
+        /// </summary>
+        public static float PeaceDividendOf(Kingdom kingdom)
+            => IntrigueConstants.LegitimacyPeaceDividend
+               * Statecraft.StatecraftTerms.RecoveryFactor(kingdom?.RulingClan);
 
         /// <summary>
         /// At war abroad, or with itself. An internal war has no `WarRecord` (design 07 §3a Q4),

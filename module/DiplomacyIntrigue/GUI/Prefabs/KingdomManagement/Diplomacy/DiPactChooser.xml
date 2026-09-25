@@ -87,7 +87,7 @@
                     <HintWidget DataSource="{Hint}" WidthSizePolicy="StretchToParent"
                         HeightSizePolicy="StretchToParent" Command.HoverBegin="ExecuteBeginHint"
                         Command.HoverEnd="ExecuteEndHint" IsEnabled="false" />
-                    <ButtonWidget DoNotPassEventsToChildren="true" WidthSizePolicy="StretchToParent"
+                    <ButtonWidget Id="DiPactPropose" DoNotPassEventsToChildren="true" WidthSizePolicy="StretchToParent"
                         HeightSizePolicy="StretchToParent" Brush="ButtonBrush2"
                         UpdateChildrenStates="true" Command.Click="ExecutePropose"
                         IsEnabled="@CanPropose">

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using DiplomacyIntrigue.Core;
 using DiplomacyIntrigue.Models;
+using DiplomacyIntrigue.Statecraft;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.Settlements;
@@ -1100,7 +1101,7 @@ namespace DiplomacyIntrigue.Diplomacy
                 if (kingdom.IsAtWarWith(other)) continue;
 
                 var ourValue = PactValue(state, kingdom, other);
-                var theirValue = PactValue(state, other, kingdom);
+                var theirValue = PactValueWhenAsked(state, other, kingdom);
                 var mutual = ourValue < theirValue ? ourValue : theirValue;
 
                 // Ambition scales with how much both sides want it. A pact neither side is
@@ -1118,7 +1119,8 @@ namespace DiplomacyIntrigue.Diplomacy
             }
 
             if (best == null) return false;
-            if (!CanAffordInfluence(kingdom, DiplomacyConstants.TreatyInfluenceCost(bestType))) return false;
+            var pactCost = StatecraftTerms.TreatyInfluenceCost(kingdom, bestType);
+            if (!CanAffordInfluence(kingdom, pactCost)) return false;
 
             var treaty = TreatyRegistry.Sign(state, kingdom, best, bestType, out var reason);
             if (treaty == null)
@@ -1128,8 +1130,8 @@ namespace DiplomacyIntrigue.Diplomacy
                 return false;
             }
 
-            ChangeClanInfluenceAction.Apply(kingdom.RulingClan,
-                -DiplomacyConstants.TreatyInfluenceCost(bestType));
+            ChangeClanInfluenceAction.Apply(kingdom.RulingClan, -pactCost);
+            SkillXp.PactSigned(kingdom, bestType);
 
             var pull = BalancingPull(state, kingdom, best, out var against);
             Telemetry.Event("ai_pact_signed", "kingdom", kingdom, "partner", best, "type", bestType,
@@ -1167,6 +1169,15 @@ namespace DiplomacyIntrigue.Diplomacy
                    + DiplomacyConstants.PactWeightBalancing * balancing
                    - DiplomacyConstants.PactWeightAmbition * ambition;
         }
+
+        /// <summary>
+        /// What <paramref name="asked"/> makes of a pact <paramref name="proposer"/> puts to it:
+        /// its own valuation, moved by the proposer's envoy (design 08 S-3). Only the side being
+        /// asked is persuaded - the proposer already wants the pact. Every place a court decides on
+        /// an offer reads this: the AI's weekly scan, the player's chooser and its button.
+        /// </summary>
+        public static float PactValueWhenAsked(ModState state, Kingdom asked, Kingdom proposer)
+            => PactValue(state, asked, proposer) + StatecraftTerms.Persuasion(proposer);
 
         /// <summary>
         /// How much the strongest sphere neither kingdom belongs to outweighs the two of them
@@ -1322,6 +1333,7 @@ namespace DiplomacyIntrigue.Diplomacy
                 return false;
             }
 
+            SkillXp.TributeDemandAccepted(kingdom);
             Log.Info("AI", kingdom.Name + " imposed a tributary pact on " + target.Name + ".");
             Announce(target.Name + " agrees to pay tribute to " + kingdom.Name + ".");
             return true;
@@ -1595,6 +1607,7 @@ namespace DiplomacyIntrigue.Diplomacy
                                 return;
                             }
 
+                            SkillXp.TributeDemandAccepted(demander);
                             Log.Info("AI", "The player accepted " + demander.Name + "'s demand for tribute: "
                                            + player.Name + " pays " + amount + " per period.");
                             Log.Notify("We pay tribute to " + demander.Name + ".", Colors.Red);
@@ -1752,10 +1765,29 @@ namespace DiplomacyIntrigue.Diplomacy
         /// What declaring this war costs the ruling clan: naked aggression pays double,
         /// legitimacy discounts it, and weariness inflates the bill. One formula, shared by
         /// the decision, its diagnostic and the player's buttons.
+        ///
+        /// <paramref name="proposer"/> is whoever puts the war to the realm - the ruler for the AI,
+        /// the player's own hero when the player proposes it as a vassal - and only matters for
+        /// Firebrand (design 08 A-2), vanilla's discount on initiating a decision, which the
+        /// takeover had left reading nothing.
         /// </summary>
-        public static int WarDeclarationCost(ModState state, Kingdom kingdom, float legitimacy)
+        public static int WarDeclarationCost(ModState state, Kingdom kingdom, float legitimacy, Hero proposer = null)
             => (int)(DiplomacyConstants.WarDeclarationBaseInfluence * (2f - legitimacy)
-                     * (1f + (state == null ? 0f : state.WearinessOf(kingdom)) / 100f));
+                     * (1f + (state == null ? 0f : state.WearinessOf(kingdom)) / 100f)
+                     * Statecraft.StatecraftTerms.FirebrandFactor(proposer ?? kingdom?.Leader));
+
+        /// <summary>
+        /// The price of declaring war on <paramref name="them"/>, with the casus belli
+        /// <see cref="EvaluateWar"/> would fight it on: the best claim held, or conquest. The
+        /// player's Declare war button is charged this, so it pays what the AI pays and what
+        /// <c>diplomacy.war_value</c> prints (design 08 A-1).
+        /// </summary>
+        public static int WarDeclarationCostAgainst(ModState state, Kingdom us, Kingdom them, Hero proposer = null)
+        {
+            var claim = state == null ? null : ClaimRegistry.Best(state, us, them);
+            var casus = claim == null ? CasusBelliType.Conquest : claim.Type;
+            return WarDeclarationCost(state, us, CasusBelli.Legitimacy(casus), proposer);
+        }
 
         /// <summary>
         /// Pays the influence, tears up the oath first when the war is an annexation (or the
@@ -2042,7 +2074,9 @@ namespace DiplomacyIntrigue.Diplomacy
 
             var cost = WarDeclarationCost(state, us, terms.Legitimacy);
             var available = us.RulingClan == null ? 0f : us.RulingClan.Influence;
-            sb.AppendLine("  influence cost: " + cost + ", available " + available.ToString("0")
+            sb.AppendLine("  influence cost: " + cost
+                          + (StatecraftTerms.FirebrandFactor(us.Leader) < 1f ? " (Firebrand, x0.75)" : "")
+                          + ", available " + available.ToString("0")
                           + (available < cost ? "   BLOCKED" : ""));
 
             return sb.ToString();

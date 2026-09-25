@@ -578,6 +578,63 @@
                               </Children>
                             </ListPanel>
 
+                            <!-- Statecraft (design 08, Phase 2.8): who holds each political office of the
+                                 realm, their skill against the realms' median, and what it moves.
+                                 Its own data context, DiStatecraftVM; see StatecraftVM.cs. -->
+                            <ListPanel DataSource="{Statecraft}" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                MarginTop="18" IsVisible="@Show" StackLayout.LayoutMethod="VerticalTopToBottom">
+                              <Children>
+                                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="1"
+                                    Sprite="BlankWhiteSquare_9" Color="#4A3C2AFF" />
+                                <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginTop="10">
+                                  <Children>
+                                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
+                                        VerticalAlignment="Bottom" Brush="DiRealm.Title" Text="Statecraft" />
+                                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
+                                        VerticalAlignment="Bottom" MarginLeft="12" Brush="DiRealm.Label"
+                                        Text="Who speaks for the realm, and what their skill moves." />
+                                  </Children>
+                                </ListPanel>
+                                <ListPanel DataSource="{Rows}" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                    MarginTop="8" StackLayout.LayoutMethod="VerticalTopToBottom">
+                                  <ItemTemplate>
+                                    <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginBottom="4">
+                                      <Children>
+                                        <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                                            Sprite="BlankWhiteSquare_9" Color="#201A13CC" />
+                                        <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                            MarginLeft="12" MarginRight="12" MarginTop="6" MarginBottom="6">
+                                          <Children>
+                                            <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="110"
+                                                HeightSizePolicy="CoverChildren" VerticalAlignment="Center"
+                                                Brush="DiRealm.Label" Text="@Office" />
+                                            <ListPanel WidthSizePolicy="Fixed" SuggestedWidth="230" HeightSizePolicy="CoverChildren"
+                                                VerticalAlignment="Center" StackLayout.LayoutMethod="VerticalTopToBottom">
+                                              <Children>
+                                                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                                                    HeightSizePolicy="CoverChildren" Brush="DiRealm.Value" Text="@Hero" />
+                                                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                                                    HeightSizePolicy="CoverChildren" Brush="DiRealm.Small" IsVisible="@HasStand"
+                                                    Text="@Stand" />
+                                              </Children>
+                                            </ListPanel>
+                                            <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="230"
+                                                HeightSizePolicy="CoverChildren" VerticalAlignment="Center"
+                                                Brush="DiRealm.Body" Brush.FontColor="@SkillColor" Text="@SkillText" />
+                                            <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                                                HeightSizePolicy="CoverChildren" VerticalAlignment="Center" MarginLeft="10"
+                                                Brush="DiRealm.Body" Text="@Moves" />
+                                          </Children>
+                                        </ListPanel>
+                                      </Children>
+                                    </Widget>
+                                  </ItemTemplate>
+                                </ListPanel>
+                                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                    MarginTop="4" Brush="DiRealm.Small" Text="@Note" />
+                              </Children>
+                            </ListPanel>
+
                             <!-- Counter-intelligence (Phase 3.7): ruler only, at the foot of the tab.
                                  Its own data context, DiCounterIntelVM; see CounterIntelVM.cs. -->
                             <ListPanel DataSource="{CounterIntel}" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"

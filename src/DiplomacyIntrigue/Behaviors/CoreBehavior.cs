@@ -246,7 +246,14 @@ namespace DiplomacyIntrigue.Behaviors
                 var war = _state.OngoingWarBetween(a, b);
                 if (war == null) return;
 
+                // Read before the record closes. A war nobody fought, or one a treaty dragged a
+                // side into, taught its rulers nothing (design 08 §6); elimination never comes here.
+                var trains = !war.IsObligationWar && !Diplomacy.PeaceTable.IsDormant(war);
+                var days = war.DaysElapsed;
+
                 CloseWar(war, a, b);
+
+                if (trains) Statecraft.SkillXp.WarEnded(a, b, days);
             }
             catch (Exception ex)
             {

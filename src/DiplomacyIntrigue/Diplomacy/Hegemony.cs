@@ -100,6 +100,7 @@ namespace DiplomacyIntrigue.Diplomacy
                           + "  rival " + Signed(-t.Rival)
                           + "  culture " + Signed(-t.Culture)
                           + "  dread " + Signed(-t.Dread)
+                          + "  authority " + Signed(t.Authority)
                           + "  => " + t.Target.ToString("0.0");
             return t.Target;
         }
@@ -111,7 +112,7 @@ namespace DiplomacyIntrigue.Diplomacy
         /// </summary>
         public struct HoldTerms
         {
-            public float Fear, Protection, Trust, Tribute, Wars, Rival, Culture, Dread, Target;
+            public float Fear, Protection, Trust, Tribute, Wars, Rival, Culture, Dread, Authority, Target;
         }
 
         public static HoldTerms HoldTermsOf(ModState state, Treaty treaty)
@@ -130,8 +131,11 @@ namespace DiplomacyIntrigue.Diplomacy
             t.Rival = BestRivalPull(state, vassal, patron) * DiplomacyConstants.HoldRivalWeight;
             t.Culture = patron.Culture != vassal.Culture ? DiplomacyConstants.HoldCultureMismatchWeight : 0f;
 
+            // Design 08 S-4: a king vassals follow is a patron vassals hold to. Signed, like Fear.
+            t.Authority = Statecraft.StatecraftTerms.Authority(patron);
+
             t.Target = Clamp(DiplomacyConstants.HoldBase + t.Fear + t.Protection + t.Trust
-                             - t.Tribute - t.Wars - t.Rival - t.Culture - t.Dread, 0f, 100f);
+                             - t.Tribute - t.Wars - t.Rival - t.Culture - t.Dread + t.Authority, 0f, 100f);
             return t;
         }
 
@@ -960,6 +964,7 @@ namespace DiplomacyIntrigue.Diplomacy
                                    + patron.Name + " and " + vassal.Name + ".");
 
             CallToArms.DefendNewVassal(state, treaty);
+            Statecraft.SkillXp.SubmissionReceived(patron);
             return treaty;
         }
 

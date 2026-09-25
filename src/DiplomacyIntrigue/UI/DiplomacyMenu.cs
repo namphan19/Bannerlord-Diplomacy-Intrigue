@@ -5,6 +5,7 @@ using DiplomacyIntrigue.Behaviors;
 using DiplomacyIntrigue.Core;
 using DiplomacyIntrigue.Diplomacy;
 using DiplomacyIntrigue.Models;
+using DiplomacyIntrigue.Statecraft;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Election;
 using TaleWorlds.CampaignSystem.Settlements;
@@ -442,8 +443,7 @@ namespace DiplomacyIntrigue.UI
                     DiplomacyConstants.FabricateClaimInfluenceCost + " influence and "
                     + DiplomacyConstants.FabricateClaimGoldCost + " denars, "
                     + DiplomacyConstants.FabricateClaimDurationDays + " days, and a "
-                    + (DiplomacyConstants.FabricateClaimExposureChance * 100f).ToString("0")
-                    + "% chance of being caught."));
+                    + StatecraftTerms.ExposureLine(us, them) + "."));
             }
 
             Show(them.Name.ToString(), Summary(state, us, them), elements, selected =>
@@ -471,12 +471,12 @@ namespace DiplomacyIntrigue.UI
             TreatyType type, List<InquiryElement> into)
         {
             var allowed = TreatyRegistry.CanSign(state, us, them, type, out var reason);
-            var cost = DiplomacyConstants.TreatyInfluenceCost(type);
+            var cost = StatecraftTerms.TreatyInfluenceCost(us, type);
 
             // Their own valuation, shown honestly: this is the number the AI uses to decide.
             // Truncated, like the Diplomacy tab's chooser: rounding would show 34.6 as "35"
             // beside a threshold of 35 it has not cleared.
-            var theirValue = AiDiplomacy.PactValue(state, them, us);
+            var theirValue = AiDiplomacy.PactValueWhenAsked(state, them, us);
             var hint = allowed
                 ? cost + " influence. " + them.Name + " values it at " + ((int)theirValue)
                   + " (they need " + ThresholdFor(type).ToString("0") + ")."
@@ -536,7 +536,7 @@ namespace DiplomacyIntrigue.UI
         internal static void ProposePact(ModState state, Kingdom us, Kingdom them, TreatyType type)
         {
             // The other side has to want it too, judged by the same function the AI uses.
-            var theirValue = AiDiplomacy.PactValue(state, them, us);
+            var theirValue = AiDiplomacy.PactValueWhenAsked(state, them, us);
             if (theirValue < ThresholdFor(type))
             {
                 Notify(them.Name + " declines: they value a " + type + " at only "
@@ -544,7 +544,7 @@ namespace DiplomacyIntrigue.UI
                 return;
             }
 
-            var cost = DiplomacyConstants.TreatyInfluenceCost(type);
+            var cost = StatecraftTerms.TreatyInfluenceCost(us, type);
             if (us.RulingClan == null || us.RulingClan.Influence < cost)
             {
                 Notify("Not enough influence: " + type + " costs " + cost + ".");
@@ -559,6 +559,7 @@ namespace DiplomacyIntrigue.UI
             }
 
             TaleWorlds.CampaignSystem.Actions.ChangeClanInfluenceAction.Apply(us.RulingClan, -cost);
+            SkillXp.PactSigned(us, type);
             Notify(us.Name + " and " + them.Name + " sign a " + type + ".", Colors.Green);
         }
 
@@ -567,6 +568,12 @@ namespace DiplomacyIntrigue.UI
         /// a DeclareWarDecision is proposed by the player's clan and the realm votes on it.
         /// The mod's enforcement gates apply to the decision itself, exactly as they do to
         /// the Decisions tab - a treaty in the way greys the button out with its reason.
+        ///
+        /// **One price for a war** (design 08 A-1, the lead's delegated call D4). The proposal
+        /// used to be charged vanilla's <c>GetInfluenceCostOfProposingWar</c> - 200, 400 under War
+        /// Tax - while an AI ruler paid the mod's <see cref="AiDiplomacy.WarDeclarationCost"/>,
+        /// typically 52-100. The player now pays that same figure, charged here, and the decision
+        /// is added with its vanilla cost ignored so nothing is charged twice.
         /// </summary>
         internal static void DeclareWar(ModState state, Kingdom us, Kingdom them)
         {
@@ -577,16 +584,24 @@ namespace DiplomacyIntrigue.UI
                 return;
             }
 
-            var decision = new DeclareWarDecision(Clan.PlayerClan, them);
+            var proposer = Clan.PlayerClan;
+            var decision = new DeclareWarDecision(proposer, them);
             if (!decision.IsAllowed())
             {
                 Notify("The court will not entertain a war against " + them.Name + " right now.");
                 return;
             }
 
-            // ignoreInfluenceCost stays false: proposing costs what the Decisions tab charges.
-            us.AddDecision(decision, false);
-            Notify("The court is asked to declare war on " + them.Name + ".", Colors.Green);
+            var cost = AiDiplomacy.WarDeclarationCostAgainst(state, us, them, proposer.Leader);
+            if (proposer.Influence < cost)
+            {
+                Notify("Not enough influence: proposing this war costs " + cost + ".");
+                return;
+            }
+
+            us.AddDecision(decision, true);
+            TaleWorlds.CampaignSystem.Actions.ChangeClanInfluenceAction.Apply(proposer, -cost);
+            Notify("The court is asked to declare war on " + them.Name + " (" + cost + " influence).", Colors.Green);
         }
 
         /// <summary>
@@ -669,6 +684,7 @@ namespace DiplomacyIntrigue.UI
                 return;
             }
 
+            SkillXp.TributeDemandAccepted(us);
             Notify(them.Name + " agrees to pay us "
                    + DiplomacyConstants.AiDefaultTributePerPeriod + " per period.", Colors.Green);
         }

@@ -22,7 +22,10 @@ namespace DiplomacyIntrigue.Intrigue
         /// <summary>The sum of member influence - what the bloc can actually spend. Design 02 §3.</summary>
         public float Power { get; private set; }
 
-        /// <summary>The most influential member; who the bloc speaks through. Design 02 §3.</summary>
+        /// <summary>
+        /// Who the bloc speaks through: the most influential member (design 02 §3), weighted by its
+        /// head's Charm since design 08 S-9. With statecraft off it is exactly the most influential.
+        /// </summary>
         public Clan Leader { get; private set; }
 
         /// <summary>
@@ -60,8 +63,18 @@ namespace DiplomacyIntrigue.Intrigue
             if (loyalty >= IntrigueConstants.LoyaltyReliable) LoyalMembers++;
             else EffectivePower += influence;
 
-            if (Leader == null || clan.Influence > Leader.Influence) Leader = clan;
+            // Design 08 S-9: who speaks is influence weighted by the head's own Charm, so a
+            // charming house can lead a bloc it does not bankroll. Power above stays the plain
+            // sum, which keeps the civil-war trigger where 2.6 measured it.
+            var voice = Statecraft.StatecraftTerms.Voice(clan);
+            if (Leader == null || voice > _leaderVoice)
+            {
+                Leader = clan;
+                _leaderVoice = voice;
+            }
         }
+
+        private float _leaderVoice;
 
         /// <summary>Share of the whole court's influence this bloc holds, 0-1.</summary>
         public float PowerShare(float kingdomTotalInfluence)

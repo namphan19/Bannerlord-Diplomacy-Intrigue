@@ -45,6 +45,12 @@ namespace DiplomacyIntrigue.Intrigue
             public float BondFactor = 1f;
             public float MomentumFactor = 1f;
 
+            /// <summary>Design 08 S-10: the two treasurers' haggling. 1 with statecraft off.</summary>
+            public float HagglingFactor = 1f;
+
+            /// <summary>Design 08 A-3: the buyer's treasurer holds Silver Tongue.</summary>
+            public float SilverTongueFactor = 1f;
+
             public int Price;
 
             /// <summary>
@@ -111,25 +117,42 @@ namespace DiplomacyIntrigue.Intrigue
             var afterBond = afterRelation * q.BondFactor;
             var afterMomentum = afterBond * q.MomentumFactor;
 
-            q.Price = Math.Max(IntrigueConstants.SideChangeMinimumPrice, (int)(Math.Round(afterMomentum / 100f) * 100f));
+            // Design 08 S-10 and A-3: the two treasurers haggle, then the buyer's bargains with
+            // Silver Tongue if it has it - vanilla's own discount on persuading a lord to defect,
+            // which is exactly this act.
+            q.HagglingFactor = Statecraft.StatecraftTerms.HagglingFactor(q.Buyer, clan);
+            var afterHaggling = afterMomentum * q.HagglingFactor;
+            var silverTongue = Statecraft.StatecraftTerms.SilverTongueHolder(q.Buyer);
+            q.SilverTongueFactor = silverTongue == null ? 1f : Statecraft.StatecraftConstants.SilverTongueFactor;
+            var afterPerk = afterHaggling * q.SilverTongueFactor;
 
-            var buyerName = q.Buyer == null ? "their new leader" : q.Buyer.Name.ToString();
-            AddLine(q, "Their house and its men", men);
-            if (land > 0f) AddLine(q, "The fiefs they would bring", land);
+            q.Price = Math.Max(IntrigueConstants.SideChangeMinimumPrice, (int)(Math.Round(afterPerk / 100f) * 100f));
+
+            // Worded from where the player stands: "you" for the player's hero, "your" for the
+            // player's own house, the way the rest of the Court tab speaks.
+            var ours = clan == Clan.PlayerClan;
+            AddLine(q, ours ? "Your house and its men" : "Their house and its men", men);
+            if (land > 0f) AddLine(q, ours ? "The fiefs you would bring" : "The fiefs they would bring", land);
             q.BaseLineCount = q.Lines.Count;
-            AddLine(q, "How they feel about " + buyerName, afterRelation - raw);
+            AddLine(q, (ours ? "How you feel about " : "How they feel about ")
+                       + (q.Buyer == null ? "their new leader" : NameOf(q.Buyer)), afterRelation - raw);
             AddLine(q, q.ToRising
-                ? "Their loyalty to the crown"
-                : "What they owe " + (war.Claimant == null ? "the claimant" : war.Claimant.Name.ToString()),
+                ? (ours ? "Your loyalty to the crown" : "Their loyalty to the crown")
+                : (ours ? "What you owe " : "What they owe ")
+                  + (war.Claimant == null ? "the claimant" : NameOf(war.Claimant)),
                 afterBond - afterRelation);
             AddLine(q, "How the war goes for " + SideName(war, q.ToRising), afterMomentum - afterBond);
+            if (q.HagglingFactor != 1f)
+                AddLine(q, Statecraft.StatecraftTerms.HagglingLabel(q.Buyer, clan), afterHaggling - afterMomentum);
+            if (silverTongue != null)
+                AddLine(q, "Silver Tongue (" + NameOf(silverTongue) + ")", afterPerk - afterHaggling);
 
             // The lines are rounded one by one; whatever that leaves over, and the floor when it
             // applies, are shown rather than hidden, so the column always adds up.
             var sum = 0;
             for (var i = 0; i < q.Lines.Count; i++) sum += q.Lines[i].Value;
             var rest = q.Price - sum;
-            if (afterMomentum < IntrigueConstants.SideChangeMinimumPrice)
+            if (afterPerk < IntrigueConstants.SideChangeMinimumPrice)
                 q.Lines.Add(new KeyValuePair<string, int>("The least any house takes", rest));
             else if (rest != 0 && q.Lines.Count > 0)
             {
@@ -153,6 +176,8 @@ namespace DiplomacyIntrigue.Intrigue
             if (head == null || claimant == null) return 50f;
             return Clamp(50f + head.GetRelation(claimant) / 2f, 0f, 100f);
         }
+
+        private static string NameOf(Hero hero) => Statecraft.StatecraftModel.NameOf(hero);
 
         public static string SideName(InternalWar war, bool rising)
             => rising ? (war.Faction == null ? "the rising" : war.Faction.Name.ToString()) : "the crown";
@@ -303,7 +328,11 @@ namespace DiplomacyIntrigue.Intrigue
             var walkedOutOn = InternalWars.LeaderOf(war, !q.ToRising);
             var playerInvolved = q.Buyer == Hero.MainHero || head == Hero.MainHero;
 
-            if (paid) GiveGoldAction.ApplyBetweenCharacters(q.Buyer, head, q.Price, !playerInvolved);
+            if (paid)
+            {
+                GiveGoldAction.ApplyBetweenCharacters(q.Buyer, head, q.Price, !playerInvolved);
+                Statecraft.SkillXp.HouseBought(q.Buyer, clan, q.Price);
+            }
             InternalWars.ChangeSide(state, war, clan, q.ToRising);
             if (walkedOutOn != null && walkedOutOn != head)
                 ChangeRelationAction.ApplyRelationChangeBetweenHeroes(head, walkedOutOn,

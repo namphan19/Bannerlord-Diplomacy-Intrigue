@@ -6,6 +6,7 @@ using DiplomacyIntrigue.Diplomacy;
 using DiplomacyIntrigue.Espionage;
 using DiplomacyIntrigue.Intrigue;
 using DiplomacyIntrigue.Models;
+using DiplomacyIntrigue.Statecraft;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.Election;
@@ -25,7 +26,7 @@ namespace DiplomacyIntrigue.Core
     /// These exist so every system can be inspected and driven before it has any UI.
     /// They are also how the systems get verified in a live campaign.
     /// </summary>
-    public static class DebugCommands
+    public static partial class DebugCommands
     {
         private const string NoCampaign = "Diplomacy & Intrigue: no campaign loaded.";
 
@@ -189,7 +190,7 @@ namespace DiplomacyIntrigue.Core
                 : "Started: " + attempt + ". Cost: "
                   + DiplomacyConstants.FabricateClaimInfluenceCost + " influence, "
                   + DiplomacyConstants.FabricateClaimGoldCost + " denars. Exposure chance: "
-                  + (DiplomacyConstants.FabricateClaimExposureChance * 100f).ToString("0") + "%.";
+                  + (Statecraft.StatecraftTerms.ExposureChance(kingdom, settlement.MapFaction as Kingdom) * 100f).ToString("0") + "%.";
         }
 
         /// <summary>
@@ -737,7 +738,8 @@ namespace DiplomacyIntrigue.Core
                 }
             }
             sb.AppendLine("Decay is " + IntrigueConstants.GrievanceDecayPerDay.ToString("0.00")
-                          + "/day; a record is dropped at zero.");
+                          + "/day at a median steward, times the steward of the house each is held against (design 08 S-6)"
+                          + "; a record is dropped at zero.");
             return sb.ToString();
         }
 
@@ -1163,6 +1165,11 @@ namespace DiplomacyIntrigue.Core
                           + AiDiplomacy.PactValue(state, a, b).ToString("0.0"));
             sb.AppendLine(b.Name + " values an agreement with " + a.Name + " at "
                           + AiDiplomacy.PactValue(state, b, a).ToString("0.0"));
+            sb.AppendLine("Asked by the other, with its envoy's persuasion (design 08 S-3): " + a.Name + " "
+                          + AiDiplomacy.PactValueWhenAsked(state, a, b).ToString("0.0") + " ("
+                          + StatecraftTerms.PersuasionLine(b) + "), " + b.Name + " "
+                          + AiDiplomacy.PactValueWhenAsked(state, b, a).ToString("0.0") + " ("
+                          + StatecraftTerms.PersuasionLine(a) + ")");
 
             sb.AppendLine("Ambition, subtracted above: " + a.Name + " "
                           + (Power.Ambition(a) * DiplomacyConstants.PactWeightAmbition).ToString("0.0")

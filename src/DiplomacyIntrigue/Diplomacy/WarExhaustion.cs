@@ -60,13 +60,13 @@ namespace DiplomacyIntrigue.Diplomacy
                 // Time alone wears both sides down. This is what guarantees that even a
                 // perfectly balanced stalemate eventually ends.
                 var perDay = DiplomacyConstants.ExhaustionPerDayAtWar * rate;
-                war.AddExhaustion(war.Aggressor, perDay);
-                war.AddExhaustion(war.Defender, perDay);
+                Accrue(war, war.Aggressor, perDay);
+                Accrue(war, war.Defender, perDay);
 
                 // Losing ground keeps hurting for as long as the enemy holds it.
-                war.AddExhaustion(war.Aggressor,
+                Accrue(war, war.Aggressor,
                     war.FiefsTakenByDefender * DiplomacyConstants.ExhaustionPerDayPerOccupiedFief * rate);
-                war.AddExhaustion(war.Defender,
+                Accrue(war, war.Defender,
                     war.FiefsTakenByAggressor * DiplomacyConstants.ExhaustionPerDayPerOccupiedFief * rate);
 
                 ApplySiegePressure(war, war.Aggressor, war.Defender, rate);
@@ -95,7 +95,7 @@ namespace DiplomacyIntrigue.Diplomacy
                 if (siege == null) continue;
                 if (siege.BesiegerCamp?.MapFaction != besieger) continue;
 
-                war.AddExhaustion(besieged, DiplomacyConstants.ExhaustionPerDayUnderSiege * rate);
+                Accrue(war, besieged, DiplomacyConstants.ExhaustionPerDayUnderSiege * rate);
             }
         }
 
@@ -144,7 +144,7 @@ namespace DiplomacyIntrigue.Diplomacy
                 DiplomacyConstants.ExhaustionCasualtyMinDivisor,
                 kingdom.CurrentTotalStrength / DiplomacyConstants.ExhaustionCasualtyStrengthDivisor);
 
-            war.AddExhaustion(kingdom, losses / divisor * Settings.Current.WarExhaustionRate);
+            Accrue(war, kingdom, losses / divisor * Settings.Current.WarExhaustionRate);
         }
 
         private static void AddBattleWarScore(WarRecord war, Kingdom attacker, Kingdom defender,
@@ -183,7 +183,7 @@ namespace DiplomacyIntrigue.Diplomacy
                 ? DiplomacyConstants.WarScorePerTownCaptured
                 : DiplomacyConstants.WarScorePerCastleCaptured;
 
-            war.AddExhaustion(formerOwner, exhaustion * Settings.Current.WarExhaustionRate);
+            Accrue(war, formerOwner, exhaustion * Settings.Current.WarExhaustionRate);
             war.AddFiefCapture(captor);
             war.AddWarScore(captor == war.Aggressor ? score : -score);
         }
@@ -197,7 +197,7 @@ namespace DiplomacyIntrigue.Diplomacy
             var war = state.OngoingWarBetween(raider, owner);
             if (war == null) return;
 
-            war.AddExhaustion(owner, DiplomacyConstants.ExhaustionPerVillageRaided * Settings.Current.WarExhaustionRate);
+            Accrue(war, owner, DiplomacyConstants.ExhaustionPerVillageRaided * Settings.Current.WarExhaustionRate);
             war.AddWarScore(raider == war.Aggressor
                 ? DiplomacyConstants.WarScorePerVillageRaided
                 : -DiplomacyConstants.WarScorePerVillageRaided);
@@ -249,6 +249,14 @@ namespace DiplomacyIntrigue.Diplomacy
                 if (entry.Value <= 0f) state.Weariness.RemoveAt(i);
             }
         }
+
+        /// <summary>
+        /// Every accrual goes through here, so no source escapes the ruler's resolve (design 08
+        /// S-1): a realm led by a ruler its vassals follow tires more slowly. The enemy's reading
+        /// of the band is untouched - it reads the value, not the rate.
+        /// </summary>
+        private static void Accrue(WarRecord war, Kingdom kingdom, float amount)
+            => war.AddExhaustion(kingdom, amount * Statecraft.StatecraftTerms.ResolveFactor(kingdom));
 
         private static float Clamp(float v, float min, float max) => v < min ? min : (v > max ? max : v);
     }

@@ -362,7 +362,12 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             CourtLine = playerRules
                 ? "The court of Clan " + ruling.Name + " - your own clan"
                 : playerRebel
+                    // Vanilla's own tabs read the player's map faction, which is the rising, and
+                    // that is kept on purpose (STATUS 2026-09-26): its clans, fiefs and armies are
+                    // the host a rebel actually commands. Said here so the switch is not a surprise.
                     ? "The court of Clan " + ruling.Name + " - you are in arms against " + rulerName
+                      + " (the vanilla tabs show " + (war.Faction == null ? "the rising" : war.Faction.Name.ToString())
+                      + ", your host)"
                     : "The court of Clan " + ruling.Name + " - you serve " + rulerName;
 
             // Crown legitimacy: the pool, the bar, and what last moved it.
@@ -371,6 +376,14 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             LegitimacyAmount = (int)Math.Round(legitimacy);
             LegitimacyColor = CrownColor(CourtBands.CrownOf(legitimacy));
             LegitimacyNote = LastLegitimacyReason(state, kingdom);
+            if (Statecraft.StatecraftModel.Enabled)
+            {
+                // Design 08 S-6: what the steward makes of a year of peace.
+                var steward = Statecraft.StatecraftModel.Actor(kingdom, Statecraft.Portfolio.Steward);
+                var dividend = "A year of peace restores " + LegitimacyRegistry.PeaceDividendOf(kingdom).ToString("0.0")
+                               + (steward == null ? "." : ", at the pace of " + Statecraft.StatecraftModel.Who(steward, TaleWorlds.Core.DefaultSkills.Steward) + ".");
+                LegitimacyNote = string.IsNullOrEmpty(LegitimacyNote) ? dividend : LegitimacyNote + " " + dividend;
+            }
 
             // Blocs, strongest first, with the share of the court each carries.
             var courtBlocs = BlocModel.BlocsOf(state, kingdom);
@@ -427,6 +440,22 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                     ? standingWord + " is low enough that a claimant's faction can gather openly."
                     : "While " + standingWord.ToLowerInvariant() + " holds above " + IntrigueConstants.LegitimacyPretenderThreshold.ToString("0")
                       + ", no faction dares rally to a claim.";
+
+                // Design 08 S-8: a claimant's own Charm, in every house's choice at a succession.
+                if (Statecraft.StatecraftModel.Enabled)
+                {
+                    var charm = new List<string>();
+                    for (var i = 0; i < claims.Count; i++)
+                    {
+                        var claimant = claims[i].Claimant;
+                        if (claimant == null) continue;
+                        charm.Add(Statecraft.StatecraftModel.NameOf(claimant) + " (Charm "
+                                  + claimant.GetSkillValue(TaleWorlds.Core.DefaultSkills.Charm) + ") "
+                                  + Statecraft.StatecraftModel.Signed(Statecraft.StatecraftTerms.Backing(claimant)));
+                    }
+                    if (charm.Count > 0)
+                        SuccessionDetail += " Charm at court, in every house's choice: " + string.Join(", ", charm) + ".";
+                }
             }
             else if (standing > 0)
             {
@@ -472,6 +501,14 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 terms.Add(new DiCourtTermVM("Land they think they merit", e.Fiefs));
                 terms.Add(new DiCourtTermVM("The war weighing on them", e.WarExhaustion));
                 terms.Add(new DiCourtTermVM("The crown's standing", e.Legitimacy));
+                if (Statecraft.StatecraftModel.Enabled)
+                {
+                    var ruler = _selected.Clan.Kingdom?.Leader;
+                    terms.Add(new DiCourtTermVM("The crown's presence"
+                        + (ruler == null ? "" : " (" + ruler.Name + ", Leadership "
+                           + ruler.GetSkillValue(TaleWorlds.Core.DefaultSkills.Leadership) + ")"),
+                        e.Presence));
+                }
                 if (e.ForeignGold != 0f)
                     terms.Add(new DiCourtTermVM("Foreign gold - nobody knows whose", e.ForeignGold));
 
@@ -677,7 +714,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             WeightText = g.Weight.ToString("0.0");
             var days = g.Created.ElapsedDaysUntilNow;
             AgeText = (days < 1f ? "today" : days.ToString("0") + " days ago")
-                      + " - fading by " + IntrigueConstants.GrievanceDecayPerDay.ToString("0.00") + " a day";
+                      + " - fading by " + GrievanceRegistry.FadePerDay(g.Target).ToString("0.000") + " a day";
         }
 
         [DataSourceProperty] public string Title { get; }

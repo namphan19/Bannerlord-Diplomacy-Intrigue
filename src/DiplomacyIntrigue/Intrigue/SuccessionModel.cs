@@ -498,6 +498,11 @@ namespace DiplomacyIntrigue.Intrigue
                     if (claimant == incumbent)
                         score += LoyaltyModel.Of(state, clan) * IntrigueConstants.SuccessionLoyaltyWeight;
 
+                    // Design 08 S-8: the claimant's own Charm, never delegated. It is added to
+                    // every house's score for that claimant, so what counts is how the claimants
+                    // compare, and the realms' median cancels out.
+                    score += Statecraft.StatecraftTerms.Backing(claimant);
+
                     if (score <= best) continue;
                     best = score;
                     backed = claimant;

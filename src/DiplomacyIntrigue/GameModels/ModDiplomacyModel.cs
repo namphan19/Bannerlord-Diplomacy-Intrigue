@@ -87,6 +87,30 @@ namespace DiplomacyIntrigue.GameModels
         }
 
         /// <summary>
+        /// Design 08 A-1: one price for a war. The mod's own Declare war button charges
+        /// <see cref="AiDiplomacy.WarDeclarationCost"/> itself and adds the decision with this cost
+        /// ignored. Any other vanilla route that proposes a war is priced here instead - and this
+        /// call has no target, so it cannot know the casus belli: it charges the conquest-grade
+        /// price, which is what a war with no better claim costs an AI ruler. Vanilla's figure was
+        /// 200, 400 under War Tax.
+        /// </summary>
+        public override int GetInfluenceCostOfProposingWar(Clan proposingClan)
+        {
+            try
+            {
+                if (VanillaDiplomacy.Active && proposingClan?.Kingdom != null)
+                    return AiDiplomacy.WarDeclarationCost(Behaviors.CoreBehavior.State, proposingClan.Kingdom,
+                        CasusBelli.Legitimacy(Models.CasusBelliType.Conquest), proposingClan.Leader);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Override", "GetInfluenceCostOfProposingWar failed; falling back to vanilla.", ex);
+            }
+
+            return base.GetInfluenceCostOfProposingWar(proposingClan);
+        }
+
+        /// <summary>
         /// The one that actually stops the same-day peaces: <c>PeaceBarterable</c> values a
         /// peace offer through this, per clan.
         /// </summary>

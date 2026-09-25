@@ -425,6 +425,13 @@ namespace DiplomacyIntrigue.Core
             Pair(line, "trustIn", others == 0 ? 0f : trustIn / others);
             Pair(line, "trustOut", others == 0 ? 0f : trustOut / others);
             Pair(line, "lastMove", AiDiplomacy.LastMove(k));
+            // Design 08 §12 point 3: each portfolio's actor skill, so a run can track AI drift.
+            Pair(line, "rulerLeadership", SkillOfActor(k, Statecraft.Portfolio.Ruler));
+            Pair(line, "envoyCharm", SkillOfActor(k, Statecraft.Portfolio.Envoy));
+            Pair(line, "stewardSteward", SkillOfActor(k, Statecraft.Portfolio.Steward));
+            Pair(line, "treasurerTrade", SkillOfActor(k, Statecraft.Portfolio.Treasurer));
+            Pair(line, "spymasterRoguery", SkillOfActor(k, Statecraft.Portfolio.Spymaster));
+            Pair(line, "watchScouting", SkillOfActor(k, Statecraft.Portfolio.Watch));
             return line.ToString();
         }
 
@@ -508,6 +515,7 @@ namespace DiplomacyIntrigue.Core
             Pair(line, "rival", -terms.Rival);
             Pair(line, "culture", -terms.Culture);
             Pair(line, "dread", -terms.Dread);
+            Pair(line, "authority", terms.Authority);
             Pair(line, "marks", link.DefianceMarks);
             Pair(line, "revoltLine", Hegemony.SecessionThreshold(state, link));
             Pair(line, "criticalDays", critical);
@@ -563,6 +571,7 @@ namespace DiplomacyIntrigue.Core
                 Pair(line, "schema", state == null ? 0 : state.SchemaVersion);
                 Pair(line, "aggressiveness", Settings.Current.AiAggressiveness);
                 Pair(line, "exhaustionRate", Settings.Current.WarExhaustionRate);
+                Pair(line, "statecraft", Statecraft.StatecraftModel.Enabled);
                 Pair(line, "player", Hero.MainHero);
                 Pair(line, "playerKingdom", Clan.PlayerClan?.Kingdom);
                 Pair(line, "kingdoms", string.Join(",", names.ToArray()));
@@ -575,11 +584,27 @@ namespace DiplomacyIntrigue.Core
                     if (!fields[i].IsLiteral) continue;
                     Log.Info("Telemetry", ConfigPrefix + " " + fields[i].Name + "=" + Value(fields[i].GetValue(null)));
                 }
+                // Design 08: the statecraft weights, so a run records which set it was played with.
+                var statecraftFields = typeof(Statecraft.StatecraftConstants).GetFields(
+                    System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+                for (var i = 0; i < statecraftFields.Length; i++)
+                {
+                    if (!statecraftFields[i].IsLiteral) continue;
+                    Log.Info("Telemetry", ConfigPrefix + " Statecraft." + statecraftFields[i].Name + "="
+                                          + Value(statecraftFields[i].GetValue(null)));
+                }
             }
             catch (Exception ex)
             {
                 Log.Error("Telemetry", "Run header failed.", ex);
             }
+        }
+
+        /// <summary>The skill of whoever holds a realm's portfolio, raw (the Level needs the median beside it).</summary>
+        private static int SkillOfActor(Kingdom kingdom, Statecraft.Portfolio portfolio)
+        {
+            var actor = Statecraft.StatecraftModel.Actor(kingdom, portfolio);
+            return actor == null ? 0 : actor.GetSkillValue(Statecraft.StatecraftModel.SkillOf(portfolio));
         }
 
         private static void AppendWhen(StringBuilder line)

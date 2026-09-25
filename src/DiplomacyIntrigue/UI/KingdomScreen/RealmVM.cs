@@ -5,6 +5,8 @@ using DiplomacyIntrigue.Core;
 using DiplomacyIntrigue.Diplomacy;
 using DiplomacyIntrigue.Intrigue;
 using DiplomacyIntrigue.Models;
+using StatecraftModel = DiplomacyIntrigue.Statecraft.StatecraftModel;
+using StatecraftTerms = DiplomacyIntrigue.Statecraft.StatecraftTerms;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Library;
 
@@ -70,6 +72,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
         /// <summary>The ruler-only counter-intelligence section at the foot of the tab (Phase 3.7).</summary>
         [DataSourceProperty] public DiCounterIntelVM CounterIntel { get; } = new DiCounterIntelVM();
+
+        /// <summary>Who holds each political office of the realm and what their skill moves (design 08 §10).</summary>
+        [DataSourceProperty] public DiStatecraftVM Statecraft { get; } = new DiStatecraftVM();
 
         public DiRealmVM(Action onShow, Action openCourt = null)
         {
@@ -445,6 +450,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         {
             // First, and on its own gate: the section follows the espionage toggle, not diplomacy's.
             CounterIntel.Rebuild();
+            Statecraft.Rebuild();
 
             StandingTitle = "No realm";
             StandingColor = MutedColor;
@@ -619,6 +625,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                         // parties are not in this war at all.
                         + (playerRebel ? "   -   the crown's war, not yours" : ""),
                     "our exhaustion " + war.ExhaustionOf(us).ToString("0.0")
+                        + (StatecraftModel.Enabled
+                            ? " (resolve " + StatecraftModel.Factor(StatecraftTerms.ResolveFactor(us)) + ")"
+                            : "")
                         + "   -   their condition "
                         + ExhaustionBands.Condition(war.ExhaustionOf(enemy)),
                     (score >= 0f ? "+" : "") + score.ToString("0"),
@@ -683,6 +692,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             AddChip(chips, "rival", -t.Rival);
             AddChip(chips, "culture", -t.Culture);
             AddChip(chips, "dread", -t.Dread);
+            AddChip(chips, "authority", t.Authority);
             return chips;
         }
 

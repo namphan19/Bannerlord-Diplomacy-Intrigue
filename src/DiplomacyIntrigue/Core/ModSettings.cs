@@ -38,6 +38,18 @@ namespace DiplomacyIntrigue.Core
         [SettingPropertyGroup(SystemsGroup)]
         public bool EnableEspionage { get; set; } = true;
 
+        /// <summary>
+        /// Design 08 (Phase 2.8). Not a restart setting: off makes every skill term neutral and
+        /// stops the XP grants, and nothing is saved by it, so it can be flipped mid-campaign. That
+        /// is also how S3's control run is made.
+        /// </summary>
+        [SettingPropertyBool("Statecraft", Order = 3, RequireRestart = false,
+            HintText = "Your heroes' skills count in politics: the ruler's Leadership, and the best "
+                       + "Charm, Steward, Trade, Roguery and Scouting in the ruling house. Off, skills "
+                       + "change nothing here and political acts train nothing.")]
+        [SettingPropertyGroup(SystemsGroup)]
+        public bool EnableStatecraft { get; set; } = true;
+
         [SettingPropertyFloatingInteger("War exhaustion rate", 0.25f, 4f, "0.00", Order = 0,
             RequireRestart = false,
             HintText = "Multiplier on how fast wars wear kingdoms down. Higher means shorter wars.")]

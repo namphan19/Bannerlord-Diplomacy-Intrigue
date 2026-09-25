@@ -6,6 +6,7 @@ using DiplomacyIntrigue.Behaviors;
 using DiplomacyIntrigue.Core;
 using DiplomacyIntrigue.Diplomacy;
 using DiplomacyIntrigue.Models;
+using DiplomacyIntrigue.Statecraft;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.ViewModelCollection.KingdomManagement.Diplomacy;
 using TaleWorlds.Core.ViewModelCollection.Information;
@@ -235,6 +236,18 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         }
 
         public override void OnRefresh() => Rebuild();
+
+        /// <summary>
+        /// An action that changes the pair on the spot - a pact signed, tribute agreed, a treaty
+        /// renounced - followed by a rebuild of this row. Vanilla refreshes the list after a war
+        /// or a peace, not after the mod's own treaties, so "Demand tribute" used to leave the row
+        /// reading "Independent" until the screen was reopened (STATUS, found 2026-09-25).
+        /// </summary>
+        private Action Then(Action action) => () =>
+        {
+            action?.Invoke();
+            Rebuild();
+        };
 
         private void Rebuild()
         {
@@ -591,8 +604,12 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         /// </summary>
         private void BuildPactRungs(ModState state, Kingdom us, Kingdom them)
         {
-            var theirValue = (int)AiDiplomacy.PactValue(state, them, us);
-            DiPactValueText = them.Name + " values a pact with you at " + theirValue;
+            var theirValue = (int)AiDiplomacy.PactValueWhenAsked(state, them, us);
+            DiPactValueText = them.Name + " values a pact with you at " + theirValue
+                              + (StatecraftModel.Enabled
+                                  ? ", our envoy's persuasion " + StatecraftModel.Signed(StatecraftTerms.Persuasion(us))
+                                    + " included: " + StatecraftModel.Who(StatecraftModel.Actor(us, Portfolio.Envoy), TaleWorlds.Core.DefaultSkills.Charm)
+                                  : "");
 
             var rungs = new MBBindingList<DiPactRungVM>();
             AddRung(rungs, state, us, them, TreatyType.NonAggressionPact,
@@ -609,13 +626,13 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         {
             var canSign = TreatyRegistry.CanSign(state, us, them, type, out var reason);
             var threshold = (int)DiplomacyMenu.ThresholdFor(type);
-            var cost = DiplomacyConstants.TreatyInfluenceCost(type);
+            var cost = StatecraftTerms.TreatyInfluenceCost(us, type);
             var hint = canSign
                 ? cost + " influence. " + them.Name + " weighs this at " + theirValue
                   + " and needs " + threshold + " - the same number their court would use."
                 : reason;
             rungs.Add(new DiPactRungVM(name, theirValue, threshold, canSign, cost, hint,
-                () => DiplomacyMenu.ProposePact(state, us, them, type)));
+                Then(() => DiplomacyMenu.ProposePact(state, us, them, type))));
         }
 
         // ----- comparison rows (vanilla's list, vanilla's row type) --------------
@@ -806,8 +823,8 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 }
                 else
                 {
-                    var lo = DiplomacyConstants.TreatyInfluenceCost(TreatyType.NonAggressionPact);
-                    var hi = DiplomacyConstants.TreatyInfluenceCost(TreatyType.Alliance);
+                    var lo = StatecraftTerms.TreatyInfluenceCost(us, TreatyType.NonAggressionPact);
+                    var hi = StatecraftTerms.TreatyInfluenceCost(us, TreatyType.Alliance);
                     into.Add(new DiplomacyActionVM("Propose a treaty",
                         "Three rungs, one valuation. See what clears their bar.",
                         0, lo + " - " + hi, true,
@@ -820,16 +837,21 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 var blockedBecause = block == TreatyEnforcement.Block.None
                     ? string.Empty
                     : TreatyEnforcement.Explain(state, us, them, block) + ".";
+                // The figure the proposal is charged: the AI's own war price (design 08 A-1).
+                var warCost = AiDiplomacy.WarDeclarationCostAgainst(state, us, them, Clan.PlayerClan?.Leader);
                 into.Add(new DiplomacyActionVM("Declare war",
                     block == TreatyEnforcement.Block.None
                         ? "Puts it to the court's vote."
                         : blockedBecause,
-                    0, block == TreatyEnforcement.Block.None,
+                    block == TreatyEnforcement.Block.None ? warCost : 0,
+                    block == TreatyEnforcement.Block.None,
                     block == TreatyEnforcement.Block.None
-                        ? "Proposes a war decision the realm votes on - the same thing the"
-                          + " Decisions tab offers. Our treaties are why it may be blocked."
+                        ? "Proposes a war decision the realm votes on, for " + warCost + " influence:"
+                          + " what an AI ruler pays for the same war - 40 x (2 - the casus belli's"
+                          + " legitimacy) x (1 + weariness / 100), a quarter less with Firebrand."
+                          + " Our treaties are why it may be blocked."
                         : blockedBecause,
-                    () => DiplomacyMenu.DeclareWar(state, us, them),
+                    Then(() => DiplomacyMenu.DeclareWar(state, us, them)),
                     DiplomacyActionVM.DangerText));
 
                 var canTribute = AiDiplomacy.CanDemandTribute(state, us, them, out var whyTribute);
@@ -842,7 +864,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                         ? "Coercion, not negotiation: our claim makes the pretext and our"
                           + " strength makes the argument - the same demand the AI makes."
                         : whyTribute ?? "Not possible now.",
-                    () => DiplomacyMenu.DemandTribute(state, us, them)));
+                    Then(() => DiplomacyMenu.DemandTribute(state, us, them))));
 
                 if (ourLink == null)
                 {
@@ -934,18 +956,18 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                     + (-DiplomacyConstants.TrustTreatyBrokenObserver).ToString("0")
                     + " with every other court. Always possible, never free: breaking a treaty "
                     + "on purpose is a story beat, not an accident. They gain a reason for war.",
-                    () => DiplomacyMenu.BreakTreaty(state, us, them),
+                    Then(() => DiplomacyMenu.BreakTreaty(state, us, them)),
                     DiplomacyActionVM.DangerText));
             }
 
             into.Add(new DiplomacyActionVM("Fabricate a claim",
                 DiplomacyConstants.FabricateClaimDurationDays + " days and "
                 + DiplomacyConstants.FabricateClaimGoldCost + " denars, "
-                + (DiplomacyConstants.FabricateClaimExposureChance * 100f).ToString("0")
+                + (StatecraftTerms.ExposureChance(us, them) * 100f).ToString("0")
                 + "% chance of exposure.",
                 DiplomacyConstants.FabricateClaimInfluenceCost, true,
-                "A " + (DiplomacyConstants.FabricateClaimExposureChance * 100f).ToString("0")
-                + "% chance of being caught, which damages relations with every court and hands "
+                "A " + StatecraftTerms.ExposureLine(us, them)
+                + ". Being caught damages relations with every court and hands "
                 + "the target a claim of their own.",
                 () => DiplomacyMenu.ShowFabricationTargets(state, us, them)));
         }

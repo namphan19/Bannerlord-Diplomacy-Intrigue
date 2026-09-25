@@ -316,7 +316,12 @@ namespace DiplomacyIntrigue.UI.Negotiation
             TermsHeader = _weAreWinner ? "What you demand" : "What you offer";
             PriceHeader = _weAreWinner ? "price" : "worth";
             BudgetNote = "Above the cliff a winner asks for standing, not coin. Below it,"
-                         + " only for what coin can buy.";
+                         + " only for what coin can buy."
+                         // Design 08 S-2: the budget is the score as the envoys argued it.
+                         + (budget > 0f && Statecraft.StatecraftModel.Enabled
+                             ? " " + Statecraft.StatecraftTerms.NegotiationLine(winner, loser)
+                               + " (war score " + _war.ScoreFor(winner).ToString("0") + ")."
+                             : "");
 
             var cliff = PeaceTable.SubjugationCost;
             ShowCliff = budget >= cliff;

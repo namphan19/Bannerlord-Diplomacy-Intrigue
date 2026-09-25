@@ -84,11 +84,17 @@ namespace DiplomacyIntrigue.Diplomacy
         /// <summary>
         /// Points the winner has earned in this war. Zero when they are not ahead, which is
         /// what makes a white peace the only option in a stalemate.
+        ///
+        /// Design 08 S-2: the score is what the winner earned, the budget is what its envoy can
+        /// argue for against the loser's. The white-peace floor reads the raw score, so a
+        /// stalemate stays a stalemate however good the envoys are.
         /// </summary>
         public static float BudgetFor(WarRecord war, Kingdom winner)
         {
             var score = war.ScoreFor(winner);
-            return score <= DiplomacyConstants.PeaceWhitePeaceOnlyBelow ? 0f : score;
+            return score <= DiplomacyConstants.PeaceWhitePeaceOnlyBelow
+                ? 0f
+                : score * Statecraft.StatecraftTerms.NegotiationFactor(winner, war.Other(winner));
         }
 
         /// <summary>The subjugation package: the top rung plus the prisoners it always carries.</summary>
@@ -376,7 +382,11 @@ namespace DiplomacyIntrigue.Diplomacy
             // They concede roughly what their defeat justifies, plus a margin - nobody
             // signs away exactly the arithmetic, and the grace keeps the AI from rejecting
             // an offer over a rounding error.
-            var tolerance = scoreAgainstThem * (1f + DiplomacyConstants.PeaceAcceptanceGrace);
+            // The tolerance reads the same argument the budget does (design 08 S-2), so a loser
+            // out-talked at the table concedes what the winner's budget can buy.
+            var tolerance = scoreAgainstThem
+                            * Statecraft.StatecraftTerms.NegotiationFactor(terms.Winner, loser)
+                            * (1f + DiplomacyConstants.PeaceAcceptanceGrace);
             var cost = CostOf(terms);
             if (cost > tolerance)
             {
@@ -452,6 +462,10 @@ namespace DiplomacyIntrigue.Diplomacy
             var winner = terms.Winner;
             var loser = terms.Loser;
             var summary = terms.ToString();
+            // Read before the peace closes the record: a dormant war ends by indifference, and
+            // nobody's envoy earned anything by it (design 08 §6).
+            var dormant = IsDormant(war);
+            var packageCost = CostOf(terms);
 
             // Peace first: it closes the war record, carries exhaustion into weariness, and
             // records the truce. The terms are then executed between kingdoms at peace,
@@ -472,6 +486,8 @@ namespace DiplomacyIntrigue.Diplomacy
             ImposeTribute(state, terms);
             DissolveSphere(state, terms);
             ImposeSubmission(state, terms);
+
+            if (!dormant) Statecraft.SkillXp.PeaceSigned(winner, loser, packageCost);
 
             Log.Info("Peace", winner.Name + " and " + loser.Name + " made peace: " + summary + ".");
             return true;
@@ -630,6 +646,7 @@ namespace DiplomacyIntrigue.Diplomacy
                     + ", and we will not settle for less than "
                     + MinimumAcceptable(state, war, winner).ToString("0")
                     + " (dearest reachable: " + DearestDemandable(state, war, winner).ToString("0") + ").",
+                "  " + Statecraft.StatecraftTerms.NegotiationLine(winner, loser),
                 "  town              " + DiplomacyConstants.PeaceCostTown.ToString("0")
                     + (hasClaim ? "" : "   (blocked: no territorial claim)"),
                 "  castle            " + DiplomacyConstants.PeaceCostCastle.ToString("0")

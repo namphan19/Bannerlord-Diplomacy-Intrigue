@@ -236,7 +236,9 @@ namespace DiplomacyIntrigue.Diplomacy
                     continue;
                 }
 
-                if (MBRandom.RandomFloat < DiplomacyConstants.FabricateClaimExposureChance)
+                // Design 08 S-5: the fabricator's spymaster against the target's watch, read as the
+                // claim resolves - the prompt showed the same function with the actors of its day.
+                if (MBRandom.RandomFloat < Statecraft.StatecraftTerms.ExposureChance(attempt.Claimant, target))
                     Expose(state, attempt, target);
                 else
                     Succeed(state, attempt, target);
@@ -249,6 +251,7 @@ namespace DiplomacyIntrigue.Diplomacy
                 CampaignTime.YearsFromNow(DiplomacyConstants.ClaimLifetimeYears),
                 attempt.Target, fabricated: true);
 
+            Statecraft.SkillXp.ClaimFabricated(attempt.Claimant);
             Log.Info("Claims", attempt.Claimant.Name + " fabricated a claim on " + attempt.Target.Name + ".");
         }
 
@@ -285,6 +288,7 @@ namespace DiplomacyIntrigue.Diplomacy
             if (Core.Settings.Current.EnableIntrigue)
                 Intrigue.LegitimacyRegistry.OnCaughtFabricating(state, fabricator);
 
+            Statecraft.SkillXp.ClaimExposed(fabricator, target);
             Log.Info("Claims", fabricator.Name + " was caught fabricating a claim on "
                                + attempt.Target.Name + " - relations damaged with every kingdom.");
         }

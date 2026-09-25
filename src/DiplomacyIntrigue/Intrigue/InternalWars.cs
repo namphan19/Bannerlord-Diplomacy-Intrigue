@@ -898,8 +898,8 @@ namespace DiplomacyIntrigue.Intrigue
             }
 
             var rate = Settings.Current.WarExhaustionRate;
-            war.AddExhaustion(true, DiplomacyConstants.ExhaustionPerDayAtWar * rate);
-            war.AddExhaustion(false, DiplomacyConstants.ExhaustionPerDayAtWar * rate);
+            Accrue(war, true, DiplomacyConstants.ExhaustionPerDayAtWar * rate);
+            Accrue(war, false, DiplomacyConstants.ExhaustionPerDayAtWar * rate);
 
             var claimantHeld = HeldBy(war.Claimant, kingdom);
             var rulerHeld = HeldBy(kingdom.Leader, faction);
@@ -962,8 +962,8 @@ namespace DiplomacyIntrigue.Intrigue
                 var crownLosses = rebelsAttacked ? mapEvent.DefenderSide.TroopCasualties : mapEvent.AttackerSide.TroopCasualties;
 
                 SideStrength(war, out var rebelStrength, out var crownStrength);
-                war.AddExhaustion(true, CasualtyExhaustion(rebelLosses, rebelStrength));
-                war.AddExhaustion(false, CasualtyExhaustion(crownLosses, crownStrength));
+                Accrue(war, true, CasualtyExhaustion(rebelLosses, rebelStrength));
+                Accrue(war, false, CasualtyExhaustion(crownLosses, crownStrength));
 
                 Log.Info("InternalWar", war.Kingdom.Name + ": " + mapEvent.EventType + ", rebels lost " + rebelLosses
                                         + ", crown lost " + crownLosses + " -> exhaustion rebels "
@@ -972,6 +972,14 @@ namespace DiplomacyIntrigue.Intrigue
                 return;
             }
         }
+
+        /// <summary>
+        /// Each side tires at its own leader's resolve (design 08 S-1): the ruler's for the crown,
+        /// the claimant's for the rising - the same term a war between kingdoms applies.
+        /// </summary>
+        private static void Accrue(InternalWar war, bool rebelSide, float amount)
+            => war.AddExhaustion(rebelSide,
+                amount * Statecraft.StatecraftTerms.ResolveFactor(LeaderOf(war, rebelSide)));
 
         private static float CasualtyExhaustion(int losses, float strength)
         {
@@ -1139,6 +1147,10 @@ namespace DiplomacyIntrigue.Intrigue
 
             Log.Info("InternalWar", (kingdom?.Name?.ToString() ?? "?") + ": the internal war ends - " + outcome
                                     + " (" + reason + "). " + war);
+
+            // Design 08 §6: the leader who carried the war to its end.
+            if (outcome == InternalWarOutcome.RebelsWon) Statecraft.SkillXp.InternalWarWon(war.Claimant);
+            else if (outcome == InternalWarOutcome.CrownWon) Statecraft.SkillXp.InternalWarWon(oldRuler);
 
             if (kingdom == null || !kingdom.IsRealm()) return;
 
