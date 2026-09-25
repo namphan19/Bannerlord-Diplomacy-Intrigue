@@ -21,6 +21,23 @@ namespace DiplomacyIntrigue.Behaviors
         {
             CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
             CampaignEvents.WeeklyTickEvent.AddNonSerializedListener(this, OnWeeklyTick);
+            CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
+        }
+
+        /// <summary>
+        /// A bribe offer left open when the last campaign closed must not block the next one:
+        /// the guard is static, and the inquiry it guarded is gone.
+        /// </summary>
+        private void OnSessionLaunched(CampaignGameStarter starter)
+        {
+            try
+            {
+                Missions.Reset();
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Espionage", "Resetting the espionage guards failed.", ex);
+            }
         }
 
         // Networks live in ModState, owned by CoreBehavior.

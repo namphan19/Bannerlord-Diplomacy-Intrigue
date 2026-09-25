@@ -483,7 +483,9 @@ Playable target: *information and subversion are a third way to fight.*
 
 **3.5 Cross-pillar payoffs** — `BribeLord` feeds Phase 2 defection; `ForgeLetters` manufactures grievances; `ReadCourt` reveals pending kingdom decisions. *Built 2026-09-25 and compiled clean against the v1.4.8 reference assemblies; **not run in game**. A bribed house loses 20 loyalty for two years and takes the rising's side if an internal war starts in that window; forged letters are a weight-8 grievance on a house the player picks; a live ReadCourt fills the Encyclopedia's ledger with exact figures. The lead's three calls and the check list are in design/03 §9-§10.*
 
-**3.6 Espionage UI** — network map, mission board, running operations.
+**3.6 AI espionage** *(design/03 §8's numbering; this entry was missing here)* — AI realms running their own networks, counter-intelligence and operations under the player's rules. *Built 2026-09-25 and compiled clean; **not run in game**. One network per AI ruling house against a clear rival, operations only at ≤10% exposure, assassination only at war on a field commander, and an AI bribe reaching the player's house becomes an offer (the lead's calls, design/03 §9 decisions 11-13). A handler is kept from governorships by a GameModel override, unverified against vanilla's AI.*
+
+**3.7 Espionage UI** — network map, mission board, running operations.
 
 **Acceptance:** a player can flip a border lord through bribery, and a caught operation drags them into a war they did not choose.
 

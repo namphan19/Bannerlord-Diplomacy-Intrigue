@@ -1,7 +1,7 @@
 # Design 03 — Espionage
 
 Status: **decided and in build** - the lead's decisions are §9, what is built is §10 (3.1, 3.2
-and 3.4 on 2026-09-25, verified live; 3.5 and 3.3 the same day, compiled but not yet run in game). Phase 3. Depends on Phase 1 (claims, treaties, trust) and
+and 3.4 on 2026-09-25, verified live; 3.5, 3.3 and 3.6 the same day, compiled but not yet run in game). Phase 3. Depends on Phase 1 (claims, treaties, trust) and
 Phase 2 (grievances, loyalty) already existing — espionage in this design is mostly a way to
 *reach into* those systems, not a separate scoreboard.
 
@@ -184,6 +184,14 @@ And two before 3.3's, the same day:
 | 9 | Who pays a realm's counter-intelligence budget? | **Whoever rules**, from their own purse - the purse that pays the troops, which is §3's trade-off. One budget per realm; it outlives a change of ruler. A vassal cannot contribute |
 | 10 | §3's "security focus × 5, a policy slot the AI also uses" | **Dropped.** Vanilla has no such policy, and the ones that raise security already reach counter-intelligence through the security term; a second term would count them twice |
 
+And three before 3.6's:
+
+| # | Question | Decision |
+|---|---|---|
+| 11 | Does the AI assassinate? | **Only at war, and only a commander in the field** - the leader of their largest army. Never a ruler, never anyone of the player's house |
+| 12 | An AI bribe that reaches the player's own house? | **The player is asked.** Take the gold and the house is bought like any other; refuse and the operation fails. Only the player decides for the player's house |
+| 13 | How busy is the AI? | **Clear rivals only.** One network per AI ruling house, aimed at a realm it is at war with, claims, is claimed by, or a stronger neighbour; spent only from a purse with room to spare; launched only when the overall chance of being caught is at most 10% |
+
 ### The questions as they were asked
 
 1. **Assassination at all?** It is in the enum and specced above, but it is the one mission
@@ -313,8 +321,10 @@ Built in a cloud session with no game. It compiles clean against the v1.4.8 refe
 - **A bribe binds the head who took it.** It lapses early if that lord stops heading the house
   (death, succession) or the house leaves the realm. The heir took nothing.
 - Several bribes on one house do not stack: it is bought or not. A second purse only extends the window.
-- The 25,000 is spent, not handed to the lord's purse. §2 prices every mission as a cost paid up
-  front, and a bribe that moved gold into the target's treasury would make it a transfer as well.
+- ~~The 25,000 is spent, not handed to the lord's purse.~~ **Revised in 3.6:** on success the gold
+  reaches the lord who took it. Spent on nobody, a bribe offered to the player (decision 12) would
+  have been an offer with nothing in it. The reason first given - that a transfer would be a second
+  effect - did not hold up once the player could be the one asked.
 - The -20 is a flat loyalty term, not a grievance: a bought lord has been paid, not wronged.
 - The victim's court is told a bribe landed ("foreign gold has reached ...") and sees the term on the
   Court tab, never the buyer - the lead's decision 2. The forged grievance is labelled
@@ -381,3 +391,70 @@ to provide; whether it is enough is for a run with AI budgets in it, after 3.6.
 4. Save and reload with a budget set: `counter_intelligence` must still read it - **the first run of
    a new savable type**, so load the save in a fresh process, not only the same session.
 5. The real weekly tick, not the lever: one budget paid on the campaign's own clock.
+
+### 3.6, the AI - built and compiled, NOT run in game, 2026-09-25
+
+Built in the same cloud session, with no game: 0 warnings against the v1.4.8 reference assemblies.
+**Nothing below has been seen in game.**
+
+| Piece | Where |
+|---|---|
+| The plan - threat and counter-intelligence order, rivals scored, the target, the handler, the budget, every operation considered and why it was or was not chosen - and its execution through the player's own calls | `Espionage/AiEspionage.cs` |
+| Its constants, every one a first guess | `EspionageConstants`, "The AI" |
+| First in the one weekly list, so its orders are paid and its handler grows the network the same week | `Espionage/EspionageUpkeep.Weekly` |
+| A handler cannot be made a governor (the 3.1 blocker) | `GameModels/ModClanPoliticsModel.cs` - a model, not a patch |
+| An AI bribe reaching the player's house becomes an offer; a bribe's gold reaches the lord | `Missions.OfferBribeToPlayer`, `Missions.ApplyEffect` |
+| Lever | `diplomacy.ai_espionage [kingdom]` - the plan, printed from the object the weekly run executes; a dry run |
+
+**How it chooses, in one place:**
+- *Counter-intelligence:* threat = wars being fought + 2 x intrusions caught (live EspionageExposed
+  claims the realm holds); order 1,500 per point of threat, at most 3% of the purse above a 50,000
+  reserve and at most 9,000. A court cannot see networks nobody has caught, so it does not react to them.
+- *Target:* at war 3, we claim their land 2, they claim ours 1, a stronger neighbour 1; a realm bound
+  to us by a pact, defensive pact, alliance or vassalage is never a target (a truce is). The network
+  stays on its target while that realm still scores, rather than moving each week to whoever scores
+  higher.
+- *Handler:* the free house member with the highest ceiling; budget 4% of the purse above the
+  reserve, at most 6,000 a week.
+- *Operations,* at most one per network, none for 14 days after the last resolves, and each through
+  `Missions.CanLaunch`, paid from the purse above the reserve, and only at an overall exposure of 10%
+  or less: BribeLord and ForgeLetters against a shaky crown (legitimacy under 50, or a standing
+  pretender) - the least loyal head under 40 for a bribe, a head at 25-45 for letters; SpreadDissent
+  and StealTreasury at war or with a land claim; SabotageGarrison on a fief our own realm is
+  besieging; Assassinate at war on their largest army's commander, with twice its price to spare.
+- *Never:* ScoutArmies and ReadCourt - the AI already reads the numbers they sell, an asymmetry the
+  project had before espionage; ForgeLetters on the player's house - a player cannot be deceived by
+  letters they never received.
+- *Winding down:* a house that no longer rules - or any AI house that is not a ruling one - stops
+  paying and recalls its handler at the next weekly run (decision 5). **This undoes, within a week,
+  any network a test lever gives an AI vassal house**, such as Urkhunait's in the 3.1/3.2 checks: test
+  missions from an AI vassal must be resolved before the weekly tick, or run from a ruling house.
+
+**Decided in building, not by the lead:** every threshold and share above; the 14-day rest; the
+threat measure; keeping a network on a target that still scores; and the handler rule below.
+
+**The handler blocker, honestly:** `ModClanPoliticsModel.CanHeroBeGovernor` returns false for a
+hero running a network. It is virtual in v1.4.8, but whether vanilla's AI governor assignment asks
+it is **not known** - the reference assemblies carry no method bodies. Nothing in v1.4.8's models
+answers "may this hero lead a party", so a handler raised to command a party is still released by
+the daily check and replaced by the AI at its next weekly run. `DiplomacyModel.GetHeroCommandingStrengthForClan`
+looked close and was left alone: what vanilla uses it for is unknown here, and a guess could move clan
+strength everywhere it is read.
+
+**By hand, not measured:** at the AI's 6,000 cap and roguery 50 against a counter-intelligence of
+12.6, a network gains about 1.34 a week - some 22 weeks to the 30 SpreadDissent needs and 34 to the 45
+of a bribe. An AI operation is therefore a year-two event at the earliest; whether it happens at all
+is for a long run.
+
+**What to check in game** (none done yet):
+1. `diplomacy.ai_espionage` on a rich save: each realm's plan reads sensibly - rivals, target, a
+   handler found, budgets inside the purse.
+2. `test_network_week` once: each plan executed - a handler posted and teleported, budgets set, the log's
+   "sets X to spy on Y" lines - then `diplomacy.networks` and `counter_intelligence` agree.
+3. **The governor question:** a few weeks on the real clock (`test_set_speed`), then check whether any
+   AI handler was made a governor. If one was, `CanHeroBeGovernor` is not what vanilla asks.
+4. An AI bribe on the player's house: player as a vassal of a shaky realm, `test_set_network` on the AI
+   ruler's network there, `test_launch_mission <AI ruling house> | <realm> | BribeLord | <player>`,
+   `test_resolve_mission ... | success` - the inquiry opens; both answers; the gold on acceptance.
+5. A long AI-only run with `ai_week` / the real clock: how many networks, operations and exposures a
+   year, and whether exposures start wars. That run also answers 3.3's balance question.

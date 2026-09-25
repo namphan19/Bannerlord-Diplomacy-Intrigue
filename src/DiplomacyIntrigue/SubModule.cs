@@ -189,6 +189,10 @@ namespace DiplomacyIntrigue
             // other's armies. Inert while no internal war runs, so registered unconditionally
             // like the diplomacy models above.
             starter.AddModel(new ModArmyManagementModel());
+
+            // Espionage's one model (3.6): a hero running a spy network is not offered as a
+            // governor. Checks the pillar's toggle per call, like the models above.
+            starter.AddModel(new ModClanPoliticsModel());
             Log.Info("SubModule", "Game models registered: kingdom decisions, peace, alliances, "
                                   + "trade agreements, armies.");
         }

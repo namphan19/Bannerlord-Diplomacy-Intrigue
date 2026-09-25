@@ -158,5 +158,79 @@ namespace DiplomacyIntrigue.Espionage
 
         /// <summary>The top of §3's 0-100 scale.</summary>
         public const float CounterIntelligenceMax = 100f;
+
+        // ----- The AI (step 3.6) -----------------------------------------------------
+        //
+        // The lead's calls of 2026-09-25 (design 03 §9, decisions 11-13): an AI ruling house runs
+        // at most one network, aimed at a clear rival, spends only a purse with room to spare, and
+        // acts only when the chance of being caught is low. Every number below is a first guess.
+
+        /// <summary>What an AI ruler keeps back before spending anything on espionage. UN-TUNED.</summary>
+        public const int AiGoldReserve = 50000;
+
+        /// <summary>Share of the purse above the reserve an AI ruler puts into its network each week. UN-TUNED.</summary>
+        public const float AiNetworkBudgetShare = 0.04f;
+
+        /// <summary>
+        /// The most an AI ruler spends on its network in a week. UN-TUNED. By hand: at roguery 50
+        /// against a counter-intelligence of 12.6, 6,000 buys 3.75, less 1.01 of counter-intelligence,
+        /// 0.7 of attrition and 0.7 of daily decay - about +1.34 a week, so ~22 weeks to the 30 dissent
+        /// needs and ~34 to the 45 a bribe needs. Slow on purpose (§1), but a balance run should say
+        /// whether an AI ever gets there.
+        /// </summary>
+        public const int AiNetworkBudgetCap = 6000;
+
+        /// <summary>Counter-intelligence ordered per point of threat (a war is 1, a caught intrusion 2). UN-TUNED.</summary>
+        public const int AiCounterBudgetPerThreat = 1500;
+        public const float AiCounterThreatPerWar = 1f;
+        public const float AiCounterThreatPerExposure = 2f;
+
+        /// <summary>Share of the purse above the reserve an AI ruler will put into counter-intelligence. UN-TUNED.</summary>
+        public const float AiCounterBudgetShare = 0.03f;
+
+        /// <summary>The most an AI ruler orders for counter-intelligence in a week. UN-TUNED.</summary>
+        public const int AiCounterBudgetCap = 9000;
+
+        /// <summary>
+        /// The overall chance of exposure an AI accepts to launch - (1 - success) x exposure on
+        /// failure, the figure the mission board shows. 10%, the lead's call (decision 13). UN-TUNED.
+        /// </summary>
+        public const float AiMaxExposure = 0.10f;
+
+        /// <summary>Days an AI network waits after one operation resolves before the next. UN-TUNED.</summary>
+        public const int AiMissionCooldownDays = 14;
+
+        /// <summary>
+        /// How much of a rival a realm is: at war 3, holding a territorial claim on them 2, claimed
+        /// by them 1, a stronger neighbour 1. A realm bound to us by a pact, an alliance or vassalage
+        /// is never a target. The best score of at least 1 gets the network. UN-TUNED.
+        /// </summary>
+        public const float AiTargetScoreWar = 3f;
+        public const float AiTargetScoreClaim = 2f;
+        public const float AiTargetScoreClaimedBy = 1f;
+        public const float AiTargetScoreStrongerNeighbour = 1f;
+        public const float AiTargetMinScore = 1f;
+
+        /// <summary>Proximity (1 next door, 0 across the map) above which a stronger realm counts as a neighbour. UN-TUNED.</summary>
+        public const float AiNeighbourProximity = 0.5f;
+
+        /// <summary>
+        /// A court worth subverting: crown legitimacy below this, or a standing pretender. Bribes and
+        /// forgeries aim at a civil war, and a secure crown does not have one coming. UN-TUNED.
+        /// </summary>
+        public const float AiSubvertLegitimacy = 50f;
+
+        /// <summary>A house head the AI will bribe: loyalty below this. UN-TUNED.</summary>
+        public const float AiBribeMaxLoyalty = 40f;
+
+        /// <summary>A house head the AI sends forged letters to: loyalty in this band, close enough to the defection line for 8 of grievance (x1.5) to push it over. UN-TUNED.</summary>
+        public const float AiForgeMinLoyalty = 25f;
+        public const float AiForgeMaxLoyalty = 45f;
+
+        /// <summary>StealTreasury only when the take is at least this many times its price. UN-TUNED.</summary>
+        public const float AiStealMinReturn = 3f;
+
+        /// <summary>Assassinate only when the purse above the reserve holds this many times its price. UN-TUNED.</summary>
+        public const float AiAssassinateGoldMultiple = 2f;
     }
 }

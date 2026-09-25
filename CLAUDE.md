@@ -242,7 +242,8 @@ who would stand at the next succession), and `court_bands` (a court exactly as i
 Encyclopedia page describes it: bands only, plus the exact ledger while the player's house holds a
 live ReadCourt on that realm). Espionage: `diplomacy.networks`, `mission_odds <clan> | <kingdom>`, `missions`, `bribes` (every
 bribe still on the record and whether it binds anybody), `counter_intelligence [kingdom]` (every
-realm's defence term by term), and the levers `test_set_network`, `test_counter_budget <kingdom> | <denars>`,
+realm's defence term by term), `ai_espionage [kingdom]` (each AI realm's espionage plan for the week,
+a dry run), and the levers `test_set_network`, `test_counter_budget <kingdom> | <denars>`,
 `test_launch_mission <clan> | <kingdom> | <type> [| settlement or hero]` and
 `test_resolve_mission <clan> | <kingdom> [| success|failure|exposed]`.
 Civil war: `diplomacy.internal_wars`, and

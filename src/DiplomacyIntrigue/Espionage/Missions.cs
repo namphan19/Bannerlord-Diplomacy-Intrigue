@@ -359,9 +359,30 @@ namespace DiplomacyIntrigue.Espionage
             else if (MBRandom.RandomFloat < odds.Success) outcome = MissionOutcome.Success;
             else outcome = MBRandom.RandomFloat < odds.ExposureOnFailure ? MissionOutcome.Exposed : MissionOutcome.Failure;
 
+            var note = " (success was " + Pct(odds.Success) + ", exposure on failure " + Pct(odds.ExposureOnFailure)
+                       + (forced.HasValue ? ", outcome forced by a test lever" : "") + ")";
+
+            // A bribe that reaches the player's own house is the player's to take or refuse (the
+            // lead's call for 3.6, design 03 §9 decision 12). For an AI lord the successful roll is
+            // the lord taking the gold; for the player, the roll only gets the offer to them. It
+            // stays pending until they answer: an inquiry stops the clock, and a save made while it
+            // is open reloads with the operation still due, so it is simply asked again.
+            if (outcome == MissionOutcome.Success && mission.Type == SpyMissionType.BribeLord
+                && mission.TargetHero != null && mission.TargetHero == Hero.MainHero)
+            {
+                if (!_askingPlayer) OfferBribeToPlayer(state, mission, note);
+                return MissionOutcome.Pending;
+            }
+
+            Conclude(state, mission, network, outcome, note);
+            return outcome;
+        }
+
+        /// <summary>Everything after the roll: the record, the network's cost, and the effect.</summary>
+        private static void Conclude(ModState state, SpyMission mission, SpyNetwork network, MissionOutcome outcome, string note)
+        {
             mission.Resolve(outcome);
-            Log.Info("Espionage", "Resolved: " + mission + " (success was " + Pct(odds.Success) + ", exposure on failure "
-                                  + Pct(odds.ExposureOnFailure) + (forced.HasValue ? ", outcome forced by a test lever" : "") + ").");
+            Log.Info("Espionage", "Resolved: " + mission + note + ".");
 
             switch (outcome)
             {
@@ -378,7 +399,79 @@ namespace DiplomacyIntrigue.Espionage
                     Exposure.Apply(state, mission, network);
                     break;
             }
-            return outcome;
+        }
+
+        // ----- A bribe offered to the player ---------------------------------------
+
+        private static bool _askingPlayer;
+
+        /// <summary>Clears the one-at-a-time guard; a new campaign or a load must not inherit an unanswered question.</summary>
+        public static void Reset() => _askingPlayer = false;
+
+        /// <summary>
+        /// A foreign network's agents reach the player's house with gold. Taking it is the same
+        /// bargain an AI lord makes: the gold, and while it holds, loyalty -20 and the rising's side
+        /// if the realm goes to war with itself. Refusing turns the agents away, and the operation
+        /// is a failure like any other.
+        /// </summary>
+        private static void OfferBribeToPlayer(ModState state, SpyMission mission, string note)
+        {
+            _askingPlayer = true;
+            var realm = mission.Target;
+            var buyer = mission.Owner;
+            var buyerRealm = buyer.Kingdom;
+            var body = "Agents of " + buyer.Name + (buyerRealm != null ? " of " + buyerRealm.Name : "")
+                       + " offer you " + mission.GoldPaid.ToString("N0") + " denars."
+                       + Environment.NewLine + Environment.NewLine
+                       + "In return, if " + realm.Name + " goes to war with itself in the next two years, your house stands with "
+                       + "the rising against " + realm.Leader?.Name + ". While the bargain holds, your house's loyalty to the crown "
+                       + "is " + EspionageConstants.BribeLoyaltyLoss.ToString("0") + " lower, where your court can see it - though "
+                       + "not whose gold it was.";
+
+            try
+            {
+                InformationManager.ShowInquiry(new InquiryData(
+                    "Foreign gold",
+                    body,
+                    true, true,
+                    "Take " + mission.GoldPaid.ToString("N0"), "Turn them away",
+                    () => AnswerBribe(state, mission, true, note),
+                    () => AnswerBribe(state, mission, false, note)), true);
+            }
+            catch (Exception ex)
+            {
+                _askingPlayer = false;
+                Log.Error("Espionage", "Could not show the bribe offer to the player.", ex);
+            }
+        }
+
+        /// <summary>Runs from the UI, outside any campaign handler's try, so it catches its own.</summary>
+        private static void AnswerBribe(ModState state, SpyMission mission, bool accepted, string note)
+        {
+            try
+            {
+                _askingPlayer = false;
+                if (!mission.IsPending) return;
+
+                // The answer can come after the world moved: the same checks the roll made.
+                var network = SpyNetworks.Get(state, mission.Owner, mission.Target);
+                if (network == null || network.Handler == null || network.Handler != mission.Handler
+                    || !IsHouseHead(mission.TargetHero, mission.Target, out _))
+                {
+                    mission.Resolve(MissionOutcome.Failure);
+                    Log.Info("Espionage", "The bribe offered to the player lapsed before the answer: " + mission + ".");
+                    if (accepted) Log.Notify("The agents are gone - the offer no longer stands.", Colors.Red);
+                    return;
+                }
+
+                if (!accepted) Log.Info("Espionage", "The player turned away " + mission.Owner.Name + "'s agents.");
+                Conclude(state, mission, network, accepted ? MissionOutcome.Success : MissionOutcome.Failure,
+                         note + (accepted ? ", taken by the player" : ", refused by the player"));
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Espionage", "Answering the bribe offer failed.", ex);
+            }
         }
 
         // ----- Effects --------------------------------------------------------
@@ -443,6 +536,11 @@ namespace DiplomacyIntrigue.Espionage
                     // Resolve has already checked that the lord still heads a house of this court.
                     var lord = mission.TargetHero;
                     var clan = lord.Clan;
+
+                    // The gold paid at launch reaches the lord who took it. Revised in 3.6: 3.5 left
+                    // it spent on nobody, which made a bribe an offer with nothing in it the moment
+                    // the player was the one asked (design 03 §10).
+                    lord.ChangeHeroGold(mission.GoldPaid);
                     Log.Info("Espionage", clan.Name + " of " + target.Name + " is bought by " + mission.Owner.Name
                                           + " for " + EspionageConstants.BribeWindowDays + " days: loyalty -"
                                           + EspionageConstants.BribeLoyaltyLoss.ToString("0") + " (now "
@@ -450,8 +548,12 @@ namespace DiplomacyIntrigue.Espionage
                                           + "), and it takes the rising's side if the realm goes to war with itself.");
                     TellOwner(mission, lord.Name + " has taken our gold. " + clan.Name + " will stand against "
                                        + target.Leader?.Name + " if " + target.Name + " goes to war with itself in the next two years.");
-                    TellVictim(mission, "Foreign gold has reached " + clan.Name + ". Its loyalty to the crown has fallen, "
-                                        + "and nobody can say whose gold it was.");
+                    if (lord == Hero.MainHero)
+                        Log.Notify("You took " + mission.GoldPaid.ToString("N0") + " denars from agents of " + mission.Owner.Name
+                                   + ". For two years your house stands with any rising against " + target.Leader?.Name + ".", Colors.Yellow);
+                    else
+                        TellVictim(mission, "Foreign gold has reached " + clan.Name + ". Its loyalty to the crown has fallen, "
+                                            + "and nobody can say whose gold it was.");
                     break;
                 }
                 case SpyMissionType.ForgeLetters:

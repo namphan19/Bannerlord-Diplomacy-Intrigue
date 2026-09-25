@@ -2425,9 +2425,38 @@ namespace DiplomacyIntrigue.Core
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
             EspionageUpkeep.Weekly(state);
-            return "Ran the weekly espionage upkeep once: counter-intelligence budgets, then networks (no daily decay)."
+            return "Ran the weekly espionage upkeep once: the AI's choices, counter-intelligence budgets, then networks (no daily decay)."
                    + Environment.NewLine + Networks(new List<string>())
                    + CounterIntelligenceReport(new List<string>());
+        }
+
+        /// <summary>
+        /// What each AI realm's espionage would do this week, and why - printed from
+        /// <see cref="AiEspionage.Plan"/>, the object the weekly run executes. A dry run: nothing is
+        /// founded, paid or launched. With a kingdom, that realm only.
+        /// Usage: diplomacy.ai_espionage   or   diplomacy.ai_espionage <kingdom>
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("ai_espionage", "diplomacy")]
+        public static string AiEspionageReport(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var filter = args == null || args.Count == 0 ? null : string.Join(" ", args).Trim();
+            Kingdom only = null;
+            if (!string.IsNullOrEmpty(filter))
+            {
+                only = FindKingdom(filter);
+                if (only == null) return "No kingdom matching \"" + filter + "\".";
+            }
+
+            var sb = new StringBuilder();
+            foreach (var kingdom in Kingdom.All)
+            {
+                if (!kingdom.IsRealm() || (only != null && kingdom != only)) continue;
+                sb.Append(AiEspionage.Describe(AiEspionage.Plan(state, kingdom)));
+            }
+            return sb.Length == 0 ? "No realm." : sb.ToString();
         }
 
         /// <summary>
