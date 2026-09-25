@@ -500,7 +500,20 @@ UI-INTEGRATION.md §0b.
 
 ### What to do next
 
-1. **Phase 3, espionage** - 3.1, 3.2 and 3.4 done; 3.5 next (design/03 §8 has the order).
+1. **Phase 3, espionage** - 3.1, 3.2 and 3.4 done; 3.5 next (design/03 §8 has the order,
+   §10 has what was built and checked). Two things to carry into it:
+   - **The 3.6 blocker found while testing 3.1/3.2**: vanilla appoints an AI clan's idle heroes
+     as governors within days, which pulls a handler off its network mid-run with no warning.
+     An AI-run network needs a way to keep its handler out of that pool before 3.6 is worth
+     starting. The player's own companions were never touched.
+   - `BribeLord` and `ForgeLetters` currently refuse to launch (`Missions.SpecOf(...).NotYet`)
+     because their payoff is Phase 2 state (loyalty, grievances) that 3.5 has to wire in.
+2. **A parallel priority from the lead, 2026-09-25, not yet started**: tying the mod's mechanics
+   to Bannerlord's own skill system ("Statecraft"). Plan is
+   [design/08-statecraft.md](design/08-statecraft.md) - six political skills, each answering one
+   question, scored against the peer median. It is a plan only: nothing is built, and it waits on
+   the lead's decisions D1-D10 (§15 of that doc). It touches Phase 1 and Phase 2 formulas, so
+   whoever picks it up should check with the lead which comes first against 3.5.
 2. **A long AI-only run with internal wars in it**, the balance question 2.6 leaves open. How
    often do internal wars start, how often do houses divide, and does a realm recover from a
    lost civil war followed by foreign wars? Both of the first run's neighbours declared war on
@@ -532,6 +545,8 @@ UI-INTEGRATION.md §0b.
 | `di_hegemony_1166` | Vlandia with 2 vassals. The only state holding a sphere built at the peace table |
 | `di_review_0919_b` | Winter 15, 1162 — the old evolved world, pre-§12 |
 | `di_run06_resume`, `di_review_0919` | run 06 checkpoints |
+| `di_espionage_test` | `di_run07_1104` + two Urkhunait (Khuzait) networks, 2026-09-25 — the 3.1 save-round-trip check |
+| `di_espionage_missions` | same world, one `ReadCourt` mission left pending — the 3.2 save-round-trip check; also where the real clock was seen resolving it and vanilla taking a second AI handler as governor |
 
 Never save over `di_phase1_full`.
 
@@ -597,7 +612,7 @@ Two things were added because of this, independent of the cause:
 | **0 — Foundation** | ✅ done, verified in a live campaign |
 | **1 — Diplomacy core (1.1–1.12)** | ✅ **accepted by the lead, 2026-09-23**. Code complete including submission and hegemony (1.9/1.10), the vanilla takeover (1.11) and power (1.12). Measured over runs 01–07; the §13 rework under it is smoke-tested only, and the carried debt is listed in [ROADMAP.md](ROADMAP.md#phase-1--accepted-by-the-project-lead-2026-09-23) |
 | **2 — Court intrigue** | 🔄 2.1-2.7 built and verified live on their main paths, all on `development` (2.6/2.6b and 2.6c merged 2026-09-24). What is still unverified is listed in the checkpoint at the top |
-| **3 — Espionage** | ⬜ spec written and reviewed, no code |
+| **3 — Espionage** | 🔄 3.1 (networks), 3.2 (missions) and 3.4 (exposure) built and verified live, 2026-09-25, merged into `development`. 3.5 (cross-pillar effects), 3.3 (counter-intelligence budgets), 3.6 (AI) and 3.7 (UI) remain — design/03 §10 |
 | **4 — Integration, balance, release** | 🔄 runs 01-07 archived. **Run 07** (2026-09-20) is the current reference — [balance/run-07.md](balance/run-07.md). **Run 08 is owed** and closes the §13 questions |
 
 ### Kingdom screen UI — built and verified live, 2026-09-21
