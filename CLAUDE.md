@@ -329,6 +329,9 @@ place, that is the bug, not the symptom.
   edits one file. An un-tuned constant says so in its own doc comment.
 - All player-facing text is English. The design docs are English.
 - **Reply to the user in Vietnamese.** The lead writes in Vietnamese; the codebase is not.
+- Any Vietnamese meant to be read (the Vietnamese handbook, player text, write-ups for the lead)
+  goes through the `vietnamese-writing` skill (`.claude/skills/vietnamese-writing/`), with its
+  glossary for the mod's terms.
 
 ## 5. Honesty requirements
 
