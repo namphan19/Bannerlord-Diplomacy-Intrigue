@@ -197,6 +197,17 @@ namespace DiplomacyIntrigue.Espionage
                                   + network.Target?.Name + " (" + why + ").");
         }
 
+        /// <summary>
+        /// Uses up network strength - what a mission's success, failure or exposure costs (design
+        /// 03 §4). Through here so a mission cannot move a network by a path that disagrees about
+        /// its bounds.
+        /// </summary>
+        internal static void Spend(SpyNetwork network, float amount)
+        {
+            if (network == null || amount <= 0f) return;
+            network.Change(-amount, EspionageConstants.NetworkMaxStrength);
+        }
+
         // ----- Upkeep ---------------------------------------------------------
 
         /// <summary>

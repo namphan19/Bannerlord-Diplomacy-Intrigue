@@ -1057,6 +1057,11 @@ namespace DiplomacyIntrigue.Core
 
             // Spy networks decay daily and lose a handler who no longer qualifies (Phase 3.1).
             SpyNetworks.DailyTick(state);
+
+            // Operations resolve on a date, so under a frozen clock none comes due here; the call
+            // is in the list because the rule is the full daily set. test_resolve_mission is the
+            // lever that resolves one now.
+            Missions.DailyTick(state);
         }
 
         private static readonly char[] CommaSeparator = { ',' };
@@ -2381,6 +2386,33 @@ namespace DiplomacyIntrigue.Core
         }
 
         /// <summary>
+        /// Sets a network's strength outright, within its handler's ceiling - for testing missions
+        /// that need a network the weekly growth would take months to build. The growth itself was
+        /// verified on the real clock (design 03 §10); this lever skips it. Test saves only.
+        /// Usage: diplomacy.test_set_network <clan> | <kingdom> | <strength>
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_set_network", "diplomacy")]
+        public static string TestSetNetwork(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var parts = SplitOnPipe(args);
+            if (parts.Count < 3 || !float.TryParse(parts[2], out var strength))
+                return "Usage: diplomacy.test_set_network <clan> | <kingdom> | <strength>";
+            var clan = FindClan(parts[0]);
+            if (clan == null) return "No clan matching \"" + parts[0] + "\".";
+            var target = FindKingdom(parts[1]);
+            if (target == null) return "No kingdom matching \"" + parts[1] + "\".";
+
+            var network = SpyNetworks.Get(state, clan, target);
+            if (network == null) return clan.Name + " has no network in " + target.Name + ".";
+            var ceiling = network.Handler == null ? EspionageConstants.NetworkMaxStrength : SpyNetworks.CeilingOf(network.Handler);
+            network.Change(strength - network.Strength, ceiling);
+            return "Set. " + network;
+        }
+
+        /// <summary>
         /// Runs one week of network upkeep now - the weekly half only, so it can be read against
         /// the prediction diplomacy.networks printed. Pair it with tick_days 7 for a whole week.
         /// Usage: diplomacy.test_network_week
@@ -2392,6 +2424,142 @@ namespace DiplomacyIntrigue.Core
             if (state == null) return NoCampaign;
             SpyNetworks.WeeklyTick(state);
             return "Ran the weekly network upkeep once (no daily decay)." + Environment.NewLine + Networks(new List<string>());
+        }
+
+        /// <summary>
+        /// Every mission's odds for one network, term by term - printed from
+        /// <see cref="Missions.OddsOf"/>, the one resolver the roll, the mission board and the AI read.
+        /// Usage: diplomacy.mission_odds <clan> | <kingdom>
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("mission_odds", "diplomacy")]
+        public static string MissionOdds(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var parts = SplitOnPipe(args);
+            if (parts.Count < 2) return "Usage: diplomacy.mission_odds <clan> | <kingdom>";
+            var clan = FindClan(parts[0]);
+            if (clan == null) return "No clan matching \"" + parts[0] + "\".";
+            var target = FindKingdom(parts[1]);
+            if (target == null) return "No kingdom matching \"" + parts[1] + "\".";
+
+            var network = SpyNetworks.Get(state, clan, target);
+            if (network == null) return clan.Name + " has no network in " + target.Name + ".";
+
+            var sb = new StringBuilder();
+            sb.AppendLine(clan.Name + " in " + target.Name + ": network " + network.Strength.ToString("0.0")
+                          + ", handler " + (network.Handler == null ? "none" : network.Handler.Name.ToString()));
+            foreach (var spec in Missions.AllSpecs)
+            {
+                var o = Missions.OddsOf(state, network, spec.Type);
+                sb.AppendLine("  " + spec.Type.ToString().PadRight(17) + " needs " + spec.Required.ToString("0").PadLeft(2)
+                              + ", " + spec.Gold.ToString().PadLeft(5) + " gold, " + spec.Days.ToString().PadLeft(2) + " days | "
+                              + "0.15 + network " + o.FromNetwork.ToString("0.000") + " + handler " + o.FromHandler.ToString("0.000")
+                              + " - counter-intel " + o.FromCounterIntelligence.ToString("0.000")
+                              + " - difficulty " + o.Difficulty.ToString("0.000") + " = " + o.RawSuccess.ToString("0.000")
+                              + " -> success " + Missions.Pct(o.Success) + ", exposed if it fails " + Missions.Pct(o.ExposureOnFailure)
+                              + ", exposed overall " + Missions.Pct(o.Exposure)
+                              + (network.Strength < spec.Required ? "   (network too weak)" : "")
+                              + (spec.NotYet != null ? "   (not yet: " + spec.NotYet + ")" : ""));
+            }
+            sb.AppendLine("  (counter-intelligence " + CounterIntelligence.Explain(state, target) + ")");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Spy missions, pending and recently resolved.
+        /// Usage: diplomacy.missions   or   diplomacy.missions <clan or kingdom>
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("missions", "diplomacy")]
+        public static string MissionList(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var filter = args == null || args.Count == 0 ? null : string.Join(" ", args).Trim();
+            if (filter == string.Empty) filter = null;
+            var clan = filter == null ? null : FindClan(filter);
+            var kingdom = filter == null || clan != null ? null : FindKingdom(filter);
+
+            var sb = new StringBuilder();
+            for (var i = 0; i < state.SpyMissions.Count; i++)
+            {
+                var m = state.SpyMissions[i];
+                if (clan != null && m.Owner != clan) continue;
+                if (kingdom != null && m.Target != kingdom && m.Owner?.Kingdom != kingdom) continue;
+                sb.AppendLine(m + (m.IsPending
+                    ? " - resolves in " + (m.ResolvesOn - CampaignTime.Now).ToDays.ToString("0.0") + " days"
+                    : " - resolved " + (CampaignTime.Now - m.ResolvedOn).ToDays.ToString("0") + " days ago")
+                    + ", handler " + m.Handler?.Name + ", paid " + m.GoldPaid);
+            }
+            return sb.Length == 0 ? "No spy missions." : sb.ToString();
+        }
+
+        /// <summary>
+        /// Launches an operation through <see cref="Missions.Launch"/> - every rule applies, and it
+        /// is paid for. The optional target is a town or castle, or a lord, as the mission needs.
+        /// Usage: diplomacy.test_launch_mission <clan> | <kingdom> | <type> [| settlement or hero]
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_launch_mission", "diplomacy")]
+        public static string TestLaunchMission(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var parts = SplitOnPipe(args);
+            if (parts.Count < 3) return "Usage: diplomacy.test_launch_mission <clan> | <kingdom> | <type> [| settlement or hero]";
+            var clan = FindClan(parts[0]);
+            if (clan == null) return "No clan matching \"" + parts[0] + "\".";
+            var target = FindKingdom(parts[1]);
+            if (target == null) return "No kingdom matching \"" + parts[1] + "\".";
+            if (!Enum.TryParse(parts[2], true, out SpyMissionType type) || type == SpyMissionType.None)
+                return "Unknown mission \"" + parts[2] + "\". Types: " + string.Join(", ", Enum.GetNames(typeof(SpyMissionType)));
+
+            var spec = Missions.SpecOf(type);
+            Settlement settlement = null;
+            Hero hero = null;
+            if (parts.Count >= 4)
+            {
+                if (spec.NeedsSettlement) settlement = FindSettlement(parts[3]);
+                if (spec.NeedsHero) hero = FindHero(parts[3]);
+            }
+
+            var mission = Missions.Launch(state, clan, target, type, hero, settlement, out var reason);
+            return mission == null ? "Refused: " + reason : "Launched: " + mission + Environment.NewLine + MissionList(new List<string> { clan.Name.ToString() });
+        }
+
+        /// <summary>
+        /// Resolves a clan's pending operation in a realm now, through <see cref="Missions.Resolve"/>.
+        /// Without an outcome it rolls, exactly as the daily tick does; with one, the roll is
+        /// skipped and everything after it runs unchanged. Test saves only.
+        /// Usage: diplomacy.test_resolve_mission <clan> | <kingdom> [| success|failure|exposed]
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_resolve_mission", "diplomacy")]
+        public static string TestResolveMission(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var parts = SplitOnPipe(args);
+            if (parts.Count < 2) return "Usage: diplomacy.test_resolve_mission <clan> | <kingdom> [| success|failure|exposed]";
+            var clan = FindClan(parts[0]);
+            if (clan == null) return "No clan matching \"" + parts[0] + "\".";
+            var target = FindKingdom(parts[1]);
+            if (target == null) return "No kingdom matching \"" + parts[1] + "\".";
+
+            MissionOutcome? forced = null;
+            if (parts.Count >= 3)
+            {
+                if (!Enum.TryParse(parts[2], true, out MissionOutcome outcome) || outcome == MissionOutcome.Pending)
+                    return "The outcome must be success, failure or exposed.";
+                forced = outcome;
+            }
+
+            var mission = Missions.PendingOn(state, clan, target);
+            if (mission == null) return clan.Name + " is running nothing in " + target.Name + ".";
+            var result = Missions.Resolve(state, mission, forced);
+            return "Resolved " + result + ": " + mission + Environment.NewLine + Networks(new List<string> { clan.Name.ToString() });
         }
 
         /// <summary>
