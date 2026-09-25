@@ -328,14 +328,24 @@ namespace DiplomacyIntrigue.Diplomacy
                 var treaty = state.Treaties[i];
                 if (!treaty.IsActive || !treaty.HasRunOut) continue;
 
-                treaty.Close(TreatyStatus.Expired);
-                Telemetry.Event("treaty_expired", "type", treaty.Type, "a", treaty.PartyA, "b", treaty.PartyB,
-                    "hold", treaty.Type == TreatyType.Vassalage ? Hegemony.HoldOf(treaty) : 0f);
-                TrustRegistry.OnTreatyHonoured(state, treaty);
-                Log.Info("Treaty", "Expired, honoured in full: " + treaty);
+                Expire(state, treaty);
                 expired++;
             }
             return expired;
+        }
+
+        /// <summary>
+        /// One treaty seen through to its end. The body of <see cref="ExpireAndReward"/>, and
+        /// what <c>diplomacy.test_expire_treaty</c> runs, so a test that needs a pact gone gets
+        /// the same ending - trust dividend included - as the calendar would give it.
+        /// </summary>
+        internal static void Expire(ModState state, Treaty treaty)
+        {
+            treaty.Close(TreatyStatus.Expired);
+            Telemetry.Event("treaty_expired", "type", treaty.Type, "a", treaty.PartyA, "b", treaty.PartyB,
+                "hold", treaty.Type == TreatyType.Vassalage ? Hegemony.HoldOf(treaty) : 0f);
+            TrustRegistry.OnTreatyHonoured(state, treaty);
+            Log.Info("Treaty", "Expired, honoured in full: " + treaty);
         }
 
         /// <summary>

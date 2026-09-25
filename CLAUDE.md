@@ -223,14 +223,18 @@ Useful commands beyond `status`/`wars`/`treaties`: `diplomacy.strength` (every k
 by the strength the formulas read, with its sphere), `diplomacy.hegemony` (every sphere, each
 link's hold and the terms pulling it), `diplomacy.submission_value A | B`,
 `diplomacy.offer_peace <winner> | <loser> | vassalage, prisoners` (drives the real peace-table
-route rather than fabricating a treaty), `diplomacy.war_value`, `diplomacy.peace_allowance`.
+route rather than fabricating a treaty), `diplomacy.war_value`, `diplomacy.peace_allowance`,
+`diplomacy.tribute_value A | B` (every gate of a tribute demand, and B's court house by house:
+who paying would leave a defection risk).
 Court intrigue: `diplomacy.grievances`, `loyalty`, `blocs`, `legitimacy`, `pretenders` (with
 who would stand at the next succession), and `court_bands` (a court exactly as its
 Encyclopedia page describes it, bands only). Civil war: `diplomacy.internal_wars`, and
 `civil_war_prices <kingdom>` (every house's price to change sides, line by line, and whether the
 other leader would pay it).
 Test-only levers for reaching a state: `diplomacy.test_set_speed <1-50>` (see §1),
-`diplomacy.test_set_player_age`, `diplomacy.sign_treaty`, and for UI the screen openers
+`diplomacy.test_set_player_age`, `diplomacy.sign_treaty`, `test_player_rule <kingdom>` (hands a
+kingdom's throne to the player's house, outside any civil war), `test_demand_tribute A | B` (one
+demand through the weekly scan's own body - on a player-ruled B it opens the inquiry), and for UI the screen openers
 `test_open_kingdom`, `test_open_encyclopedia <kingdom>` and `test_court_select <clan>`. For a
 civil war: `test_start_internal_war`, `test_end_internal_war`, `test_change_side <clan> [| unpaid]`,
 `test_concede <kingdom> | crown|rising`, and `test_player_side <kingdom> | crown|rising|ruler`,
@@ -265,8 +269,10 @@ Screenshots do confirm rendering.
 
 **What no tool can do:** advance `CampaignTime.Now`. `diplomacy.tick_days` and
 `diplomacy.ai_week` drive the real upkeep and the real AI evaluation, but the clock stays
-put — so inside them treaties never expire, claims never age out and clan influence never
-regenerates. A long `ai_week` run therefore under-reports wars. **This has already produced
+put — so inside them treaties never expire, claims never age out, clan influence never
+regenerates, and a trust record still inside its grace period never leaves it (the grace is
+measured in dates since the last positive change: on 2026-09-25 `tick_days 70` moved one grudge
+by 10.5 and left another, whose pair had traded tribute recently, exactly where it was). A long `ai_week` run therefore under-reports wars. **This has already produced
 one false conclusion in this project.** Treat any long-run number from those commands as
 suspect and say so.
 

@@ -1305,8 +1305,7 @@ namespace DiplomacyIntrigue.Diplomacy
 
             if (IsPlayerRuled(target))
             {
-                if (_tributeAskPending || TrustRegistry.RefusedOfferRecently(state, kingdom, target))
-                    return false;
+                if (WhyPlayerNotAsked(state, kingdom, target) != null) return false;
                 AskPlayerForTribute(state, kingdom, target, terms);
                 // The week's move was spent making the demand: the only answer left is the
                 // player's, the same as a peace offer.
@@ -1425,6 +1424,7 @@ namespace DiplomacyIntrigue.Diplomacy
             {
                 t.Signable = TreatyRegistry.CanSign(state, kingdom, target, TreatyType.TributaryPact,
                     out var unsignable);
+                t.SignReason = unsignable;
                 if (!t.Signable) t.Block(unsignable);
             }
 
@@ -1481,11 +1481,37 @@ namespace DiplomacyIntrigue.Diplomacy
                 if (court.Houses.Count == 0) sb.AppendLine("      (no sworn house but the crown's own)");
             }
 
-            sb.AppendLine("  pact signable:  " + (t.Signable ? "yes" : "no"));
-            sb.AppendLine(t.Allowed
-                ? "  verdict: the demand stands" + (IsPlayerRuled(them) ? " - it would be put to the player" : "")
-                : "  verdict: refused - " + t.Blocked);
+            sb.AppendLine("  pact signable:  " + (t.Signable ? "yes" : "no - " + t.SignReason));
+            var notAsked = WhyPlayerNotAsked(state, us, them);
+            sb.AppendLine(!t.Allowed
+                ? "  verdict: refused - " + t.Blocked
+                : !IsPlayerRuled(them)
+                    ? "  verdict: the demand stands"
+                    : notAsked == null
+                        ? "  verdict: the demand stands - it would be put to the player"
+                        : "  verdict: the demand stands, but it would not be sent now - " + notAsked);
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// Why a demand that clears every gate would still not be put to a player crown right
+        /// now; null when it would be, or when the target is not player-ruled. The scan and
+        /// <c>diplomacy.tribute_value</c> both read this - the diagnostic once reported "it
+        /// would be put to the player" for a demand the scan was silently skipping.
+        ///
+        /// The refusal window is the one every offer to the player shares
+        /// (<see cref="TrustRegistry.RefusedOfferRecently"/>): a kingdom whose peace, protection
+        /// or tribute the player just turned down does not come back with another request
+        /// the next week, whichever kind it was.
+        /// </summary>
+        public static string WhyPlayerNotAsked(ModState state, Kingdom kingdom, Kingdom target)
+        {
+            if (target == null || !IsPlayerRuled(target)) return null;
+            if (_tributeAskPending) return "another demand for tribute is already in front of the player";
+            if (TrustRegistry.RefusedOfferRecently(state, kingdom, target))
+                return target.Name + " turned down an offer from " + kingdom.Name + " within the last "
+                       + DiplomacyConstants.PlayerOfferRefusalCooldownDays.ToString("0") + " days";
+            return null;
         }
 
         /// <summary>
@@ -1636,6 +1662,9 @@ namespace DiplomacyIntrigue.Diplomacy
             public string CourtDetail;
 
             public bool Signable;
+
+            /// <summary>Why <c>TreatyRegistry.CanSign</c> refused, when it did.</summary>
+            public string SignReason;
 
             /// <summary>Records a refusal; true when it is the first, so the caller can tell whose it was.</summary>
             internal bool Block(string reason)
