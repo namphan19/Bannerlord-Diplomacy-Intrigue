@@ -2497,6 +2497,35 @@ namespace DiplomacyIntrigue.Core
         }
 
         /// <summary>
+        /// Every successful bribe still on the record, and whether it binds anybody today - read
+        /// through <see cref="Bribes.On"/>, the resolver loyalty and the internal war read.
+        /// Usage: diplomacy.bribes
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("bribes", "diplomacy")]
+        public static string BribeList(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var sb = new StringBuilder();
+            for (var i = 0; i < state.SpyMissions.Count; i++)
+            {
+                var m = state.SpyMissions[i];
+                if (m.Type != SpyMissionType.BribeLord || m.Outcome != MissionOutcome.Success) continue;
+
+                var clan = m.TargetHero?.Clan;
+                var live = clan != null && Bribes.On(state, clan) == m;
+                sb.AppendLine(m.TargetHero?.Name + " of " + clan?.Name + ", bought by " + m.Owner?.Name
+                              + " in " + m.Target?.Name + " " + (CampaignTime.Now - m.ResolvedOn).ToDays.ToString("0") + " days ago: "
+                              + (live
+                                  ? "binds, " + Bribes.DaysLeft(state, clan).ToString("0") + " days left; loyalty "
+                                    + LoyaltyModel.Explain(state, clan)
+                                  : "binds nobody (expired, superseded, or the lord no longer heads a house of that realm)"));
+            }
+            return sb.Length == 0 ? "No bribes on the record." : sb.ToString();
+        }
+
+        /// <summary>
         /// Launches an operation through <see cref="Missions.Launch"/> - every rule applies, and it
         /// is paid for. The optional target is a town or castle, or a lord, as the mission needs.
         /// Usage: diplomacy.test_launch_mission <clan> | <kingdom> | <type> [| settlement or hero]

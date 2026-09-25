@@ -472,6 +472,8 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 terms.Add(new DiCourtTermVM("Land they think they merit", e.Fiefs));
                 terms.Add(new DiCourtTermVM("The war weighing on them", e.WarExhaustion));
                 terms.Add(new DiCourtTermVM("The crown's standing", e.Legitimacy));
+                if (e.ForeignGold != 0f)
+                    terms.Add(new DiCourtTermVM("Foreign gold - nobody knows whose", e.ForeignGold));
 
                 var ruling = _selected.Clan.Kingdom?.RulingClan;
                 foreach (var g in GrievanceRegistry.Of(state, _selected.Clan))
@@ -682,8 +684,12 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         [DataSourceProperty] public string WeightText { get; }
         [DataSourceProperty] public string AgeText { get; }
 
-        /// <summary>Plain words for the player, not the enum name. Design: "An unjust war", not "UnjustWar 7.8".</summary>
-        private static string TitleOf(GrievanceType type)
+        /// <summary>
+        /// Plain words for the player, not the enum name. Design: "An unjust war", not "UnjustWar 7.8".
+        /// Also read by the Encyclopedia's ledger under a ReadCourt, so a slight is named the same
+        /// wherever it is shown.
+        /// </summary>
+        internal static string TitleOf(GrievanceType type)
         {
             switch (type)
             {
@@ -696,6 +702,11 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 case GrievanceType.PeaceWhileWinning: return "Peace made while they were winning";
                 case GrievanceType.RequestRefused: return "A request refused";
                 case GrievanceType.SuccessionPassedOver: return "Their candidate for the throne passed over";
+                // Named as forged. The Court tab is the victim's own court, which was told so when the
+                // letters surfaced. On the Encyclopedia only a ReadCourt shows it, and an agent inside
+                // the court is placed to know the crown's hand from a forgery - the forger's or a
+                // third realm's alike.
+                case GrievanceType.ForgedLetters: return "Letters in the crown's hand - forged";
                 default: return "An old slight";
             }
         }

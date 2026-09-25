@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using DiplomacyIntrigue.Core;
 using DiplomacyIntrigue.Diplomacy;
+using DiplomacyIntrigue.Espionage;
 using DiplomacyIntrigue.Models;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
@@ -380,6 +381,12 @@ namespace DiplomacyIntrigue.Intrigue
                     bool rebels;
                     if (clan == claimant.Clan)
                         rebels = true;
+                    else if (Bribes.IsBought(state, clan))
+                        // Design 03 §2 BribeLord: a house that took foreign gold stands with the
+                        // rising whatever its bloc or its relations say - the lead's reading of
+                        // "flips to us", 2026-09-25. Only at the start: once the war runs, a
+                        // bought house can be bought back like any other (SideChange).
+                        rebels = true;
                     else if (a.Bloc != null && a.Bloc.Members.Contains(clan))
                         rebels = LoyaltyModel.Of(state, clan) < IntrigueConstants.LoyaltyReliable;
                     else
@@ -636,6 +643,15 @@ namespace DiplomacyIntrigue.Intrigue
             {
                 if (names.Length > 0) names.Append(", ");
                 names.Append(rebels[i].Name);
+
+                // A house on this side because it was bought says so in the log, and the buyer
+                // hears that the gold was well spent - if the buyer is the player.
+                var buyer = Bribes.BuyerOf(state, rebels[i]);
+                if (buyer == null || rebels[i] == banner) continue;
+                names.Append(" (bought by ").Append(buyer.Name).Append(')');
+                if (buyer == Clan.PlayerClan)
+                    Log.Notify(rebels[i].Name + ", bought with our gold, stands with " + claimant.Name
+                               + " against " + kingdom.Leader?.Name + ".", Colors.Cyan);
             }
 
             Log.Info("InternalWar", kingdom.Name + ": " + claimant.Name + " takes up arms against "

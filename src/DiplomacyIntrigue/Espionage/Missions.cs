@@ -23,6 +23,13 @@ namespace DiplomacyIntrigue.Espionage
         public bool NeedsHero;
         public bool NeedsSettlement;
 
+        /// <summary>
+        /// The lord must head a sworn house of the target's court other than the crown's own: what
+        /// the mission changes is that house's standing with its crown (step 3.5), and a mercenary,
+        /// the ruling house or a house's younger son has no such standing to change.
+        /// </summary>
+        public bool NeedsHouseHead;
+
         /// <summary>Null when the mission can be run; otherwise why not yet.</summary>
         public string NotYet;
 
@@ -65,8 +72,10 @@ namespace DiplomacyIntrigue.Espionage
     /// told: an operation against the player's realm is announced when it lands or is caught (the
     /// lead's decision 2, "clearly telegraphed"), and the player's own operations report back.
     ///
-    /// BribeLord and ForgeLetters cannot be launched yet: their effects reach into Phase 2 and are
-    /// step 3.5. A mission that could be paid for and then did nothing would be worse than none.
+    /// BribeLord and ForgeLetters are step 3.5, the two whose effects land in Phase 2 state: a
+    /// bribe is read by <see cref="Bribes"/> into loyalty and the internal war, and forged letters
+    /// are an ordinary grievance in <see cref="GrievanceRegistry"/>. Espionage keeps no state of
+    /// its own for either (design 03 §6).
     /// </summary>
     public static class Missions
     {
@@ -78,8 +87,10 @@ namespace DiplomacyIntrigue.Espionage
             { SpyMissionType.ReadCourt, new MissionSpec { Type = SpyMissionType.ReadCourt, Required = 25, Gold = 2000, Days = 5 } },
             { SpyMissionType.SabotageGarrison, new MissionSpec { Type = SpyMissionType.SabotageGarrison, Required = 35, Gold = 5000, Days = 7, NeedsSettlement = true } },
             { SpyMissionType.SpreadDissent, new MissionSpec { Type = SpyMissionType.SpreadDissent, Required = 30, Gold = 4000, Days = 10, NeedsSettlement = true } },
-            { SpyMissionType.BribeLord, new MissionSpec { Type = SpyMissionType.BribeLord, Required = 45, Gold = 25000, Days = 14, NeedsHero = true, NotYet = "its effect on a lord's loyalty arrives with step 3.5" } },
-            { SpyMissionType.ForgeLetters, new MissionSpec { Type = SpyMissionType.ForgeLetters, Required = 50, Gold = 15000, Days = 14, NotYet = "its forged grievance arrives with step 3.5" } },
+            { SpyMissionType.BribeLord, new MissionSpec { Type = SpyMissionType.BribeLord, Required = 45, Gold = 25000, Days = 14, NeedsHero = true, NeedsHouseHead = true } },
+            // §2 gives ForgeLetters no target. It takes one, the lead's call of 2026-09-25: the
+            // letters are shown to a lord the player chooses, as a bribe is paid to one.
+            { SpyMissionType.ForgeLetters, new MissionSpec { Type = SpyMissionType.ForgeLetters, Required = 50, Gold = 15000, Days = 14, NeedsHero = true, NeedsHouseHead = true } },
             { SpyMissionType.StealTreasury, new MissionSpec { Type = SpyMissionType.StealTreasury, Required = 40, Gold = 3000, Days = 7 } },
             { SpyMissionType.Assassinate, new MissionSpec { Type = SpyMissionType.Assassinate, Required = 70, Gold = 60000, Days = 21, NeedsHero = true } },
         };
@@ -142,20 +153,30 @@ namespace DiplomacyIntrigue.Espionage
         /// can never outlive or disagree with the operation that bought it.
         /// </summary>
         public static bool IsRevealed(ModState state, Clan owner, Kingdom target, SpyMissionType type)
+            => RevealDaysLeft(state, owner, target, type) > 0f;
+
+        /// <summary>
+        /// Days the reveal has left, from the latest success of that kind; 0 when there is none.
+        /// The same reading as <see cref="IsRevealed"/>, so a screen that says "for 3 more days"
+        /// cannot disagree with whether it shows anything at all.
+        /// </summary>
+        public static float RevealDaysLeft(ModState state, Clan owner, Kingdom target, SpyMissionType type)
         {
-            if (state == null || owner == null || target == null) return false;
+            if (state == null || owner == null || target == null) return 0f;
             var days = type == SpyMissionType.ScoutArmies ? EspionageConstants.ScoutArmiesRevealDays
                      : type == SpyMissionType.ReadCourt ? EspionageConstants.ReadCourtRevealDays : 0;
-            if (days == 0) return false;
+            if (days == 0) return 0f;
 
+            var best = 0f;
             for (var i = 0; i < state.SpyMissions.Count; i++)
             {
                 var m = state.SpyMissions[i];
                 if (m.Type != type || m.Outcome != MissionOutcome.Success) continue;
                 if (m.Owner != owner || m.Target != target) continue;
-                if ((CampaignTime.Now - m.ResolvedOn).ToDays < days) return true;
+                var left = days - (float)(CampaignTime.Now - m.ResolvedOn).ToDays;
+                if (left > best) best = left;
             }
-            return false;
+            return best;
         }
 
         // ----- Launching ------------------------------------------------------
@@ -197,7 +218,29 @@ namespace DiplomacyIntrigue.Espionage
                 if (targetHero == null || !targetHero.IsAlive) { reason = type + " needs a living lord."; return false; }
                 if (targetHero.Clan?.Kingdom != target) { reason = targetHero.Name + " is not of " + target.Name + "."; return false; }
                 if (targetHero.Clan == owner) { reason = targetHero.Name + " is of our own house."; return false; }
+                if (spec.NeedsHouseHead && !IsHouseHead(targetHero, target, out var why))
+                {
+                    reason = type + " needs the head of a sworn house: " + why;
+                    return false;
+                }
             }
+            return true;
+        }
+
+        /// <summary>
+        /// Whether <paramref name="hero"/> leads a house sworn to <paramref name="target"/> that is
+        /// not the crown's. Checked at launch and again before the roll, since fourteen days is
+        /// long enough for a lord to die, be succeeded, or lead the house to another crown.
+        /// </summary>
+        private static bool IsHouseHead(Hero hero, Kingdom target, out string why)
+        {
+            why = null;
+            if (hero == null || !hero.IsAlive) { why = (hero == null ? "the lord" : hero.Name.ToString()) + " is dead."; return false; }
+            var clan = hero.Clan;
+            if (clan == null || clan.Leader != hero) { why = hero?.Name + " is not the head of a house."; return false; }
+            if (clan.Kingdom != target) { why = clan.Name + " is not of " + target?.Name + "."; return false; }
+            if (clan == target.RulingClan) { why = clan.Name + " is the crown's own house."; return false; }
+            if (!Court.IsMember(clan)) { why = clan.Name + " serves for pay and has no place at court."; return false; }
             return true;
         }
 
@@ -263,9 +306,18 @@ namespace DiplomacyIntrigue.Espionage
                 }
             }
 
-            state.SpyMissions.RemoveAll(m => !m.IsPending
-                                             && (CampaignTime.Now - m.ResolvedOn).ToDays > EspionageConstants.ResolvedMissionKeepDays);
+            state.SpyMissions.RemoveAll(m => !m.IsPending && (CampaignTime.Now - m.ResolvedOn).ToDays > KeepDays(m));
         }
+
+        /// <summary>
+        /// How long a resolved operation stays on the record. Long enough for every reader of it:
+        /// a successful bribe is read by <see cref="Bribes"/> for its whole window, the rest only
+        /// by the reveals and the operations list.
+        /// </summary>
+        internal static int KeepDays(SpyMission mission)
+            => mission.Type == SpyMissionType.BribeLord && mission.Outcome == MissionOutcome.Success
+                ? EspionageConstants.BribeWindowDays
+                : EspionageConstants.ResolvedMissionKeepDays;
 
         /// <summary>
         /// Rolls an operation (design 03 §4) and applies what came of it. <paramref name="forced"/>
@@ -285,6 +337,19 @@ namespace DiplomacyIntrigue.Espionage
                 mission.Resolve(MissionOutcome.Failure);
                 Log.Info("Espionage", "Failed for want of a handler: " + mission + ".");
                 TellOwner(mission, Describe(mission.Type) + " in " + mission.Target.Name + " came to nothing: nobody was left to run it.");
+                return MissionOutcome.Failure;
+            }
+
+            // The lord a bribe or a forgery was meant for no longer heads a house of that court -
+            // dead, succeeded, gone to another crown. Like a lost handler, it fails before any
+            // roll: nobody was approached, so nobody can be caught, and a Success on the record
+            // always means the effect landed.
+            var spec = SpecOf(mission.Type);
+            if (spec != null && spec.NeedsHouseHead && !IsHouseHead(mission.TargetHero, mission.Target, out var gone))
+            {
+                mission.Resolve(MissionOutcome.Failure);
+                Log.Info("Espionage", "Failed for want of a mark: " + mission + " - " + gone);
+                TellOwner(mission, Describe(mission.Type) + " in " + mission.Target.Name + " came to nothing: " + gone);
                 return MissionOutcome.Failure;
             }
 
@@ -371,6 +436,36 @@ namespace DiplomacyIntrigue.Espionage
                     Log.Info("Espionage", mission.Owner.Name + " stole " + take + " from " + ruler?.Name + ".");
                     TellOwner(mission, "Our agents lifted " + take + " denars from " + ruler?.Name + "'s treasury.");
                     TellVictim(mission, take + " denars are missing from the treasury.");
+                    break;
+                }
+                case SpyMissionType.BribeLord:
+                {
+                    // Resolve has already checked that the lord still heads a house of this court.
+                    var lord = mission.TargetHero;
+                    var clan = lord.Clan;
+                    Log.Info("Espionage", clan.Name + " of " + target.Name + " is bought by " + mission.Owner.Name
+                                          + " for " + EspionageConstants.BribeWindowDays + " days: loyalty -"
+                                          + EspionageConstants.BribeLoyaltyLoss.ToString("0") + " (now "
+                                          + LoyaltyModel.Of(state, clan).ToString("0.0")
+                                          + "), and it takes the rising's side if the realm goes to war with itself.");
+                    TellOwner(mission, lord.Name + " has taken our gold. " + clan.Name + " will stand against "
+                                       + target.Leader?.Name + " if " + target.Name + " goes to war with itself in the next two years.");
+                    TellVictim(mission, "Foreign gold has reached " + clan.Name + ". Its loyalty to the crown has fallen, "
+                                        + "and nobody can say whose gold it was.");
+                    break;
+                }
+                case SpyMissionType.ForgeLetters:
+                {
+                    var lord = mission.TargetHero;
+                    var clan = lord.Clan;
+                    var ruling = target.RulingClan;
+                    GrievanceRegistry.Add(state, clan, ruling, GrievanceType.ForgedLetters, -1f,
+                        "letters forged by agents of " + mission.Owner.Name);
+                    TellOwner(mission, lord.Name + " has read our letters in " + target.Leader?.Name
+                                       + "'s hand. " + clan.Name + " now holds them against the crown.");
+                    TellVictim(mission, "Letters under " + target.Leader?.Name + "'s seal, never written by "
+                                        + target.Leader?.Name + ", have reached " + clan.Name
+                                        + ". The house holds them against the crown.");
                     break;
                 }
                 case SpyMissionType.Assassinate:

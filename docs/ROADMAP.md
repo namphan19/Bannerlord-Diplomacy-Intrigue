@@ -475,13 +475,13 @@ Playable target: *information and subversion are a third way to fight.*
 
 **3.1 Spy networks** — per kingdom-pair strength, built up over time, decayed by enemy counter-intelligence. *Owned per clan, not per kingdom pair (the lead's call, design/03 §9). **Built and verified live 2026-09-25**: founding, handlers, the weekly growth paid from the owner's purse, daily decay, save round trip (design/03 §10).*
 
-**3.2 Missions** — the types in `Models/SpyMissionType`: scout armies, read court, sabotage garrison, spread dissent, bribe a lord, forge letters, steal treasury, assassinate. Resolution from network strength + agent skill (Roguery/Charm) vs target counter-intelligence. *Built and verified live 2026-09-25 for six missions; BribeLord and ForgeLetters wait for 3.5 (design/03 §10).*
+**3.2 Missions** — the types in `Models/SpyMissionType`: scout armies, read court, sabotage garrison, spread dissent, bribe a lord, forge letters, steal treasury, assassinate. Resolution from network strength + agent skill (Roguery/Charm) vs target counter-intelligence. *Built and verified live 2026-09-25 for six missions; BribeLord and ForgeLetters built with 3.5, not yet run in game (design/03 §10).*
 
 **3.3 Counter-intelligence** — passive defence a kingdom invests in; determines exposure chance.
 
 **3.4 Exposure as diplomacy** — a burned network is a *diplomatic incident*: the victim gains the `EspionageExposed` casus belli and trust drops. This is the cross-pillar hinge that keeps espionage from being a free action. *Built with 3.2 and verified live 2026-09-25: a mission that could be caught for free was not worth allowing.*
 
-**3.5 Cross-pillar payoffs** — `BribeLord` feeds Phase 2 defection; `ForgeLetters` manufactures grievances; `ReadCourt` reveals pending kingdom decisions.
+**3.5 Cross-pillar payoffs** — `BribeLord` feeds Phase 2 defection; `ForgeLetters` manufactures grievances; `ReadCourt` reveals pending kingdom decisions. *Built 2026-09-25 and compiled clean against the v1.4.8 reference assemblies; **not run in game**. A bribed house loses 20 loyalty for two years and takes the rising's side if an internal war starts in that window; forged letters are a weight-8 grievance on a house the player picks; a live ReadCourt fills the Encyclopedia's ledger with exact figures. The lead's three calls and the check list are in design/03 §9-§10.*
 
 **3.6 Espionage UI** — network map, mission board, running operations.
 

@@ -1,5 +1,6 @@
 using DiplomacyIntrigue.Core;
 using DiplomacyIntrigue.Diplomacy;
+using DiplomacyIntrigue.Espionage;
 using DiplomacyIntrigue.Models;
 using TaleWorlds.CampaignSystem;
 
@@ -107,6 +108,12 @@ namespace DiplomacyIntrigue.Intrigue
             result.Legitimacy = (crownLegitimacy - IntrigueConstants.LegitimacyNeutral)
                                 * IntrigueConstants.LoyaltyLegitimacyFactor;
 
+            // Phase 3.5: a house whose head has taken a foreign network's gold. Not in design 02
+            // §2's sum, which predates espionage; design 03 §2 puts it here ("target clan loyalty
+            // -20"). Read from Bribes, the one place that decides whether a house is bought.
+            if (Bribes.IsBought(state, clan))
+                result.ForeignGold = -EspionageConstants.BribeLoyaltyLoss;
+
             return result;
         }
     }
@@ -126,7 +133,15 @@ namespace DiplomacyIntrigue.Intrigue
         public float WarExhaustion;
         public float Legitimacy;
 
-        public float Raw => Base + Relation + Grievances + Fiefs + WarExhaustion + Legitimacy;
+        /// <summary>
+        /// Zero unless the house is bought (design 03 §2 BribeLord). Shown only when it is not
+        /// zero: a line reading "foreign gold 0.0" on every house would be noise, and on the
+        /// victim's own Court tab it is the visible trace the lead's decision 2 asks for - the
+        /// fall is shown, the buyer is not.
+        /// </summary>
+        public float ForeignGold;
+
+        public float Raw => Base + Relation + Grievances + Fiefs + WarExhaustion + Legitimacy + ForeignGold;
 
         /// <summary>Clamped to 0-100. Bands read this.</summary>
         public float Total
@@ -144,6 +159,7 @@ namespace DiplomacyIntrigue.Intrigue
                + ", grievances " + Grievances.ToString("+0.0;-0.0;0.0")
                + ", fiefs " + Fiefs.ToString("+0.0;-0.0;0.0")
                + ", war " + WarExhaustion.ToString("+0.0;-0.0;0.0")
-               + ", legitimacy " + Legitimacy.ToString("+0.0;-0.0;0.0") + ")";
+               + ", legitimacy " + Legitimacy.ToString("+0.0;-0.0;0.0")
+               + (ForeignGold != 0f ? ", foreign gold " + ForeignGold.ToString("+0.0;-0.0;0.0") : "") + ")";
     }
 }

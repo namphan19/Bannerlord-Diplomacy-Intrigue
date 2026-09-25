@@ -200,7 +200,16 @@ pwsh ./scripts/play.ps1      # launch the way that works (BLSE Standalone, launc
 pwsh ./scripts/play.ps1 -Without DiplomacyIntrigue   # same, minus a mod: bisect a crash
 dotnet run --project tools/LoadProbe   # would the game load this assembly?
 dotnet run --project tools/ApiDump -- "TypeNameOrFilter"   # real v1.4.8 API surface
+scripts/compile-check.sh     # no game on this box (Linux, cloud): compile against NuGet reference assemblies
 ```
+
+`compile-check.sh` builds against BUTR's `Bannerlord.ReferenceAssemblies.Core` 1.4.8.119303 and
+the framework packages at `SubModule.xml`'s versions, into a temp folder. A clean result there
+means the code compiles against the real v1.4.8 API, **nothing more**: LoadProbe still needs the
+real install, and nothing has run. `tools/ApiDump` works the same way with
+`BANNERLORD_GAME_DIR` pointed at that script's stand-in game folder. On a cloud session the .NET
+SDK comes from Ubuntu's own repository (`apt-get install dotnet-sdk-8.0`); Microsoft's install
+script is blocked there.
 
 `deploy.ps1` runs LoadProbe **before** copying anything and refuses to install a module the
 game could not load. It also refuses while Bannerlord is running — stop the game first
@@ -230,7 +239,12 @@ route rather than fabricating a treaty), `diplomacy.war_value`, `diplomacy.peace
 who paying would leave a defection risk).
 Court intrigue: `diplomacy.grievances`, `loyalty`, `blocs`, `legitimacy`, `pretenders` (with
 who would stand at the next succession), and `court_bands` (a court exactly as its
-Encyclopedia page describes it, bands only). Civil war: `diplomacy.internal_wars`, and
+Encyclopedia page describes it: bands only, plus the exact ledger while the player's house holds a
+live ReadCourt on that realm). Espionage: `diplomacy.networks`, `mission_odds <clan> | <kingdom>`, `missions`, `bribes` (every
+bribe still on the record and whether it binds anybody), and the levers `test_set_network`,
+`test_launch_mission <clan> | <kingdom> | <type> [| settlement or hero]` and
+`test_resolve_mission <clan> | <kingdom> [| success|failure|exposed]`.
+Civil war: `diplomacy.internal_wars`, and
 `civil_war_prices <kingdom>` (every house's price to change sides, line by line, and whether the
 other leader would pay it).
 Test-only levers for reaching a state: `diplomacy.test_set_speed <1-50>` (see §1),
@@ -292,7 +306,8 @@ properties **1-16** (11 `Grievances`, 12 `Legitimacy`, 13 `Pretenders`, 14 `Inte
 (26 `GrievanceType`, 27 `InternalWarOutcome`), next free **28**. `Grievance` uses
 properties 1-5, `KingdomLegitimacy` 1-5, `Pretender` 1-4, `InternalWar` 1-14 (13 `Faction`,
 14 `SideChanges`, next free **15**), `InternalWarMember` 1, `SpyNetwork` 1-8 (next free **9**), `SpyMission` 1-11 (next free **12**). A new *value* on an enum the definer
-already registers is safe (`GrievanceType.SuccessionPassedOver = 9` was added that way);
+already registers is safe (`GrievanceType.SuccessionPassedOver = 9` and `ForgedLetters = 10` were
+added that way; next free value there is **11**);
 renumbering or reusing one is not. Adding a new savable type means a class definition
 **and** a container definition in `ModSaveDefiner` — a missing container definition crashes
 on save, which is the single most common way to break a Bannerlord mod. Bump

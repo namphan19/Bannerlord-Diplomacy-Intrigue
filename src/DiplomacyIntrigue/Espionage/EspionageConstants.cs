@@ -100,8 +100,25 @@ namespace DiplomacyIntrigue.Espionage
         public const int StealTreasuryCap = 50000;
 
         /// <summary>
+        /// Loyalty a bought house loses to its crown while the bribe holds (design 03 §2). A flat
+        /// term in the loyalty sum, not a grievance: a bought lord has been paid, not wronged, and
+        /// dressing gold up as resentment would put it in the court's ledger under a false name.
+        /// UN-TUNED.
+        /// </summary>
+        public const float BribeLoyaltyLoss = 20f;
+
+        /// <summary>
+        /// How long a bribe holds, for both its effects: the loyalty loss, and the house taking the
+        /// rising's side if an internal war starts in its realm (design 03 §2, "within 2 years").
+        /// One window rather than a second duration for the loyalty term, the lead's call of
+        /// 2026-09-25. UN-TUNED.
+        /// </summary>
+        public const int BribeWindowDays = 730;
+
+        /// <summary>
         /// A resolved mission is kept this long, then dropped: longer than the longest reveal, so
-        /// a reveal never outlives its record. UN-TUNED only in the sense that nothing reads it past 14.
+        /// a reveal never outlives its record. A successful bribe is kept for its whole window
+        /// instead (<see cref="BribeWindowDays"/>). UN-TUNED only in the sense that nothing reads it past 14.
         /// </summary>
         public const int ResolvedMissionKeepDays = 60;
 

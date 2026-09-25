@@ -64,6 +64,15 @@ namespace DiplomacyIntrigue.Intrigue
         /// <summary>Backed a losing claimant at a contested succession. UN-TUNED: design 02 §5.</summary>
         public const float GrievanceSuccessionPassedOver = 6f;
 
+        /// <summary>
+        /// Forged letters from a foreign network (design 03 §2: "a fabricated grievance of weight
+        /// 8"). UN-TUNED. As heavy as the heaviest real slight on purpose: the forgery costs 15,000
+        /// and a network of 50, and a fake that weighed less than a real wrong would not be worth it.
+        /// Here rather than in EspionageConstants because it is a grievance weight, and every one
+        /// of those is read through <see cref="WeightOf"/>.
+        /// </summary>
+        public const float GrievanceForgedLetters = 8f;
+
         // ----- Crown legitimacy (design 02 §4) --------------------------------
 
         /// <summary>Where every crown starts, on a 0-100 pool. UN-TUNED: design 02 §4.</summary>
@@ -424,6 +433,7 @@ namespace DiplomacyIntrigue.Intrigue
                 case GrievanceType.PeaceWhileWinning: return GrievancePeaceWhileWinning;
                 case GrievanceType.RequestRefused: return GrievanceRequestRefused;
                 case GrievanceType.SuccessionPassedOver: return GrievanceSuccessionPassedOver;
+                case GrievanceType.ForgedLetters: return GrievanceForgedLetters;
                 default: return 0f;
             }
         }

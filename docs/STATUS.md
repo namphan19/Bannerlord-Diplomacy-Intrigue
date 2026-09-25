@@ -28,9 +28,18 @@ what was built (§10).
   hands the victim a casus belli against the owner's realm, costs trust, captures the handler, and
   costs a vassal house its crown's favour. The player is told of every operation that lands on
   their realm or drags it in. §4's missing difficulty was set as (requirement - 15) / 200.
-- **Next: 3.5, the cross-pillar effects** - BribeLord into loyalty and civil war, ForgeLetters into
-  grievances, ReadCourt's exact figures on the Encyclopedia - then 3.3 counter-intelligence
+- **3.5, the cross-pillar effects: built, compiled, NOT run in game** (2026-09-25, a cloud session
+  with no game). BribeLord: -20 loyalty for two years, and the house takes the rising's side if an
+  internal war starts in that window. ForgeLetters: a weight-8 grievance against the crown, on a
+  house head the player picks. ReadCourt: exact figures in the Encyclopedia's "Their ledger" block
+  while the reveal lasts. The lead made three calls first (design/03 §9, decisions 6-8). No new
+  save ids; one new enum value, `GrievanceType.ForgedLetters = 10`.
+- **Next: run 3.5 in game** - design/03 §10 has the five checks and the levers for each; the first
+  suspect is whether the ledger's TextWidget breaks lines on `\n`. Then 3.3 counter-intelligence
   budgets, 3.6 the AI, 3.7 the UI.
+- **New:** `scripts/compile-check.sh` compiles the module on a box with no game (Linux, a cloud
+  session) against BUTR's v1.4.8 reference assemblies from NuGet. It proves the code compiles
+  against the real API and nothing more - no LoadProbe, no game.
 
 **The side branch of 2026-09-25, `feature/side-civil-war-gaps-tribute-court`, merged into
 `development`.** It was briefed for opencode, but the bridge was broken, so Claude built it.
@@ -500,14 +509,15 @@ UI-INTEGRATION.md §0b.
 
 ### What to do next
 
-1. **Phase 3, espionage** - 3.1, 3.2 and 3.4 done; 3.5 next (design/03 §8 has the order,
-   §10 has what was built and checked). Two things to carry into it:
+1. **Phase 3, espionage** - 3.1, 3.2 and 3.4 done and verified live; 3.5 built and compiled but
+   **not yet run in game** - that run is the next job (design/03 §10, "What to check in game").
+   Then 3.3 (design/03 §8 has the order). Carried:
    - **The 3.6 blocker found while testing 3.1/3.2**: vanilla appoints an AI clan's idle heroes
      as governors within days, which pulls a handler off its network mid-run with no warning.
      An AI-run network needs a way to keep its handler out of that pool before 3.6 is worth
      starting. The player's own companions were never touched.
-   - `BribeLord` and `ForgeLetters` currently refuse to launch (`Missions.SpecOf(...).NotYet`)
-     because their payoff is Phase 2 state (loyalty, grievances) that 3.5 has to wire in.
+   - ~~`BribeLord` and `ForgeLetters` refuse to launch~~ - wired in by 3.5 on 2026-09-25; both
+     now need the head of a sworn house of the target's court.
 2. **A parallel priority from the lead, 2026-09-25, not yet started**: tying the mod's mechanics
    to Bannerlord's own skill system ("Statecraft"). Plan is
    [design/08-statecraft.md](design/08-statecraft.md) - six political skills, each answering one
@@ -612,7 +622,7 @@ Two things were added because of this, independent of the cause:
 | **0 — Foundation** | ✅ done, verified in a live campaign |
 | **1 — Diplomacy core (1.1–1.12)** | ✅ **accepted by the lead, 2026-09-23**. Code complete including submission and hegemony (1.9/1.10), the vanilla takeover (1.11) and power (1.12). Measured over runs 01–07; the §13 rework under it is smoke-tested only, and the carried debt is listed in [ROADMAP.md](ROADMAP.md#phase-1--accepted-by-the-project-lead-2026-09-23) |
 | **2 — Court intrigue** | 🔄 2.1-2.7 built and verified live on their main paths, all on `development` (2.6/2.6b and 2.6c merged 2026-09-24). What is still unverified is listed in the checkpoint at the top |
-| **3 — Espionage** | 🔄 3.1 (networks), 3.2 (missions) and 3.4 (exposure) built and verified live, 2026-09-25, merged into `development`. 3.5 (cross-pillar effects), 3.3 (counter-intelligence budgets), 3.6 (AI) and 3.7 (UI) remain — design/03 §10 |
+| **3 — Espionage** | 🔄 3.1 (networks), 3.2 (missions) and 3.4 (exposure) built and verified live, 2026-09-25, merged into `development`. 3.5 (cross-pillar effects) built and compiled the same day, **not run in game**. 3.3 (counter-intelligence budgets), 3.6 (AI) and 3.7 (UI) remain — design/03 §10 |
 | **4 — Integration, balance, release** | 🔄 runs 01-07 archived. **Run 07** (2026-09-20) is the current reference — [balance/run-07.md](balance/run-07.md). **Run 08 is owed** and closes the §13 questions |
 
 ### Kingdom screen UI — built and verified live, 2026-09-21

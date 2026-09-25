@@ -115,6 +115,12 @@ namespace DiplomacyIntrigue.Models
         /// renumbering one would silently change the meaning of grievances already stored.
         /// </summary>
         SuccessionPassedOver = 9,
+        /// <summary>
+        /// Letters in the ruler's hand that the ruler never wrote, shown to the house by a
+        /// foreign network (design 03 §2 ForgeLetters, §6). The house believes them, so it weighs
+        /// on loyalty exactly as a real slight would. Value 10, added the way 9 was.
+        /// </summary>
+        ForgedLetters = 10,
     }
 
     /// <summary>

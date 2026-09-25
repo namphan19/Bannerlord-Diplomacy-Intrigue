@@ -1,7 +1,7 @@
 # Design 03 — Espionage
 
-Status: **decided and in build** - the lead's decisions are §9, what is built is §10 (3.1 on
-2026-09-25). Phase 3. Depends on Phase 1 (claims, treaties, trust) and
+Status: **decided and in build** - the lead's decisions are §9, what is built is §10 (3.1, 3.2
+and 3.4 on 2026-09-25, verified live; 3.5 the same day, compiled but not yet run in game). Phase 3. Depends on Phase 1 (claims, treaties, trust) and
 Phase 2 (grievances, loyalty) already existing — espionage in this design is mostly a way to
 *reach into* those systems, not a separate scoreboard.
 
@@ -164,6 +164,14 @@ before any Phase 3 code:
 Consequences written into the model: a network is keyed by (owner clan, target kingdom); a clan
 cannot run one inside its own realm; the handler is a hero of the owning clan.
 
+Three more, asked before 3.5's code on 2026-09-25, where §2 left the two Phase 2 missions open:
+
+| # | Question | Decision |
+|---|---|---|
+| 6 | BribeLord "flips to us if a civil war starts within 2 years": flips to whom? | **The rising.** When an internal war starts in the bribed house's realm inside the window, the house takes the rising's side whatever its bloc or relations say. Not defection to the briber's own realm, which would move fiefs across a border and has nowhere to go for an owner outside any realm |
+| 7 | How long does the -20 loyalty last? | **The same two years, then gone.** One window for both effects, not a second curve to tune |
+| 8 | Whose grievance is a forged letter? | **A lord the player chooses**, as a bribe is paid to one; not the least loyal house picked automatically |
+
 ### The questions as they were asked
 
 1. **Assassination at all?** It is in the enum and specced above, but it is the one mission
@@ -268,3 +276,57 @@ keep the pillar honest falls away just as the network becomes useful. Counter-in
 **Not verified:** a mission whose handler is lost before it resolves (the rule is written, not
 seen), an exposure by a clan outside any realm, cancelling, and the reveal durations, which have
 no reader yet.
+
+### 3.5, the cross-pillar effects - built and compiled, NOT run in game, 2026-09-25
+
+Built in a cloud session with no game. It compiles clean against the v1.4.8 reference assemblies
+(`scripts/compile-check.sh`), 0 warnings. **Nothing below has been seen in game.**
+
+| Piece | Where |
+|---|---|
+| Whether a house is bought: one resolver, derived from the BribeLord record, no new save data | `Espionage/Bribes.cs` |
+| The -20: a "foreign gold" term in the loyalty sum, shown on the Court tab only when it is not zero | `Intrigue/LoyaltyModel.cs`, `UI/KingdomScreen/CourtVM.cs` |
+| A bought house takes the rising's side when an internal war starts | `Intrigue/InternalWars.Assess` |
+| A successful bribe kept on the record for its two years, the rest still 60 days | `Missions.KeepDays` |
+| Forged letters: `GrievanceType.ForgedLetters = 10`, weight 8, through the one grievance ledger | `Models/Enums.cs`, `IntrigueConstants.GrievanceForgedLetters`, `Missions.ApplyEffect` |
+| ReadCourt's exact figures on the Encyclopedia, in the "Their ledger" block reserved for it | `UI/EncyclopediaPages/EncyclopediaCourtVM.cs` |
+| Levers | `diplomacy.bribes`; the existing `test_launch_mission`, `test_resolve_mission`, `loyalty`, `grievances`, `court_bands`, `internal_wars`, `test_start_internal_war` |
+
+**Decided in building, not in the spec or by the lead:**
+- Both missions need the **head** of a house sworn to the target, not the crown's own house and not
+  a mercenary: what they change is the house's standing with its crown, and loyalty is read from
+  the head. Checked at launch and again before the roll; a mark who has died, been succeeded or left
+  the realm fails the operation before any roll, with no exposure risk - the rule 3.2 already uses
+  for a lost handler. So a Success on the record always means the effect landed.
+- **A bribe binds the head who took it.** It lapses early if that lord stops heading the house
+  (death, succession) or the house leaves the realm. The heir took nothing.
+- Several bribes on one house do not stack: it is bought or not. A second purse only extends the window.
+- The 25,000 is spent, not handed to the lord's purse. §2 prices every mission as a cost paid up
+  front, and a bribe that moved gold into the target's treasury would make it a transfer as well.
+- The -20 is a flat loyalty term, not a grievance: a bought lord has been paid, not wronged.
+- The victim's court is told a bribe landed ("foreign gold has reached ...") and sees the term on the
+  Court tab, never the buyer - the lead's decision 2. The forged grievance is labelled
+  "forged" on the ledger: the victim was told when the letters surfaced, and anyone else reading
+  that ledger has an agent inside the court.
+- ReadCourt reads the court **live** for its 14 days, not a snapshot of the day it landed. The ledger
+  gives legitimacy, each war's exhaustion, each party's power, what is before the council (vanilla's
+  own decision titles) and every house's loyalty and grievances. Everything above the ledger on the
+  page stays in bands. The reveal is the player's own house's; a liege's or vassal's does not count.
+
+**What to check in game, and how** (none done yet):
+1. `test_set_network <clan> | <kingdom> | 60`, `test_launch_mission <clan> | <kingdom> | BribeLord | <a house head>`,
+   `test_resolve_mission ... | success` - then `diplomacy.bribes` and `diplomacy.loyalty <kingdom>` should show
+   `foreign gold -20.0` on that house, and its Court tab row the "Foreign gold" line if the player sits in that court.
+2. On `di_pretender_test` (Battania rises on the first tick): bribe a Battanian house that the
+   relation roll would leave with the crown, then `test_start_internal_war Battania` - it must be in
+   the rebels, marked "(bought by ...)" in the log.
+3. ForgeLetters the same way, then `diplomacy.grievances` - `ForgedLetters 8.0` against the ruling clan.
+4. ReadCourt by the player's house, resolved as success, then `diplomacy.court_bands <kingdom>` and the
+   Encyclopedia page: the ledger block must show the figures, one per line. **Whether Gauntlet breaks
+   the lines of that TextWidget on `\n` is unverified** - if it renders as one run, that is the first fix.
+5. Save and reload with a live bribe: `diplomacy.bribes` must still read it (no new save data, so
+   this should hold, but it has not been seen).
+
+**Open, for 3.6:** under today's rules an AI network could bribe the player's own house, and the
+player would then be asked at the next internal war as for any other rebel side. Nothing launches
+an AI operation until 3.6, and whether the player should instead be offered the gold is 3.6's call.

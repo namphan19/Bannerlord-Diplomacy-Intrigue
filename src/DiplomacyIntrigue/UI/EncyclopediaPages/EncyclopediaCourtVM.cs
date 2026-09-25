@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Text;
 using DiplomacyIntrigue.Behaviors;
 using DiplomacyIntrigue.Core;
+using DiplomacyIntrigue.Diplomacy;
+using DiplomacyIntrigue.Espionage;
 using DiplomacyIntrigue.Intrigue;
 using DiplomacyIntrigue.Models;
 using DiplomacyIntrigue.UI.KingdomScreen;
@@ -19,8 +21,11 @@ namespace DiplomacyIntrigue.UI.EncyclopediaPages
     /// **Bands, never figures** (design 02 §9.1). Every word here comes from
     /// <see cref="CourtBands"/>, whose edges are the thresholds the AI acts on, so the page
     /// says which side of a line a court sits on and never how far. The exact numbers are
-    /// what Phase 3's ReadCourt mission will sell; nothing on this page may leak one, which
-    /// is why this VM exposes only text and colours - there is no number property to bind.
+    /// what Phase 3's ReadCourt mission sells, and they appear in one place only: the ledger,
+    /// while the player's own house holds a live ReadCourt on this realm (step 3.5, design 03
+    /// §2). Everything above the ledger stays in bands even then, so the page reads the same
+    /// shape with or without an agent inside. This VM still exposes only text and colours -
+    /// there is no number property to bind.
     ///
     /// Your own kingdom gets a pointer to the Court tab instead: the full ledger is one
     /// screen away, and an envoy's report of your own court would be a strange thing to read.
@@ -46,6 +51,7 @@ namespace DiplomacyIntrigue.UI.EncyclopediaPages
         private string _moodText = string.Empty;
         private string _houseCountText = string.Empty;
         private string _claimText = string.Empty;
+        private string _ledgerNote = string.Empty;
         private MBBindingList<DiBandSegmentVM> _standingSegments = new MBBindingList<DiBandSegmentVM>();
         private MBBindingList<DiBandSegmentVM> _moodSegments = new MBBindingList<DiBandSegmentVM>();
         private MBBindingList<DiEnvoyHouseVM> _houses = new MBBindingList<DiEnvoyHouseVM>();
@@ -156,10 +162,20 @@ namespace DiplomacyIntrigue.UI.EncyclopediaPages
             "Every edge above is a real threshold in their court: you are told which side of it "
             + "a house sits on, never how far.";
 
-        [DataSourceProperty]
-        public string LedgerNote =>
+        private const string UnreadLedger =
             "What each house holds against its ruler, and by how much, is not something an envoy "
             + "can count. An agent inside their court would read you the figures.";
+
+        /// <summary>
+        /// The envoy's disclaimer, or - under a live ReadCourt of the player's own house - the
+        /// agent's reading, figure by figure.
+        /// </summary>
+        [DataSourceProperty]
+        public string LedgerNote
+        {
+            get => _ledgerNote;
+            set { if (value == _ledgerNote) return; _ledgerNote = value; OnPropertyChangedWithValue(value, nameof(LedgerNote)); }
+        }
 
         [DataSourceProperty]
         public MBBindingList<DiBandSegmentVM> StandingSegments
@@ -219,7 +235,11 @@ namespace DiplomacyIntrigue.UI.EncyclopediaPages
             var him = female ? "her" : "him";
             var his = female ? "her" : "his";
 
-            HeaderLine = "The court of Clan " + ruling.Name + " - what your envoys can tell you.";
+            // A reveal is the player's own house's: a vassal's agents report to their own lord.
+            var readDaysLeft = Missions.RevealDaysLeft(state, Clan.PlayerClan, kingdom, SpyMissionType.ReadCourt);
+            HeaderLine = readDaysLeft > 0f
+                ? "The court of Clan " + ruling.Name + " - what your envoys can tell you, and what your agents read inside it."
+                : "The court of Clan " + ruling.Name + " - what your envoys can tell you.";
 
             // The crown, as a band.
             var standing = CourtBands.CrownOf(LegitimacyRegistry.Of(state, kingdom));
@@ -263,6 +283,115 @@ namespace DiplomacyIntrigue.UI.EncyclopediaPages
             FactionReport = Factions(BlocModel.BlocsOf(state, kingdom), his);
             DefectionReport = Defections(counts[(int)LoyaltyBand.DefectionRisk], him);
             ClaimText = Claims(SuccessionModel.PretendersTo(state, kingdom), kingdom);
+            LedgerNote = readDaysLeft > 0f ? Ledger(state, kingdom, members, readDaysLeft) : UnreadLedger;
+        }
+
+        /// <summary>
+        /// What a successful ReadCourt buys (design 03 §2): the crown's legitimacy, each war's
+        /// exhaustion, each party's power, what is before the council, and every house's loyalty
+        /// and grievances, exactly. Read live from the same resolvers the AI and the Court tab
+        /// read - an agent reads the court as it is today, not a snapshot of the day the mission
+        /// landed - for as long as the reveal lasts.
+        /// </summary>
+        private static string Ledger(ModState state, Kingdom kingdom, List<Clan> members, float daysLeft)
+        {
+            var lines = new List<string>();
+            var days = Math.Ceiling(daysLeft);
+            lines.Add("Your agents inside the court read you its figures for " + days.ToString("0")
+                      + (days > 1 ? " more days." : " more day."));
+
+            var crown = new StringBuilder();
+            crown.Append("The crown's legitimacy: ").Append(LegitimacyRegistry.Of(state, kingdom).ToString("0.0")).Append(" of 100.");
+            var wars = 0;
+            foreach (var war in state.OngoingWarsOf(kingdom))
+            {
+                var enemy = war.Aggressor == kingdom ? war.Defender : war.Aggressor;
+                crown.Append(wars == 0 ? " War exhaustion: " : "; ")
+                     .Append(war.ExhaustionOf(kingdom).ToString("0.0")).Append(" against ").Append(enemy?.Name);
+                wars++;
+            }
+            crown.Append(wars == 0 ? " No war is wearing on them." : ".");
+            lines.Add(crown.ToString());
+
+            var blocs = BlocModel.BlocsOf(state, kingdom);
+            if (blocs.Count == 0) lines.Add("No party has formed at court.");
+            else
+            {
+                var parties = new StringBuilder("Parties: ");
+                for (var i = 0; i < blocs.Count; i++)
+                {
+                    var bloc = blocs[i];
+                    if (i > 0) parties.Append("; ");
+                    parties.Append(DiCourtVM.AgendaName(bloc.Agenda)).Append(", ")
+                           .Append(bloc.Members.Count).Append(bloc.Members.Count == 1 ? " house" : " houses")
+                           .Append(", power ").Append(bloc.Power.ToString("0"))
+                           .Append(", ").Append(bloc.EffectivePower.ToString("0")).Append(" of it from houses that would follow it");
+                }
+                lines.Add(parties.Append('.').ToString());
+            }
+
+            lines.Add(Council(kingdom));
+
+            var ruling = kingdom.RulingClan;
+            for (var i = 0; i < members.Count; i++)
+            {
+                var clan = members[i];
+                var line = new StringBuilder();
+                line.Append("Clan ").Append(clan.Name).Append(": loyalty ")
+                    .Append(LoyaltyModel.Of(state, clan).ToString("0.0"));
+
+                var held = GrievanceRegistry.TotalAgainst(state, clan, ruling);
+                if (held <= 0f)
+                {
+                    line.Append(", holds nothing against the crown.");
+                }
+                else
+                {
+                    line.Append(", holds ").Append(held.ToString("0.0")).Append(" against the crown (");
+                    var first = true;
+                    foreach (var g in GrievanceRegistry.Of(state, clan))
+                    {
+                        if (g.Target != ruling) continue;
+                        if (!first) line.Append("; ");
+                        line.Append(DiCourtGrievanceVM.TitleOf(g.Type)).Append(' ').Append(g.Weight.ToString("0.0"));
+                        first = false;
+                    }
+                    line.Append(").");
+                }
+                lines.Add(line.ToString());
+            }
+            return string.Join("\n", lines);
+        }
+
+        /// <summary>
+        /// The kingdom decisions waiting on a vote. Each title is vanilla's own text, and a
+        /// decision whose title cannot be built is named by its kind rather than taking the
+        /// whole section down with it.
+        /// </summary>
+        private static string Council(Kingdom kingdom)
+        {
+            var decisions = kingdom.UnresolvedDecisions;
+            if (decisions == null || decisions.Count == 0) return "Nothing is before the council.";
+
+            var sb = new StringBuilder("Before the council: ");
+            for (var i = 0; i < decisions.Count; i++)
+            {
+                var d = decisions[i];
+                if (i > 0) sb.Append("; ");
+                string title;
+                try
+                {
+                    title = d.GetGeneralTitle()?.ToString();
+                }
+                catch (Exception ex)
+                {
+                    Log.Warn("UI", "A kingdom decision's title could not be built: " + ex.Message);
+                    title = null;
+                }
+                sb.Append(string.IsNullOrEmpty(title) ? d.GetType().Name : title);
+                if (d.ProposerClan != null) sb.Append(", put forward by Clan ").Append(d.ProposerClan.Name);
+            }
+            return sb.Append('.').ToString();
         }
 
         /// <summary>The houses by mood, worst first, as one bar. Widths are shares of the court.</summary>
@@ -398,6 +527,9 @@ namespace DiplomacyIntrigue.UI.EncyclopediaPages
             for (var i = 0; i < _houses.Count; i++)
                 sb.AppendLine("    " + _houses[i].Name.PadRight(16) + _houses[i].MoodText.PadRight(17) + _houses[i].WeightText);
             sb.AppendLine("  " + ClaimText);
+            sb.AppendLine("  Ledger:");
+            foreach (var line in LedgerNote.Split('\n'))
+                sb.AppendLine("    " + line);
             return sb.ToString();
         }
     }
