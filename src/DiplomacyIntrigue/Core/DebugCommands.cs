@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using DiplomacyIntrigue.Behaviors;
 using DiplomacyIntrigue.Diplomacy;
+using DiplomacyIntrigue.Espionage;
 using DiplomacyIntrigue.Intrigue;
 using DiplomacyIntrigue.Models;
 using TaleWorlds.CampaignSystem;
@@ -1053,6 +1054,9 @@ namespace DiplomacyIntrigue.Core
             // Advances every internal war and looks for a new one. Exhaustion accrues here; the
             // cooldown after a war is measured in dates and, like the peace dividend, cannot.
             InternalWars.DailyTick(state);
+
+            // Spy networks decay daily and lose a handler who no longer qualifies (Phase 3.1).
+            SpyNetworks.DailyTick(state);
         }
 
         private static readonly char[] CommaSeparator = { ',' };
@@ -1087,9 +1091,17 @@ namespace DiplomacyIntrigue.Core
                 // permanently discouraged by wars it finished years ago.
                 for (var day = 0; day < 7; day++) RunDailyUpkeep(state);
 
+                // The weekly half of the campaign's upkeep, every piece of it. The grievance
+                // scan was missing from this list until 2026-09-25: a realm paying tribute was
+                // never resented under ai_week, the partial-tick trap of CLAUDE.md §1 again.
+                GrievanceSources.WeeklyScan(state);
+
                 // A civil war's leaders buy houses weekly (design 07 §6). Left out, a week here
                 // would show every internal war fought with its sides frozen.
                 SideChange.WeeklyTick(state);
+
+                // Spy networks are paid for and grow weekly (Phase 3.1).
+                SpyNetworks.WeeklyTick(state);
 
                 foreach (var kingdom in Kingdom.All)
                 {
@@ -2265,6 +2277,145 @@ namespace DiplomacyIntrigue.Core
             sb.AppendLine(clan.Name + " keeps " + clan.Heroes.Count + " hero(es); relation between the heads now "
                           + cadet.Leader?.GetRelation(clan.Leader) + ".");
             return sb.ToString();
+        }
+
+        // ----- Espionage (Phase 3) --------------------------------------------
+
+        /// <summary>
+        /// Spy networks, each with its week term by term - printed from
+        /// <see cref="SpyNetworks.Explain"/>, the same sum the weekly upkeep applies - and the
+        /// target's counter-intelligence.
+        /// Usage: diplomacy.networks   or   diplomacy.networks <clan or kingdom>
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("networks", "diplomacy")]
+        public static string Networks(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var filter = args == null || args.Count == 0 ? null : string.Join(" ", args).Trim();
+            if (filter == string.Empty) filter = null;
+            var clan = filter == null ? null : FindClan(filter);
+            var kingdom = filter == null || clan != null ? null : FindKingdom(filter);
+            if (filter != null && clan == null && kingdom == null) return "No clan or kingdom matching \"" + filter + "\".";
+
+            var sb = new StringBuilder();
+            var shown = 0;
+            for (var i = 0; i < state.SpyNetworks.Count; i++)
+            {
+                var n = state.SpyNetworks[i];
+                if (clan != null && n.Owner != clan) continue;
+                if (kingdom != null && n.Target != kingdom && n.Owner?.Kingdom != kingdom) continue;
+                shown++;
+
+                var t = SpyNetworks.Explain(state, n);
+                sb.AppendLine(n.Owner?.Name + " in " + n.Target?.Name + ": strength " + n.Strength.ToString("0.0")
+                              + " of " + t.Ceiling.ToString("0") + ", budget " + n.WeeklyBudget + "/week"
+                              + ", last week " + n.LastWeekChange.ToString("+0.00;-0.00;0.00")
+                              + " for " + n.LastWeekSpent + " spent");
+                sb.AppendLine("    handler: " + (n.Handler == null ? "none" : n.Handler.Name
+                              + " (roguery " + t.Roguery.ToString("0") + ", charm " + t.Charm.ToString("0")
+                              + ") at " + (n.Handler.CurrentSettlement?.Name?.ToString() ?? "no settlement")));
+                if (t.Idle != null) sb.AppendLine("    idle: " + t.Idle + " - nothing is spent, nothing grows");
+                sb.AppendLine("    next week: gold " + t.Spend + " -> " + t.FromGold.ToString("+0.00;-0.00;0.00")
+                              + (t.AtWar ? " x " + EspionageConstants.NetworkWartimeGrowth.ToString("0.0") + " at war = " + t.Investment.ToString("+0.00;-0.00;0.00") : "")
+                              + ", counter-intelligence " + t.CounterIntelligence.ToString("0.0") + " -> "
+                              + (-t.FromCounterIntelligence).ToString("+0.00;-0.00;0.00")
+                              + ", attrition " + (-t.Attrition).ToString("+0.00;-0.00;0.00")
+                              + " = " + t.Weekly.ToString("+0.00;-0.00;0.00")
+                              + ", and " + (-t.WeekOfDecay).ToString("+0.00;-0.00;0.00") + " of daily decay = "
+                              + t.NetOverAWeek.ToString("+0.00;-0.00;0.00") + " a week");
+            }
+            if (shown == 0) sb.AppendLine("No spy networks" + (filter == null ? "." : " for \"" + filter + "\"."));
+
+            if (kingdom != null)
+                sb.AppendLine(kingdom.Name + "'s counter-intelligence: " + CounterIntelligence.Explain(state, kingdom));
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Puts a hero of a clan in charge of that clan's network in a realm, founding it if needed,
+        /// through <see cref="SpyNetworks.Assign"/> - every eligibility rule applies. An optional
+        /// weekly budget is set at the same time. Test saves only until the espionage UI (3.7).
+        /// Usage: diplomacy.test_assign_handler <hero> | <kingdom> [| weekly denars]
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_assign_handler", "diplomacy")]
+        public static string TestAssignHandler(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var parts = SplitOnPipe(args);
+            if (parts.Count < 2) return "Usage: diplomacy.test_assign_handler <hero> | <kingdom> [| weekly denars]";
+            var hero = FindHero(parts[0]);
+            if (hero == null) return "No living hero matching \"" + parts[0] + "\".";
+            var target = FindKingdom(parts[1]);
+            if (target == null) return "No kingdom matching \"" + parts[1] + "\".";
+
+            var network = SpyNetworks.Assign(state, hero, hero.Clan, target, out var reason);
+            if (network == null) return "Refused: " + reason;
+            if (parts.Count >= 3 && int.TryParse(parts[2], out var budget)) SpyNetworks.SetBudget(state, hero.Clan, target, budget);
+            return "Assigned. " + network + Environment.NewLine + Networks(new List<string> { hero.Clan.Name.ToString() });
+        }
+
+        /// <summary>
+        /// Sets a clan's weekly budget for its network in a realm.
+        /// Usage: diplomacy.test_network_budget <clan> | <kingdom> | <weekly denars>
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_network_budget", "diplomacy")]
+        public static string TestNetworkBudget(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var parts = SplitOnPipe(args);
+            if (parts.Count < 3 || !int.TryParse(parts[2], out var budget))
+                return "Usage: diplomacy.test_network_budget <clan> | <kingdom> | <weekly denars>";
+            var clan = FindClan(parts[0]);
+            if (clan == null) return "No clan matching \"" + parts[0] + "\".";
+            var target = FindKingdom(parts[1]);
+            if (target == null) return "No kingdom matching \"" + parts[1] + "\".";
+
+            var network = SpyNetworks.SetBudget(state, clan, target, budget);
+            return "Budget set. " + network;
+        }
+
+        /// <summary>
+        /// Runs one week of network upkeep now - the weekly half only, so it can be read against
+        /// the prediction diplomacy.networks printed. Pair it with tick_days 7 for a whole week.
+        /// Usage: diplomacy.test_network_week
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_network_week", "diplomacy")]
+        public static string TestNetworkWeek(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+            SpyNetworks.WeeklyTick(state);
+            return "Ran the weekly network upkeep once (no daily decay)." + Environment.NewLine + Networks(new List<string>());
+        }
+
+        /// <summary>
+        /// A living hero by string id, then by name - the player's own clan first, since a
+        /// handler is usually one of ours and names repeat across Calradia ("Sinor" is three
+        /// heroes) - then by prefix.
+        /// </summary>
+        private static Hero FindHero(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return null;
+            name = name.Trim();
+            foreach (var hero in Hero.AllAliveHeroes)
+                if (string.Equals(hero.StringId, name, StringComparison.OrdinalIgnoreCase)) return hero;
+            if (Clan.PlayerClan != null)
+                foreach (var hero in Clan.PlayerClan.Heroes)
+                    if (hero.IsAlive && string.Equals(hero.Name?.ToString(), name, StringComparison.OrdinalIgnoreCase)) return hero;
+            foreach (var hero in Hero.AllAliveHeroes)
+                if (string.Equals(hero.Name?.ToString(), name, StringComparison.OrdinalIgnoreCase)) return hero;
+            foreach (var hero in Hero.AllAliveHeroes)
+            {
+                var heroName = hero.Name?.ToString();
+                if (heroName != null && heroName.StartsWith(name, StringComparison.OrdinalIgnoreCase)) return hero;
+            }
+            return null;
         }
 
         private static Clan FindClan(string name)

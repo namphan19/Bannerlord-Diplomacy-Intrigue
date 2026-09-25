@@ -21,8 +21,9 @@ mission is strictly better than doing nothing, it is mis-specified.
 
 ## 1. Spy networks
 
-One strength value per **ordered** kingdom pair (our network *in* their realm), 0–100.
-Ordered because Vlandia spying on Battania is not the same asset as the reverse.
+One strength value per **owner clan and target kingdom** (our network *in* their realm), 0–100.
+Ordered because Vlandia spying on Battania is not the same asset as the reverse. (Written as a
+kingdom pair first; the lead moved ownership to the clan on 2026-09-25, §9 decision 5.)
 
 **Building:** an ongoing weekly investment, not a purchase.
 
@@ -146,7 +147,23 @@ keeps three pillars from becoming three unrelated games.
 | 3.6 | AI running its own networks and missions | 3.2–3.4 |
 | 3.7 | Espionage UI | all above |
 
-## 9. Open questions
+## 9. Decisions, 2026-09-25
+
+The lead answered the four open questions below, and one more that the data model raised,
+before any Phase 3 code:
+
+| # | Question | Decision |
+|---|---|---|
+| 1 | Assassination at all? | **Keep it, as specced, with the §5 penalties.** |
+| 2 | Can the player be a target? | **Yes, and clearly telegraphed.** The AI runs operations against the player's realm under the same rules; every one aimed at us leaves a visible trace, and nothing is lost to a roll the player cannot see |
+| 3 | Handler risk on exposure | **Captured, never killed.** The victim holds the handler prisoner; the owner can ransom them back |
+| 4 | Do networks survive a war? | **Yes, growing at half rate**, as §1 says: a network built before a war is what the wartime missions run on |
+| 5 | Who owns a network? | **Each clan, not each kingdom.** §1 said "per ordered kingdom pair", which leaves a player who serves a king, most of a campaign, with no espionage at all. A network is owned by a clan and paid from its purse, and it sits in a target kingdom. An exposure still hands the victim a casus belli against the owner's **kingdom**, so a vassal's operation can drag its liege into a war. The AI runs networks only from ruling clans: the rule is the same for every clan, and that limit is the AI's choice, not an exemption |
+
+Consequences written into the model: a network is keyed by (owner clan, target kingdom); a clan
+cannot run one inside its own realm; the handler is a hero of the owning clan.
+
+### The questions as they were asked
 
 1. **Assassination at all?** It is in the enum and specced above, but it is the one mission
    that can permanently delete content a player cares about (a named lord, a marriage

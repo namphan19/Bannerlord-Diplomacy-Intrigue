@@ -214,6 +214,12 @@ namespace DiplomacyIntrigue
             {
                 starter.AddBehavior(new IntrigueBehavior());
             }
+
+            // Its own toggle again, for the same reason.
+            if (Settings.Current.EnableEspionage)
+            {
+                starter.AddBehavior(new EspionageBehavior());
+            }
         }
 
         /// <summary>
