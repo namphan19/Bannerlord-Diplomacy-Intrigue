@@ -2395,6 +2395,32 @@ namespace DiplomacyIntrigue.Core
         }
 
         /// <summary>
+        /// Hires a wanderer into the player's clan and puts them in the main party, through
+        /// vanilla's AddCompanionAction and AddHeroToPartyAction - so a test save with no companion
+        /// can give the player a handler who starts where a real one would, in the party.
+        /// Test saves only.
+        /// Usage: diplomacy.test_hire_companion Synira the Wanderer
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_hire_companion", "diplomacy")]
+        public static string TestHireCompanion(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+            if (args == null || args.Count == 0) return "Usage: diplomacy.test_hire_companion <wanderer>";
+
+            var hero = FindHero(string.Join(" ", args));
+            if (hero == null) return "No living hero matching \"" + string.Join(" ", args) + "\".";
+            if (!hero.IsWanderer || hero.Clan != null) return hero.Name + " is not a free wanderer.";
+            if (Clan.PlayerClan == null || TaleWorlds.CampaignSystem.Party.MobileParty.MainParty == null) return "No player clan or party.";
+
+            AddCompanionAction.Apply(Clan.PlayerClan, hero);
+            AddHeroToPartyAction.Apply(hero, TaleWorlds.CampaignSystem.Party.MobileParty.MainParty, true);
+            return hero.Name + " joins " + Clan.PlayerClan.Name + " (roguery " + hero.GetSkillValue(DefaultSkills.Roguery)
+                   + ", charm " + hero.GetSkillValue(DefaultSkills.Charm) + "), in "
+                   + (hero.PartyBelongedTo?.Name?.ToString() ?? "no party") + ".";
+        }
+
+        /// <summary>
         /// A living hero by string id, then by name - the player's own clan first, since a
         /// handler is usually one of ours and names repeat across Calradia ("Sinor" is three
         /// heroes) - then by prefix.

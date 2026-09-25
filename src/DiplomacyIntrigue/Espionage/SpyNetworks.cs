@@ -260,6 +260,15 @@ namespace DiplomacyIntrigue.Espionage
                     var before = network.Strength;
                     network.Change(t.Weekly, t.Ceiling);
                     network.RecordWeek(network.Strength - before - t.WeekOfDecay, t.Spend);
+
+                    // One line a network a week: the only record of what was paid, once the purse
+                    // has moved on. A live check on 2026-09-25 had to reconstruct a week from
+                    // strengths alone because this line did not exist.
+                    Log.Info("Espionage", network.Owner.Name + " in " + network.Target.Name + ": "
+                                          + before.ToString("0.0") + " -> " + network.Strength.ToString("0.0")
+                                          + " (weekly " + t.Weekly.ToString("+0.00;-0.00;0.00")
+                                          + (t.Idle != null ? ", idle: " + t.Idle : ", spent " + t.Spend)
+                                          + (t.AtWar ? ", at war" : "") + ").");
                 }
                 catch (Exception ex)
                 {

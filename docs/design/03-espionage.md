@@ -1,6 +1,7 @@
 # Design 03 — Espionage
 
-Status: **spec for review**. Phase 3. Depends on Phase 1 (claims, treaties, trust) and
+Status: **decided and in build** - the lead's decisions are §9, what is built is §10 (3.1 on
+2026-09-25). Phase 3. Depends on Phase 1 (claims, treaties, trust) and
 Phase 2 (grievances, loyalty) already existing — espionage in this design is mostly a way to
 *reach into* those systems, not a separate scoreboard.
 
@@ -179,3 +180,39 @@ cannot run one inside its own realm; the handler is a hero of the owning clan.
    roll the player did not see.
 4. **Do networks survive a war?** Currently they grow at half rate in wartime but persist.
    The alternative — war collapses networks — makes pre-war preparation matter much more.
+
+## 10. What was built
+
+### 3.1, spy networks - built and verified live, 2026-09-25
+
+| Piece | Where |
+|---|---|
+| The saved network: owner clan, target realm, strength, handler, budget, last week (class id 15, `ModState` property 15) | `Models/SpyNetwork.cs` |
+| Founding, handlers, the weekly sum, daily decay, releasing a handler who no longer qualifies | `Espionage/SpyNetworks.cs` |
+| Counter-intelligence, base and security terms only until 3.3 | `Espionage/CounterIntelligence.cs` |
+| Upkeep under its own settings toggle | `Behaviors/EspionageBehavior.cs` |
+| Levers | `diplomacy.networks`, `test_assign_handler`, `test_network_budget`, `test_network_week`, `test_hire_companion` |
+
+A handler must be of the owning clan, grown, free, not the clan's head, not leading a party and
+not governing. They are stationed in the target realm's most prosperous town. Validity is
+checked every day rather than hooked on events, so no listener order matters (CLAUDE.md §1).
+
+| Check | Result |
+|---|---|
+| Eligibility | A governor and two party leaders of Urkhunait refused with the reason; Chaghan accepted and sent to Sargot, Vlandia's richest town |
+| The sum, by hand | Ceiling 40 + 48/2 + 76/4 = **83**; gold 10,000/2,000 x (1 + 48/200) = **6.20**; counter-intelligence 10 + 0.05 x 51 = **12.6**, x 0.08 = 1.01; weekly **+4.49**. The upkeep applied exactly that |
+| Wartime | Urkhunait in the Northern Empire, at war: 6.40 x 0.5 = 3.20, weekly **+1.49** |
+| Daily decay | `tick_days 7`: 4.5 -> **3.8** |
+| Gold | the owner's head paid exactly 10,000 |
+| **Save round trip** | saved `di_espionage_test`, new process, reloaded: `2 spy networks`, handlers, strengths and budgets intact |
+| The campaign's own weekly tick | a player companion hired and assigned from the main party (moved out of it to Pravend), then the real clock: "Calastides in Vlandia: 0.0 -> 4.4 (weekly +4.36, spent 10000)" |
+| A handler taken by vanilla | on the real clock, vanilla made **both AI handlers governors** within days, and the daily check released them with the reason |
+
+**Found, for 3.6:** vanilla puts an AI clan's idle lords to work - as governors here, and it
+raises parties from them too. An AI handler will be taken away the same way unless it is kept
+out of those choices. The player's companions are not touched, since vanilla leaves the player's
+appointments to the player. How to reserve an AI handler is 3.6's first problem.
+
+**Not verified:** a network owned by a clan whose realm later becomes the target's (it goes
+idle by rule; not seen), and a handler dying or captured (the same daily check as the governor
+case, not seen for those causes).
