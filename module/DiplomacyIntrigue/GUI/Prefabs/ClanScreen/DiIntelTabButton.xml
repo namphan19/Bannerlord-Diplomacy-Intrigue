@@ -1,0 +1,23 @@
+<Prefab>
+  <Constants>
+    <Constant Name="Header.Tab.Right.Width" BrushLayer="Default" BrushName="Header.Tab.Right" BrushValueType="Width" />
+    <Constant Name="Header.Tab.Right.Height" BrushLayer="Default" BrushName="Header.Tab.Right" BrushValueType="Height" />
+    <Constant Name="Header.Tab.Right.Width.Scaled" MultiplyResult="0.90" Value="!Header.Tab.Right.Width" />
+    <Constant Name="Header.Tab.Right.Height.Scaled" MultiplyResult="0.90" Value="!Header.Tab.Right.Height" />
+  </Constants>
+  <Window>
+    <!-- Fifth Clan-screen tab (Phase 3.7): the house's espionage. Last in the strip, so it
+         wears the rounded right end cap, at vanilla's own 0.90 scale. Wiring is the Kingdom
+         screen's Realm and Court tabs', pointed at DiIntelligence. -->
+    <ButtonWidget DataSource="{DiIntelligence}" DoNotPassEventsToChildren="true"
+        WidthSizePolicy="Fixed" HeightSizePolicy="Fixed"
+        SuggestedWidth="!Header.Tab.Right.Width.Scaled" SuggestedHeight="!Header.Tab.Right.Height.Scaled"
+        Brush="Header.Tab.Right" Command.Click="ExecuteShow" IsSelected="@Show" IsVisible="@TabVisible"
+        UpdateChildrenStates="true">
+      <Children>
+        <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+            PositionXOffset="-10" MarginTop="3" Brush="Clan.TabControl.Text" Text="@TabText" />
+      </Children>
+    </ButtonWidget>
+  </Window>
+</Prefab>

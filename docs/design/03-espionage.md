@@ -1,7 +1,8 @@
 # Design 03 — Espionage
 
-Status: **decided and in build** - the lead's decisions are §9, what is built is §10 (3.1, 3.2
-and 3.4 on 2026-09-25, verified live; 3.5, 3.3 and 3.6 the same day, compiled but not yet run in game). Phase 3. Depends on Phase 1 (claims, treaties, trust) and
+Status: **decided and in build** - the lead's decisions are §9, what is built is §10 (3.1-3.6 on
+2026-09-25, all run live the same day - 3.6 with its handler blocker still open; 3.7 on 2026-09-26,
+verified live). Phase 3. Depends on Phase 1 (claims, treaties, trust) and
 Phase 2 (grievances, loyalty) already existing — espionage in this design is mostly a way to
 *reach into* those systems, not a separate scoreboard.
 
@@ -297,7 +298,7 @@ keep the pillar honest falls away just as the network becomes useful. Counter-in
 seen), an exposure by a clan outside any realm, cancelling, and the reveal durations, which have
 no reader yet.
 
-### 3.5, the cross-pillar effects - built and compiled, NOT run in game, 2026-09-25
+### 3.5, the cross-pillar effects - built 2026-09-25, verified live 2026-09-25
 
 Built in a cloud session with no game. It compiles clean against the v1.4.8 reference assemblies
 (`scripts/compile-check.sh`), 0 warnings. **Nothing below has been seen in game.**
@@ -335,7 +336,7 @@ Built in a cloud session with no game. It compiles clean against the v1.4.8 refe
   own decision titles) and every house's loyalty and grievances. Everything above the ledger on the
   page stays in bands. The reveal is the player's own house's; a liege's or vassal's does not count.
 
-**What to check in game, and how** (none done yet):
+**What to check in game, and how** (all five run 2026-09-25, results below the list):
 1. `test_set_network <clan> | <kingdom> | 60`, `test_launch_mission <clan> | <kingdom> | BribeLord | <a house head>`,
    `test_resolve_mission ... | success` - then `diplomacy.bribes` and `diplomacy.loyalty <kingdom>` should show
    `foreign gold -20.0` on that house, and its Court tab row the "Foreign gold" line if the player sits in that court.
@@ -349,11 +350,27 @@ Built in a cloud session with no game. It compiles clean against the v1.4.8 refe
 5. Save and reload with a live bribe: `diplomacy.bribes` must still read it (no new save data, so
    this should hold, but it has not been seen).
 
+**Run live, 2026-09-25, on `di_pretender_test`** (the player's Airit, ruling Khuzait; saved after as
+`di_35_bribe_test`). All five held:
+1. Bribes on Luichan (fen Penraic) and Aeron (fen Giall): `foreign gold -20.0`, 730 days left. A bribe
+   aimed at the crown's own head was refused ("fen Gruffendoc is the crown's own house").
+2. Battania's rising grew from 5 to 6 houses; the log marks "fen Giall (bought by Airit)". Giall rose
+   only through the bribe: Aeron's relation was 20 with the ruler and -2 with the claimant, and the
+   house is not in the pretender bloc, so neither other route could have taken it.
+3. `ForgedLetters 8.0` against fen Gruffendoc on fen Morcar.
+4. The ledger renders one figure per line: Gauntlet does break a TextWidget on `\n`.
+5. Save, then reload in a fresh process: both bribes, the forged grievance and the running war read back.
+
+Also: a mark killed before the operation came due failed it before the roll ("Pryndor is dead"), and the
+network was charged nothing. Two wording faults found and not yet fixed: the rising's "bought with our
+gold" notice also names a bribed house that would have risen anyway (Penraic sat in the pretender bloc),
+and "came to nothing" notices begin with a lower-case operation name.
+
 **Open, for 3.6:** under today's rules an AI network could bribe the player's own house, and the
 player would then be asked at the next internal war as for any other rebel side. Nothing launches
 an AI operation until 3.6, and whether the player should instead be offered the gold is 3.6's call.
 
-### 3.3, counter-intelligence budgets - built and compiled, NOT run in game, 2026-09-25
+### 3.3, counter-intelligence budgets - built 2026-09-25, verified live 2026-09-25
 
 Built in the same cloud session as 3.5, with no game: 0 warnings against the v1.4.8 reference
 assemblies. **Nothing below has been seen in game.**
@@ -392,7 +409,15 @@ to provide; whether it is enough is for a run with AI budgets in it, after 3.6.
    a new savable type**, so load the save in a fresh process, not only the same session.
 5. The real weekly tick, not the lever: one budget paid on the campaign's own clock.
 
-### 3.6, the AI - built and compiled, NOT run in game, 2026-09-25
+**Run live, 2026-09-25** (`di_35_bribe_test`, the player ruling Khuzait). All five held: 15,000 paid,
+`budget +10.0`, counter-intelligence 13.1 -> 23.1; an order of 150,000 against a purse of 118,500 paid
+118,500 and raised the red notice; a foreign network's counter-intelligence term went 0.079 -> 0.139 and
+its exposure on failure 18% -> 26%; `di_36_espionage_test` loaded in a fresh process with all eight
+budgets exactly as saved, and a save from before 3.3 loaded with none; two weekly ticks on the real clock
+paid every realm. Noted, not a fault: one week's large payment (118,500) lifts the realm to 92 for that
+week.
+
+### 3.6, the AI - built 2026-09-25, run live 2026-09-25: checks 1, 2 and 4 hold, 3 FAILS, 5 not run
 
 Built in the same cloud session, with no game: 0 warnings against the v1.4.8 reference assemblies.
 **Nothing below has been seen in game.**
@@ -458,3 +483,55 @@ is for a long run.
    `test_resolve_mission ... | success` - the inquiry opens; both answers; the gold on acceptance.
 5. A long AI-only run with `ai_week` / the real clock: how many networks, operations and exposures a
    year, and whether exposures start wars. That run also answers 3.3's balance question.
+
+**Run live, 2026-09-25** (`di_35_bribe_test`, then `di_36_espionage_test`):
+1. Holds. Plans read sensibly: rivals scored, targets chosen, budgets inside the purse.
+2. Holds. Southern Empire, Sturgia and Vlandia each posted a handler into a rival's town at 6,000 a
+   week; every realm ordered counter-intelligence (1,500, or 3,000 for Aserai at two wars).
+3. **Fails.** Lilizha (Sturgia's handler in Vlandia) was made governor of Mazhadan Castle within the
+   first in-game week, so `CanHeroBeGovernor` is not what vanilla's governor assignment asks. The same
+   run showed the party blocker is as bad: Battania's and the Northern Empire's handlers were given
+   parties within days of each posting, week after week. In practice an AI network cannot hold a handler.
+4. Holds. Player as a vassal of Aserai, Pethros's BribeLord forced to success: the "Foreign gold" inquiry
+   opened; Take gave 25,000 and the -20; Turn away recorded a failure and moved no gold.
+5. Not run.
+
+Also found: four of seven ruling houses had nobody free to post at all (every grown member leads a
+party, governs or heads the house); StealTreasury scores 5.0 against every rich ruler, above
+Assassinate (3) and SabotageGarrison (4); and the text above says an open bribe offer saved and reloaded
+"is simply asked again", when in fact the due operation is rolled again and may fail.
+
+### 3.7, the UI - built and verified live, 2026-09-26
+
+The layout the lead approved on 2026-09-25 (artifact "Espionage UI mockup (Phase 3.7)"): the house's
+espionage on a **new fifth Clan-screen tab, Intelligence**, and the realm's counter-intelligence as a
+**ruler-only section at the foot of the Realm tab**. ReadCourt's figures stay on the Encyclopedia ledger.
+
+| Piece | Where |
+|---|---|
+| The tab: networks and reports; the selected network term by term, with its budget and handler; its operations board, the selected operation, and what is under way house-wide | `UI/ClanScreen/IntelligenceVM.cs`, `GUI/Prefabs/ClanScreen/DiIntelPanel.xml` |
+| Two overlays on the tab: planning an operation (the mark, three outcomes with their odds and costs, the send) and posting a handler (realm, member, what they could build) | the same two files |
+| The fifth tab and its switching with the four vanilla ones | `UI/ClanScreen/ClanManagementVMMixin.cs`, `ClanScreenExtensions.cs`, `DiIntelTabButton.xml` |
+| Counter-intelligence on the Realm tab | `UI/KingdomScreen/CounterIntelVM.cs`, a block at the foot of `DiRealmPanel.xml` |
+| One set of launch rules for the board and the launch: `Missions.CanPlan`, the gates that do not depend on the mark, now the first half of `CanLaunch` | `Espionage/Missions.cs` |
+| Lever | `diplomacy.test_intel open`, then `select`, `mission`, `plan`, `mark`, `send`, `picker`, `pick`, `post`, `budget`, `cancel` |
+
+Every figure on the tab is read from the resolver the roll uses (`SpyNetworks.Explain`,
+`Missions.OddsOf`, `CanPlan`/`CanLaunch`); "about N a week would hold it steady" is the upkeep's own
+terms solved for the spend. A rival house's mood in the mark list is a band, never a figure.
+
+**Verified live, 2026-09-26, on `di_36_espionage_test`**, by screenshot and through `test_intel` (which
+calls the same methods the buttons do): the tab and both overlays render as the mockup; a sabotage
+planned on Uthelaim Castle and sent (5,000 paid, the board locked with its reason); called off (the gold
+not refunded); Baghbayar posted to Vlandia through the picker, the ceiling mark drawn at 84 in both bars;
+the budget stepped; real clicks on Parties and Members push the panel out, including a re-click of the
+tab vanilla already had selected; the Realm section's order stepped 15,000 -> 16,500 with a real click.
+
+**Not verified:** the "caught in our realm" list with an entry in it (the test save holds no
+EspionageExposed claim), and keyboard or gamepad tab switching (vanilla's Q/E cycles its own four tabs).
+
+Found and fixed while building: the Clan screen's category flags raise only
+`PropertyChangedWithBoolValue`, so the first build never heard a vanilla tab open; a `ButtonWidget`
+ignores `Color`, so the overlays' backdrop drew white; the game's Fira Sans has no U+2212 and drew the
+minus sign as an underscore; and the Realm tab's two column rules stretched their row to the whole
+viewport, which only showed once something sat below them (UI-INTEGRATION.md §0d).

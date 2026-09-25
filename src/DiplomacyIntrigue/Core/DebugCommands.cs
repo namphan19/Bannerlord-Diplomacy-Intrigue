@@ -1584,6 +1584,86 @@ namespace DiplomacyIntrigue.Core
         }
 
         /// <summary>
+        /// Drives the Clan screen's Intelligence tab (Phase 3.7) through the same methods its
+        /// buttons call, and prints what the tab binds. The bridge's clicks match widgets by text
+        /// and can land on a hidden panel (UI-INTEGRATION.md 0b.5), so this is how a check says
+        /// what it exercised: the view model's commands, not the click itself.
+        /// Usage: diplomacy.test_intel open | show | select &lt;kingdom&gt; | mission &lt;type&gt; | plan | mark &lt;n&gt;
+        ///        | send | close | budget +|- | recall | picker [kingdom] | pick &lt;realm or hero&gt; | post | cancel &lt;n&gt;
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_intel", "diplomacy")]
+        public static string TestIntel(List<string> args)
+        {
+            if (Campaign.Current == null) return NoCampaign;
+            var words = args ?? new List<string>();
+            var verb = words.Count > 0 ? words[0].ToLowerInvariant() : "show";
+            var rest = words.Count > 1 ? string.Join(" ", words.GetRange(1, words.Count - 1)) : string.Empty;
+
+            try
+            {
+                if (verb == "open")
+                {
+                    var manager = GameStateManager.Current;
+                    if (manager == null) return "No game state manager - not in a running game.";
+                    manager.PushState(manager.CreateState<TaleWorlds.CampaignSystem.GameState.ClanState>(), 0);
+                    var opened = UI.ClanScreen.DiIntelligenceVM.Current;
+                    if (opened == null) return "Clan screen pushed, but the Intelligence tab's view model is not there - the mixin did not attach.";
+                    opened.ExecuteShow();
+                    return "Clan screen pushed, Intelligence tab shown.\n" + opened.Describe();
+                }
+
+                var vm = UI.ClanScreen.DiIntelligenceVM.Current;
+                if (vm == null) return "The Clan screen is not open (diplomacy.test_intel open).";
+
+                switch (verb)
+                {
+                    case "show": break;
+                    case "select":
+                        var k = FindKingdom(rest);
+                        if (k == null) return "No kingdom \"" + rest + "\".";
+                        vm.Select(k);
+                        break;
+                    case "mission":
+                        if (!Enum.TryParse(rest, true, out SpyMissionType type)) return "No mission type \"" + rest + "\".";
+                        vm.SelectMission(type);
+                        break;
+                    case "plan": vm.ExecutePlan(); break;
+                    case "mark":
+                        if (!int.TryParse(rest, out var index) || !vm.PickMark(index)) return "No mark " + rest + " on an open plan.";
+                        break;
+                    case "send": vm.ExecuteSend(); break;
+                    case "close": vm.ExecuteClosePlan(); vm.ExecuteClosePicker(); break;
+                    case "budget":
+                        if (rest == "+") vm.ExecuteBudgetUp();
+                        else if (rest == "-") vm.ExecuteBudgetDown();
+                        else return "budget + or budget -";
+                        break;
+                    case "recall": vm.ExecuteRecall(); break;
+                    case "picker":
+                        if (rest.Length == 0) vm.ExecuteFoundNetwork();
+                        else vm.ExecutePostHandler();
+                        if (rest.Length > 0 && !vm.PickInPicker(rest)) return "Picker open, but no realm \"" + rest + "\" in it.\n" + vm.Describe();
+                        break;
+                    case "pick":
+                        if (!vm.PickInPicker(rest)) return "Nothing called \"" + rest + "\" in an open picker.";
+                        break;
+                    case "post": vm.ExecuteSendHandler(); break;
+                    case "cancel":
+                        if (!int.TryParse(rest, out var op) || op < 0 || op >= vm.Operations.Count) return "No operation " + rest + ".";
+                        vm.Operations[op].ExecuteCancel();
+                        break;
+                    default:
+                        return "Unknown verb \"" + verb + "\".";
+                }
+                return vm.Describe();
+            }
+            catch (Exception ex)
+            {
+                return "test_intel failed: " + ex.Message;
+            }
+        }
+
+        /// <summary>
         /// Sets war score from the first kingdom's point of view, so the peace table can be
         /// opened without fighting a war to a budget. Mirrors <c>set_smoothed_strength</c>:
         /// test only, never save over a real campaign.

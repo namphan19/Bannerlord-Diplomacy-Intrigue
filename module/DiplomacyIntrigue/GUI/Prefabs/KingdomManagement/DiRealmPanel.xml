@@ -341,9 +341,11 @@
                                   </Children>
                                 </ListPanel>
 
-                                <!-- Divider -->
-                                <Widget WidthSizePolicy="Fixed" SuggestedWidth="1" HeightSizePolicy="StretchToParent"
-                                    MarginLeft="14" MarginRight="14" Sprite="BlankWhiteSquare_9" Color="#3A2F24FF" />
+                                <!-- Gap between columns. Was a 1px rule with HeightSizePolicy StretchToParent, which
+                                     made this CoverChildren row stretch to the whole viewport (UI-INTEGRATION.md 0b.1):
+                                     harmless while the row was last, a screen of empty space once the
+                                     counter-intelligence section came after it. Same width, no rule. -->
+                                <Widget WidthSizePolicy="Fixed" SuggestedWidth="29" HeightSizePolicy="Fixed" SuggestedHeight="1" />
 
                                 <!-- Column 2: our claims -->
                                 <ListPanel WidthSizePolicy="Fixed" SuggestedWidth="330" HeightSizePolicy="CoverChildren"
@@ -478,9 +480,11 @@
                                   </Children>
                                 </ListPanel>
 
-                                <!-- Divider -->
-                                <Widget WidthSizePolicy="Fixed" SuggestedWidth="1" HeightSizePolicy="StretchToParent"
-                                    MarginLeft="14" MarginRight="14" Sprite="BlankWhiteSquare_9" Color="#3A2F24FF" />
+                                <!-- Gap between columns. Was a 1px rule with HeightSizePolicy StretchToParent, which
+                                     made this CoverChildren row stretch to the whole viewport (UI-INTEGRATION.md 0b.1):
+                                     harmless while the row was last, a screen of empty space once the
+                                     counter-intelligence section came after it. Same width, no rule. -->
+                                <Widget WidthSizePolicy="Fixed" SuggestedWidth="29" HeightSizePolicy="Fixed" SuggestedHeight="1" />
 
                                 <!-- Column 3: our agreements -->
                                 <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
@@ -571,6 +575,148 @@
                                   </Children>
                                 </ListPanel>
 
+                              </Children>
+                            </ListPanel>
+
+                            <!-- Counter-intelligence (Phase 3.7): ruler only, at the foot of the tab.
+                                 Its own data context, DiCounterIntelVM; see CounterIntelVM.cs. -->
+                            <ListPanel DataSource="{CounterIntel}" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                MarginTop="18" MarginBottom="8" IsVisible="@Show" StackLayout.LayoutMethod="VerticalTopToBottom">
+                              <Children>
+                                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="1"
+                                    Sprite="BlankWhiteSquare_9" Color="#4A3C2AFF" />
+                                <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginTop="10">
+                                  <Children>
+                                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
+                                        VerticalAlignment="Bottom" Brush="DiRealm.Title" Text="Counter-intelligence" />
+                                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
+                                        VerticalAlignment="Bottom" MarginLeft="12" Brush="DiRealm.Label"
+                                        Text="Hunting foreign agents in our realm, paid from your own purse each week." />
+                                  </Children>
+                                </ListPanel>
+
+                                <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginTop="10">
+                                  <Children>
+
+                                    <!-- Standing and the order -->
+                                    <ListPanel WidthSizePolicy="Fixed" SuggestedWidth="400" HeightSizePolicy="CoverChildren"
+                                        StackLayout.LayoutMethod="VerticalTopToBottom">
+                                      <Children>
+                                        <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren">
+                                          <Children>
+                                            <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
+                                                VerticalAlignment="Bottom" Brush="DiRealm.Header" Text="@ValueText" />
+                                            <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
+                                                VerticalAlignment="Bottom" MarginLeft="8" MarginBottom="3" Brush="DiRealm.Label" Text="of 100, this week" />
+                                          </Children>
+                                        </ListPanel>
+                                        <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="24" MarginTop="6">
+                                          <Children>
+                                            <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="StretchToParent"
+                                                HorizontalAlignment="Left" Brush="DiRealm.Body" Text="Every realm starts at" />
+                                            <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="StretchToParent"
+                                                HorizontalAlignment="Right" Brush="DiIntel.Right" Text="@BaseText" />
+                                          </Children>
+                                        </Widget>
+                                        <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="24">
+                                          <Children>
+                                            <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="StretchToParent"
+                                                HorizontalAlignment="Left" Brush="DiRealm.Body" Text="@SecurityLabel" />
+                                            <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="StretchToParent"
+                                                HorizontalAlignment="Right" Brush="DiIntel.Right" Text="@SecurityText" />
+                                          </Children>
+                                        </Widget>
+                                        <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="24">
+                                          <Children>
+                                            <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="StretchToParent"
+                                                HorizontalAlignment="Left" Brush="DiRealm.Body" Text="@BudgetLabel" />
+                                            <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="StretchToParent"
+                                                HorizontalAlignment="Right" Brush="DiIntel.Right" Text="@BudgetText" />
+                                          </Children>
+                                        </Widget>
+
+                                        <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="40" MarginTop="10">
+                                          <Children>
+                                            <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="StretchToParent"
+                                                HorizontalAlignment="Left" Brush="DiRealm.Body" Text="Weekly order" />
+                                            <ListPanel WidthSizePolicy="CoverChildren" HeightSizePolicy="StretchToParent" HorizontalAlignment="Right">
+                                              <Children>
+                                                <ButtonWidget DoNotPassEventsToChildren="true" WidthSizePolicy="Fixed" SuggestedWidth="44"
+                                                    HeightSizePolicy="StretchToParent" Brush="ButtonBrush2" UpdateChildrenStates="true"
+                                                    IsEnabled="@CanLower" Command.Click="ExecuteOrderDown">
+                                                  <Children>
+                                                    <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                                                        Brush="Kingdom.GeneralButtons.Text" Text="-" />
+                                                  </Children>
+                                                </ButtonWidget>
+                                                <TextWidget WidthSizePolicy="Fixed" SuggestedWidth="100" HeightSizePolicy="StretchToParent"
+                                                    Brush="DiIntel.Center" Text="@OrderText" />
+                                                <ButtonWidget DoNotPassEventsToChildren="true" WidthSizePolicy="Fixed" SuggestedWidth="44"
+                                                    HeightSizePolicy="StretchToParent" Brush="ButtonBrush2" UpdateChildrenStates="true"
+                                                    Command.Click="ExecuteOrderUp">
+                                                  <Children>
+                                                    <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                                                        Brush="Kingdom.GeneralButtons.Text" Text="+" />
+                                                  </Children>
+                                                </ButtonWidget>
+                                              </Children>
+                                            </ListPanel>
+                                          </Children>
+                                        </Widget>
+                                        <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginTop="6"
+                                            Brush="DiRealm.Body" Text="@NextText" />
+                                        <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginTop="4"
+                                            Brush="DiRealm.Label" Brush.FontColor="@PurseColor" Text="@PurseLine" />
+                                      </Children>
+                                    </ListPanel>
+
+                                    <!-- What it does -->
+                                    <ListPanel WidthSizePolicy="Fixed" SuggestedWidth="340" HeightSizePolicy="CoverChildren" MarginLeft="30"
+                                        StackLayout.LayoutMethod="VerticalTopToBottom">
+                                      <Children>
+                                        <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
+                                            Brush="DiRealm.Label" Text="WHAT IT DOES" />
+                                        <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginTop="6"
+                                            Brush="DiRealm.Body" Text="@EffectText" />
+                                      </Children>
+                                    </ListPanel>
+
+                                    <!-- Caught -->
+                                    <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginLeft="30"
+                                        StackLayout.LayoutMethod="VerticalTopToBottom">
+                                      <Children>
+                                        <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
+                                            Brush="DiRealm.Label" Text="AGENTS CAUGHT IN OUR REALM" />
+                                        <ListPanel DataSource="{Caught}" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                            MarginTop="6" StackLayout.LayoutMethod="VerticalTopToBottom">
+                                          <ItemTemplate>
+                                            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="52" MarginBottom="4">
+                                              <Children>
+                                                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                                                    Sprite="BlankWhiteSquare_9" Color="#201A13CC" />
+                                                <Widget WidthSizePolicy="Fixed" SuggestedWidth="4" HeightSizePolicy="StretchToParent"
+                                                    Sprite="BlankWhiteSquare_9" Color="@AccentColor" />
+                                                <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginLeft="12"
+                                                    MarginRight="8" VerticalAlignment="Center" StackLayout.LayoutMethod="VerticalTopToBottom">
+                                                  <Children>
+                                                    <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                                        Brush="DiRealm.Value" Text="@Name" />
+                                                    <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                                        Brush="DiRealm.Label" Text="@Line" />
+                                                  </Children>
+                                                </ListPanel>
+                                              </Children>
+                                            </Widget>
+                                          </ItemTemplate>
+                                        </ListPanel>
+                                        <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginTop="4"
+                                            Brush="DiRealm.Body"
+                                            Text="Networks nobody has caught are not listed. You cannot see them, and neither can any AI court: an AI ruler raises its order for the wars it fights and the agents it has caught." />
+                                      </Children>
+                                    </ListPanel>
+
+                                  </Children>
+                                </ListPanel>
                               </Children>
                             </ListPanel>
 

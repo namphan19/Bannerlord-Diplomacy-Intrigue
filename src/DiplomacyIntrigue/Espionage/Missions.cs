@@ -184,6 +184,37 @@ namespace DiplomacyIntrigue.Espionage
         public static bool CanLaunch(ModState state, Clan owner, Kingdom target, SpyMissionType type,
             Hero targetHero, Settlement targetSettlement, out string reason)
         {
+            if (!CanPlan(state, owner, target, type, out reason)) return false;
+            var spec = SpecOf(type);
+
+            if (spec.NeedsSettlement)
+            {
+                if (targetSettlement == null || targetSettlement.Town == null) { reason = type + " needs a town or castle."; return false; }
+                if (targetSettlement.OwnerClan?.Kingdom != target) { reason = targetSettlement.Name + " is not held by " + target.Name + "."; return false; }
+            }
+
+            if (spec.NeedsHero)
+            {
+                if (targetHero == null || !targetHero.IsAlive) { reason = type + " needs a living lord."; return false; }
+                if (targetHero.Clan?.Kingdom != target) { reason = targetHero.Name + " is not of " + target.Name + "."; return false; }
+                if (targetHero.Clan == owner) { reason = targetHero.Name + " is of our own house."; return false; }
+                if (spec.NeedsHouseHead && !IsHouseHead(targetHero, target, out var why))
+                {
+                    reason = type + " needs the head of a sworn house: " + why;
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Every gate of <see cref="CanLaunch"/> that does not depend on the mark: the network, its
+        /// handler, an operation already running, the strength and the purse. The Intelligence tab's
+        /// board reads this before a mark is chosen, so the board and the launch are one set of rules
+        /// rather than two that could drift apart.
+        /// </summary>
+        public static bool CanPlan(ModState state, Clan owner, Kingdom target, SpyMissionType type, out string reason)
+        {
             reason = null;
             var spec = SpecOf(type);
             if (spec == null) { reason = "No such mission."; return false; }
@@ -206,24 +237,6 @@ namespace DiplomacyIntrigue.Espionage
 
             var purse = owner.Leader == null ? 0 : owner.Leader.Gold;
             if (purse < spec.Gold) { reason = type + " costs " + spec.Gold + "; " + owner.Leader?.Name + " holds " + purse + "."; return false; }
-
-            if (spec.NeedsSettlement)
-            {
-                if (targetSettlement == null || targetSettlement.Town == null) { reason = type + " needs a town or castle."; return false; }
-                if (targetSettlement.OwnerClan?.Kingdom != target) { reason = targetSettlement.Name + " is not held by " + target.Name + "."; return false; }
-            }
-
-            if (spec.NeedsHero)
-            {
-                if (targetHero == null || !targetHero.IsAlive) { reason = type + " needs a living lord."; return false; }
-                if (targetHero.Clan?.Kingdom != target) { reason = targetHero.Name + " is not of " + target.Name + "."; return false; }
-                if (targetHero.Clan == owner) { reason = targetHero.Name + " is of our own house."; return false; }
-                if (spec.NeedsHouseHead && !IsHouseHead(targetHero, target, out var why))
-                {
-                    reason = type + " needs the head of a sworn house: " + why;
-                    return false;
-                }
-            }
             return true;
         }
 
@@ -608,7 +621,7 @@ namespace DiplomacyIntrigue.Espionage
             return removed;
         }
 
-        private static string ArmiesReport(Kingdom target)
+        internal static string ArmiesReport(Kingdom target)
         {
             var sb = new StringBuilder();
             sb.Append("strength ").Append(target.CurrentTotalStrength.ToString("0"));

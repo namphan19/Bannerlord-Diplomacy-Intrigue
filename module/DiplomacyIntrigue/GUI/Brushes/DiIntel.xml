@@ -1,0 +1,43 @@
+<!-- Brushes for the Clan screen's Intelligence tab (IntelligenceVM.cs / DiIntelPanel.xml).
+     Right-aligned variants of DiRealm.Body and DiRealm.Label for figures in a row, and a dim
+     backdrop for the tab's two overlays. Everything draws from BlankWhiteSquare_9: a brush that
+     borrows another screen's sprite loses its art here (UI-INTEGRATION.md 0c.4). -->
+<Brushes>
+
+  <Brush Name="DiIntel.Right" Font="FiraSansExtraCondensed-Regular" TextHorizontalAlignment="Right">
+    <Styles>
+      <Style Name="Default" FontColor="#DDD0B8FF" TextOutlineAmount="0" TextGlowRadius="0.0" TextBlur="0" TextShadowOffset="0" FontSize="17" />
+    </Styles>
+  </Brush>
+
+  <Brush Name="DiIntel.RightLabel" Font="FiraSansExtraCondensed-Regular" TextHorizontalAlignment="Right">
+    <Styles>
+      <Style Name="Default" FontColor="#A89878FF" TextOutlineAmount="0" TextGlowRadius="0.0" TextBlur="0" TextShadowOffset="0" FontSize="15" />
+    </Styles>
+  </Brush>
+
+  <Brush Name="DiIntel.Center" Font="FiraSansExtraCondensed-Regular" TextHorizontalAlignment="Center">
+    <Styles>
+      <Style Name="Default" FontColor="#E0CFA8FF" TextOutlineAmount="0" TextGlowRadius="0.0" TextBlur="0" TextShadowOffset="0" FontSize="19" />
+    </Styles>
+  </Brush>
+
+  <Brush Name="DiIntel.Warning" Font="FiraSansExtraCondensed-Regular" TextHorizontalAlignment="Left">
+    <Styles>
+      <Style Name="Default" FontColor="#E0A860FF" TextOutlineAmount="0" TextGlowRadius="0.0" TextBlur="0" TextShadowOffset="0" FontSize="16" />
+    </Styles>
+  </Brush>
+
+  <Brush Name="DiIntel.Danger" Font="FiraSansExtraCondensed-Regular" TextHorizontalAlignment="Left">
+    <Styles>
+      <Style Name="Default" FontColor="#E8A090FF" TextOutlineAmount="0" TextGlowRadius="0.0" TextBlur="0" TextShadowOffset="0" FontSize="16" />
+    </Styles>
+  </Brush>
+
+  <Brush Name="DiIntel.Big" Font="Galahad" TextHorizontalAlignment="Right">
+    <Styles>
+      <Style Name="Default" FontColor="#F0B8A8FF" TextOutlineAmount="0.1" TextGlowRadius="0" TextBlur="0.2" TextShadowOffset="0" FontSize="22" />
+    </Styles>
+  </Brush>
+
+</Brushes>

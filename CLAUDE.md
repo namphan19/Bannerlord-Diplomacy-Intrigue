@@ -253,7 +253,9 @@ Test-only levers for reaching a state: `diplomacy.test_set_speed <1-50>` (see §
 `diplomacy.test_set_player_age`, `diplomacy.sign_treaty`, `test_player_rule <kingdom>` (hands a
 kingdom's throne to the player's house, outside any civil war), `test_demand_tribute A | B` (one
 demand through the weekly scan's own body - on a player-ruled B it opens the inquiry), and for UI the screen openers
-`test_open_kingdom`, `test_open_encyclopedia <kingdom>` and `test_court_select <clan>`. For a
+`test_open_kingdom`, `test_open_encyclopedia <kingdom>`, `test_court_select <clan>`, and
+`test_intel open` (the Clan screen's Intelligence tab, then driven verb by verb through the same
+methods its buttons call). For a
 civil war: `test_start_internal_war`, `test_end_internal_war`, `test_change_side <clan> [| unpaid]`,
 `test_concede <kingdom> | crown|rising`, and `test_player_side <kingdom> | crown|rising|ruler`,
 which puts the player's house where the Court tab can be seen from each side. Note that `sign_treaty` with

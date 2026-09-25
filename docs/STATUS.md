@@ -1,4 +1,4 @@
-# Status — 2026-09-25
+# Status — 2026-09-26
 
 Point-in-time state. [CLAUDE.md](../CLAUDE.md) holds the things that are always true; this
 file holds what changes. Update it when you finish a chunk of work.
@@ -48,11 +48,20 @@ what was built (§10).
   The 3.1 blocker is met with a GameModel (`ModClanPoliticsModel.CanHeroBeGovernor`), **not known to
   be what vanilla's AI asks**. A bribe's gold now reaches the lord (a revision of a 3.5 call). No new
   save data. `diplomacy.ai_espionage` prints each realm's plan.
-- **Next: run 3.5, 3.3 and 3.6 in game** - design/03 §10 has the checks and levers for each step. The
-  first suspects: the ledger's TextWidget and `\n`, the new savable type's round trip, and whether any
-  AI handler is still made a governor. **Note** that the AI now winds down, weekly, any network owned
-  by an AI house that does not rule - including test networks put on AI vassals - so 3.5's checks
-  must use a ruling house or resolve inside the week. Then 3.7, the UI.
+- **3.5, 3.3 and 3.6 run live, 2026-09-25** (design/03 §10 has each list with its results). 3.5
+  and 3.3 hold on every check, the new savable type included (fresh-process round trip). 3.6 holds on
+  plans, execution and the bribe offered to the player, and **fails on the handler**: vanilla made an
+  AI handler a governor in the first week (`CanHeroBeGovernor` is not what it asks) and gave two others
+  parties within days, every week. AI espionage does not work until that is solved.
+- **3.7, the UI: built and verified live, 2026-09-26.** A fifth Clan-screen tab, Intelligence (the
+  house's networks, operations board, what is under way, and two overlays: planning an operation and
+  posting a handler), and a ruler-only counter-intelligence section at the foot of the Realm tab - the
+  layout the lead approved as a mockup on 2026-09-25. Lever: `diplomacy.test_intel`.
+- **Parked by the lead, 2026-09-26:** espionage stays as it is for now and is improved later. When it
+  is picked up again, the order is: the 3.6 handler blocker - find, from vanilla's IL, what assigns governors and parties to an
+  AI clan's heroes, then decide the lever with that evidence (a patch needs CLAUDE.md §3's case). Then
+  3.6's long AI-only run (check 5). Small open items: two 3.5 wording faults and the 3.6 note on a
+  reloaded bribe offer (design/03 §10).
 - **New:** `scripts/compile-check.sh` compiles the module on a box with no game (Linux, a cloud
   session) against BUTR's v1.4.8 reference assemblies from NuGet. It proves the code compiles
   against the real API and nothing more - no LoadProbe, no game.
@@ -525,13 +534,12 @@ UI-INTEGRATION.md §0b.
 
 ### What to do next
 
-1. **Phase 3, espionage** - 3.1, 3.2 and 3.4 done and verified live; 3.5, 3.3 and 3.6 built and
-   compiled but **not yet run in game** - that run is the next job (design/03 §10, "What to check
-   in game", one list per step). Then 3.7, the UI (design/03 §8 has the order). Carried:
-   - **The 3.6 blocker found while testing 3.1/3.2**: vanilla appoints an AI clan's idle heroes
-     as governors within days. Met in 3.6 by `ModClanPoliticsModel.CanHeroBeGovernor`, which is
-     virtual in v1.4.8 but **not known** to be what vanilla's AI asks - check it on the real clock.
-     Party appointments have no model; the daily release plus the AI's weekly re-post covers them.
+1. **Phase 3, espionage** - every step built and run live (3.1-3.6 on 2026-09-25, 3.7 on
+   2026-09-26). What is left is 3.6's handler blocker and its long run. Carried:
+   - **The 3.6 blocker, confirmed live 2026-09-25**: `ModClanPoliticsModel.CanHeroBeGovernor` did not
+     stop vanilla making an AI handler a governor, and party appointments pull the others away within
+     days. The daily release plus the AI's weekly re-post does not cover it: the networks never grow.
+     Next is IL evidence for what vanilla calls, then the lever.
    - ~~`BribeLord` and `ForgeLetters` refuse to launch~~ - wired in by 3.5 on 2026-09-25; both
      now need the head of a sworn house of the target's court.
 2. **A parallel priority from the lead, 2026-09-25, not yet started**: tying the mod's mechanics
@@ -638,7 +646,7 @@ Two things were added because of this, independent of the cause:
 | **0 — Foundation** | ✅ done, verified in a live campaign |
 | **1 — Diplomacy core (1.1–1.12)** | ✅ **accepted by the lead, 2026-09-23**. Code complete including submission and hegemony (1.9/1.10), the vanilla takeover (1.11) and power (1.12). Measured over runs 01–07; the §13 rework under it is smoke-tested only, and the carried debt is listed in [ROADMAP.md](ROADMAP.md#phase-1--accepted-by-the-project-lead-2026-09-23) |
 | **2 — Court intrigue** | 🔄 2.1-2.7 built and verified live on their main paths, all on `development` (2.6/2.6b and 2.6c merged 2026-09-24). What is still unverified is listed in the checkpoint at the top |
-| **3 — Espionage** | 🔄 3.1 (networks), 3.2 (missions) and 3.4 (exposure) built and verified live, 2026-09-25, merged into `development`. 3.5 (cross-pillar effects), 3.3 (counter-intelligence budgets) and 3.6 (AI) built and compiled the same day, **not run in game**. 3.7 (UI) remains — design/03 §10 |
+| **3 — Espionage** | 🔄 3.1 (networks), 3.2 (missions) and 3.4 (exposure) built and verified live, 2026-09-25, merged into `development`. 3.5 (cross-pillar effects), 3.3 (counter-intelligence budgets) and 3.6 (AI) built and run live the same day; 3.6's AI handlers are still taken by vanilla. 3.7 (UI) built and verified live 2026-09-26 — design/03 §10 |
 | **4 — Integration, balance, release** | 🔄 runs 01-07 archived. **Run 07** (2026-09-20) is the current reference — [balance/run-07.md](balance/run-07.md). **Run 08 is owed** and closes the §13 questions |
 
 ### Kingdom screen UI — built and verified live, 2026-09-21

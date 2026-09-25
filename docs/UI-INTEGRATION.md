@@ -122,6 +122,35 @@ screenshots, none from the log.
    did not close even a freshly opened Kingdom screen, so what Esc does over the table is
    **unverified**. Try `SendInput` with scan codes before trusting any keyboard result.
 
+## 0d. Four more, from the Clan screen's Intelligence tab (2026-09-26)
+
+Built as Phase 3.7 (`UI/ClanScreen/`, `GUI/Prefabs/ClanScreen/`). All four rendered or behaved wrong
+without a single logged error.
+
+1. **A bool property raises `PropertyChangedWithBoolValue`, not `PropertyChanged`.** `ViewModel` has one
+   event per value type; `OnPropertyChangedWithValue(bool, name)` invokes only the bool list (IL,
+   v1.4.8). `ClanManagementVM.IsMembersSelected` and its siblings are set that way, so a mixin listening
+   to `PropertyChanged` never heard a vanilla tab open and Members drew over our panel. Read the
+   setter's IL (`tools/CallSites --il "Type::set_Prop"`) before choosing the event. `KingdomCategoryVM.Show`
+   calls plain `OnPropertyChanged`, which is why the Kingdom screen's mixin works.
+2. **A `ButtonWidget` ignores `Color`.** A full-screen `ButtonWidget` with `Sprite="BlankWhiteSquare_9"
+   Color="#000000B0"`, meant as a dim backdrop that also swallows clicks, drew solid white. Put the
+   colour on a plain `Widget` and lay an empty `ButtonWidget` over it for the clicks.
+3. **The game's Fira Sans has no U+2212.** A minus sign rendered as an underscore. Use the ASCII hyphen
+   in any string a Fira brush draws.
+4. **§0b.1 can hide until something sits below it.** The Realm tab's column rules (`StretchToParent`
+   in a `CoverChildren` row) stretched the row to the whole viewport; nobody saw it while the row was
+   the last thing in the scroll list. Adding a section after it put a screen of empty space in between.
+   The rules became fixed-width spacers.
+
+**Recipe, Clan screen, a new tab.** The strip is four plain `ButtonWidget`s with no `Id`, each calling
+`SetSelectedCategory(n)`; anchor on `descendant::ButtonWidget[@CommandParameter.Click='3']`, move its
+brush from `Header.Tab.Right` to `Header.Tab.Center` (with the centre tabs' `PositionYOffset="6"`), and
+append the panel after `descendant::ClanIncome` - its parent already carries the panels' margins.
+`SetSelectedCategory` clears and resets every flag with no early return, so a vanilla tab clicked after
+ours always shows again; our tab clears the same flags through their public setters. The Clan screen
+does not load the Kingdom screen's sprites (§0c.4): build every row and backdrop from `BlankWhiteSquare_9`.
+
 ## 1. Mental model of Gauntlet (just enough)
 
 | Piece | What it is |

@@ -68,6 +68,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         private MBBindingList<DiRealmFabricationVM> _fabrications = new MBBindingList<DiRealmFabricationVM>();
         private MBBindingList<DiRealmAgreementVM> _agreements = new MBBindingList<DiRealmAgreementVM>();
 
+        /// <summary>The ruler-only counter-intelligence section at the foot of the tab (Phase 3.7).</summary>
+        [DataSourceProperty] public DiCounterIntelVM CounterIntel { get; } = new DiCounterIntelVM();
+
         public DiRealmVM(Action onShow, Action openCourt = null)
         {
             _standingColor = GoldColor;
@@ -440,6 +443,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
         private void Compose()
         {
+            // First, and on its own gate: the section follows the espionage toggle, not diplomacy's.
+            CounterIntel.Rebuild();
+
             StandingTitle = "No realm";
             StandingColor = MutedColor;
             StandingDetail = string.Empty;
