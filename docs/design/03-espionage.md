@@ -216,3 +216,55 @@ appointments to the player. How to reserve an AI handler is 3.6's first problem.
 **Not verified:** a network owned by a clan whose realm later becomes the target's (it goes
 idle by rule; not seen), and a handler dying or captured (the same daily check as the governor
 case, not seen for those causes).
+
+### 3.2 missions, with 3.4 exposure - built and verified live, 2026-09-25
+
+| Piece | Where |
+|---|---|
+| The saved operation, kept 60 days after it resolves (class id 16, `ModState` property 16) | `Models/SpyMission.cs` |
+| The table of §2, the odds of §4, launching, resolving, six effects | `Espionage/Missions.cs` |
+| Exposure: casus belli, trust, the handler captured, the vassal's crown displeased | `Espionage/Exposure.cs` |
+| Levers | `diplomacy.mission_odds`, `missions`, `test_launch_mission`, `test_resolve_mission`, `test_set_network` |
+
+**Decided in building, not in the spec:**
+- §4 names a per-mission difficulty and gives no values. It is `(requirement - 15) / 200`: one rule,
+  so ScoutArmies costs nothing and Assassinate 0.275. UN-TUNED.
+- A handler runs one operation at a time. An operation whose handler is gone when it comes due
+  fails, with nobody left to be caught.
+- ScoutArmies and ReadCourt reveal for 7 and 14 days, derived from the mission's own record.
+  Today they report once, to the owner and the log; the screens that keep showing the reveal are 3.5
+  (the Encyclopedia) and 3.7.
+- Sabotage removes a quarter of each regular troop line. The siege engines of §2 are not touched.
+- Dissent is the loyalty loss of §2; "unrest rises" has no separate number.
+- An assassination names no killer: unexposed, it is traced to nobody.
+- Exposure's trust loss goes through the one trust ledger, so its grudge decays like any other.
+  §5 said "permanent until rebuilt"; a second trust rule for spies would be a second resolver.
+- The lead's decision 5 said a vassal who drags the realm into trouble answers to the crown. That
+  is a relation loss of 15 between the ruler and the house's head, not a grievance: nothing reads a
+  grievance a crown holds against its vassal, and relation is what loyalty reads.
+
+| Check | Result |
+|---|---|
+| The odds, by hand | network 80 -> 0.400, handler (48 + 76) / 2 -> 0.248, counter-intelligence 12.6 -> 0.076: ScoutArmies **0.72**, exposure on failure 0.25 + 0.101 - 0.240 = **11%** |
+| Gates | a second operation while one runs refused; Assassinate at network 45 refused ("needs 70") |
+| Sabotage | Sargot's garrison **275 -> 210**; network -5 |
+| Dissent | Sargot's loyalty **44 -> 29** |
+| Treasury | Derthert **158,443 -> 126,755** (20%, 31,688) and Monchug +31,688 less the 3,000 paid |
+| Scout, read court | reports: "army of Aldric, 10 parties, 269 men, near Pravend"; "legitimacy 60.0, worst war exhaustion 5.1" |
+| A natural roll | ScoutArmies at 65% came up **Failure**: network -10 |
+| Assassinate | Morcon, Derthert's son, **dead** |
+| **Exposed assassination** | Vlandia's trust in Khuzait **-7.5 -> -32.5**; every other realm -15 (Battania -7.5 -> -22.5, Northern Empire -20.3 -> -35.3); **EspionageExposed** for Vlandia against Khuzait, legitimacy 0.85, two years; Chaghan **taken prisoner** at Sargot; network burned to 0 |
+| The vassal answers | Urkhunait's exposure: the player, ruling Khuzait, **0 -> -15** with Monchug, and told "Vlandia now holds a casus belli against Khuzait" |
+| The player's own operation | "Naselos the Scholar begins scouting the armies in Vlandia: 3 days, 54% to succeed" - 0.15 + 0.20 + 0.27 - 0.076 = 0.544 - then the report |
+| The player's realm as victim | "Agitators have been stirring Chaikand: loyalty 34 -> 19" - no name, since it was not exposed |
+| **Save round trip** | saved `di_espionage_missions` with an operation pending; new process: `4 spy networks, 4 spy missions`, the pending one intact |
+| The campaign's own clock | after the reload, the real clock resolved that pending ReadCourt on its day - a natural roll, **Success** at 47% - and reported it. In the same days vanilla made two more AI handlers governors, as at 3.1; the player's companion handler stayed |
+
+**Balance, recorded not acted on:** once a network is strong the overall chance of exposure is
+small - 3-6% at 80 against a counter-intelligence of 12.6. At 15 it is 18%. The risk that is meant to
+keep the pillar honest falls away just as the network becomes useful. Counter-intelligence budgets
+(3.3) are what should push it back up; measure after 3.3.
+
+**Not verified:** a mission whose handler is lost before it resolves (the rule is written, not
+seen), an exposure by a clan outside any realm, cancelling, and the reveal durations, which have
+no reader yet.

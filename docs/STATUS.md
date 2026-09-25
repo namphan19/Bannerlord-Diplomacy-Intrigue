@@ -4,8 +4,8 @@ Point-in-time state. [CLAUDE.md](../CLAUDE.md) holds the things that are always 
 file holds what changes. Update it when you finish a chunk of work.
 
 Module version 0.1.0. Save schema **v4**, definer base id **2749100**.
-Save ids in use: `Treaty` 1-17, `TrustRecord` 1-6, `ModState` 1-15, definer class ids to 15
-(`SpyNetwork`, Phase 3.1), enums 20-27. Next free: class id **16**, `ModState` property **16**, enum
+Save ids in use: `Treaty` 1-17, `TrustRecord` 1-6, `ModState` 1-16, definer class ids to 16
+(`SpyNetwork` 3.1, `SpyMission` 3.2), enums 20-27. Next free: class id **17**, `ModState` property **17**, enum
 **28** (CLAUDE.md §3 has the per-type detail). The 2.6 ids (13, 14, 27, property 14) are on
 `development` since 2026-09-24, and so is 2.6c's `InternalWar` property 14 (`SideChanges`);
 next free on `InternalWar` is 15.
@@ -23,8 +23,14 @@ what was built (§10).
   including a save round trip (`di_espionage_test`) and the campaign's own weekly tick.
 - **Found, for 3.6:** vanilla made both AI handlers governors within days. An AI handler has to
   be kept out of vanilla's appointments before the AI can run networks.
-- **Next: 3.2, missions** (design/03 §2, §4). One gap in the spec to settle there: §4's
-  `missionDifficulty` has no values.
+- **3.2, missions, with 3.4, exposure: built and verified live**, merged into `development`.
+  Six of eight missions have their effect; BribeLord and ForgeLetters wait for 3.5. An exposure
+  hands the victim a casus belli against the owner's realm, costs trust, captures the handler, and
+  costs a vassal house its crown's favour. The player is told of every operation that lands on
+  their realm or drags it in. §4's missing difficulty was set as (requirement - 15) / 200.
+- **Next: 3.5, the cross-pillar effects** - BribeLord into loyalty and civil war, ForgeLetters into
+  grievances, ReadCourt's exact figures on the Encyclopedia - then 3.3 counter-intelligence
+  budgets, 3.6 the AI, 3.7 the UI.
 
 **The side branch of 2026-09-25, `feature/side-civil-war-gaps-tribute-court`, merged into
 `development`.** It was briefed for opencode, but the bridge was broken, so Claude built it.
@@ -494,7 +500,7 @@ UI-INTEGRATION.md §0b.
 
 ### What to do next
 
-1. **Phase 3, espionage** - 3.1 done; 3.2 missions next (design/03 §8 has the order).
+1. **Phase 3, espionage** - 3.1, 3.2 and 3.4 done; 3.5 next (design/03 §8 has the order).
 2. **A long AI-only run with internal wars in it**, the balance question 2.6 leaves open. How
    often do internal wars start, how often do houses divide, and does a realm recover from a
    lost civil war followed by foreign wars? Both of the first run's neighbours declared war on
