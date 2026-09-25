@@ -355,9 +355,15 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             var playerRules = ruling == Clan.PlayerClan;
 
             RealmName = kingdom.Name.ToString().ToUpperInvariant();
+            // A house with the rising does not serve the ruler it is fighting: the claimant read
+            // "you serve Aradwyr" over a war against Aradwyr (live 2026-09-25).
+            var rulerName = kingdom.Leader == null ? "its ruler" : kingdom.Leader.Name.ToString();
+            var playerRebel = war != null && war.IsRebel(Clan.PlayerClan);
             CourtLine = playerRules
                 ? "The court of Clan " + ruling.Name + " - your own clan"
-                : "The court of Clan " + ruling.Name + " - you serve " + (kingdom.Leader == null ? "its ruler" : kingdom.Leader.Name.ToString());
+                : playerRebel
+                    ? "The court of Clan " + ruling.Name + " - you are in arms against " + rulerName
+                    : "The court of Clan " + ruling.Name + " - you serve " + rulerName;
 
             // Crown legitimacy: the pool, the bar, and what last moved it.
             var legitimacy = LegitimacyRegistry.Of(state, kingdom);
