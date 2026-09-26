@@ -13,6 +13,10 @@ param(
 $ErrorActionPreference = "Stop"
 $repo = Split-Path -Parent $PSScriptRoot
 
+# Save data first: a broken definition compiles and plays, and breaks the save (CLAUDE.md §3).
+& (Join-Path $PSScriptRoot "check-save-ids.ps1")
+if ($LASTEXITCODE -ne 0) { throw "Save-data check failed - see above." }
+
 dotnet build (Join-Path $repo "DiplomacyIntrigue.sln") -c $Configuration --nologo
 if ($LASTEXITCODE -ne 0) { throw "Build failed with exit code $LASTEXITCODE." }
 

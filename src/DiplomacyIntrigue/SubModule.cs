@@ -50,6 +50,7 @@ namespace DiplomacyIntrigue
 
                 _harmony = new Harmony(HarmonyId);
                 _harmony.PatchAll(Assembly.GetExecutingAssembly());
+                Log.Info("SubModule", DescribePatches());
 
                 // After Harmony and inside the same try: the Kingdom screen additions are
                 // not load-bearing, and ModUI.Install swallows its own failures so a broken
@@ -128,6 +129,32 @@ namespace DiplomacyIntrigue
             catch (Exception ex)
             {
                 return "host=unknown (" + ex.GetType().Name + ")";
+            }
+        }
+
+        /// <summary>
+        /// Every method this mod's Harmony instance actually patched. PatchAll succeeding says
+        /// nothing about which classes it found; this line does, so a patch that silently stopped
+        /// applying - a renamed file, a lost attribute - shows at the main menu instead of as a
+        /// rule that quietly stopped holding in a campaign.
+        /// </summary>
+        private string DescribePatches()
+        {
+            try
+            {
+                var names = new System.Text.StringBuilder();
+                var count = 0;
+                foreach (var method in _harmony.GetPatchedMethods())
+                {
+                    if (names.Length > 0) names.Append(", ");
+                    names.Append(method.DeclaringType?.Name).Append('.').Append(method.Name);
+                    count++;
+                }
+                return "Harmony patched " + count + " methods: " + names;
+            }
+            catch (Exception ex)
+            {
+                return "Harmony patched methods unknown (" + ex.GetType().Name + ")";
             }
         }
 

@@ -90,6 +90,22 @@ namespace DiplomacyIntrigue.Diplomacy
             => WhyWarBlocked(state, aggressor, defender) == Block.None;
 
         /// <summary>
+        /// What the two DeclareWarAction patches ask: why this action must be refused, or null
+        /// to let it through. Only a war between two kingdoms is judged - a rebellion or a
+        /// minor faction reaching the action is not this class's business. One answer shared
+        /// by both patches, so the two entry points cannot come to disagree.
+        /// </summary>
+        public static string WhyWarActionRefused(ModState state, IFaction faction1, IFaction faction2)
+        {
+            var aggressor = faction1 as Kingdom;
+            var defender = faction2 as Kingdom;
+            if (aggressor == null || defender == null) return null;
+
+            var block = WhyWarBlocked(state, aggressor, defender);
+            return block == Block.None ? null : Explain(state, aggressor, defender, block);
+        }
+
+        /// <summary>
         /// Human-readable reason, for logs and for the 1.8 UI. Kept next to the enum so the
         /// two cannot drift apart.
         /// </summary>

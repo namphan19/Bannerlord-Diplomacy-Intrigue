@@ -20,7 +20,7 @@ namespace DiplomacyIntrigue.Models
     /// both; two would have meant two ledgers that could disagree about the same slight,
     /// which is the mistake CasusBelli.Resolve exists to prevent.
     ///
-    /// Save ids are frozen. This type is definer class id 10; next free there is 11.
+    /// Save ids are frozen. This type is definer class id 10; the next free ids are kept in CLAUDE.md §3 only.
     /// </summary>
     public sealed class Grievance
     {

@@ -16,7 +16,7 @@ namespace DiplomacyIntrigue.Models
     /// paid, not money promised - so a ruler with an empty purse and a large budget defends at
     /// what the purse could cover.
     ///
-    /// Save ids are frozen. This type is definer class id 17; next free there is 18.
+    /// Save ids are frozen. This type is definer class id 17; the next free ids are kept in CLAUDE.md §3 only.
     /// </summary>
     public sealed class CounterIntelligenceBudget
     {

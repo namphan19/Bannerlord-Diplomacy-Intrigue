@@ -14,7 +14,7 @@ namespace DiplomacyIntrigue.Models
     /// operations list (design 03 §7) shows what happened recently. Resolved missions are dropped
     /// once neither reader needs them (<c>Missions.DailyTick</c>).
     ///
-    /// Save ids are frozen. This type is definer class id 16; next free there is 17.
+    /// Save ids are frozen. This type is definer class id 16; the next free ids are kept in CLAUDE.md §3 only.
     /// </summary>
     public sealed class SpyMission
     {

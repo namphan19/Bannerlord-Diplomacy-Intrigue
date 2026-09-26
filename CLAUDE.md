@@ -200,6 +200,7 @@ pwsh ./scripts/play.ps1      # launch the way that works (BLSE Standalone, launc
 pwsh ./scripts/play.ps1 -Without DiplomacyIntrigue   # same, minus a mod: bisect a crash
 dotnet run --project tools/LoadProbe   # would the game load this assembly?
 dotnet run --project tools/ApiDump -- "TypeNameOrFilter"   # real v1.4.8 API surface
+pwsh ./scripts/check-save-ids.ps1   # the save-data rules of §3, read from source; build and deploy run it first
 scripts/compile-check.sh     # no game on this box (Linux, cloud): compile against NuGet reference assemblies
 ```
 
@@ -341,7 +342,10 @@ already registers is safe (`GrievanceType.SuccessionPassedOver = 9` and `ForgedL
 added that way; next free value there is **11**);
 renumbering or reusing one is not. Adding a new savable type means a class definition
 **and** a container definition in `ModSaveDefiner` — a missing container definition crashes
-on save, which is the single most common way to break a Bannerlord mod. Bump
+on save, which is the single most common way to break a Bannerlord mod.
+`scripts/check-save-ids.ps1` checks what can be read from source - an id used twice, a class,
+enum or container left out of the definer - and `build.ps1` and `deploy.ps1` refuse to go on
+when it fails. It cannot see a renumbering; review the diff of any `Saveable` line. Bump
 `ModState.CurrentSchemaVersion` only when the *meaning* of existing data changes; adding a
 field that defaults sensibly does not need it.
 
@@ -352,12 +356,15 @@ check it and stay inert rather than half-running.
 
 **Prefer events and `GameModel` overrides. Harmony is the last resort.** Rules for
 `Patches/`: one patched method per file, a header stating *what* it changes, *why* no event
-exists, and the *game version verified against*; a `try/catch` that degrades to vanilla. Five
-patches exist today and all follow this. The third,
-`KingdomDecision_DetermineSupportOption_Patch` (Phase 2.3 bloc voting), and the fourth and
-fifth, `Clan_MapFaction_Patch` and `Hero_MapFaction_Patch` (Phase 2.6 internal war), record in
-their headers the evidence that no event or `GameModel` could do the job. Do not add a sixth
-without the same evidence.
+exists, and the *game version verified against*; a `try/catch` that degrades to vanilla. Six
+patch files exist today, one method each, and all follow this. Phase 1's three guard war
+initiation: `DeclareWarDecision_IsAllowed_Patch` and the two `DeclareWarAction_*` backstops,
+which were one file patching both methods until 2026-09-26 and now share one answer,
+`TreatyEnforcement.WhyWarActionRefused`. `KingdomDecision_DetermineSupportOption_Patch`
+(Phase 2.3 bloc voting), `Clan_MapFaction_Patch` and `Hero_MapFaction_Patch` (Phase 2.6
+internal war) record in their headers the evidence that no event or `GameModel` could do the
+job. The mod log's `Harmony patched N methods:` line, written at startup, names every method
+actually patched. Do not add a seventh without the same evidence.
 
 **The AI plays by the same rules as the player.** A project decision, enforced in code:
 `ClaimRegistry`, `TreatyRegistry`, `PeaceTable` and `CallToArms` take no "is this the player"

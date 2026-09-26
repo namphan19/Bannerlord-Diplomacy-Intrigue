@@ -54,7 +54,8 @@ namespace DiplomacyIntrigue.Diplomacy
 
         /// <summary>
         /// The move each kingdom made at its most recent weekly evaluation, for the weekly
-        /// telemetry. Session-scoped: it describes what the AI just did, not the campaign.
+        /// telemetry. Session-scoped: it describes what the AI just did, not the campaign, and
+        /// <see cref="ResetSession"/> empties it.
         /// </summary>
         private static readonly Dictionary<Kingdom, Move> LastMoves = new Dictionary<Kingdom, Move>();
 
@@ -1538,6 +1539,11 @@ namespace DiplomacyIntrigue.Diplomacy
         public static void ResetSession()
         {
             _tributeAskPending = false;
+
+            // Keyed on the last campaign's Kingdom objects. They never match the new ones
+            // (MBObjectBase does not override Equals), so leaving them only held the previous
+            // world in memory after every load.
+            LastMoves.Clear();
         }
 
         /// <summary>

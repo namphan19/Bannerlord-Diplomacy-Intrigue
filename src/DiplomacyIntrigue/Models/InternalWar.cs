@@ -19,7 +19,7 @@ namespace DiplomacyIntrigue.Models
     /// ago" is what stops the next one being declared the day after a stalemate.
     ///
     /// Save ids are frozen. This type is definer class id 13 and uses properties 1-14;
-    /// <see cref="InternalWarMember"/> is class id 14; next free class id is 15.
+    /// <see cref="InternalWarMember"/> is class id 14. The next free ids are kept in CLAUDE.md §3 only.
     /// </summary>
     public sealed class InternalWar
     {

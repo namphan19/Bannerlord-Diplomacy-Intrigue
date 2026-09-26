@@ -18,7 +18,7 @@ namespace DiplomacyIntrigue.Models
     /// One record holding both would have two unrelated lifecycles and invite a daily sampler
     /// to touch a political number.
     ///
-    /// Save ids are frozen. This type is definer class id 11; next free there is 12.
+    /// Save ids are frozen. This type is definer class id 11; the next free ids are kept in CLAUDE.md §3 only.
     /// </summary>
     public sealed class KingdomLegitimacy
     {

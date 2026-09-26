@@ -136,25 +136,6 @@ namespace DiplomacyIntrigue.Intrigue
         }
 
         /// <summary>
-        /// Wipes what one clan holds against another. For the moments that are supposed to
-        /// settle a score rather than add to it - the same reasoning as
-        /// <c>Hegemony</c> clearing grievances when an oath is sworn afresh.
-        /// </summary>
-        public static int Forgive(ModState state, Clan holder, Clan target)
-        {
-            if (state == null || holder == null || target == null) return 0;
-
-            var removed = state.Grievances.RemoveAll(g => g.Is(holder, target));
-            if (removed > 0)
-            {
-                BlocModel.Invalidate();
-                Log.Info("Grievance", holder.Name + " sets aside " + removed
-                                      + " grievance(s) against " + target.Name + ".");
-            }
-            return removed;
-        }
-
-        /// <summary>
         /// How fast grievances held against <paramref name="target"/> fade, per day: the base rate
         /// at that house's steward's pace (design 08 S-6). The upkeep and every display read this.
         /// </summary>

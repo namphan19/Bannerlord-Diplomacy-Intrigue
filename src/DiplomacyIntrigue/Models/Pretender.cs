@@ -16,7 +16,7 @@ namespace DiplomacyIntrigue.Models
     /// not a state of the world. Nothing about a hero today says they were passed over for a
     /// crown eight years ago.
     ///
-    /// Save ids are frozen. This type is definer class id 12; next free there is 13.
+    /// Save ids are frozen. This type is definer class id 12; the next free ids are kept in CLAUDE.md §3 only.
     /// </summary>
     public sealed class Pretender
     {

@@ -33,7 +33,12 @@ if ($running) {
     throw "Bannerlord is running ($names). Close the game first - do not force-kill it, someone may be playing."
 }
 
-# 1. Build only - nothing touches the game folder yet.
+# 1. Save-data check, then build only - nothing touches the game folder yet. The check is
+#    here as well as in build.ps1 because this script builds on its own, and this is the
+#    last point before the DLL can reach someone's save.
+& (Join-Path $PSScriptRoot "check-save-ids.ps1")
+if ($LASTEXITCODE -ne 0) { throw "Save-data check failed - nothing was copied to the game folder." }
+
 $buildArgs = @("build", (Join-Path $repo "DiplomacyIntrigue.sln"), "-c", $Configuration, "--nologo")
 if ($GameFolder) { $buildArgs += "-p:GameFolder=$GameFolder" }
 

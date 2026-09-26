@@ -14,7 +14,7 @@ namespace DiplomacyIntrigue.Models
     /// **Stored**, unlike almost everything Phase 2 derives: strength is an asset built up week by
     /// week out of gold that was actually spent, and nothing in the world could rebuild it.
     ///
-    /// Save ids are frozen. This type is definer class id 15; next free there is 16.
+    /// Save ids are frozen. This type is definer class id 15; the next free ids are kept in CLAUDE.md §3 only.
     /// </summary>
     public sealed class SpyNetwork
     {
