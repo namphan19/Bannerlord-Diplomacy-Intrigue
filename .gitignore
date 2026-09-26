@@ -28,3 +28,7 @@ node_modules/
 
 # opencode local config (each clone has its own)
 opencode.jsonc
+
+# Local play aids (lead-provided, for base-game GABS play; not part of the mod)
+.claude/skills/bannerlord-gabs/
+docs_playing_game/
