@@ -195,7 +195,9 @@ C3 is not needed for the acceptance line. It is in R-2, so it is here, last in t
 ## 4. UI
 
 Where each verb goes follows the lead's scope rule. The precise layout goes to a mockup first,
-as the Court and Intelligence tabs did.
+as the Court and Intelligence tabs did: the "Court verbs" row of the court canvas
+(https://claude.ai/artifact/1FrpG5in328WYfNi6sP8Pf), published 2026-09-26 for the lead's review.
+Its prices are computed by §1-§3's formulas on sample skills.
 
 - **Court tab, the selected house's grievance list:** each grievance held against the crown
   carries **Make amends — N influence**, disabled with its reason when the player is not the

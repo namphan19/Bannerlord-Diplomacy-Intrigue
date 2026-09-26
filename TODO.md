@@ -41,7 +41,8 @@ checked Phase 2 against its acceptance line.
 - [x] D1-D15 of [design/09](docs/design/09-court-verbs.md) decided 2026-09-26, with the lead's
       pricing rule: influence and gold together, each scaled ×0.5-×2 by its skill, priced high
       (design/09 §0, CLAUDE.md §3).
-- [ ] The mockup of the Court tab's amends and offices, for the lead. Then C1, C2, C3.
+- [ ] The lead's approval of the mockup — the "Court verbs" row of the court canvas
+      (https://claude.ai/artifact/1FrpG5in328WYfNi6sP8Pf), published 2026-09-26. Then C1, C2, C3.
 
 ### 2. The court does not reach the AI's foreign policy
 
