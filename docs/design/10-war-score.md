@@ -42,7 +42,7 @@ Two components, with different natures:
 |---|---|---|
 | What | the share of the loser's pre-war fortifications the winner now holds | battles won and villages burned |
 | Nature | a **state**, read live | an **accumulation**, event by event |
-| Drift | **none** - held land is a fact, and it reverses itself when retaken | **decays** - a victory fades over a season |
+| Drift | **none** - held land is a fact, and it reverses itself when retaken | **decays** - a victory fades over half a year |
 | Relative to | the loser's holdings on the day the war began | the loser's manpower on the day of the battle |
 
 `WarScore = Land + Momentum`, aggressor-positive as today, and everything that reads the score
@@ -104,8 +104,11 @@ Ravaging the countryside wears a realm down; it cannot by itself make one kneel.
 
 ### 3.3 Decay
 
-Momentum loses **1% of itself per day**, with a floor of 0.05/day so it finishes clearing. A big
-victory has a half-life of roughly 70 days - about a season. Land does not decay (F7): a
+Momentum loses **1.65% of itself per day**, with a floor of 0.05/day so it finishes clearing: a
+**half-life of 42 days, two seasons, half a year**. The campaign year is 84 days (four seasons of
+21), and a decisive war reaches the table in about a year, so a victory from the opening season
+still counts at the peace but is worth a quarter of what it was. A great battle fought two years
+before the peace is worth almost nothing. Land does not decay (F7): a
 stalemate with land held stays a stalemate *in the holder's favour*, which is what occupation
 means. A stalemate with no land changed hands still drifts to zero and to a white peace, as the
 drift was always meant to do.
@@ -136,7 +139,7 @@ Khuzait as the winner, manpower ~4,500. Envoys even unless stated.
 | **E.** Ten skirmishes of 30 men each | 10 × 1.7 = **17** | 10 × 0.5 = **5** | Nothing - the F3 exploit is closed |
 | **F.** A small realm (2 towns, 3 castles; value 7): 1 town, 1 castle, one battle | 18 + 4 = **22** | Land 64 + ~12 = **~76** | **Vassal** - minor realms fall fast |
 | **G.** A large realm (value ~24): 3 towns | 36 | Land 37.5 | Land alone buys a town back |
-| **H.** Won to 76, then 60 days without signing | ~73: submission lost | Land unchanged, Momentum halved | Still vassal if the land carries it |
+| **H.** Won to 76, then 60 days (about 3 seasons) without signing | ~73: submission lost | Land unchanged, Momentum down to ~37% | Still vassal if the land carries it |
 
 A siege assault on its own scores little net: at Amprela the attacker took ~400 casualties to
 the defenders' ~390, so the fighting roughly cancels and the capture is what counts. That is the
@@ -196,6 +199,6 @@ tributary, an overwhelming one takes a vassal. **D1** asks the lead to choose.
 |---|---|---|
 | **D1** | Where subjugation sits: WL = 150 (half the realm, or land and a broken army) or 200 (a third of the realm) | **150** |
 | **D2** | Does a fief carried off by a defecting clan count as Land | **Yes**, the realm lost it |
-| **D3** | Momentum half-life: ~70 days (1%/day) | **70 days**, a season |
+| **D3** | Momentum half-life (the year is 84 days) | **42 days**: two seasons, half a year |
 | **D4** | Running wars on an old save: approximate migration, or reset their battle history to zero | **Migrate**; a reset erases real victories |
 | **D5** | Raid cap at 15 | **15**: raids alone reach a castle's worth, never a vassal |

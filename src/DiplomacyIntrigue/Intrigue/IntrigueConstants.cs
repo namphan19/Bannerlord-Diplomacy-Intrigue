@@ -19,8 +19,10 @@ namespace DiplomacyIntrigue.Intrigue
 
         /// <summary>
         /// Weight lost per day. UN-TUNED: design 02 §1's figure, which puts an uncompounded
-        /// grievance of weight 8 at zero in ~400 days - "a grievance nobody compounds fades in
-        /// roughly a year and a half".
+        /// grievance of weight 8 at zero in ~400 days. Design 02 describes that as "fades in
+        /// roughly a year and a half", but the campaign year is 84 days, so 400 days is **~4.8
+        /// years**. The words and the number disagree; a year and a half would be ~126 days, a
+        /// rate of ~0.063. Which one was meant is the lead's call, so the number is unchanged.
         /// </summary>
         public const float GrievanceDecayPerDay = 0.02f;
 
@@ -317,6 +319,10 @@ namespace DiplomacyIntrigue.Intrigue
         /// Days after an internal war ends before the same kingdom can start another. UN-TUNED.
         /// Without it a stalemate - which leaves the claim standing and the court as divided as
         /// it was - would re-trigger the war the next morning.
+        ///
+        /// 365 campaign days is **~4.3 years** (the year is 84 days). Nothing records whether
+        /// "one year" was meant, which would be 84; the figure looks like a calendar-year
+        /// conversion. Left for the lead to decide, since it changes how often realms split.
         /// </summary>
         public const float InternalWarCooldownDays = 365f;
 

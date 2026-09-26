@@ -137,8 +137,9 @@ namespace DiplomacyIntrigue.Intrigue
         /// Design 02 §4's "per year of peace".
         ///
         /// Driven daily but paid at most once a year per kingdom, against a stored mark. The
-        /// alternatives were both wrong: a 365th paid daily rounds to nothing in a float pool,
-        /// and a yearly event pays a kingdom that spent 364 of those days fighting.
+        /// alternatives were both wrong: an 84th paid daily (the campaign year is 84 days)
+        /// rounds to nothing in a float pool, and a yearly event pays a kingdom that spent 83
+        /// of those days fighting.
         ///
         /// Note what this does *not* do: it cannot run under `diplomacy.tick_days`, because
         /// the mark is a date and `CampaignTime.Now` does not move there. That is stated in

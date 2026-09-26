@@ -37,8 +37,9 @@ namespace DiplomacyIntrigue.Models
 
         /// <summary>
         /// When the peace dividend was last paid. Design 02 §4 grants legitimacy "per year of
-        /// peace", which needs a mark: without one, either a daily tick pays a 365th of it and
-        /// rounds away, or a yearly event pays a kingdom that was at war for 364 of those days.
+        /// peace", which needs a mark: without one, either a daily tick pays an 84th of it (the
+        /// campaign year is 84 days) and rounds away, or a yearly event pays a kingdom that was
+        /// at war for 83 of those days.
         /// </summary>
         [SaveableProperty(5)] public CampaignTime LastPeaceDividend { get; private set; }
 
