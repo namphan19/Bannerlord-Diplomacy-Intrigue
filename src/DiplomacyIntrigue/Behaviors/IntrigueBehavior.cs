@@ -90,32 +90,19 @@ namespace DiplomacyIntrigue.Behaviors
         }
 
         /// <summary>
-        /// The sources that are conditions rather than moments - a tribute being paid, a
-        /// relative still held. See <see cref="GrievanceSources.WeeklyScan"/>. Then each AI
-        /// leader of a civil war considers buying a house (<see cref="SideChange.WeeklyTick"/>).
+        /// The court's week: the conditions that renew grievances, the civil wars' leaders buying
+        /// houses, the AI rulers making amends. One list, <see cref="IntrigueUpkeep.Weekly"/>,
+        /// shared with <c>diplomacy.ai_week</c>; it catches its own failures step by step.
         /// </summary>
         private void OnWeeklyTick()
         {
-            var state = CoreBehavior.State;
-            if (state == null || !Settings.Current.EnableIntrigue) return;
-
             try
             {
-                GrievanceSources.WeeklyScan(state);
+                IntrigueUpkeep.Weekly(CoreBehavior.State);
             }
             catch (Exception ex)
             {
-                Log.Error("Intrigue", "Weekly grievance scan failed.", ex);
-            }
-
-            // Its own try: a failure buying a house must not be read as a failed grievance scan.
-            try
-            {
-                SideChange.WeeklyTick(state);
-            }
-            catch (Exception ex)
-            {
-                Log.Error("Intrigue", "Weekly side changes failed.", ex);
+                Log.Error("Intrigue", "Weekly intrigue upkeep failed.", ex);
             }
         }
 

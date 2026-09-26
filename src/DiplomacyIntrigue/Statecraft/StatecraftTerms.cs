@@ -170,5 +170,32 @@ namespace DiplomacyIntrigue.Statecraft
         /// <summary>A treaty's influence price for the proposing realm's ruler.</summary>
         public static int TreatyInfluenceCost(Kingdom proposer, Models.TreatyType type)
             => (int)(DiplomacyConstants.TreatyInfluenceCost(type) * FirebrandFactor(proposer?.Leader));
+
+        // ----- Rule 10: what an act costs follows the skills that do it -------------------
+
+        /// <summary>
+        /// The one multiplier every price built under the lead's rule of 2026-09-26 applies to each
+        /// of its parts: <c>2^(-x)</c> over a level or a contest, x0.5 at the top of the scale and x2
+        /// at the bottom (design 08 rule 10, design 09 §0). 1 with statecraft off, which keeps the
+        /// A/B switch honest: off means neutral here as everywhere.
+        /// </summary>
+        public static float PriceFactor(float levelOrContest)
+        {
+            if (!StatecraftModel.Enabled) return 1f;
+            var x = StatecraftModel.Clamp(levelOrContest, -1f, 1f);
+            return (float)System.Math.Pow(StatecraftConstants.PriceSkillSpread, -x);
+        }
+
+        /// <summary>
+        /// The price factor for a bargain: <paramref name="ours"/> against <paramref name="theirs"/>
+        /// in one skill, each measured against the realms' median. Our better hand is a lower price.
+        /// </summary>
+        public static float PriceFactor(Hero ours, Hero theirs, SkillObject skill)
+            => PriceFactor(StatecraftModel.Contest(StatecraftModel.Level(ours, skill),
+                                                   StatecraftModel.Level(theirs, skill)));
+
+        /// <summary>The price factor for an act with no other party: one hero against the median.</summary>
+        public static float PriceFactor(Hero hero, SkillObject skill)
+            => PriceFactor(StatecraftModel.Level(hero, skill));
     }
 }

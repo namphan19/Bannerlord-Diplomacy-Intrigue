@@ -47,6 +47,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         private string _worstWarText = string.Empty;
         private string _worstWarNote = string.Empty;
         private string _clanCountText = string.Empty;
+        private string _amendsAllText = string.Empty;
         private string _successionTitle = string.Empty;
         private string _successionDetail = string.Empty;
         private bool _hasBlocs;
@@ -172,6 +173,21 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             get => _clanCountText;
             set { if (value == _clanCountText) return; _clanCountText = value; OnPropertyChangedWithValue(value, nameof(ClanCountText)); }
         }
+
+        [DataSourceProperty]
+        public string AmendsAllText
+        {
+            get => _amendsAllText;
+            set
+            {
+                if (value == _amendsAllText) return;
+                _amendsAllText = value;
+                OnPropertyChangedWithValue(value, nameof(AmendsAllText));
+                OnPropertyChangedWithValue(!string.IsNullOrEmpty(value), nameof(HasAmendsAll));
+            }
+        }
+
+        [DataSourceProperty] public bool HasAmendsAll => !string.IsNullOrEmpty(_amendsAllText);
 
         [DataSourceProperty]
         public string SuccessionTitle
@@ -330,6 +346,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 LegitimacyNote = string.Empty;
                 LegitimacyAmount = 0;
                 ClanCountText = string.Empty;
+                AmendsAllText = string.Empty;
                 WorstWarText = string.Empty;
                 WorstWarNote = string.Empty;
                 SuccessionTitle = string.Empty;
@@ -420,6 +437,10 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             Clans = clans;
             ClanCountText = members.Count + (members.Count == 1 ? " clan owes" : " clans owe")
                             + (playerRules ? " you fealty" : " fealty to " + ruling.Name);
+
+            // Design 09 C1: what answering the whole court would cost - the line that says the
+            // verbs are for choosing, not for keeping everybody content. The ruler's view only.
+            AmendsAllText = playerRules && war == null ? (Amends.AllOpenCost(state, kingdom) ?? string.Empty) : string.Empty;
 
             // The succession watch.
             var claims = SuccessionModel.PretendersTo(state, kingdom);
@@ -512,9 +533,15 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 if (e.ForeignGold != 0f)
                     terms.Add(new DiCourtTermVM("Foreign gold - nobody knows whose", e.ForeignGold));
 
-                var ruling = _selected.Clan.Kingdom?.RulingClan;
+                // Design 09 C1: only the ruler makes amends, so only the ruler's view carries the
+                // price and the button. A vassal reads the same ledger, and no civil war is running.
+                var kingdom = _selected.Clan.Kingdom;
+                var ruling = kingdom?.RulingClan;
+                var mayAmend = ruling != null && ruling == Clan.PlayerClan && !_isAtWar;
                 foreach (var g in GrievanceRegistry.Of(state, _selected.Clan))
-                    if (g.Target == ruling) grievances.Add(new DiCourtGrievanceVM(g));
+                    if (g.Target == ruling) grievances.Add(new DiCourtGrievanceVM(state, g, mayAmend, Rebuild));
+                foreach (var g in GrievanceRegistry.AnsweredOf(state, _selected.Clan, ruling))
+                    grievances.Add(DiCourtGrievanceVM.Answered(g));
             }
 
             Terms = terms;
@@ -700,52 +727,146 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 : (value > 0f ? DiCourtVM.ReliableColor : DiCourtVM.DefectionColor);
         }
 
+        /// <summary>A line whose value is already words - a term of an amends price (design 09 C1).</summary>
+        public DiCourtTermVM(string label, string valueText)
+        {
+            Label = label;
+            ValueText = valueText;
+            ValueColor = DiCourtVM.TextColor;
+        }
+
         [DataSourceProperty] public string Label { get; }
         [DataSourceProperty] public string ValueText { get; }
         [DataSourceProperty] public Color ValueColor { get; }
     }
 
-    /// <summary>One thing a clan has not forgotten.</summary>
+    /// <summary>
+    /// One thing a clan has not forgotten - and, for the ruler, what answering it would cost
+    /// (design 09 C1). The price is <see cref="Amends.QuoteFor"/>, the number the AI weighs; the
+    /// button re-prices through <see cref="Amends.Execute"/>, so it cannot buy at a stale price.
+    /// </summary>
     internal sealed class DiCourtGrievanceVM : ViewModel
     {
-        public DiCourtGrievanceVM(Grievance g)
+        private readonly ModState _state;
+        private readonly Grievance _grievance;
+        private readonly Action _onChanged;
+        private readonly Amends.Quote _quote;
+        private bool _armed;
+        private string _amendText = string.Empty;
+        private string _amendNote = string.Empty;
+
+        public DiCourtGrievanceVM(ModState state, Grievance g, bool mayAmend, Action onChanged)
         {
+            _state = state;
+            _grievance = g;
+            _onChanged = onChanged;
+
             Title = TitleOf(g.Type);
             WeightText = g.Weight.ToString("0.0");
             var days = g.Created.ElapsedDaysUntilNow;
             AgeText = (days < 1f ? "today" : days.ToString("0") + " days ago")
                       + " - fading by " + GrievanceRegistry.FadePerDay(g.Target).ToString("0.000") + " a day";
+            AccentColor = DiCourtVM.DisaffectedColor;
+            PriceLines = new MBBindingList<DiCourtTermVM>();
+
+            if (!mayAmend) return;
+            _quote = Amends.QuoteFor(state, g);
+            if (!_quote.Eligible)
+            {
+                // Shown rather than hidden: a ruler who cannot answer a grievance should see why.
+                HasAmendNote = true;
+                _amendNote = "Amends cannot be made: " + _quote.Reason + ".";
+                return;
+            }
+
+            HasAmends = true;
+            HasAmendNote = true;
+            foreach (var term in Amends.PriceTerms(_quote))
+                PriceLines.Add(new DiCourtTermVM(term.Key, term.Value));
+            OutcomeText = "Loyalty " + _quote.LoyaltyBefore.ToString("0.0") + " -> " + _quote.LoyaltyAfter.ToString("0.0")
+                          + ", " + LoyaltyModel.Band(_quote.LoyaltyAfter);
+            AmendEnabled = _quote.Affordable;
+            ComposeButton();
+        }
+
+        private DiCourtGrievanceVM(Grievance g)
+        {
+            Title = TitleOf(g.Type) + " - answered";
+            WeightText = "0.0";
+            AgeText = "Answered " + g.AnsweredOn.ElapsedDaysUntilNow.ToString("0") + " days ago. Remembered for "
+                      + IntrigueConstants.AmendsMemoryYears.ToString("0") + " years: the same wrong again weighs x"
+                      + IntrigueConstants.AmendsRepeatWrongFactor.ToString("0.#") + ", and amends to this house cost x"
+                      + IntrigueConstants.AmendsRepeatPriceFactor.ToString("0.#") + ".";
+            AccentColor = DiCourtVM.ReliableColor;
+            PriceLines = new MBBindingList<DiCourtTermVM>();
+        }
+
+        /// <summary>A wrong the crown answered, still remembered: shown under the live ones.</summary>
+        internal static DiCourtGrievanceVM Answered(Grievance g) => new DiCourtGrievanceVM(g);
+
+        private void ComposeButton()
+        {
+            if (_quote == null) return;
+            var price = _quote.Influence.ToString("N0") + " influence, " + _quote.Gold.ToString("N0") + " denars";
+            AmendText = _armed ? "Confirm: pay " + price : "Make amends - " + price;
+            AmendNote = !_quote.Affordable ? "Cannot pay: " + _quote.Short + "."
+                : _armed ? "Click again to pay. Anything else leaves it unpaid."
+                : "Paid to the house's head; the influence is spent.";
         }
 
         [DataSourceProperty] public string Title { get; }
         [DataSourceProperty] public string WeightText { get; }
         [DataSourceProperty] public string AgeText { get; }
+        [DataSourceProperty] public Color AccentColor { get; }
+
+        [DataSourceProperty] public bool HasAmends { get; }
+        [DataSourceProperty] public bool HasAmendNote { get; }
+        [DataSourceProperty] public MBBindingList<DiCourtTermVM> PriceLines { get; }
+        [DataSourceProperty] public string OutcomeText { get; } = string.Empty;
+        [DataSourceProperty] public bool AmendEnabled { get; }
+
+        [DataSourceProperty]
+        public string AmendText
+        {
+            get => _amendText;
+            set { if (value == _amendText) return; _amendText = value; OnPropertyChangedWithValue(value, nameof(AmendText)); }
+        }
+
+        [DataSourceProperty]
+        public string AmendNote
+        {
+            get => _amendNote;
+            set { if (value == _amendNote) return; _amendNote = value; OnPropertyChangedWithValue(value, nameof(AmendNote)); }
+        }
 
         /// <summary>
-        /// Plain words for the player, not the enum name. Design: "An unjust war", not "UnjustWar 7.8".
-        /// Also read by the Encyclopedia's ledger under a ReadCourt, so a slight is named the same
-        /// wherever it is shown.
+        /// Two clicks: the first arms the button and names the price, the second pays. The same
+        /// shape as conceding a civil war, for the same two reasons: the act is dear and cannot be
+        /// undone, and the test bridge can click a panel button but not inside an inquiry.
         /// </summary>
-        internal static string TitleOf(GrievanceType type)
+        public void ExecuteAmend()
         {
-            switch (type)
+            try
             {
-                case GrievanceType.FiefToRival: return "A fief given to another";
-                case GrievanceType.UnjustWar: return "An unjust war";
-                case GrievanceType.HumiliatingTribute: return "Tribute paid to a foreign crown";
-                case GrievanceType.RelativeInCaptivity: return "Kin left in an enemy cell";
-                case GrievanceType.FiefLostToEnemy: return "A fief the crown failed to defend";
-                case GrievanceType.PolicyAgainstAgenda: return "A policy against their interest";
-                case GrievanceType.PeaceWhileWinning: return "Peace made while they were winning";
-                case GrievanceType.RequestRefused: return "A request refused";
-                case GrievanceType.SuccessionPassedOver: return "Their candidate for the throne passed over";
-                // Named as forged. The Court tab is the victim's own court, which was told so when the
-                // letters surfaced. On the Encyclopedia only a ReadCourt shows it, and an agent inside
-                // the court is placed to know the crown's hand from a forgery - the forger's or a
-                // third realm's alike.
-                case GrievanceType.ForgedLetters: return "Letters in the crown's hand - forged";
-                default: return "An old slight";
+                if (_quote == null || !_quote.Eligible || !_quote.Affordable) return;
+                if (!_armed)
+                {
+                    _armed = true;
+                    ComposeButton();
+                    return;
+                }
+
+                if (!Amends.Execute(_state, _grievance, out var failed))
+                    Log.Notify("Amends could not be made: " + failed, Colors.Red);
+                _onChanged?.Invoke();
+            }
+            catch (Exception ex)
+            {
+                Log.Error("UI", "Making amends from the Court tab failed.", ex);
             }
         }
+
+        /// <summary>The slight's name, from <see cref="GrievanceRegistry.TitleOf"/>, its one home.</summary>
+        internal static string TitleOf(GrievanceType type) => GrievanceRegistry.TitleOf(type);
     }
 }

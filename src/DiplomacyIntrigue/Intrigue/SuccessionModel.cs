@@ -415,8 +415,15 @@ namespace DiplomacyIntrigue.Intrigue
         /// Influence of this clan as a multiple of its court's average - the one place that
         /// average is computed. Sworn clans with positive influence make up the average; a
         /// mercenary is not at court and a clan at or below zero carries no weight in it.
+        ///
+        /// <paramref name="peersOnly"/> leaves the ruling clan out of the average: a house's
+        /// weight among the other houses. Design 09's amends price reads it that way, found live
+        /// on 2026-09-26: with the crown counted, a ruler who gained 1,000 influence saw every
+        /// house's standing fall (Urkhunait 1.59 to 1.12), so the richer the crown, the cheaper
+        /// placating its court - the opposite of what the price is for. The magnate test and the
+        /// Encyclopedia's bands keep the crown in, as before.
         /// </summary>
-        public static float InfluenceRatio(Clan clan, Kingdom kingdom)
+        public static float InfluenceRatio(Clan clan, Kingdom kingdom, bool peersOnly = false)
         {
             if (clan == null || kingdom?.Clans == null) return 0f;
 
@@ -426,6 +433,7 @@ namespace DiplomacyIntrigue.Intrigue
             {
                 var other = kingdom.Clans[i];
                 if (!Court.IsMember(other) || other.Influence <= 0f) continue;
+                if (peersOnly && other == kingdom.RulingClan) continue;
                 total += other.Influence;
                 counted++;
             }

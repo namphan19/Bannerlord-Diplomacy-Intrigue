@@ -416,6 +416,54 @@ namespace DiplomacyIntrigue.Intrigue
         /// </summary>
         public const float ClanSuccessionCadetRenownShare = 0.25f;
 
+        // ----- Court verbs (design 09) ------------------------------------------------------
+        //
+        // The lead's pricing rule of 2026-09-26 (design 09 §0, CLAUDE.md §3): an act costs
+        // influence and gold together, each part scaled by its skill (StatecraftTerms.PriceFactor),
+        // and priced high. The first draft of amends, 10 influence a point and no gold, was judged
+        // far too cheap. Every number below is a first guess.
+
+        /// <summary>
+        /// Influence per point of weight answered, before standing, memory and skill. UN-TUNED.
+        /// A weight-8 wrong costs an ordinary house 320: half a p10 ruler's influence, a seventh of
+        /// the median's (run 08, 1,904 weekly samples: p10 624, median 2,374).
+        /// </summary>
+        public const float AmendsInfluencePerPoint = 40f;
+
+        /// <summary>
+        /// Denars per point of weight answered, before standing, memory and skill. UN-TUNED. A
+        /// weight-8 wrong costs 40,000, 7% of the median ruler's 551,000 - and more than forging
+        /// the same wrong costs (ForgeLetters, 15,000): repair is dearer than harm.
+        /// </summary>
+        public const float AmendsGoldPerPoint = 5000f;
+
+        /// <summary>
+        /// The house's court weight (<see cref="SuccessionModel.InfluenceRatio"/>) is clamped to
+        /// this range as the standing multiplier: a great house is dearer to placate. UN-TUNED.
+        /// </summary>
+        public const float AmendsStandingMin = 0.5f;
+        public const float AmendsStandingMax = 2f;
+
+        /// <summary>
+        /// Game years an answered wrong is remembered: a second amends to the same house inside it
+        /// costs <see cref="AmendsRepeatPriceFactor"/>, and the same wrong repeated inside it weighs
+        /// <see cref="AmendsRepeatWrongFactor"/>. Game years, as every "years" constant here is
+        /// (84 days each). UN-TUNED.
+        /// </summary>
+        public const float AmendsMemoryYears = 2f;
+
+        /// <summary>A king who keeps apologising to the same house pays more for it. UN-TUNED.</summary>
+        public const float AmendsRepeatPriceFactor = 2f;
+
+        /// <summary>The house forgave once, on terms: a repeated wrong weighs more. UN-TUNED.</summary>
+        public const float AmendsRepeatWrongFactor = 1.5f;
+
+        /// <summary>
+        /// An AI ruler makes amends only while it keeps this many times its current war-declaration
+        /// cost in influence, so answering a court never leaves it unable to go to war. UN-TUNED.
+        /// </summary>
+        public const float AiAmendsWarCostReserve = 2f;
+
         /// <summary>
         /// The starting weight for a type. One place, so a source cannot disagree with the
         /// ledger about what a slight is worth.

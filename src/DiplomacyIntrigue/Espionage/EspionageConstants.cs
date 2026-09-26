@@ -165,8 +165,8 @@ namespace DiplomacyIntrigue.Espionage
         // at most one network, aimed at a clear rival, spends only a purse with room to spare, and
         // acts only when the chance of being caught is low. Every number below is a first guess.
 
-        /// <summary>What an AI ruler keeps back before spending anything on espionage. UN-TUNED.</summary>
-        public const int AiGoldReserve = 50000;
+        /// <summary>What an AI ruler keeps back before spending anything on espionage: the shared figure.</summary>
+        public const int AiGoldReserve = Diplomacy.DiplomacyConstants.AiGoldReserve;
 
         /// <summary>Share of the purse above the reserve an AI ruler puts into its network each week. UN-TUNED.</summary>
         public const float AiNetworkBudgetShare = 0.04f;

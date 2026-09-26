@@ -734,13 +734,80 @@ namespace DiplomacyIntrigue.Core
                     var g = pair.Value[i];
                     sb.AppendLine("    " + g.Weight.ToString("0.0").PadLeft(5) + "  " + g.Type
                                   + "  vs " + g.Target.Name
-                                  + "  (" + g.Created.ElapsedDaysUntilNow.ToString("0") + "d ago)");
+                                  + "  (" + g.Created.ElapsedDaysUntilNow.ToString("0") + "d ago)"
+                                  + (g.Answers > 0 ? "  answered x" + g.Answers + " " + g.AnsweredOn.ElapsedDaysUntilNow.ToString("0") + "d ago"
+                                                     + (GrievanceRegistry.IsRemembered(g) ? ", remembered" : "") : ""));
                 }
             }
             sb.AppendLine("Decay is " + IntrigueConstants.GrievanceDecayPerDay.ToString("0.00")
                           + "/day at a median steward, times the steward of the house each is held against (design 08 S-6)"
-                          + "; a record is dropped at zero.");
+                          + "; a record is dropped at zero, unless the crown answered it inside "
+                          + IntrigueConstants.AmendsMemoryYears.ToString("0") + " years (design 09).");
             return sb.ToString();
+        }
+
+        /// <summary>
+        /// Design 09 C1, the diagnostic: every grievance held against one crown, priced term by term
+        /// by the resolver the Court tab and the AI read, and what the AI would answer this week.
+        /// A dry run: nothing is paid.
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("amends", "diplomacy")]
+        public static string AmendsQuote(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+            var parts = SplitOnPipe(args);
+            if (parts.Count < 1) return "Usage: diplomacy.amends <kingdom> [| <clan>]";
+
+            var kingdom = FindKingdom(parts[0]);
+            if (kingdom == null) return "No kingdom matching \"" + parts[0] + "\".";
+            Clan only = null;
+            if (parts.Count > 1)
+            {
+                only = FindClan(parts[1]);
+                if (only == null) return "No clan matching \"" + parts[1] + "\".";
+            }
+            return Intrigue.Amends.Describe(state, kingdom, only);
+        }
+
+        /// <summary>
+        /// Test lever: the clan's crown makes amends for its heaviest grievance against the crown (or
+        /// the one of <c>type</c>), paying the real price through <see cref="Intrigue.Amends.Execute"/> -
+        /// the same call the Court tab's button and the AI make. Whoever rules pays, player or AI.
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_amends", "diplomacy")]
+        public static string TestAmends(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+            var parts = SplitOnPipe(args);
+            if (parts.Count < 1) return "Usage: diplomacy.test_amends <clan> [| <grievance type>]";
+
+            var clan = FindClan(parts[0]);
+            if (clan == null) return "No clan matching \"" + parts[0] + "\".";
+            var ruling = clan.Kingdom?.RulingClan;
+            if (ruling == null) return clan.Name + " has no crown.";
+
+            GrievanceType wanted = GrievanceType.None;
+            if (parts.Count > 1 && !Enum.TryParse(parts[1], true, out wanted))
+                return "Unknown grievance type \"" + parts[1] + "\". Types: " + string.Join(", ", Enum.GetNames(typeof(GrievanceType)));
+
+            Grievance pick = null;
+            foreach (var g in GrievanceRegistry.Of(state, clan))
+            {
+                if (g.Target != ruling) continue;
+                if (wanted != GrievanceType.None && g.Type != wanted) continue;
+                pick = g;   // Of() is heaviest first
+                break;
+            }
+            if (pick == null) return clan.Name + " holds no such grievance against its crown.";
+
+            var quote = Intrigue.Amends.QuoteFor(state, pick);
+            if (!Intrigue.Amends.Execute(state, pick, out var failed))
+                return "Refused: " + failed;
+            return "Amends made to " + clan.Name + " for " + pick.Type + ": " + quote.Influence + " influence, "
+                   + quote.Gold.ToString("N0") + " denars. Loyalty " + quote.LoyaltyBefore.ToString("0.0") + " -> "
+                   + Intrigue.LoyaltyModel.Of(state, clan).ToString("0.0") + " (predicted " + quote.LoyaltyAfter.ToString("0.0") + ").";
         }
 
         /// <summary>
@@ -1098,14 +1165,11 @@ namespace DiplomacyIntrigue.Core
                 // permanently discouraged by wars it finished years ago.
                 for (var day = 0; day < 7; day++) RunDailyUpkeep(state);
 
-                // The weekly half of the campaign's upkeep, every piece of it. The grievance
-                // scan was missing from this list until 2026-09-25: a realm paying tribute was
-                // never resented under ai_week, the partial-tick trap of CLAUDE.md §1 again.
-                GrievanceSources.WeeklyScan(state);
-
-                // A civil war's leaders buy houses weekly (design 07 §6). Left out, a week here
-                // would show every internal war fought with its sides frozen.
-                SideChange.WeeklyTick(state);
+                // The court's week - the grievance scan, the civil wars' side changes and the AI's
+                // amends - through the campaign's own list, not a copy of it. The copy this used to
+                // keep had already lost the grievance scan once (fixed 2026-09-25), the
+                // partial-tick trap of CLAUDE.md §1.
+                IntrigueUpkeep.Weekly(state);
 
                 // The espionage week: counter-intelligence budgets paid, then networks paid for
                 // and grown (Phase 3.1, 3.3) - the campaign's own list, not a copy of it.

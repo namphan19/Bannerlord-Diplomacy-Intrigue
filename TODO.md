@@ -41,8 +41,19 @@ checked Phase 2 against its acceptance line.
 - [x] D1-D15 of [design/09](docs/design/09-court-verbs.md) decided 2026-09-26, with the lead's
       pricing rule: influence and gold together, each scaled ×0.5-×2 by its skill, priced high
       (design/09 §0, CLAUDE.md §3).
-- [ ] The lead's approval of the mockup — the "Court verbs" row of the court canvas
-      (https://claude.ai/artifact/1FrpG5in328WYfNi6sP8Pf), published 2026-09-26. Then C1, C2, C3.
+- [x] The mockup approved by the lead, 2026-09-26.
+- [x] **C1, make amends: built and run live, 2026-09-26** ([design/09 §8](docs/design/09-court-verbs.md)).
+- [ ] **For the lead — measured, the line is not met in its hardest form.** On Battania one tick from
+      rising after a contested succession, two amends took the pretender bloc from 61% to 56% and the
+      rising from 5 houses to 4; the rising still came. Crown legitimacy (25 against 35) is out of
+      every court verb's reach, and relation sank three houses below 25. Does "survive it" mean
+      surviving a court already at the trigger? If so, the ruler needs a verb that buys legitimacy or
+      relation (for example a court feast or a coronation, priced by the rule), and C2's +8 will not
+      be enough on its own.
+- [ ] **For the lead — the AI answers a crisis a week late.** The trigger is checked daily, the AI
+      makes amends weekly; a contested succession raises all three conditions at once, so the AI
+      never gets its turn. Option: let a ruler whose realm is one tick from rising act that day.
+- [ ] C2, offices and patronage; then C3, tribute per vassal.
 
 ### 2. The court does not reach the AI's foreign policy
 
@@ -166,6 +177,12 @@ own `vietnamese-writing` (CLAUDE.md §4).
       what assigns governors and parties to an AI clan's heroes, then choose the lever with that
       evidence), then 3.6's long AI-only run, then the two 3.5 wording faults and the note on a
       reloaded bribe offer ([design/03 §10](docs/design/03-espionage.md)).
+      **Found 2026-09-26:** `EspionageConstants.BribeWindowDays = 730` implements the lead's "two
+      years" (design/03 §9 decision 7) in calendar days, which is 8.7 game years at 84 days each;
+      every other "years" constant in the mod is game years. Not changed, since espionage is parked.
+- [ ] `diplomacy.test_set_skill` sets a skill without its XP, so the hero's next XP grant puts the old
+      value back (seen 2026-09-26: Charm 232 read 503 again after one amends). A test built on it has
+      to set the skill after any act that grants XP.
 
 ## Not verified in game
 

@@ -114,5 +114,17 @@ namespace DiplomacyIntrigue.Statecraft
             Grant(house?.Leader, DefaultSkills.Trade,
                 StatecraftConstants.XpPerSideChangeDenarHouse * price, "house_sold");
         }
+
+        /// <summary>
+        /// Design 09 C1: amends train the skills that priced them - the crown's envoy (Charm) and
+        /// treasurer (Trade), the same heroes the quote named.
+        /// </summary>
+        public static void AmendsMade(Intrigue.Amends.Quote quote)
+        {
+            if (quote == null) return;
+            var xp = StatecraftConstants.XpAmendsPerPoint * quote.Weight;
+            Grant(quote.Envoy, DefaultSkills.Charm, xp, "amends");
+            Grant(quote.Treasurer, DefaultSkills.Trade, xp, "amends");
+        }
     }
 }

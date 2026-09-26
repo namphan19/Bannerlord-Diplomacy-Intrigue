@@ -1,6 +1,6 @@
 # Design 09 — Court verbs: the ruler's hands
 
-Status: **decided**, 2026-09-26 (§7). Phase 2. Nothing is built yet; the mockup comes first.
+Status: **decided** 2026-09-26 (§7). **C1 built and run live** the same day (§8); C2 and C3 not built.
 
 The lead's call of 2026-09-26: build R-2 of the 2026-09-24 mechanics review (court and patron
 verbs for the player) so that Phase 2 meets its acceptance line. Espionage's default and the
@@ -269,3 +269,92 @@ take influence and gold together (§0's pricing rule). The first version priced 
 | D13 | Seat offers to the player as a vassal | **Yes, as an inquiry** |
 | D14 | Tribute levels | **None / 250 / 500 / 1,000, AI by Hold** |
 | D15 | UI | **Mockup first, then build** |
+
+---
+
+## 8. C1 as built and run live, 2026-09-26
+
+Built: `Intrigue/Amends.cs` (the one price, the act, the AI's weekly choice), `Grievance` properties
+**6** `AnsweredOn` and **7** `Answers`, the Court tab's price lines and button, the line under the
+roster that prices the whole court, `StatecraftTerms.PriceFactor`, `diplomacy.amends` (the dry run,
+with the AI's pick) and `diplomacy.test_amends` (the real act, paid by whoever rules). The court's
+week is now one list, `IntrigueUpkeep.Weekly`, shared by the campaign and `diplomacy.ai_week`; the
+AI's gold reserve is one constant, `DiplomacyConstants.AiGoldReserve`, read by espionage and amends.
+No Harmony; no new class id; the save check counts 126 saved members.
+
+### What running it changed in this spec
+
+- **Standing counts peers only.** As first written, standing read the court's average with the
+  crown in it, and on `di_grievance_test` a ruler who gained 1,000 influence saw Urkhunait's standing
+  fall from 1.59 to 1.12: the richer the crown, the cheaper its court. `SuccessionModel.InfluenceRatio`
+  now takes `peersOnly`, and amends reads it that way; the magnate test and the Encyclopedia keep the
+  crown in.
+- **The AI scores what an answer really moves.** Loyalty is clamped at 0, so a house deep below it
+  gains nothing from one amends (fen Uvain on `di_pretender_test`, 0.0 -> 0.0). The AI's score reads
+  the quote's loyalty before and after, and skips a zero. Compiled and reviewed; **not seen choosing
+  differently live** (on the one court where it could matter, the old score picked the same house).
+- **The button takes two clicks**, the first naming the price: the shape conceding a civil war
+  already has, because the act is dear and final and the test bridge cannot click inside an inquiry.
+  The approved mockup showed one click.
+- The button is 56 high: at the column's 310 width the price wraps to two lines.
+
+### Checked live
+
+On `di_grievance_test` (Khuzait, the player rules), with the player's Charm set to 232 and Trade to
+150 and the purse topped up with vanilla's cheats; every figure predicted by hand first.
+
+| Check | Result |
+|---|---|
+| Urkhunait's price, predicted 459 influence and 79,200 denars (standing 1.44, Charm x1.02, Trade x1.41) | **459 and 79,200**, on the Court tab and in `diplomacy.amends` |
+| Two clicks from the Court tab | the first armed it ("Confirm: pay 459 influence, 79,200 denars"), the second paid |
+| The crown's purse | 1,006 -> 547 influence; 201,000 -> 121,800 denars |
+| Loyalty | 39.7 -> **51.4**, Disaffected -> Transactional, the grievance term 0.0 |
+| The ledger | "answered x1, remembered", shown on the Court tab under the live grievances |
+| A day of upkeep | the answered record stays (it is remembered) |
+| The same wrong again (a war on Vlandia with no claim) | Urkhunait **12.0** (8 x 1.5); every other house 8.0 |
+| The next price for Urkhunait | "within 2 years: x2", 707 influence and 86,100 denars; refused for want of influence, with the reason |
+| Save, a new process, load | the answered record, its weight 12.0 and the x2 all came back |
+| Telemetry and XP | `kind=amends`; `skill_xp` 1,950 each to the envoy's Charm and the treasurer's Trade (7.8 x 250) |
+| The AI's weekly pass, through `ai_week` | Aserai answered Banu Habbab: 101 influence, 13,800 denars, loyalty 3.0 -> 8.6 |
+
+### The acceptance line, measured
+
+§5's pass condition was **not met** on the court it was written for, and the finding is the point
+of the check. `test_player_rule battania` cannot run on `di_pretender_test`: the player already rules
+Khuzait there, and a ruler cannot leave a realm without a crown. So the verbs were run in Battania
+itself, through the same `Amends.Execute` the player's button calls, with Battania's own ruler paying.
+
+| | Before | After two amends (fen Penraic, the AI's own pick, and fen Caernacht) |
+|---|---|---|
+| The trigger | READY | still **READY** |
+| Pretender bloc's share | 61% | 56% (Penraic 62.3 -> 70.8 left the bloc's power) |
+| Houses below 25 | 4 | 3 (Caernacht 21.3 -> 29.8) |
+| Crown legitimacy | 25 | 25 - amends do not reach it |
+| The rising, next daily tick | would take 5 houses | took **4**; the crown held 44% of the court |
+
+What held, and by how much: **legitimacy** (25 against the 35 needed) is out of every court verb's
+reach; the **bloc** stays above 40% because only a house at 70 leaves the bloc's power, and the others
+sit at 0-30; **three houses** stay below 25 because relation, not grievance, sank them after the
+contested succession (fen Uvain: relation -34, raw loyalty -10.2 before the amends, -1.7 after).
+C2's +8 would not change any of the three here.
+
+What C1 does do: it moves a house across a band (Khuzait, Disaffected -> Transactional), it can pull a
+great house out of a pretender bloc before the war (Penraic), and it makes the war that comes smaller.
+In the unjust-war court the acceptance line describes, no internal war can start at all without a
+standing claimant, which only a contested succession makes; there, "surviving" is keeping houses from
+sliding, and amends does that.
+
+Two more findings from the same runs:
+
+- **The AI cannot answer a sudden crisis.** The trigger is checked daily and the AI makes amends
+  weekly; a contested succession creates all three conditions at once, so the rising comes the next
+  day. The AI only prevents a threat that builds over weeks.
+- **Spending influence can make a claimant.** After the player's 459 influence went on amends, Arkit
+  crossed the magnate line (x1.30 of a court average that counts the crown) and the Court tab marked
+  it "claimant". Two systems meeting, not a fault: a crown that spends its influence looks weaker.
+
+Not checked: the AI's zero-gain skip in a case where it changes the pick; a vassal player being told
+an AI ruler answered their house (the message exists; no test put the player's house on the
+receiving end); the Encyclopedia ledger, which now leaves answered records out; the test lever
+`test_set_skill`, which sets a skill without its XP, so the first XP grant puts the old value back -
+the player's Charm read 503 again after one amends.

@@ -53,18 +53,96 @@ namespace DiplomacyIntrigue.Intrigue
             return TotalAgainst(state, clan, ruling);
         }
 
-        /// <summary>Every live grievance a clan holds, heaviest first, for the court ledger UI.</summary>
+        /// <summary>
+        /// Every live grievance a clan holds, heaviest first, for the court ledger UI. An answered
+        /// one that weighs nothing is not live (<see cref="AnsweredOf"/> lists those).
+        /// </summary>
         public static List<Grievance> Of(ModState state, Clan holder)
         {
             var list = new List<Grievance>();
             if (state == null || holder == null) return list;
 
             for (var i = 0; i < state.Grievances.Count; i++)
-                if (state.Grievances[i].Holder == holder) list.Add(state.Grievances[i]);
+            {
+                var g = state.Grievances[i];
+                if (g.Holder == holder && g.Weight > 0f) list.Add(g);
+            }
 
             list.Sort((a, b) => b.Weight.CompareTo(a.Weight));
             return list;
         }
+
+        /// <summary>
+        /// Wrongs the crown answered that <paramref name="holder"/> still remembers, at no weight:
+        /// what the Court tab shows under "answered" (design 09 §4).
+        /// </summary>
+        public static List<Grievance> AnsweredOf(ModState state, Clan holder, Clan target)
+        {
+            var list = new List<Grievance>();
+            if (state == null || holder == null || target == null) return list;
+
+            for (var i = 0; i < state.Grievances.Count; i++)
+            {
+                var g = state.Grievances[i];
+                if (g.Is(holder, target) && g.Weight <= 0f && IsRemembered(g)) list.Add(g);
+            }
+            return list;
+        }
+
+        /// <summary>
+        /// Plain words for the player, not the enum name. Design: "An unjust war", not "UnjustWar 7.8".
+        /// Read by the Court tab, the Encyclopedia's ledger under a ReadCourt and the amends
+        /// messages, so a slight is named the same wherever it is shown. Here rather than in the UI
+        /// since amends (design 09) became a reader in this layer.
+        /// </summary>
+        public static string TitleOf(GrievanceType type)
+        {
+            switch (type)
+            {
+                case GrievanceType.FiefToRival: return "A fief given to another";
+                case GrievanceType.UnjustWar: return "An unjust war";
+                case GrievanceType.HumiliatingTribute: return "Tribute paid to a foreign crown";
+                case GrievanceType.RelativeInCaptivity: return "Kin left in an enemy cell";
+                case GrievanceType.FiefLostToEnemy: return "A fief the crown failed to defend";
+                case GrievanceType.PolicyAgainstAgenda: return "A policy against their interest";
+                case GrievanceType.PeaceWhileWinning: return "Peace made while they were winning";
+                case GrievanceType.RequestRefused: return "A request refused";
+                case GrievanceType.SuccessionPassedOver: return "Their candidate for the throne passed over";
+                // Named as forged. The Court tab is the victim's own court, which was told so when the
+                // letters surfaced. On the Encyclopedia only a ReadCourt shows it, and an agent inside
+                // the court is placed to know the crown's hand from a forgery - the forger's or a
+                // third realm's alike.
+                case GrievanceType.ForgedLetters: return "Letters in the crown's hand - forged";
+                default: return "An old slight";
+            }
+        }
+
+        /// <summary>A grievance the crown answered inside the memory window (design 09 §1).</summary>
+        public static bool IsRemembered(Grievance g)
+            => g != null && g.WasAnsweredWithin(IntrigueConstants.AmendsMemoryYears);
+
+        /// <summary>
+        /// True when <paramref name="target"/> made amends to <paramref name="holder"/> for anything
+        /// inside the memory window. The price of another amends doubles on it.
+        /// </summary>
+        public static bool AnsweredRecently(ModState state, Clan holder, Clan target)
+        {
+            if (state == null || holder == null || target == null) return false;
+            for (var i = 0; i < state.Grievances.Count; i++)
+            {
+                var g = state.Grievances[i];
+                if (g.Is(holder, target) && IsRemembered(g)) return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// The weight a renewal arrives at: a wrong repeated after the crown answered it, inside
+        /// the memory window, weighs x<see cref="IntrigueConstants.AmendsRepeatWrongFactor"/>. One
+        /// place, read by both <see cref="Add"/> and <see cref="WouldAdd"/>.
+        /// </summary>
+        private static float RenewalWeight(Grievance existing, float value)
+            => IsRemembered(existing) ? value * IntrigueConstants.AmendsRepeatWrongFactor : value;
 
         /// <summary>
         /// How much <see cref="Add"/> would raise what <paramref name="holder"/> holds against
@@ -88,7 +166,8 @@ namespace DiplomacyIntrigue.Intrigue
             {
                 var existing = state.Grievances[i];
                 if (existing.Type != type || !existing.Is(holder, target)) continue;
-                return value > existing.Weight ? value - existing.Weight : 0f;
+                var renewed = RenewalWeight(existing, value);
+                return renewed > existing.Weight ? renewed - existing.Weight : 0f;
             }
             return value;
         }
@@ -120,10 +199,12 @@ namespace DiplomacyIntrigue.Intrigue
                 var existing = state.Grievances[i];
                 if (existing.Type != type || !existing.Is(holder, target)) continue;
 
-                existing.Renew(value);
+                var repeated = IsRemembered(existing);
+                existing.Renew(RenewalWeight(existing, value));
                 BlocModel.Invalidate();
                 Log.Info("Grievance", holder.Name + " renews " + type + " against " + target.Name
                                       + " at " + existing.Weight.ToString("0.0")
+                                      + (repeated ? ", a wrong repeated after amends" : "")
                                       + (reason == null ? "" : " (" + reason + ")"));
                 return;
             }
@@ -176,8 +257,21 @@ namespace DiplomacyIntrigue.Intrigue
             BlocModel.Invalidate();
 
             // Dropping spent records keeps the save from growing without bound across a long
-            // campaign; a grievance at zero weighs nothing anywhere that reads it.
-            state.Grievances.RemoveAll(g => g.IsSpent);
+            // campaign; a grievance at zero weighs nothing anywhere that reads it. One the crown
+            // answered stays at zero until its memory lapses, since a repeat is priced from it.
+            state.Grievances.RemoveAll(g => g.IsSpent && !IsRemembered(g));
+        }
+
+        /// <summary>
+        /// The crown made amends (design 09 C1). The only way a grievance is set to nothing
+        /// before it fades; <see cref="Amends.Execute"/> is the only caller, and it has already
+        /// checked and paid.
+        /// </summary>
+        internal static void Answer(Grievance grievance)
+        {
+            if (grievance == null) return;
+            grievance.Answer();
+            BlocModel.Invalidate();
         }
     }
 }

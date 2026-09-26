@@ -241,7 +241,10 @@ who paying would leave a defection risk).
 Court intrigue: `diplomacy.grievances`, `loyalty`, `blocs`, `legitimacy`, `pretenders` (with
 who would stand at the next succession), and `court_bands` (a court exactly as its
 Encyclopedia page describes it: bands only, plus the exact ledger while the player's house holds a
-live ReadCourt on that realm). Espionage: `diplomacy.networks`, `mission_odds <clan> | <kingdom>`, `missions`, `bribes` (every
+live ReadCourt on that realm), `amends <kingdom> [| clan]` (every grievance against a crown priced
+term by term, and the AI's pick this week; a dry run) and the lever `test_amends <clan> [| type]`
+(the real act, paid by whoever rules - `test_player_rule` cannot move a player who already rules a
+realm, so this is how a crisis court's own ruler is made to act). Espionage: `diplomacy.networks`, `mission_odds <clan> | <kingdom>`, `missions`, `bribes` (every
 bribe still on the record and whether it binds anybody), `counter_intelligence [kingdom]` (every
 realm's defence term by term), `ai_espionage [kingdom]` (each AI realm's espionage plan for the week,
 a dry run), and the levers `test_set_network`, `test_counter_budget <kingdom> | <denars>`,
@@ -335,7 +338,7 @@ are left below the enum block**: the definer adds its base to class and enum ids
 believed to share one id space (not verified - the reference assemblies carry no method bodies), so
 the class after 19 takes **28** or above rather than risk 20. Enums are **20-27**
 (26 `GrievanceType`, 27 `InternalWarOutcome`), next free **28**. `Grievance` uses
-properties 1-5, `KingdomLegitimacy` 1-5, `Pretender` 1-4, `InternalWar` 1-14 (13 `Faction`,
+properties 1-7 (6 `AnsweredOn`, 7 `Answers`, design 09; next free **8**), `KingdomLegitimacy` 1-5, `Pretender` 1-4, `InternalWar` 1-14 (13 `Faction`,
 14 `SideChanges`, next free **15**), `InternalWarMember` 1, `SpyNetwork` 1-8 (next free **9**), `SpyMission` 1-11 (next free **12**),
 `CounterIntelligenceBudget` 1-3 (next free **4**). A new *value* on an enum the definer
 already registers is safe (`GrievanceType.SuccessionPassedOver = 9` and `ForgedLetters = 10` were

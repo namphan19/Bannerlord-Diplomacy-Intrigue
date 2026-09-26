@@ -64,6 +64,15 @@ namespace DiplomacyIntrigue.Statecraft
         /// <summary>A-3: vanilla's own Silver Tongue figure (-15% gold to persuade lords to defect).</summary>
         public const float SilverTongueFactor = 0.85f;
 
+        // ---- What an act costs follows the skills that do it (rule 10, the lead's, 2026-09-26) ----
+
+        /// <summary>
+        /// A price part is multiplied by this to the power of minus the level (or contest): x0.5 at
+        /// +1, x2 at -1. The lead's call: skill should move a price strongly, not by rule 5's ±15%.
+        /// UN-TUNED only in its reach, which the lead set.
+        /// </summary>
+        public const float PriceSkillSpread = 2f;
+
         // ---- Doing trains the skill (design 08 §6), raw XP before the learning rate ----
 
         public const float XpNonAggressionPact = 2000f;
@@ -96,5 +105,11 @@ namespace DiplomacyIntrigue.Statecraft
 
         /// <summary>The house's head per denar received for changing sides.</summary>
         public const float XpPerSideChangeDenarHouse = 0.05f;
+
+        /// <summary>
+        /// Design 09 C1: the envoy's Charm and the treasurer's Trade, each, per point of weight
+        /// answered. A weight-8 wrong gives 2,000, a non-aggression pact's worth. UN-TUNED.
+        /// </summary>
+        public const float XpAmendsPerPoint = 250f;
     }
 }

@@ -1037,6 +1037,14 @@ namespace DiplomacyIntrigue.Diplomacy
 
         public const int AiDefaultTributePerPeriod = 500;
 
+        /// <summary>
+        /// What an AI ruler keeps back in denars before spending on anything this mod prices in
+        /// gold: espionage (design 03) and making amends (design 09). One number for one question,
+        /// so the two cannot disagree about how rich an AI ruler must stay. Moved here from
+        /// EspionageConstants when amends became its second reader. UN-TUNED.
+        /// </summary>
+        public const int AiGoldReserve = 50000;
+
         // ---- Claim fabrication ----------------------------------------------
 
         public const int FabricateClaimInfluenceCost = 150;

@@ -215,6 +215,10 @@
                             Brush="DiRealm.Small" IsEnabled="false" Text="@ClanCountText" />
                       </Children>
                     </ListPanel>
+                    <!-- Design 09 C1: what answering the whole court would cost. The ruler's view only. -->
+                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                        HeightSizePolicy="CoverChildren" MarginBottom="6" IsVisible="@HasAmendsAll"
+                        Brush="DiRealm.Small" IsEnabled="false" Text="@AmendsAllText" />
 
                     <!-- Column headings -->
                     <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="24">
@@ -358,13 +362,19 @@
                     <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
                         HeightSizePolicy="CoverChildren" MarginTop="14" MarginBottom="4" Brush="DiRealm.Label"
                         IsEnabled="false" Text="WHAT THEY HAVE NOT FORGOTTEN" />
+                    <!-- Each grievance, and for the ruler what answering it costs (design 09 C1, the
+                         court canvas's "Making amends" board). The price lines are Amends.PriceTerms,
+                         the button Amends.Execute - the numbers the AI weighs. The item grows with its
+                         content, so the accent is a short bar rather than a full-height one: a
+                         StretchToParent child inside a CoverChildren parent has no height to stretch to. -->
                     <ListPanel DataSource="{Grievances}" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
                         StackLayout.LayoutMethod="VerticalTopToBottom">
                       <ItemTemplate>
-                        <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="44" MarginBottom="6">
+                        <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginBottom="8"
+                            StackLayout.LayoutMethod="HorizontalLeftToRight">
                           <Children>
-                            <Widget WidthSizePolicy="Fixed" SuggestedWidth="3" HeightSizePolicy="StretchToParent"
-                                Sprite="BlankWhiteSquare_9" Color="#D98C4AFF" />
+                            <Widget WidthSizePolicy="Fixed" SuggestedWidth="3" HeightSizePolicy="Fixed" SuggestedHeight="36"
+                                Sprite="BlankWhiteSquare_9" Color="@AccentColor" />
                             <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
                                 MarginLeft="12" StackLayout.LayoutMethod="VerticalTopToBottom">
                               <Children>
@@ -380,10 +390,54 @@
                                 <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
                                     HeightSizePolicy="CoverChildren" MarginTop="1" Brush="DiRealm.Small"
                                     Text="@AgeText" />
+
+                                <!-- The price, term by term. Empty for anyone but the ruler. -->
+                                <ListPanel DataSource="{PriceLines}" WidthSizePolicy="StretchToParent"
+                                    HeightSizePolicy="CoverChildren" MarginTop="4" StackLayout.LayoutMethod="VerticalTopToBottom">
+                                  <ItemTemplate>
+                                    <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginBottom="1">
+                                      <Children>
+                                        <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                                            HeightSizePolicy="CoverChildren" Brush="DiRealm.Small" Text="@Label" />
+                                        <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="96"
+                                            HeightSizePolicy="CoverChildren" Brush="DiRealm.Small" Brush.FontColor="@ValueColor"
+                                            Brush.TextHorizontalAlignment="Right" Text="@ValueText" />
+                                      </Children>
+                                    </ListPanel>
+                                  </ItemTemplate>
+                                </ListPanel>
+
+                                <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                    IsVisible="@HasAmends" StackLayout.LayoutMethod="VerticalTopToBottom">
+                                  <Children>
+                                    <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                                        HeightSizePolicy="CoverChildren" MarginTop="3" Brush="DiRealm.Body"
+                                        Text="@OutcomeText" />
+                                    <!-- 56 high: at 310 wide the price always takes two lines of the button
+                                         font, and 40 let the second line spill over the frame (live 2026-09-26). -->
+                                    <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="56"
+                                        MarginTop="5">
+                                      <Children>
+                                        <ButtonWidget DoNotPassEventsToChildren="true" WidthSizePolicy="StretchToParent"
+                                            HeightSizePolicy="StretchToParent" Brush="ButtonBrush2" UpdateChildrenStates="true"
+                                            IsEnabled="@AmendEnabled" Command.Click="ExecuteAmend">
+                                          <Children>
+                                            <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                                                MarginLeft="6" MarginRight="6" Brush="Kingdom.GeneralButtons.Text"
+                                                Text="@AmendText" />
+                                          </Children>
+                                        </ButtonWidget>
+                                      </Children>
+                                    </Widget>
+                                  </Children>
+                                </ListPanel>
+                                <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
+                                    HeightSizePolicy="CoverChildren" MarginTop="3" IsVisible="@HasAmendNote"
+                                    Brush="DiRealm.Small" Text="@AmendNote" />
                               </Children>
                             </ListPanel>
                           </Children>
-                        </Widget>
+                        </ListPanel>
                       </ItemTemplate>
                     </ListPanel>
                     <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"

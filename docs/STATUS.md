@@ -62,24 +62,33 @@ also moved this file's history out. What needs the lead is in TODO.md, items 1-4
 acceptance line, the court and the AI's foreign policy, espionage's default, how rarely civil war
 and tribute happen, and the unmerged 2026-09-24 mechanics review.
 
+**Then 2.9, court verbs (R-2), the same day.** The lead decided R-2 and set the pricing rule
+(CLAUDE.md §3); design/09 was written, decided and mocked up, and the lead approved the mockup.
+**C1, make amends, is built and run live** (design/09 §8): every price matched a hand prediction,
+the Court tab's two-click button paid, the save round trip held the new `Grievance` properties 6-7,
+and an AI ruler made amends through the weekly pass. Running it corrected the spec twice (standing
+now counts peer houses only; the AI scores the loyalty an answer really moves). **The acceptance
+line is not met in its hardest form:** on Battania one tick from rising, two amends shrank the
+bloc (61% to 56%) and the rising (5 houses to 4), and the rising still came, held by crown
+legitimacy 25 and by relation. That, and the AI answering a crisis a week late, are TODO.md item 1.
+
 ## Where the work stands
 
 | Phase | State |
 |---|---|
 | **0 — Foundation** | ✅ done, verified in a live campaign |
 | **1 — Diplomacy core (1.1–1.12)** | ✅ **accepted by the lead, 2026-09-23**. Code complete including submission and hegemony (1.9/1.10), the vanilla takeover (1.11) and power (1.12). Measured over runs 01–08; run 08 answered the §13.7 questions the §13 rework had left open. Carried debt: [ROADMAP.md](ROADMAP.md#phase-1--accepted-by-the-project-lead-2026-09-23) and "Not verified — carried" below |
-| **2 — Court intrigue** | 🔄 2.1–2.7 built and verified live on their main paths; **2.8 Statecraft** built and run live 2026-09-26 (S0–S2; S3 is run 08; S4 offices and S5 traits wait). **Not accepted:** the acceptance line needs a player who can manage grievances, and the player has no act that reduces one (TODO 1) |
+| **2 — Court intrigue** | 🔄 2.1–2.7 built and verified live on their main paths; **2.8 Statecraft** built and run live 2026-09-26 (S0–S2; S3 is run 08; S4 became design/09's C2; S5 traits waits); **2.9 Court verbs**: C1 make amends built and run live 2026-09-26, C2 and C3 not built. **Not accepted:** measured with C1, the acceptance line fails on a court already at the civil-war trigger (TODO 1) |
 | **3 — Espionage** | ⏸ **parked by the lead, 2026-09-26.** 3.1–3.7 built and run live ([design/03 §10](design/03-espionage.md)). The AI's handlers are still taken by vanilla, so an AI network never grows (TODO 3) |
 | **4 — Integration, balance, release** | 🔄 runs 01–08 archived; **run 08** is the current reference. The civil-war balance needs its own run (TODO 4) |
 
 ## What to do next
 
-**Phase 2's court verbs (R-2), decided by the lead on 2026-09-26.** The spec is
-[design/09](design/09-court-verbs.md): make amends, offices and patronage, tribute per vassal.
-D1-D15 were decided the same day, with a standing rule from the lead: a political act costs
-influence and gold together, each scaled ×0.5-×2 by the skill doing it, and priced high
-(CLAUDE.md §3). Next: the mockup, then C1. Espionage's default and civil war's rarity stay as
-they are, the same call.
+**Phase 2's court verbs (R-2), [design/09](design/09-court-verbs.md).** C1 is built and run live.
+Next, in the lead's order: the lead's answer to TODO.md item 1 (does the acceptance line need a
+verb for legitimacy or relation, and should an AI ruler answer a crisis the day it comes), then
+C2 offices and patronage, then C3 tribute per vassal. Espionage's default and civil war's rarity
+stay as they are, the lead's call of 2026-09-26.
 
 Work that needs no decision:
 
@@ -111,12 +120,16 @@ Short on purpose; each line points to where the detail is.
   ([design/03 §10](design/03-espionage.md)).
 - **2026-09-26:** the `DeclareWarAction.ApplyByKingdomDecision` prefix since its split: applied,
   not run.
+- **2.9 C1:** the AI skipping an answer that moves nothing, in a case where that changes its pick; a
+  player serving an AI king being told the king answered their house; the Encyclopedia ledger,
+  which now leaves answered records out ([design/09 §8](design/09-court-verbs.md)).
 
 ## Saves
 
 | Save | State |
 |---|---|
 | `di_fresh_1084` | **Summer 1, 1084, pristine start, hero parked in Myzea.** The run-08 baseline |
+| `di_amends_test` | `di_grievance_test` after one amends (2026-09-26): Urkhunait answered and remembered, then wronged again at 12.0, its next amends at x2. The save for checking C1 after a reload |
 | `di_pretender_test` | **Phase 2's richest court:** Battania at legitimacy 25 with a standing pretender (Aradwyr) and a Pretenders bloc, rising on the first daily tick; Khuzait player-ruled with four would-be claimants |
 | `di_civilwar_test` | **Overwritten 2026-09-24** by a "Save and Exit": Battania mid-war with the rebels at 11 fiefs, plus two cadet houses (Oburit of Sevin, Pethros of Patyr) |
 | `di_civilwar_2_6c` | `di_civilwar_test` with the player's house as Battania's ruler and fen Caernacht bought back by the crown. The save for checking `SideChanges` after a reload |
