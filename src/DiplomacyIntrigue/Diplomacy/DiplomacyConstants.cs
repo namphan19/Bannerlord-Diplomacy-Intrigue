@@ -395,6 +395,31 @@ namespace DiplomacyIntrigue.Diplomacy
         /// <summary>Denars of tribute per fief that counts as a full burden. Un-tuned.</summary>
         public const float HoldTributePerFiefForFullBurden = 200f;
 
+        // ----- Tribute set per vassal (design 09 C3, D14) ---------------------------------
+        //
+        // A setting, not a payment: its costs are the income forgone and the Hold it moves, both
+        // through formulas that already exist, so the pricing rule of design 09 §0 (influence and
+        // gold, scaled by skill) has nothing to price here. Skill still enters, through Hold's
+        // own authority term.
+
+        /// <summary>A vassal's tribute a period at each level. Standard is the amount every link was signed with. UN-TUNED.</summary>
+        public const int TributeLight = 250;
+        public const int TributeStandard = 500;
+        public const int TributeHeavy = 1000;
+
+        /// <summary>
+        /// Days a level holds once set, for patron and AI alike. Four payment periods, and longer
+        /// than Hold takes to answer a full tribute swing (20 points at 1 a day), so a level
+        /// cannot be raised the day before payment and lowered after it. UN-TUNED.
+        /// </summary>
+        public const float TributeLevelLockDays = 28f;
+
+        /// <summary>An AI patron demands Heavy while a link's Hold is above this (D14). UN-TUNED.</summary>
+        public const float AiTributeHeavyAboveHold = 70f;
+
+        /// <summary>An AI patron eases to Light while a link's Hold is below this (D14). UN-TUNED.</summary>
+        public const float AiTributeLightBelowHold = 40f;
+
         /// <summary>Obligation wars at once that count as a full war burden. Un-tuned.</summary>
         public const int HoldWarBurdenSaturation = 3;
 

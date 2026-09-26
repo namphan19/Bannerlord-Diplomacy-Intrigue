@@ -248,7 +248,9 @@ realm, so this is how a crisis court's own ruler is made to act), `offices [king
 its holder, who speaks for it, the houses in favour, and the AI's plan today), the levers
 `test_appoint <kingdom> | <seat> | <hero>` and `test_dismiss <kingdom> | <seat>`, and
 `test_court_seat <seat>` (selects a seat on the Court tab: "Envoy" also appears elsewhere in the
-widget tree, so a click by text is not reliable). Espionage: `diplomacy.networks`, `mission_odds <clan> | <kingdom>`, `missions`, `bribes` (every
+widget tree, so a click by text is not reliable), `vassal_tribute [kingdom]` (every vassalage's
+tribute and what each level would do to its Hold target and income) and the lever
+`test_vassal_tribute <patron> | <vassal> | <None|Light|Standard|Heavy>`. Espionage: `diplomacy.networks`, `mission_odds <clan> | <kingdom>`, `missions`, `bribes` (every
 bribe still on the record and whether it binds anybody), `counter_intelligence [kingdom]` (every
 realm's defence term by term), `ai_espionage [kingdom]` (each AI realm's espionage plan for the week,
 a dry run), and the levers `test_set_network`, `test_counter_budget <kingdom> | <denars>`,
@@ -331,8 +333,8 @@ suspect and say so.
 
 **Save data is frozen once shipped.** Never renumber or reuse a `SaveableProperty` id, never
 reuse a save-definer local id for a different type, never change the definer base id
-(`2749100`, block `2749100`–`2749199`). `Treaty` currently uses ids **1-17** (14 `Hold`, 15
-defiance marks, 16 last defiance, 17 the revolt clock), so the next free id there is **18**. `TrustRecord` uses **1-6** (5 `LastPositiveChange`, 6
+(`2749100`, block `2749100`–`2749199`). `Treaty` currently uses ids **1-18** (14 `Hold`, 15
+defiance marks, 16 last defiance, 17 the revolt clock, 18 `TributeSetOn`, design 09 C3), so the next free id there is **19**. `TrustRecord` uses **1-6** (5 `LastPositiveChange`, 6
 `LastOfferRefused`), next free **7**. `ModState` uses
 properties **1-18** (11 `Grievances`, 12 `Legitimacy`, 13 `Pretenders`, 14 `InternalWars`,
 15 `SpyNetworks`, 16 `SpyMissions`, 17 `CounterIntelligenceBudgets`, 18 `Offices`), next free **19**. The definer's class ids run to **18**

@@ -637,10 +637,21 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
         // ----- comparison rows (vanilla's list, vanilla's row type) --------------
 
+        /// <summary>
+        /// The rows this mixin put into vanilla's list last time. An action that changes the pair
+        /// rebuilds the row without vanilla refilling the list first (<see cref="Then"/>), and
+        /// inserting again showed "Diplomatic Trust" twice (live 2026-09-26, design 09 C3's first
+        /// tribute button); so our own rows come out before they go back in.
+        /// </summary>
+        private readonly List<KingdomWarComparableStatVM> _ourStats = new List<KingdomWarComparableStatVM>();
+
         private void BuildStats(ModState state, Kingdom faction1, Kingdom faction2, WarRecord war)
         {
             var stats = ViewModel?.Stats;
             if (stats == null) return;
+
+            for (var i = 0; i < _ourStats.Count; i++) stats.Remove(_ourStats[i]);
+            _ourStats.Clear();
 
             var player = Clan.PlayerClan?.Kingdom;
             // The player's own side reads exactly; any other side reads as a band.
@@ -696,6 +707,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
             for (var i = 0; i < rows.Count; i++)
                 stats.Insert(Math.Min(i, stats.Count), rows[i]);
+            _ourStats.AddRange(rows);
         }
 
         /// <summary>
@@ -934,6 +946,40 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                           + " needs a realm already breaking.",
                     () => DiplomacyMenu.SecedeFromPatron(state, us, them),
                     DiplomacyActionVM.DangerText));
+            }
+
+            // Design 09 C3: the patron sets its vassal's tribute, one button a level, on the
+            // vassal's own row (the one-relationship scope). Each says what it does to the Hold
+            // target and the year's income - VassalTribute.QuoteFor, the figures the AI weighs.
+            var vassalLink = Hegemony.VassalageOf(state, them);
+            if (vassalLink != null && vassalLink.DominantParty == us)
+            {
+                var band = VassalTribute.AiLevel(Hegemony.HoldOf(vassalLink));
+                foreach (var level in VassalTribute.Levels)
+                {
+                    var q = VassalTribute.QuoteFor(state, vassalLink, level);
+                    var current = q.CurrentAmount == q.Amount;
+                    var effect = "Hold target " + q.TargetAfter.ToString("0") + ", "
+                                 + (q.Amount == 0 ? "no income"
+                                    : q.Withheld ? "withheld: under " + DiplomacyConstants.HoldPassiveResistanceThreshold.ToString("0") + " they stop paying"
+                                    : q.YearlyIncome.ToString("N0") + " a year");
+                    into.Add(new DiplomacyActionVM("Tribute: " + level,
+                        current ? "Now: " + effect + "." : effect + ".",
+                        0, q.Eligible,
+                        (q.Amount == 0 ? "No tribute" : q.Amount + " denars every " + DiplomacyConstants.TributePeriodDays + " days")
+                        + ". The tribute term of their Hold goes from -" + q.TermNow.ToString("0.0") + " to -"
+                        + q.TermAfter.ToString("0.0") + ", so it drifts toward " + q.TargetAfter.ToString("0.0")
+                        + " (now " + q.Hold.ToString("0.0") + ", a point a day). A level holds "
+                        + DiplomacyConstants.TributeLevelLockDays.ToString("0") + " days once set."
+                        + (level == band ? " An AI patron would ask this at their Hold." : "")
+                        + (q.Eligible ? "" : " " + char.ToUpperInvariant(q.Reason[0]) + q.Reason.Substring(1) + "."),
+                        Then(() =>
+                        {
+                            if (!VassalTribute.Set(state, vassalLink, level, out var failed))
+                                Log.Notify("The tribute could not be set: " + failed, Colors.Red);
+                        }),
+                        current ? DiplomacyActionVM.GoldText : null));
+                }
             }
 
             var breakable = DiplomacyMenu.FirstBreakableTreaty(state, us, them);

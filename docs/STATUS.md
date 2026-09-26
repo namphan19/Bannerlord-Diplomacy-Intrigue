@@ -79,22 +79,29 @@ Run live: every price predicted and matched; the Centralist bloc formed for the 
 seat back left its grievance; the new save type came back from a fresh process; AI realms under
 threat gave seats and made amends, one act a day. New save data: class 18, `ModState` 18, enum 28.
 
+**Then C3, tribute per vassal** (design/09 §10): four levels on a vassal's Diplomacy-tab row, a
+28-day lock (`Treaty` property 18, so it survives a save), the AI easing or squeezing by Hold. Run
+live, with the real clock: a Heavy tribute at Hold 40 pushed the vassal under the line where it
+withholds, so the preview now warns; a Heavy period paid once Hold recovered; an AI patron eased both
+its vassals. A fault older than C3 was found and fixed: a Diplomacy-tab action showed "Diplomatic
+Trust" twice. **2.9 is built: C1, C2, C3.**
+
 ## Where the work stands
 
 | Phase | State |
 |---|---|
 | **0 — Foundation** | ✅ done, verified in a live campaign |
 | **1 — Diplomacy core (1.1–1.12)** | ✅ **accepted by the lead, 2026-09-23**. Code complete including submission and hegemony (1.9/1.10), the vanilla takeover (1.11) and power (1.12). Measured over runs 01–08; run 08 answered the §13.7 questions the §13 rework had left open. Carried debt: [ROADMAP.md](ROADMAP.md#phase-1--accepted-by-the-project-lead-2026-09-23) and "Not verified — carried" below |
-| **2 — Court intrigue** | 🔄 2.1–2.7 built and verified live on their main paths; **2.8 Statecraft** built and run live 2026-09-26 (S0–S2; S3 is run 08; S4 became design/09's C2; S5 traits waits); **2.9 Court verbs**: C1 make amends built and run live 2026-09-26, C1 and C2 built and run live, C3 not built. The acceptance line is met by C1 under the lead's reading (prevention, design/09 D16); formal acceptance is the lead's |
+| **2 — Court intrigue** | 🔄 2.1–2.7 built and verified live on their main paths; **2.8 Statecraft** built and run live 2026-09-26 (S0–S2; S3 is run 08; S4 became design/09's C2; S5 traits waits); **2.9 Court verbs**: C1 make amends built and run live 2026-09-26, C1, C2 and C3 built and run live. The acceptance line is met by C1 under the lead's reading (prevention, design/09 D16); formal acceptance is the lead's |
 | **3 — Espionage** | ⏸ **parked by the lead, 2026-09-26.** 3.1–3.7 built and run live ([design/03 §10](design/03-espionage.md)). The AI's handlers are still taken by vanilla, so an AI network never grows (TODO 3) |
 | **4 — Integration, balance, release** | 🔄 runs 01–08 archived; **run 08** is the current reference. The civil-war balance needs its own run (TODO 4) |
 
 ## What to do next
 
 **Phase 2's court verbs (R-2), [design/09](design/09-court-verbs.md).** C1 is built and run live.
-C1, D16-D17 and C2 are built. Next: C3 tribute per vassal, then a balance run - five of seven AI
-realms seated someone on day one, and seats move the statecraft medians - and the lead's formal
-acceptance of Phase 2 when they choose. Espionage's default and civil war's rarity
+2.9 is built (C1, C2, C3, D16-D17). Next: a balance run with the court verbs in the world - five of
+seven AI realms seated someone on day one, seats move the statecraft medians, AI patrons now set
+tribute by Hold - and the lead's formal acceptance of Phase 2 when they choose. Espionage's default and civil war's rarity
 stay as they are, the lead's call of 2026-09-26.
 
 Work that needs no decision:
@@ -127,6 +134,7 @@ Short on purpose; each line points to where the detail is.
   ([design/03 §10](design/03-espionage.md)).
 - **2026-09-26:** the `DeclareWarAction.ApplyByKingdomDecision` prefix since its split: applied,
   not run.
+- **2.9 C3:** the AI raising a link to Heavy; a vassal player told of a new tribute; the Diplomacy tab's action grid overlapping a vanilla label on a ten-button row (design/09 §10).
 - **2.9 C2:** the seat offered to a vassal player; a captured or dead holder; the AI world's balance with seats in it (design/09 §9).
 - **2.9 C1:** the AI skipping an answer that moves nothing, in a case where that changes its pick; a
   player serving an AI king being told the king answered their house; the Encyclopedia ledger,
@@ -137,6 +145,7 @@ Short on purpose; each line points to where the detail is.
 | Save | State |
 |---|---|
 | `di_fresh_1084` | **Summer 1, 1084, pristine start, hero parked in Myzea.** The run-08 baseline |
+| `di_tribute_test` | `di_grievance_test` + a Khuzait <- Sturgia vassalage (by `sign_treaty`) set to Heavy on 2026-09-26, 16 days into its lock. The save for checking `Treaty.TributeSetOn` after a reload |
 | `di_offices_test` | `di_grievance_test` after C2's checks (2026-09-26): Khada of Arkit holds Khuzait's Spymaster seat, Koltit took a seat back as a grievance. The save for checking `CourtOffice` after a reload |
 | `di_amends_test` | `di_grievance_test` after one amends (2026-09-26): Urkhunait answered and remembered, then wronged again at 12.0, its next amends at x2. The save for checking C1 after a reload |
 | `di_pretender_test` | **Phase 2's richest court:** Battania at legitimacy 25 with a standing pretender (Aradwyr) and a Pretenders bloc, rising on the first daily tick; Khuzait player-ruled with four would-be claimants |

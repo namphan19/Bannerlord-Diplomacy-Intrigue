@@ -39,6 +39,10 @@ namespace DiplomacyIntrigue.Behaviors
                 // the treaty for having run out.
                 Hegemony.DailyTick(state);
 
+                // Design 09 C3: AI patrons set each vassal's tribute to the band its Hold is in,
+                // before tribute falls due below. It catches its own failures link by link.
+                VassalTribute.AiDaily(state);
+
                 TreatyRegistry.ExpireAndReward(state);
                 TreatyRegistry.PayDueTribute(state);
                 TreatyRegistry.PayPeaceDividends(state);

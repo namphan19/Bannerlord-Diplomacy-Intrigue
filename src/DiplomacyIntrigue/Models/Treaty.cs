@@ -64,6 +64,14 @@ namespace DiplomacyIntrigue.Models
         /// </summary>
         [SaveableProperty(17)] public CampaignTime CriticalSince { get; private set; }
 
+        /// <summary>
+        /// When the patron last set this vassal's tribute (design 09 C3). A level holds for a lock
+        /// period, so tribute cannot be raised the day before it falls due and lowered the day
+        /// after, faster than Hold can answer. A link from before C3 reads the default, long past:
+        /// free to set, the correct reading, so no schema bump.
+        /// </summary>
+        [SaveableProperty(18)] public CampaignTime TributeSetOn { get; private set; }
+
         // The save system rehydrates instances without running a constructor.
         internal Treaty() { }
 
@@ -142,6 +150,18 @@ namespace DiplomacyIntrigue.Models
         }
 
         internal void AdvanceTributeDate(CampaignTime next) => NextTributeDue = next;
+
+        /// <summary>
+        /// The patron sets a new tribute for the period (design 09 C3). The payer stays the payer;
+        /// the payment date is kept, so a level set mid-period is paid when that period falls due.
+        /// </summary>
+        internal void SetTributeLevel(Kingdom payer, int amountPerPeriod, CampaignTime nextDueIfUnset)
+        {
+            if (TributePayer == null) TributePayer = payer;
+            if (TributeAmount <= 0 && amountPerPeriod > 0 && NextTributeDue.IsPast) NextTributeDue = nextDueIfUnset;
+            TributeAmount = amountPerPeriod;
+            TributeSetOn = CampaignTime.Now;
+        }
 
         internal void SetSubordinate(Kingdom subordinate) => SubordinateParty = subordinate;
 

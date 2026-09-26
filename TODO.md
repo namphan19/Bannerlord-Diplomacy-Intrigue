@@ -51,10 +51,11 @@ checked Phase 2 against its acceptance line.
       check, and the rising took 4 houses instead of 5.
 - [ ] Formal acceptance of Phase 2, the lead's call.
 - [x] **C2, offices and patronage: built and run live, 2026-09-26** ([design/09 §9](docs/design/09-court-verbs.md)).
-- [ ] C3, tribute per vassal.
+- [x] **C3, tribute per vassal: built and run live, 2026-09-26** ([design/09 §10](docs/design/09-court-verbs.md)). 2.9 is complete.
 - [ ] A balance run with C1 and C2 in the world: five of seven AI realms on `di_pretender_test`
       seated someone on day one (one house below 25 is "under threat"), and seats move the statecraft
-      medians. How far the AI world moves, and whether civil war gets rarer still, is the run's.
+      medians, and AI patrons now ease or squeeze tribute by Hold. How far the AI world moves, and
+      whether civil war gets rarer still, is the run's.
 
 ### 2. The court does not reach the AI's foreign policy
 

@@ -834,6 +834,49 @@ namespace DiplomacyIntrigue.Core
         }
 
         /// <summary>
+        /// Design 09 C3, the diagnostic: every vassalage (or one kingdom's), its tribute, the AI's band
+        /// for its Hold, and what each level would do to the Hold target and the year's income. A dry run.
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("vassal_tribute", "diplomacy")]
+        public static string VassalTributeCommand(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+            Kingdom only = null;
+            if (args != null && args.Count > 0)
+            {
+                only = FindKingdom(string.Join(" ", args));
+                if (only == null) return "No such kingdom.";
+            }
+            return VassalTribute.DescribeAll(state, only);
+        }
+
+        /// <summary>
+        /// Test lever: the patron sets a vassal's tribute through <see cref="VassalTribute.Set"/>, the
+        /// call the Diplomacy tab's buttons and the AI make, the lock included.
+        /// Usage: diplomacy.test_vassal_tribute &lt;patron&gt; | &lt;vassal&gt; | &lt;None|Light|Standard|Heavy&gt;
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_vassal_tribute", "diplomacy")]
+        public static string TestVassalTribute(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+            var parts = SplitOnPipe(args);
+            if (parts.Count < 3) return "Usage: diplomacy.test_vassal_tribute <patron> | <vassal> | <None|Light|Standard|Heavy>";
+            var patron = FindKingdom(parts[0]);
+            var vassal = FindKingdom(parts[1]);
+            if (patron == null || vassal == null) return "No such kingdom.";
+            if (!Enum.TryParse(parts[2], true, out VassalTribute.Level level)) return "Unknown level \"" + parts[2] + "\".";
+            var link = Hegemony.VassalageOf(state, vassal);
+            if (link == null || link.DominantParty != patron) return vassal.Name + " is not " + patron.Name + "'s vassal.";
+            var q = VassalTribute.QuoteFor(state, link, level);
+            return VassalTribute.Set(state, link, level, out var failed)
+                ? vassal.Name + " now pays " + q.Amount + " a period; Hold target " + q.TargetNow.ToString("0.0") + " -> "
+                  + q.TargetAfter.ToString("0.0") + " (Hold " + q.Hold.ToString("0.0") + ")."
+                : "Refused: " + failed;
+        }
+
+        /// <summary>
         /// Test lever: the realm's crown takes a seat back through <see cref="Intrigue.Offices.Dismiss"/>.
         /// Usage: diplomacy.test_dismiss &lt;kingdom&gt; | &lt;seat&gt;
         /// </summary>
@@ -1184,6 +1227,7 @@ namespace DiplomacyIntrigue.Core
             Power.DailySample(state);
             WarExhaustion.DailyTick(state);
             Hegemony.DailyTick(state);
+            VassalTribute.AiDaily(state);   // design 09 C3, where the campaign's daily handler runs it
             TreatyRegistry.ExpireAndReward(state);
             TreatyRegistry.PayDueTribute(state);
             TreatyRegistry.PayPeaceDividends(state);

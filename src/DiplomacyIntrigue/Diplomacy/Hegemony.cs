@@ -113,6 +113,9 @@ namespace DiplomacyIntrigue.Diplomacy
         public struct HoldTerms
         {
             public float Fear, Protection, Trust, Tribute, Wars, Rival, Culture, Dread, Authority, Target;
+
+            /// <summary>The sum before it is clamped to 0-100, so a change to one term can be previewed exactly.</summary>
+            public float Raw;
         }
 
         public static HoldTerms HoldTermsOf(ModState state, Treaty treaty)
@@ -134,8 +137,9 @@ namespace DiplomacyIntrigue.Diplomacy
             // Design 08 S-4: a king vassals follow is a patron vassals hold to. Signed, like Fear.
             t.Authority = Statecraft.StatecraftTerms.Authority(patron);
 
-            t.Target = Clamp(DiplomacyConstants.HoldBase + t.Fear + t.Protection + t.Trust
-                             - t.Tribute - t.Wars - t.Rival - t.Culture - t.Dread + t.Authority, 0f, 100f);
+            t.Raw = DiplomacyConstants.HoldBase + t.Fear + t.Protection + t.Trust
+                    - t.Tribute - t.Wars - t.Rival - t.Culture - t.Dread + t.Authority;
+            t.Target = Clamp(t.Raw, 0f, 100f);
             return t;
         }
 
@@ -185,6 +189,16 @@ namespace DiplomacyIntrigue.Diplomacy
         private static float TributeBurden(Treaty treaty, Kingdom vassal)
         {
             if (treaty.TributeAmount <= 0 || treaty.TributePayer != vassal) return 0f;
+            return TributeBurden(treaty.TributeAmount, vassal);
+        }
+
+        /// <summary>
+        /// The burden of <paramref name="amount"/> a period on <paramref name="vassal"/>, 0-1: the one
+        /// place it is computed, read by Hold and by design 09 C3's preview of another level.
+        /// </summary>
+        public static float TributeBurden(int amount, Kingdom vassal)
+        {
+            if (amount <= 0 || vassal == null) return 0f;
 
             var fiefs = 0;
             var settlements = vassal.Settlements;
@@ -193,7 +207,7 @@ namespace DiplomacyIntrigue.Diplomacy
             if (fiefs <= 0) return 1f;
 
             var tolerable = fiefs * DiplomacyConstants.HoldTributePerFiefForFullBurden;
-            return Clamp(treaty.TributeAmount / tolerable, 0f, 1f);
+            return Clamp(amount / tolerable, 0f, 1f);
         }
 
         /// <summary>Wars the vassal is fighting because somebody else asked it to.</summary>

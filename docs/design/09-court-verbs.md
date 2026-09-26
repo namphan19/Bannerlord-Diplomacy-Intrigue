@@ -1,6 +1,6 @@
 # Design 09 — Court verbs: the ruler's hands
 
-Status: **decided** 2026-09-26 (§7). **C1 and C2 built and run live** the same day (§8, §9); C3 not built.
+Status: **decided** 2026-09-26 (§7). **C1, C2 and C3 built and run live** the same day (§8, §9, §10).
 
 The lead's call of 2026-09-26: build R-2 of the 2026-09-24 mechanics review (court and patron
 verbs for the player) so that Phase 2 meets its acceptance line. Espionage's default and the
@@ -434,3 +434,53 @@ Treasurer went from Philenora (Trade 125) to Elbet of dey Cortain (179), and dey
   a realm and so the medians every statecraft Level is measured against. How far that moves the AI
   world is a run's question.
 - The selected seat's row is highlighted only faintly by the vanilla tuple brush.
+
+---
+
+## 10. C3 as built and run live, 2026-09-26
+
+Built: `Diplomacy/VassalTribute.cs` (the four levels, the preview `QuoteFor`, the act `Set`, the AI's
+daily choice `AiDaily`), `Treaty` property **18** `TributeSetOn`, `Hegemony.TributeBurden(amount,
+vassal)` as the one computation of a tribute's burden and `HoldTerms.Raw` so another level can be
+previewed exactly, four "Tribute: <level>" buttons on a vassal's row of the Diplomacy tab,
+`diplomacy.vassal_tribute` and `test_vassal_tribute`. The AI runs in the daily treaty upkeep, after
+the Hold drift, in the campaign and in `tick_days` alike.
+
+### Where the build differs from §3, and why
+
+- **Save data after all: one property.** A level holds for 28 days once set, for the patron and the
+  AI alike. Without it a patron could raise the tribute the day before it falls due and lower it the
+  day after - Hold moves a point a day, so a one-day Heavy costs about a point of Hold for twice the
+  money. The date has to survive a save to hold.
+- **No price in influence or gold.** Setting a level is a setting, not a payment: its costs are the
+  income forgone and the Hold it moves. The pricing rule (§0) has nothing to price here; skill enters
+  through Hold's own authority term. Said so here because the rule covers "every political act built
+  from then on", and the lead may read it more widely.
+- **The preview warns when the vassal would not pay.** Below a Hold of 40 a vassal withholds its
+  tribute (`HoldPassiveResistanceThreshold`). The first test set Sturgia to Heavy at Hold 40; the
+  target fell to 36 and Sturgia paid nothing for two periods. A level whose target lands under 40 now
+  reads "withheld: under 40 they stop paying" instead of a yearly income that would never arrive.
+- **A fault that predated C3, fixed:** an action that rebuilds its row on the Diplomacy tab
+  (tribute here, and the pact and tribute-demand actions before it) inserted the mod's comparison
+  rows a second time, showing "Diplomatic Trust" twice. The rows are now removed before they go
+  back in.
+
+### Checked live
+
+| Check | Result |
+|---|---|
+| The preview (Khuzait <- Sturgia, 15 fortifications) | tribute term 1.7 / 3.3 / 6.7 at 250 / 500 / 1,000, targets consistent with the raw sum, 3,000 / 6,000 / 12,000 a year |
+| The Diplomacy tab | four buttons on Sturgia's row; the current level disabled and marked "Now" |
+| "Tribute: Heavy", clicked | "Vassalage (1000 from Sturgia)"; every other level locked "for 28 more"; `test_vassal_tribute` refused with the same reason |
+| The real clock, 16 days | Sturgia withheld twice at Hold 35.6 and 34.5 - the finding above |
+| Save, a new process, load (`di_tribute_test`) | Heavy, "set 15 days ago; holds for 13 more" |
+| The real clock past the lock | Hold back to 40.5; one Heavy period paid (`tribute_received` XP 500 = 0.5 x 1,000); "Tribute: Light" clicked, "250 from Sturgia"; "Diplomatic Trust" shown once |
+| The AI (`di_hegemony_1166`, Vlandia with two vassals, both under Hold 40) | Vlandia eased both to Light on the first day: Southern Empire's target 42.8 -> 51.2, Western Empire's 32.7 -> 34.7; three more days, no change. 0 errors |
+
+### Not checked
+
+- The AI raising a link to Heavy (no link on the test saves stands above Hold 70).
+- A vassal player told its patron changed the tribute (the message exists).
+- The action grid's explanations overlapping vanilla's "Castles" label once a vassal's row carries
+  ten buttons; the overlap looks older than C3 (six buttons already made two rows), but only this
+  row was looked at.
