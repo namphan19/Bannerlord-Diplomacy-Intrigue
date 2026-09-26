@@ -79,8 +79,10 @@ multiplied by `2 − legitimacy`: a war of reclamation costs about 52, naked con
 and both get more expensive if your realm is already weary of fighting.
 
 The **Declare war** button on the Diplomacy tab proposes the decision your court then votes
-on — the same proposal the Decisions tab offers, shown here so the treaties in the way can
-say so. A pact between you greys it out and names itself.
+on, and charges exactly that price — the figure an AI ruler pays for the same war, shown on
+the button. (The game's own proposal cost of 200, or 400 under War Tax, no longer applies.)
+A pact between you greys it out and names itself. The Charm perk **Firebrand** takes a
+quarter off every war and treaty you propose, as it does for AI rulers who hold it.
 
 Legitimacy also decides whether your allies answer your call, and what a defensive pact
 obliges them to do. A pact never drags anyone into a war of conquest.
@@ -286,7 +288,42 @@ the same in words: *"holds 27% of Calradia's strength; growing greedy"*.
 - **Conquest ends kingdoms.** A kingdom that loses its last town or castle is gone; its wars end
   with it, and anyone fighting only because it called them in is released.
 
-## 8. Common questions
+## 8. Your skills in politics
+
+Six skills count in the mod's decisions. Each is measured against the **median of the same
+office across every realm**, so a ruler exactly as good as the other rulers changes nothing,
+and one far below or above them feels it. The **Statecraft** strip on the Realm tab lists who
+holds each office for your realm, their skill against that median, and what it moves.
+
+| Office | Skill | Who holds it | What it moves |
+|---|---|---|---|
+| Ruler | Leadership | the ruler, in person | how fast your realm tires in a war (±15%), every vassal's Hold (±10), every house's loyalty (±5) |
+| Envoy | Charm | the best Charm in the ruling house | what a victory buys at the peace table (±15%, envoy against envoy), how a court you ask values a pact (±10) |
+| Steward | Steward | the best Steward in the ruling house | how fast grievances against the crown fade (×0.5 to ×1.5), the legitimacy a year of peace restores |
+| Treasurer | Trade | the best Trade in the ruling house | what a house costs to turn in a civil war (±15%, treasurer against treasurer) |
+| Spymaster | Roguery | the best Roguery in the ruling house | the chance a claim you fabricate is caught (10–30%, against their Watch) |
+| Watch | Scouting | the best Scouting in the ruling house | catching someone else's fabrication |
+
+**"The ruling house" includes your companions and family.** A companion with Charm 250 is your
+envoy the day they join; a captured one hands the office to the next best. Leadership is the
+exception: a king cannot delegate being followed.
+
+**Personal Charm matters twice more.** A claimant's own Charm counts in every house's choice at
+a succession, and a house head's Charm decides who speaks for a court bloc — a charming vassal
+can lead a bloc it does not bankroll.
+
+**Doing the work trains the skill**, through the game's own learning rate: signing pacts and
+peace trains the envoy's Charm, a vassal kneeling or a war carried to its end trains the
+ruler's Leadership, a year of peace the steward's Steward, tribute and buying houses the
+treasurers' Trade, fabricating the spymaster's Roguery. AI heroes train the same way.
+
+**Silver Tongue** (Trade 250) takes 15% off the price of buying a house in a civil war, when
+your treasurer holds it.
+
+A new ruler usually starts far below the kings around them. Put your best companions where
+they count; the numbers on the Realm tab say which office needs them most.
+
+## 9. Common questions
 
 **Why can't I declare war on anyone?**
 Check the Diplomacy tab: a treaty may forbid it, or you may already be a vassal, or your
@@ -321,6 +358,8 @@ Mod Configuration Menu → Diplomacy & Intrigue.
 
 - **AI diplomacy aggressiveness** — a multiplier on how readily AI kingdoms choose war over
   pacts. 1.00 is the tuned default; lower for a quieter Calradia, higher for a bloodier one.
+- **Statecraft** — whether skills count in politics (§8). Off, every skill term is neutral and
+  political acts train nothing. It can be switched mid-campaign; nothing is saved by it.
 - **Announce AI decisions** — a map notification each time a court acts.
 - **Verbose logging** — every decision written to the log. Slower, and what a bug report
   needs.

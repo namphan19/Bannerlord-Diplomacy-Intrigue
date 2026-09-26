@@ -10,9 +10,57 @@ Save ids in use: `Treaty` 1-17, `TrustRecord` 1-6, `ModState` 1-17, definer clas
 class ids run into the enum block after 19). The 2.6 ids (13, 14, 27, property 14) are on
 `development` since 2026-09-24, and so is 2.6c's `InternalWar` property 14 (`SideChanges`);
 next free on `InternalWar` is 15.
-Last completed measurement: **balance run 07** — [docs/balance/run-07.md](balance/run-07.md).
+Last completed measurement: **balance run 08** (statecraft on/off) — [docs/balance/run-08.md](balance/run-08.md).
 
-## Start here — handoff, 2026-09-25
+## Start here — handoff, 2026-09-26
+
+**Phase 2.8, Statecraft, is built and run live** ([design/08](design/08-statecraft.md) §16-§17).
+The lead delegated D1-D10 on 2026-09-26 and asked for every open item to be handled and then
+one test pass over everything. Each decision was taken as §15 recommended; the reasons are §16.
+
+- **S0-S2 built** (commit `669a431`): the six political skills in ten terms, the XP grants,
+  the Realm tab's Statecraft strip and the breakdown lines, `EnableStatecraft` (default on).
+  **A-1 fixed a real fairness bug:** the player's Declare war now charges the AI's price (72 on a
+  Conquest claim) instead of vanilla's 200. Firebrand and Silver Tongue reach the mod's own acts.
+  No save data. No Harmony; one `GameModel` override.
+- **Verified live** with every term predicted by hand first: design/08 §17 has the table. What is
+  not verified is listed there too - most importantly, the regression proof was off against on,
+  not against the previous build.
+- **Balance run 08** is the S3 measurement: 10 years with the layer on, 10 with it off, from
+  `di_fresh_1084`, 0 errors in both. The war economy is unchanged (chosen wars 71 vs 73 days,
+  white peace 28 vs 29), and XP does not inflate skills (Envoy Charm median 232 to 235 over ten
+  years). The one large difference is pacts (47 AI pacts with the layer on, 31 off), which one
+  pair cannot separate from world divergence. It also answers design/04 §13.7. No civil war
+  happened in either run. [balance/run-08.md](balance/run-08.md).
+
+**The open items of 2026-09-26, handled:**
+
+| Item | What was done |
+|---|---|
+| Unpushed commit `8e41561` (Phase 3.7) | Pushed with this work |
+| 2.6c price lines named the player | "you"/"your" throughout the price column, for the buyer, the claimant and the player's own house |
+| Diplomacy row read "Independent" after the player's own tribute demand | The row now rebuilds after any action that changes the pair on the spot (pact, tribute, renounce, war). Not seen live: no tribute demand was available on the test saves; a pact through the same wrapper was not completed either (the bridge clicked a vanilla "Propose" first; the button now has `Id="DiPactPropose"`) |
+| A rebel player sees vanilla's Kingdom tabs as the rising (design question) | **Kept, on purpose**: those tabs are what a rebel commands (the rising's clans, fiefs and armies), and showing the realm would need Harmony on four vanilla VMs with no case under CLAUDE.md §3. The Court line now tells the player so |
+| "Raise your banner?" never reached | **Reached by the real path** on `di_fresh_1084`: the player made a pretender at a contested succession (81%), the crown at legitimacy 25, `tick_days 1` - the prompt, answered "Raise the banner", and the war began ("you raised your banner") |
+| The side-choice prompt at a war's start | **Reached** (Battania, Ergeon's rising): "Civil war in Battania … Join the rebellion / Stay loyal", answered Stay loyal |
+| The 30-day captivity ending | **Holds**: the ruler held by a rebel party, 30 daily ticks, RebelsWon "held by the rebels for 30 days"; a claimant held by a *foreign* power correctly counts nothing |
+| A cadet branch starting an internal war | **Reached the claimant stage, not the war.** A cadet founder stands at the next succession (it did, "Mengus 0% (1 clan)") but a new cadet branch has almost no influence, so it cannot reach the 30% a pretender needs. Finding: this path is structurally near-impossible soon after a split. A design question for the lead, below |
+| Esc over the peace table | **Not testable here**: the machine had no display attached, so no key reaches the game (CLAUDE.md §2). Still open |
+| `AiTributeCourtRefusalShare` untuned; how often the weekly demand fires | Run 08: the weekly demand was accepted twice in 20 in-game years (both in run B). Refusals are not logged, so the share could not be measured - a `tribute_refused` telemetry event is the next step |
+| Long-run balance of side changes and concession at 75 | **Not measured.** Run 08 had no internal war in either half: a fresh 1084 world does not strain a court within ten years. Needs a run from a save with a low-legitimacy realm |
+
+**Open for the lead:**
+- *Pacts under statecraft.* Run 08 signed about half again as many pacts with the layer on. A
+  second A/B pair from another seed is the next step before any constant moves; say if you want it
+  run.
+- *Tribute at the peace table.* Run 08 settled 123 peaces and none became a tributary pact.
+  Tribute needs a war score of 65-75, and wars end far lower. Imposed links stayed rare, too (3 in
+  20 years). Whether the §13 bands should move is your call (design/04 §13.7).
+- *Cadet branches and the throne.* Should a cadet founder inherit some of the parent house's
+  influence (or its backers) so that 2.6b can lead to 2.6 as design/07 imagined? Today it cannot.
+- Espionage stays parked (the lead's call of 2026-09-26); its items are unchanged below.
+
+## Handoff, 2026-09-25
 
 **Phase 2 is built. Phase 3, espionage, has started (the lead's call, 2026-09-25).**
 [design/03-espionage.md](design/03-espionage.md) now records the lead's five decisions (§9) and
@@ -173,9 +221,10 @@ Anyone reading "Phase 1 ✅" should read that sentence with it.
 The full carried-debt table is in
 [ROADMAP.md](ROADMAP.md#phase-1--accepted-by-the-project-lead-2026-09-23). The short version:
 
-- **Balance run 08 is deferred, not cancelled.** It is what closes §13, and it unblocks two
-  undecided constants: the strength margin on `IsStrongEnoughToHold` (§13.6) and whether the
-  indemnity price should bite (§13.4).
+- **Balance run 08 was run on 2026-09-26** and answers §13.7 ([balance/run-08.md](balance/run-08.md) §5):
+  five links per run, and no link doomed at signing, so the strength margin stays. Tribute vanished
+  from the peace table. The 50-55 band bought one link, which lasted three weeks.
+  `ReconcileWithSiblings` never ran.
 - **Two peace-table surfaces have never been seen working**: the multi-selection checklist
   against a real budget, and the AI→player incoming offer. `save007`'s wars are all war
   score ~0, so only the white-peace short path has rendered on screen.
@@ -551,7 +600,8 @@ UI-INTEGRATION.md §0b.
 2. **A long AI-only run with internal wars in it**, the balance question 2.6 leaves open. How
    often do internal wars start, how often do houses divide, and does a realm recover from a
    lost civil war followed by foreign wars? Both of the first run's neighbours declared war on
-   Battania the day its war ended. Fold it into run 08.
+   Battania the day its war ended. Fold it into run 08. *(Run 08, 2026-09-26: no internal war
+   in 20 in-game years from a fresh start; this still needs its own run.)*
 3. **Court tab gaps**: no scrolling past ~13 sworn clans; the physical row click is unverified.
 4. ~~The `AiDiplomacy.TryDemandTribute` revisit~~ - **done 2026-09-25** (design/02 §7.1).
 5. **Fold run 08 in** once Phase 2 work produces a campaign long enough to carry it. Same
@@ -647,7 +697,7 @@ Two things were added because of this, independent of the cause:
 | **1 — Diplomacy core (1.1–1.12)** | ✅ **accepted by the lead, 2026-09-23**. Code complete including submission and hegemony (1.9/1.10), the vanilla takeover (1.11) and power (1.12). Measured over runs 01–07; the §13 rework under it is smoke-tested only, and the carried debt is listed in [ROADMAP.md](ROADMAP.md#phase-1--accepted-by-the-project-lead-2026-09-23) |
 | **2 — Court intrigue** | 🔄 2.1-2.7 built and verified live on their main paths, all on `development` (2.6/2.6b and 2.6c merged 2026-09-24). What is still unverified is listed in the checkpoint at the top |
 | **3 — Espionage** | 🔄 3.1 (networks), 3.2 (missions) and 3.4 (exposure) built and verified live, 2026-09-25, merged into `development`. 3.5 (cross-pillar effects), 3.3 (counter-intelligence budgets) and 3.6 (AI) built and run live the same day; 3.6's AI handlers are still taken by vanilla. 3.7 (UI) built and verified live 2026-09-26 — design/03 §10 |
-| **4 — Integration, balance, release** | 🔄 runs 01-07 archived. **Run 07** (2026-09-20) is the current reference — [balance/run-07.md](balance/run-07.md). **Run 08 is owed** and closes the §13 questions |
+| **4 — Integration, balance, release** | 🔄 runs 01-08 archived. **Run 08** (2026-09-26, statecraft on/off, 10 years each) is the current reference — [balance/run-08.md](balance/run-08.md). It answers §13.7; the civil-war balance still needs its own run |
 
 ### Kingdom screen UI — built and verified live, 2026-09-21
 

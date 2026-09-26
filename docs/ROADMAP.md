@@ -398,16 +398,17 @@ unresolved, stated plainly:
 
 | Carried debt | State | Lands in |
 |---|---|---|
-| **§13** — merged subjugation rung, the cliff at 75, reachable ceiling, indemnity resize, threshold 50 | **smoke-tested only**: builds clean, LoadProbe clean, 2 in-game years with 0 errors. None of the five questions in [design/04 §13.7](design/04-hegemony.md#137-what-the-next-run-must-answer) is answered | balance run 08 |
-| Strength margin on `IsStrongEnoughToHold` ([design/04 §13.6](design/04-hegemony.md)) | **undecided** — needs run 08 to show how often a link is doomed at signing | Phase 4 |
+| **§13** — merged subjugation rung, the cliff at 75, reachable ceiling, indemnity resize, threshold 50 | **measured by balance run 08** (2026-09-26, 20 in-game years, 0 errors): all five questions of [design/04 §13.7](design/04-hegemony.md#137-what-the-next-run-must-answer) answered. Tribute has vanished from the peace table, and 2 imposed links formed in ten years, not the multiple expected. Whether that calls for a change is the lead's call | the lead |
+| Strength margin on `IsStrongEnoughToHold` ([design/04 §13.6](design/04-hegemony.md)) | **Run 08 (2026-09-26): no link doomed at signing in 20 in-game years** (lowest starting target 24.1, at ratio 1.10). Left as it is | Phase 4 |
 | Whether the indemnity price should bite ([design/04 §13.4](design/04-hegemony.md)) | **undecided** — 8 points per 1,000 denars is trivial against a late-game treasury | Phase 4 |
 | Peace-table multi-selection checklist against a real budget | **unverified in a live game** — `save007`'s wars are all war score ~0, so only the white-peace short path has been seen on screen | first run that produces a war with terms |
 | AI → player incoming peace-offer inquiry | **unverified in a live game**, same reason | as above |
 | Battle casualties and siege capture feeding exhaustion | wired, reviewed, exercised in long runs — never asserted against hand-computed values | Phase 4 |
 | Realm tab widens the tab strip into the leader portrait's caption | cosmetic, unfixed | whenever the court UI (2.7) touches that screen |
 
-**Run 08 is deferred, not cancelled.** It is the measurement that closes §13, and Phase 2
-work will produce campaigns to fold it into.
+**Run 08 was run on 2026-09-26** and answers §13.7's five questions ([balance/run-08.md](balance/run-08.md) §5,
+[design/04 §13.7](design/04-hegemony.md#137-what-the-next-run-must-answer)). The §13 row above
+stays open on the indemnity price, which run 08 does not settle.
 
 ---
 
@@ -428,6 +429,8 @@ Playable target: *being a king is a political problem, not just a military one.*
 **2.6 Civil war** — a strong pretender bloc can secede into a rival kingdom, taking its fiefs. The end state of unmanaged internal pressure. *Built instead as war inside the kingdom, which does not split (design/07): **2.6** the internal war and **2.6b** a house divided by its succession, verified live 2026-09-23/24; **2.6c** conceding and changing sides for gold, shown on the Court tab, run live 2026-09-24, and from the two places left unseen (an AI leader's offer to the player's house, the player as claimant) on 2026-09-25. Secession stays the last rung of design/07 §2 and is not built. What is still unverified is listed in STATUS.md.*
 
 **2.7 Intrigue UI** — court screen: blocs, loyalty, grievance ledger, legitimacy — in full for your own court, as a qualitative band for rivals (§9.1). **Own court: built and verified live 2026-09-23** as a seventh Kingdom-screen tab, "Court" (STATUS.md). **Rival court: built and verified live 2026-09-23** — a bands-only "Court" section on the kingdom's Encyclopedia page, every edge a behavioural threshold (`CourtBands`).
+
+**2.8 Statecraft** — the six political skills count in the mod's own judgments, and the acts it added train them ([design/08](design/08-statecraft.md)). Built after Phase 3, on the lead's delegation of D1-D10 (2026-09-26). **S0-S2 built and run live 2026-09-26**: every term predicted by hand and matched in game, the player's war now costs what the AI's does, Firebrand and Silver Tongue reach the mod's own acts. **S3**, the on/off measurement, is balance run 08 (design/08 §17). It ran on 2026-09-26 with 0 errors: war lengths and white peace are unchanged and XP drift is negligible, but §12's acceptance is not yet met (total wars +20%, all obligation wars; pacts 47 against 31, which needs a second pair; points 2 and 4 not measured). S4 offices and S5 traits wait on S3.
 
 **Acceptance:** an AI kingdom that loses a long illegitimate war visibly fractures — blocs shift, then either sues for peace or splits. The player can survive it by managing grievances.
 

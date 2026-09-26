@@ -246,7 +246,11 @@ realm's defence term by term), `ai_espionage [kingdom]` (each AI realm's espiona
 a dry run), and the levers `test_set_network`, `test_counter_budget <kingdom> | <denars>`,
 `test_launch_mission <clan> | <kingdom> | <type> [| settlement or hero]` and
 `test_resolve_mission <clan> | <kingdom> [| success|failure|exposed]`.
-Civil war: `diplomacy.internal_wars`, and
+Statecraft (design 08): `diplomacy.statecraft [kingdom]` (each realm's six office-holders, the
+medians, and for one realm every term they feed), and the levers `test_set_skill hero | skill | value`,
+`test_add_perk hero | perk`, `test_statecraft on|off` (the MCM switch for this session - the A/B
+control; a flip is not logged and the `[RUN]` header keeps the value at launch, so prove an
+"off" run by its zero `skill_xp` events). Civil war: `diplomacy.internal_wars`, and
 `civil_war_prices <kingdom>` (every house's price to change sides, line by line, and whether the
 other leader would pay it).
 Test-only levers for reaching a state: `diplomacy.test_set_speed <1-50>` (see §1),
@@ -258,7 +262,13 @@ demand through the weekly scan's own body - on a player-ruled B it opens the inq
 methods its buttons call). For a
 civil war: `test_start_internal_war`, `test_end_internal_war`, `test_change_side <clan> [| unpaid]`,
 `test_concede <kingdom> | crown|rising`, and `test_player_side <kingdom> | crown|rising|ruler`,
-which puts the player's house where the Court tab can be seen from each side. Note that `sign_treaty` with
+which puts the player's house where the Court tab can be seen from each side. To reach the
+prompts a civil war puts to the player: `test_player_join <kingdom>` (the player's house as a
+vassal, before any war), `test_set_legitimacy <kingdom> | <value>`, `test_imprison <prisoner> | <captor>`
+(the 30-day captivity rule), and the vanilla `campaign.add_hero_relation <id> | <id> | <value>`,
+which sets a relation between two NPCs (use string ids such as `lord_4_3`; names are ambiguous).
+The daily tick that `tick_days` runs includes the trigger, so a met trigger rises on the next
+`tick_days 1` - only the 365-day cooldown after a war needs the real clock. Note that `sign_treaty` with
 `Vassalage` calls `TreatyRegistry.Sign` **directly** — it skips `Hegemony.Submit`, so the link
 it makes has no starting Hold, no call to arms and no sibling reconciliation. It is a treaty
 row, not a submission, and it cannot be used to test anything downstream of `Submit`.
@@ -286,6 +296,19 @@ root needs a human; that is too strong — on 2026-09-20 `ui/click_widget` drove
 character creation. The intro video does not need one either - the bridge has
 `core/skip_video` (confirmed 2026-09-23). The inquiry case specifically is untested.
 Screenshots do confirm rendering.
+
+**Driving the Kingdom screen, learned 2026-09-26.** `ui/answer_inquiry` takes `affirmative`,
+not `accept` - a wrong key is read as false and silently answers **No**. The same call dismisses
+a scene notification ("… joined the Kingdom of …", raised by `ChangeKingdomAction`), but a
+second one queued behind a Kingdom Decisions popup stayed on screen with no inquiry the bridge
+could see; test on a save where the player is already placed rather than joining mid-session.
+A Diplomacy-tab row is selected with `ui/call_viewmodel_method_at_index` (layer `KingdomScreen`,
+list `Diplomacy.PlayerTruces` or `PlayerWars`, method `OnSelect`), and the mod's own buttons
+are clicked by their text. **The mod's mixin properties are invisible to
+`ui/get_viewmodel_property`**, which reflects the vanilla VM type; read those through a
+`diplomacy.*` command that shares the resolver. When the machine has no display attached
+(Windows reports a 640×480 `WinDisc` screen), no real mouse or keyboard input reaches the game,
+so nothing below a scroll fold and no Esc key can be exercised.
 
 **What no tool can do:** advance `CampaignTime.Now`. `diplomacy.tick_days` and
 `diplomacy.ai_week` drive the real upkeep and the real AI evaluation, but the clock stays
@@ -383,6 +406,7 @@ This project has a standing expectation, set by the lead and by several correcti
 | [docs/design/03-espionage.md](docs/design/03-espionage.md) | Phase 3 spec — networks, missions, exposure as diplomacy |
 | [docs/design/04-hegemony.md](docs/design/04-hegemony.md) | Phase 1.9/1.10 spec — hegemon derived from vassalage, Hold, defiance, the rise |
 | [docs/design/05-vanilla-override.md](docs/design/05-vanilla-override.md) | Phase 1.11 — every vanilla diplomacy surface and the lever that takes it |
+| [docs/design/08-statecraft.md](docs/design/08-statecraft.md) | Phase 2.8 — the six political skills, who holds each office, the terms, and what trains them |
 | Game install | `E:\SteamLibrary\steamapps\common\Mount & Blade II Bannerlord` (auto-detected; override with `BANNERLORD_GAME_DIR`) |
 | Mod logs | `Documents\Mount and Blade II Bannerlord\DiplomacyIntrigue\Logs\` |
 | Mod reports | `Documents\Mount and Blade II Bannerlord\DiplomacyIntrigue\Reports\` |

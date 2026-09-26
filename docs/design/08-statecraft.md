@@ -1,7 +1,8 @@
 # Design 08 — Statecraft: the character behind the crown
 
-Status: **plan for review, 2026-09-25. Nothing is built.** It changes formulas in Phase 1 and
-Phase 2 alike, so where it sits on the roadmap is the lead's call (§15, D10).
+Status: **S0, S1 and S2 built and run live, 2026-09-26** (Phase 2.8). The lead delegated
+D1-D10 on 2026-09-26; each was taken as §15 recommended (§16). What was verified, and what was
+not, is §17. S3 is §17's measurement; S4 and S5 wait on it.
 
 The lead's brief, 2026-09-25: the mod's mechanics run independently of the game's skill system,
 and that is what matters most right now. Map the skill system against the mod's mechanics,
@@ -467,7 +468,7 @@ to manage his court.
 - **The player as a vassal** can be appointed by an AI king. Serving a king becomes a political
   position with a desk, not only a vote.
 - **Cost**: size L, covering a Court-tab panel, an AI rule and save data: `CourtOffice` at
-  class id **15**, `ModState` property **15**, and a `CourtSeat` enum at **28**, each with its
+  class id **18**, `ModState` property **18**, and a `CourtSeat` enum at **28**, each with its
   container definition (CLAUDE.md §3).
 
 ## 9. Traits (S5, optional)
@@ -593,7 +594,7 @@ it the same day; points 1–4 above hold; 0 errors; and no save data changes bef
 ## 13. Save data, Harmony, compatibility
 
 - **Save data: none through S3.** Every term is derived. XP lives in vanilla's own hero data,
-  which the game saves. S4 would take class id 15, `ModState` property 15 and enum 28.
+  which the game saves. S4 would take class id 18, `ModState` property 18 and enum 28 (15-17 went to Phase 3 after this plan was written).
 - **Harmony: none.** Everything is in the mod's own resolvers. A-1's Decisions-tab route may
   need `ModDiplomacyModel.GetInfluenceCostOfProposingWar`, which is a model override, not a
   patch.
@@ -629,6 +630,88 @@ it the same day; points 1–4 above hold; 0 errors; and no save data changes bef
 | D10 | Where in the roadmap? | As Phase 2.8, before Phase 3; or deferred behind the civil-war gaps and run 08 | **Phase 2.8, with S3 folded into run 08.** Phase 3's spec then starts on this layer instead of raw skill terms |
 
 ---
+
+## 16. Decisions taken, 2026-09-26
+
+The lead handed D1-D10 over ("bạn tôi cho bạn quyền quyết định"). Each was taken as §15
+recommended; the reasons below are the ones that decided it, not a restatement of §15.
+
+| # | Taken | Why this and not the alternative |
+|---|---|---|
+| D1 | **(b)** the ruler for Leadership, the house's best for the other five | (a) leaves companions with no political use, which is half of §0's problem; (c) offices are an L-size stage with save data, and every formula already asks `StatecraftModel.Actor`, so S4 can replace the rule later without touching a term |
+| D2 | **Peer median, read live** | A fixed pivot drifts as AI heroes train (§6) and would move the balance seven runs set. Measured on `di_fresh_1084`: Leadership 226, Charm 232, Steward 233, Trade 228, Roguery 238, Scouting 189 - each 6 to 9 points above §1.4's template figures, which is AI training between the templates and a save in Summer 1084 |
+| D3 | **Symmetric** | Halving the penalties would make skill matter less for exactly the player it is meant to reach. §14's upstart penalty is real (measured: a fresh player-king at skill ~0 reads exhaustion ×1.15, Hold −10, loyalty −5, budget ×0.85) and companions are the answer the design intends |
+| D4 | **One price for a war** | The standing rule is that the AI plays by the same rules. The player's war now costs 72 on a Conquest claim instead of 200 |
+| D5 | **Restore only** | Extended perks would move numbers the character screen's tooltips never mention |
+| D6 | **Yes, the acts train skills** | The second half of §0; without it the player's build is static politically |
+| D7 | **Offices after S3** | They are only worth their save data once S3 shows the automatic rule is too blunt |
+| D8 | **Traits: their own plan after S3** | |
+| D9 | **`EnableStatecraft`, default on, not a restart setting** | It is also S3's control, and `diplomacy.test_statecraft on|off` flips it from the bridge |
+| D10 | **Phase 2.8, built after Phase 3** | Phase 3 was already built when the decision came; the number keeps the dependency visible (it rewrites Phase 1 and 2 formulas), and S3 is folded into run 08 |
+
+Two calls made while building, not in §15:
+
+- **The perk repairs (A-1 to A-3) are not behind the toggle.** They restore vanilla rules the
+  takeover had cut off; switching the new layer off should not re-break them. So with the layer
+  off, `war_value` still shows Firebrand's discount for a ruler who holds it.
+- **Silver Tongue is read from the buyer's treasurer**, the hero doing the haggling (§3 rule 3),
+  not from the buyer.
+
+## 17. What was built and verified, 2026-09-26
+
+Built as §5 and §6 describe, in `Statecraft/` (`StatecraftModel`, `StatecraftTerms`, `SkillXp`,
+`StatecraftConstants`). No save data, no Harmony. One `GameModel` override:
+`ModDiplomacyModel.GetInfluenceCostOfProposingWar`, for any vanilla war proposal route that is not
+the mod's own button (conquest-grade price, since the call has no target).
+
+**Run live**, each predicted by hand first (`di_fresh_1084`, `di_civilwar_2_6c`,
+`di_pretender_test`), 0 errors and 0 warnings in every session:
+
+| Term | Check | Result |
+|---|---|---|
+| S-1 | Lucon at Leadership 100, Monchug at 300, `tick_days 10` | +3.38 and +2.78 against a base 3.00: ×1.127 and ×0.927, exact |
+| S-1 | Internal war, a claimant at Leadership 10, a crown at 105 | rebels ×1.15 (3.45 → 3.5), crown ×1.10 (3.3), exact |
+| S-3 | Philenora (Charm 175) and Caladog (208) against a median of 232 | −3.8 and −1.6, exact |
+| S-5 | the fabrication button | "10% chance of exposure" for a spymaster at Roguery 569; 20% base |
+| S-6 | grievances against fen Gruffendoc, `tick_days 50`, on then off | 0.6 then exactly 1.0 |
+| S-7 | Derthert at Leadership 229 against 226 | presence +0.1 on every house, exact |
+| S-9 | Doves bloc: Muinser (influence 766, Charm 20) against Ergeon (543, Charm 330) | leader Gruffendoc off, Derngil on (733 against 383), exact |
+| S-10, A-3 | fen Uvain's price | 27,650 ×0.85 haggling → 23,500; with Silver Tongue 20,000 |
+| A-1 | the player's Declare war button (Battania, influence 50 then 200) | refused at 50 with "costs 72"; accepted at 200, influence 200 → 128, charged once |
+| A-2 | Gavalon given Firebrand | 72 → 54 |
+| XP | a pact, a house bought, an internal war won | 2,000 Charm to the envoy; 2,000 and 1,000 Trade (0.1 and 0.05 × 20,000); 10,000 Leadership to the winner |
+| S-8 | two contested successions | ran with the term, no errors. Not compared on against off: that needs the same death twice, from a reload |
+
+**On screen:** the Realm tab's Statecraft strip rendered its first row (the rest sit below the
+fold and the bridge cannot scroll on this box - the display is disconnected, so no real input
+reaches the game), "(resolve x1.09)" on a war row, the war cost on Declare war, the persuasion
+line in the pact chooser, and "10% chance of exposure" on Fabricate.
+
+**Not verified:** the regression proof against the build *before* this change (off was compared
+with on, and each off figure matched the formula without the term, but the old build was not run
+on the same save); the other five rows of the Realm strip on screen; S-2 on a real peace (no war on
+the test saves had a budget); S-4 on a real vassal link; the Court tab lines on screen; the
+legitimacy dividend (dated, needs the real clock). §12's measurement is below.
+
+### S3 — balance run 08, measured 2026-09-26
+
+Two ten-year runs from `di_fresh_1084`, A with the layer on and B off, 0 errors in both. In full:
+[balance/run-08.md](../balance/run-08.md). Against §12:
+
+| §12 point | Result |
+|---|---|
+| 1. The world did not move (±15%) | **Mostly.** These held: chosen wars 45 against 45; median war length 52 against 57 days (9%); white peace 28 against 29; tribute at the table 0 and 0; internal wars and side changes 0 and 0. Two did not. **Total wars ended: 67 against 56 (+20%).** The whole gap is obligation wars, from A's larger alliance web. **Subjugation at the table: 0 against 4.** The counts are too small to read as a rate |
+| 2. Each term points the right way, across realms | **Not analysed.** A kingdom's exhaustion in the weekly record mixes the ruler's Leadership with how hard its wars were fought, and one run cannot separate the two. The per-term direction is what the live checks above showed |
+| 3. AI skill drift | **Negligible.** 1.04 million XP in ten years; Envoy Charm median 232 → 235, the other five unchanged. In B, a change of office-holders alone moved Roguery by 21, so +3 is noise |
+| 4. A player's year | **Not run.** The player's party was parked for both runs |
+
+**The finding to follow up:** A signed 47 AI pacts against B's 31, and held up to 8 alliances at
+once against 4. Persuasion (S-3) and the Envoy's treaty cost (S-2) both reach pacts, so a real
+effect is possible. But the worlds diverged within a year, and one pair cannot separate the two.
+The next step is a second pair from a different seed. No constant was changed.
+
+**Acceptance (§12)** is therefore not yet met: point 1 is at the margin on two measures, and points
+2 and 4 are open. S4 and S5 wait on it, as D7 and D8 say.
 
 ## Appendix A — Perks with a political reading, v1.4.8 (a selection)
 

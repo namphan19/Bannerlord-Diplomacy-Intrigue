@@ -910,3 +910,16 @@ that unravels weeks later — is the failure mode to look for in the next run.
 **This was a smoke test, not a measured run.** It shows the code runs and does not crash. It does
 not answer any of §13.7's questions: no link formed in two years, the world had not yet
 diverged enough to reach the cliff, and nothing here says whether the rates are right.
+
+**Answered by balance run 08, 2026-09-26** (two ten-year runs from `di_fresh_1084`; the full
+tables are in [balance/run-08.md](../balance/run-08.md) §5):
+
+1. **Five links per run.** In run A, all four that were old enough to judge outlived their first
+   year. In run B, two of five did, and Western Empire had three patrons in one year. The imposed
+   route did not multiply: 2 and 1 imposed links in ten years, against 3 in run 07's twenty.
+2. **Tribute vanished from the peace table.** There were 0 tributary settlements in 123 peace
+   settlements. Final war scores averaged 21-27, and few wars reached 65.
+3. **The 50-55 band bought one link in twenty years** (value 53.3), and it lasted three weeks.
+4. **No link was doomed at signing.** The lowest starting target was 24.1, at a strength ratio of
+   1.10. Links that reached target 0 got there after signing. The margin stays as the lead left it.
+5. **`ReconcileWithSiblings` never ran.** No hegemon had two vassals at war with each other.
