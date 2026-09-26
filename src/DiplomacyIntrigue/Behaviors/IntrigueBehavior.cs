@@ -81,17 +81,39 @@ namespace DiplomacyIntrigue.Behaviors
                 LegitimacyRegistry.DailyTick(state);
                 SuccessionModel.DailyWatch(state);
                 SuccessionModel.RetireSpentClaims(state);
-                InternalWars.DailyTick(state);
             }
             catch (Exception ex)
             {
                 Log.Error("Intrigue", "Daily intrigue upkeep failed.", ex);
             }
+
+            // The AI rulers' amends, daily and before the internal-war check - the lead's call of
+            // 2026-09-26: a ruler looks at its court as often as the court is checked for a rising,
+            // so a crisis that arrives in one day (a contested succession) meets a ruler who can
+            // answer it that day, as the player can. Its own try: a failure here must not stop the
+            // check below.
+            try
+            {
+                Amends.AiDaily(state);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Intrigue", "Daily amends failed.", ex);
+            }
+
+            try
+            {
+                InternalWars.DailyTick(state);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Intrigue", "Daily internal-war upkeep failed.", ex);
+            }
         }
 
         /// <summary>
         /// The court's week: the conditions that renew grievances, the civil wars' leaders buying
-        /// houses, the AI rulers making amends. One list, <see cref="IntrigueUpkeep.Weekly"/>,
+        /// houses (the AI rulers' amends run daily, before the internal-war check). One list, <see cref="IntrigueUpkeep.Weekly"/>,
         /// shared with <c>diplomacy.ai_week</c>; it catches its own failures step by step.
         /// </summary>
         private void OnWeeklyTick()

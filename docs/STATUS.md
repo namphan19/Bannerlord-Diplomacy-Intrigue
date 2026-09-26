@@ -67,10 +67,11 @@ and tribute happen, and the unmerged 2026-09-24 mechanics review.
 **C1, make amends, is built and run live** (design/09 §8): every price matched a hand prediction,
 the Court tab's two-click button paid, the save round trip held the new `Grievance` properties 6-7,
 and an AI ruler made amends through the weekly pass. Running it corrected the spec twice (standing
-now counts peer houses only; the AI scores the loyalty an answer really moves). **The acceptance
-line is not met in its hardest form:** on Battania one tick from rising, two amends shrank the
-bloc (61% to 56%) and the rising (5 houses to 4), and the rising still came, held by crown
-legitimacy 25 and by relation. That, and the AI answering a crisis a week late, are TODO.md item 1.
+now counts peer houses only; the AI scores the loyalty an answer really moves). Measured on
+Battania one tick from rising, two amends shrank the bloc (61% to 56%) and the rising (5 houses to
+4), and the rising still came, held by crown legitimacy 25 and by relation. **The lead then decided
+(design/09 D16-D17):** the acceptance line means prevention, which C1 meets; and AI rulers consider
+amends daily, before the internal-war check - built and run live the same day.
 
 ## Where the work stands
 
@@ -78,16 +79,15 @@ legitimacy 25 and by relation. That, and the AI answering a crisis a week late, 
 |---|---|
 | **0 — Foundation** | ✅ done, verified in a live campaign |
 | **1 — Diplomacy core (1.1–1.12)** | ✅ **accepted by the lead, 2026-09-23**. Code complete including submission and hegemony (1.9/1.10), the vanilla takeover (1.11) and power (1.12). Measured over runs 01–08; run 08 answered the §13.7 questions the §13 rework had left open. Carried debt: [ROADMAP.md](ROADMAP.md#phase-1--accepted-by-the-project-lead-2026-09-23) and "Not verified — carried" below |
-| **2 — Court intrigue** | 🔄 2.1–2.7 built and verified live on their main paths; **2.8 Statecraft** built and run live 2026-09-26 (S0–S2; S3 is run 08; S4 became design/09's C2; S5 traits waits); **2.9 Court verbs**: C1 make amends built and run live 2026-09-26, C2 and C3 not built. **Not accepted:** measured with C1, the acceptance line fails on a court already at the civil-war trigger (TODO 1) |
+| **2 — Court intrigue** | 🔄 2.1–2.7 built and verified live on their main paths; **2.8 Statecraft** built and run live 2026-09-26 (S0–S2; S3 is run 08; S4 became design/09's C2; S5 traits waits); **2.9 Court verbs**: C1 make amends built and run live 2026-09-26, C2 and C3 not built. The acceptance line is met by C1 under the lead's reading (prevention, design/09 D16); formal acceptance is the lead's |
 | **3 — Espionage** | ⏸ **parked by the lead, 2026-09-26.** 3.1–3.7 built and run live ([design/03 §10](design/03-espionage.md)). The AI's handlers are still taken by vanilla, so an AI network never grows (TODO 3) |
 | **4 — Integration, balance, release** | 🔄 runs 01–08 archived; **run 08** is the current reference. The civil-war balance needs its own run (TODO 4) |
 
 ## What to do next
 
 **Phase 2's court verbs (R-2), [design/09](design/09-court-verbs.md).** C1 is built and run live.
-Next, in the lead's order: the lead's answer to TODO.md item 1 (does the acceptance line need a
-verb for legitimacy or relation, and should an AI ruler answer a crisis the day it comes), then
-C2 offices and patronage, then C3 tribute per vassal. Espionage's default and civil war's rarity
+The lead's D16-D17 are built. Next: C2 offices and patronage, then C3 tribute per vassal, and the
+lead's formal acceptance of Phase 2 when they choose. Espionage's default and civil war's rarity
 stay as they are, the lead's call of 2026-09-26.
 
 Work that needs no decision:

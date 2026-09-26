@@ -43,16 +43,13 @@ checked Phase 2 against its acceptance line.
       (design/09 §0, CLAUDE.md §3).
 - [x] The mockup approved by the lead, 2026-09-26.
 - [x] **C1, make amends: built and run live, 2026-09-26** ([design/09 §8](docs/design/09-court-verbs.md)).
-- [ ] **For the lead — measured, the line is not met in its hardest form.** On Battania one tick from
-      rising after a contested succession, two amends took the pretender bloc from 61% to 56% and the
-      rising from 5 houses to 4; the rising still came. Crown legitimacy (25 against 35) is out of
-      every court verb's reach, and relation sank three houses below 25. Does "survive it" mean
-      surviving a court already at the trigger? If so, the ruler needs a verb that buys legitimacy or
-      relation (for example a court feast or a coronation, priced by the rule), and C2's +8 will not
-      be enough on its own.
-- [ ] **For the lead — the AI answers a crisis a week late.** The trigger is checked daily, the AI
-      makes amends weekly; a contested succession raises all three conditions at once, so the AI
-      never gets its turn. Option: let a ruler whose realm is one tick from rising act that day.
+- [x] **Decided 2026-09-26 (design/09 D16): the line means prevention**, and C1 meets it. A court
+      already at the trigger after a contested succession may rise; no verb for legitimacy or
+      relation is added.
+- [x] **Decided 2026-09-26 (D17): AI rulers consider amends daily, before the internal-war check.**
+      Built and run live: on `di_pretender_test` Battania's ruler answered fen Penraic before the
+      check, and the rising took 4 houses instead of 5.
+- [ ] Formal acceptance of Phase 2, the lead's call.
 - [ ] C2, offices and patronage; then C3, tribute per vassal.
 
 ### 2. The court does not reach the AI's foreign policy

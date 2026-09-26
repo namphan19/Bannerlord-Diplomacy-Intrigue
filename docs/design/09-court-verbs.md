@@ -116,9 +116,10 @@ of Battania's court sat at loyalty 0–7.5; there, answering every grievance may
 houses below 25. Section 5's check measures exactly this, and C2's patronage is the second
 lever for it.
 
-**The AI**, under the same price and effect. Once a week, an AI ruler whose court is under
+**The AI**, under the same price and effect. Once a day, before the internal-war check (D17; first
+written as once a week), an AI ruler whose court is under
 threat (a Pretenders bloc has formed, or a sworn house is below 25) makes **one** amends: the
-grievance whose answer moves the most bloc power out of danger per point of influence, paid only
+grievance whose answer moves the most loyalty in houses of weight per point of influence, paid only
 from influence above a reserve of **twice** its current war-declaration cost, so it can still go
 to war, and from gold above the AI's gold reserve (50,000, today `EspionageConstants.AiGoldReserve`;
 one number for "what an AI ruler keeps back", moved to a shared place when C1 is built). An AI
@@ -259,7 +260,7 @@ take influence and gold together (§0's pricing rule). The first version priced 
 | D3 | The price | **40 influence and 5,000 gold per point, × standing 0.5–2** — raised by the lead from 10 influence per point |
 | D4 | Memory | **×2 price for repeat amends and ×1.5 for a repeated wrong, within two years** |
 | D5 | Statecraft | **Each part scaled by its skill, ×0.5 to ×2 (`PriceFactor`): influence by the Charm contest, gold by the Trade contest; amends train both** — strengthened by the lead from ±15% on the influence alone |
-| D6 | How eager the AI is | **Only under threat, one a week, above an influence and a gold reserve** |
+| D6 | How eager the AI is | **Only under threat, one a week, above an influence and a gold reserve** - the cadence changed to daily by D17 |
 | D7 | Seats | **Five, one per portfolio** |
 | D8 | Holders from other houses | **Yes** |
 | D9 | Patronage strength | **+8, +4 for a second seat** (un-tuned) |
@@ -269,6 +270,13 @@ take influence and gold together (§0's pricing rule). The first version priced 
 | D13 | Seat offers to the player as a vassal | **Yes, as an inquiry** |
 | D14 | Tribute levels | **None / 250 / 500 / 1,000, AI by Hold** |
 | D15 | UI | **Mockup first, then build** |
+
+Two more, after C1 was measured (§8), the same day:
+
+| # | Question | Decision |
+|---|---|---|
+| D16 | Does "the player can survive it by managing grievances" require rescuing a court already at the civil-war trigger? | **No - it means prevention.** The ruler manages grievances before the court reaches the brink; a court already there after a contested succession may rise. No verb for legitimacy or relation is added. Under this reading C1 meets the line (§8) |
+| D17 | How often does an AI ruler consider amends? | **Daily, as often as the internal-war trigger is checked, and before it.** Changed from D6's weekly: a crisis that arrives in one day met an AI that could not answer it, while the player could |
 
 ---
 
@@ -319,6 +327,9 @@ On `di_grievance_test` (Khuzait, the player rules), with the player's Charm set 
 
 ### The acceptance line, measured
 
+*The lead's reading (D16): the line means prevention, and C1 meets it. The measurement below is
+kept because it is what the reading was decided on.*
+
 §5's pass condition was **not met** on the court it was written for, and the finding is the point
 of the check. `test_player_rule battania` cannot run on `di_pretender_test`: the player already rules
 Khuzait there, and a ruler cannot leave a realm without a crown. So the verbs were run in Battania
@@ -346,9 +357,12 @@ sliding, and amends does that.
 
 Two more findings from the same runs:
 
-- **The AI cannot answer a sudden crisis.** The trigger is checked daily and the AI makes amends
-  weekly; a contested succession creates all three conditions at once, so the rising comes the next
-  day. The AI only prevents a threat that builds over weeks.
+- **The AI could not answer a sudden crisis** - fixed by D17. The trigger was checked daily and the
+  AI made amends weekly; a contested succession creates all three conditions at once, so the rising
+  came before the AI's turn. Now the AI looks daily, before the check. Run again on
+  `di_pretender_test`, one day of upkeep: Battania's ruler answered fen Penraic (62.3 -> 70.7) and
+  Aserai's answered Banu Habbab, both logged before the internal-war check; Battania still rose, with
+  4 houses instead of 5 and the crown holding 47% of the court. 0 errors.
 - **Spending influence can make a claimant.** After the player's 459 influence went on amends, Arkit
   crossed the magnate line (x1.30 of a court average that counts the crown) and the Court tab marked
   it "claimant". Two systems meeting, not a fault: a crown that spends its influence looks weaker.

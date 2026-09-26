@@ -1120,6 +1120,10 @@ namespace DiplomacyIntrigue.Core
             SuccessionModel.DailyWatch(state);
             SuccessionModel.RetireSpentClaims(state);
 
+            // The AI rulers' amends, before the internal-war check, as the campaign's daily
+            // handler runs them (design 09, the lead's call of 2026-09-26).
+            Intrigue.Amends.AiDaily(state);
+
             // Advances every internal war and looks for a new one. Exhaustion accrues here; the
             // cooldown after a war is measured in dates and, like the peace dividend, cannot.
             InternalWars.DailyTick(state);

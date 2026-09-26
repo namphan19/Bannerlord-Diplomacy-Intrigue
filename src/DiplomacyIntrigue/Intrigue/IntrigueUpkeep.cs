@@ -12,9 +12,9 @@ namespace DiplomacyIntrigue.Intrigue
     public static class IntrigueUpkeep
     {
         /// <summary>
-        /// The conditions that renew grievances, then the civil wars' leaders buying houses, then
-        /// the AI rulers making amends (design 09 C1) - after the scan, so a ruler answers the court
-        /// as it stands this week. Each step has its own try: none throws past here (CLAUDE.md §3).
+        /// The conditions that renew grievances, then the civil wars' leaders buying houses. Each
+        /// step has its own try: none throws past here (CLAUDE.md §3). The AI rulers' amends were
+        /// here until the lead moved them to the daily upkeep (design 09 §7, D17).
         /// </summary>
         public static void Weekly(ModState state)
         {
@@ -36,15 +36,6 @@ namespace DiplomacyIntrigue.Intrigue
             catch (Exception ex)
             {
                 Log.Error("Intrigue", "Weekly side changes failed.", ex);
-            }
-
-            try
-            {
-                Amends.AiWeekly(state);
-            }
-            catch (Exception ex)
-            {
-                Log.Error("Intrigue", "Weekly amends failed.", ex);
             }
         }
     }

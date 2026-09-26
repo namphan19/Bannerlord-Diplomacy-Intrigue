@@ -19,7 +19,7 @@ namespace DiplomacyIntrigue.Intrigue
     /// and, by CLAUDE.md §3, the same verb an AI ruler uses.
     ///
     /// **One price for everybody.** <see cref="QuoteFor"/> is the only place a price is made; the
-    /// Court tab, the AI's weekly choice, the diagnostic and <see cref="Execute"/> all read it, so
+    /// Court tab, the AI's daily choice, the diagnostic and <see cref="Execute"/> all read it, so
     /// the number on the button is the number the AI weighed. The price follows the lead's rule of
     /// 2026-09-26 (design 09 §0): influence and gold together, each scaled by its skill through
     /// <see cref="StatecraftTerms.PriceFactor(Hero, Hero, SkillObject)"/> - the crown's envoy against
@@ -30,7 +30,7 @@ namespace DiplomacyIntrigue.Intrigue
     /// The influence is spent.
     ///
     /// Nothing here takes an "is this the player" argument. The one player branch is who decides
-    /// for a realm: an AI ruler's weekly choice is made here, the player's on the Court tab.
+    /// for a realm: an AI ruler's daily choice is made here, the player's on the Court tab.
     /// </summary>
     public static class Amends
     {
@@ -192,7 +192,7 @@ namespace DiplomacyIntrigue.Intrigue
 
         // ----- The AI (design 09 §1, D6) --------------------------------------------------
 
-        /// <summary>What an AI ruler would answer this week, and why it answers nothing if it would not.</summary>
+        /// <summary>What an AI ruler would answer today, and why it answers nothing if it would not.</summary>
         public sealed class AiChoice
         {
             public Quote Pick;
@@ -203,7 +203,7 @@ namespace DiplomacyIntrigue.Intrigue
 
         /// <summary>
         /// An AI ruler whose court is under threat - a Pretenders bloc has formed, or a sworn house
-        /// is below the defection line - answers one grievance a week: the one that moves the most
+        /// is below the defection line - answers one grievance a day: the one that moves the most
         /// court weight out of danger per point of influence, from what is left above its reserves.
         /// A dry run: nothing is paid.
         /// </summary>
@@ -265,10 +265,11 @@ namespace DiplomacyIntrigue.Intrigue
         }
 
         /// <summary>
-        /// The weekly AI pass, part of the intrigue week (<see cref="IntrigueUpkeep.Weekly"/>). The
+        /// The daily AI pass, run before the internal-war check each day - the lead's call of 2026-09-26
+        /// (design 09 D17): a ruler looks at its court as often as the court is checked for a rising. The
         /// player's realm is skipped: the player decides for the player, on the Court tab.
         /// </summary>
-        public static void AiWeekly(ModState state)
+        public static void AiDaily(ModState state)
         {
             if (state == null || !Settings.Current.EnableIntrigue) return;
 
@@ -286,7 +287,7 @@ namespace DiplomacyIntrigue.Intrigue
                 }
                 catch (Exception ex)
                 {
-                    Log.Error("Amends", "The weekly amends of " + kingdom.Name + " failed.", ex);
+                    Log.Error("Amends", "The daily amends of " + kingdom.Name + " failed.", ex);
                 }
             }
         }
@@ -403,7 +404,7 @@ namespace DiplomacyIntrigue.Intrigue
             else
             {
                 var plan = PlanFor(state, kingdom);
-                sb.AppendLine("  AI this week: " + plan.Why
+                sb.AppendLine("  AI today: " + plan.Why
                               + (plan.Pick == null ? "" : " (" + plan.Pick.Grievance.Type + ", " + plan.Pick.Influence
                                  + " influence, " + plan.Pick.Gold.ToString("N0") + " denars)"));
             }

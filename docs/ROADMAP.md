@@ -436,7 +436,7 @@ Playable target: *being a king is a political problem, not just a military one.*
 
 **Acceptance:** an AI kingdom that loses a long illegitimate war visibly fractures — blocs shift, then either sues for peace or splits. The player can survive it by managing grievances.
 
-*Measured 2026-09-26 with C1, and not met in its hardest form (design/09 §8).* Amends move a house across a band and can pull a great house out of a pretender bloc; in Battania, one tick from rising after a contested succession, two amends took the bloc from 61% to 56% and the rising from 5 houses to 4, and the rising still came. What held was crown legitimacy (25 against 35), which no court verb reaches, and relation, which sank three houses below 25. Whether the line requires surviving a court already at the trigger is the lead's call (TODO.md item 1).
+*Met by C1 under the lead's reading of 2026-09-26 (design/09 D16): "survive" means prevention* - the ruler answers grievances before the court reaches the brink, and amends move a house across a band (Khuzait, Disaffected to Transactional) and can pull a great house out of a pretender bloc. A court already at the trigger after a contested succession may still rise, by design: in Battania two amends shrank the rising from 5 houses to 4 and it still came, held by crown legitimacy 25 and by relation. AI rulers look at their courts daily, before the trigger is checked (D17). The first sentence of the line was verified in 2.1-2.6. Formal acceptance of Phase 2 is the lead's.
 
 ### What Phase 1 already left waiting for it
 
