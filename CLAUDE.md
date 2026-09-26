@@ -405,7 +405,9 @@ This project has a standing expectation, set by the lead and by several correcti
 
 | | |
 |---|---|
-| [docs/STATUS.md](docs/STATUS.md) | **where the work stands, what to do next** |
+| [docs/STATUS.md](docs/STATUS.md) | **where the work stands, what to do next** - the current part only |
+| [TODO.md](TODO.md) | the one list of open decisions for the lead and pending work |
+| [docs/STATUS-history.md](docs/STATUS-history.md) | every earlier handoff, checkpoint and verification table, verbatim |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | layering, the runtime facts in full, save rules, how the game is hooked |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | all four phases, what is done, what is verified, acceptance criteria |
 | [docs/design/01-diplomacy.md](docs/design/01-diplomacy.md) | Phase 1 spec, formulas, and the lead's decisions |

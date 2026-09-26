@@ -342,7 +342,7 @@ weight.
 > actually called to defend its vassal, submission reads the patron's ability to protect,
 > withheld tribute is defiance, outsiders balance against a dominant sphere, and a revolt can
 > carry the other resentful vassals with it. Detail, live evidence and what stays unverified:
-> STATUS.md, "What to do next" §3.
+> STATUS-history.md, "History — how each run changed the design" §3.
 
 **1.12 Power: ambition, coalitions, greed** ✅ **implemented**, verified piecewise, not yet in a run
 — the lead's design of 2026-09-16. Strength against the world makes a ruler ambitious; the rest of
@@ -350,7 +350,7 @@ the map finds it easier to stand together against the strongest, and alliances n
 the war valuation reads whole sides; a ruler past a quarter of the world's (smoothed) strength turns
 greedy, takes no new vassals and may tear up a vassal's oath to conquer it; its vassals dread it.
 Annexation only through war, and a kingdom that loses its last settlement is eliminated.
-[design/06](design/06-power.md); evidence in STATUS.md "What to do next" §3c.
+[design/06](design/06-power.md); evidence in STATUS-history.md, "History — how each run changed the design" §3c.
 
 **1.11 Take inter-kingdom diplomacy from vanilla** ✅ **implemented**, partly verified — the
 lead's directive that our diplomacy overrides *all* vanilla diplomacy, plus the two bugs run
@@ -428,11 +428,13 @@ Playable target: *being a king is a political problem, not just a military one.*
 
 **2.6 Civil war** — a strong pretender bloc can secede into a rival kingdom, taking its fiefs. The end state of unmanaged internal pressure. *Built instead as war inside the kingdom, which does not split (design/07): **2.6** the internal war and **2.6b** a house divided by its succession, verified live 2026-09-23/24; **2.6c** conceding and changing sides for gold, shown on the Court tab, run live 2026-09-24, and from the two places left unseen (an AI leader's offer to the player's house, the player as claimant) on 2026-09-25. Secession stays the last rung of design/07 §2 and is not built. What is still unverified is listed in STATUS.md.*
 
-**2.7 Intrigue UI** — court screen: blocs, loyalty, grievance ledger, legitimacy — in full for your own court, as a qualitative band for rivals (§9.1). **Own court: built and verified live 2026-09-23** as a seventh Kingdom-screen tab, "Court" (STATUS.md). **Rival court: built and verified live 2026-09-23** — a bands-only "Court" section on the kingdom's Encyclopedia page, every edge a behavioural threshold (`CourtBands`).
+**2.7 Intrigue UI** — court screen: blocs, loyalty, grievance ledger, legitimacy — in full for your own court, as a qualitative band for rivals (§9.1). **Own court: built and verified live 2026-09-23** as a seventh Kingdom-screen tab, "Court" (STATUS-history.md). **Rival court: built and verified live 2026-09-23** — a bands-only "Court" section on the kingdom's Encyclopedia page, every edge a behavioural threshold (`CourtBands`).
 
 **2.8 Statecraft** — the six political skills count in the mod's own judgments, and the acts it added train them ([design/08](design/08-statecraft.md)). Built after Phase 3, on the lead's delegation of D1-D10 (2026-09-26). **S0-S2 built and run live 2026-09-26**: every term predicted by hand and matched in game, the player's war now costs what the AI's does, Firebrand and Silver Tongue reach the mod's own acts. **S3**, the on/off measurement, is balance run 08 (design/08 §17). It ran on 2026-09-26 with 0 errors: war lengths and white peace are unchanged and XP drift is negligible, but §12's acceptance is not yet met (total wars +20%, all obligation wars; pacts 47 against 31, which needs a second pair; points 2 and 4 not measured). S4 offices and S5 traits wait on S3.
 
 **Acceptance:** an AI kingdom that loses a long illegitimate war visibly fractures — blocs shift, then either sues for peace or splits. The player can survive it by managing grievances.
+
+*Not met as of 2026-09-26, and not yet formally checked: the player has no act that reduces a grievance (the Court tab shows and selects only), so the second sentence cannot hold. TODO.md item 1.*
 
 ### What Phase 1 already left waiting for it
 
@@ -444,7 +446,7 @@ Playable target: *being a king is a political problem, not just a military one.*
 | `EnableIntrigue` settings toggle, already shipped and defaulting on | `Core/ModSettings.cs:31` |
 | The `Hold` formula wants a crown-legitimacy term | [design/04 §1.2](design/04-hegemony.md) |
 | `CourtAgenda`, `SpyMissionType`, `MissionOutcome` — enums written in Phase 0 and already registered at definer ids 23–25 | `Models/Enums.cs`, `Core/ModSaveDefiner.cs` |
-| `AiDiplomacy.TryDemandTribute` accepts on strength ratio and trust alone, with no sense of the target court's willingness | **done 2026-09-25**: the target's court answers (`Intrigue/TributeCourt`), and a player-ruled target is asked instead of signed for. Verified live; STATUS.md |
+| `AiDiplomacy.TryDemandTribute` accepts on strength ratio and trust alone, with no sense of the target court's willingness | **done 2026-09-25**: the target's court answers (`Intrigue/TributeCourt`), and a player-ruled target is asked instead of signed for. Verified live; STATUS-history.md |
 
 Two Phase 1 pieces are parked until Phase 2 makes them mean something: **vassal-party
 summons** ([design/04 §8](design/04-hegemony.md) — the most intrusive and least load-bearing

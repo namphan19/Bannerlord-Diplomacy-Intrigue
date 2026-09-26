@@ -52,7 +52,7 @@ mockup ("Court Intrigue Screen") and are already built. They are not part of thi
   dissolution) must come from the model's rules. The screen must not hard-code them.
 - The mockup was drawn at 1280x720. The game must also work at 1920x1080.
 
-## What already exists (from docs/STATUS.md, "Kingdom screen UI", 2026-09-21)
+## What already exists (from docs/STATUS-history.md, "Kingdom screen UI", 2026-09-21)
 
 | Board | State |
 |---|---|

@@ -12,7 +12,7 @@ Written for whoever picks up the balance work next. §8 is the checklist.
 ## 1. What this run measures
 
 The first campaign with all of branch `feature/hegemony-structural-fixes` in play
-([STATUS.md](../STATUS.md) "What to do next" §3, §3b, §3c):
+([STATUS-history.md](../STATUS-history.md), "History — how each run changed the design" §3, §3b, §3c):
 
 - the patron's duty to defend its vassal, submission reading the patron's protection, withheld
   tribute as defiance, joint revolt, safer poaching;

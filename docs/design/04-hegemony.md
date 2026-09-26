@@ -362,7 +362,7 @@ zero), spheres stay bounded — no single hegemon holding more than half the map
 
 Written down because a spec that quietly disagrees with the code is worse than no spec. The
 first four departures were made while building 1.9 on 2026-09-16; the next six came from the
-design review of run 04 the same day, and the last three from reading strength properly (docs/STATUS.md, "What to do next" §3). Several of those
+design review of run 04 the same day, and the last three from reading strength properly (docs/STATUS-history.md, "History — how each run changed the design" §3). Several of those
 six are the code finally doing what this spec already said.
 
 | Spec said | Code does | Why |
@@ -391,7 +391,7 @@ happens without any special case for it.
 ## 11. Implementation order
 
 Gated on the run-02 fixes: submission needs war scores near 90, and no war currently survives
-long enough to earn one. See [STATUS.md](../STATUS.md).
+long enough to earn one. See [STATUS-history.md](../STATUS-history.md).
 
 | Step | Work |
 |---|---|
