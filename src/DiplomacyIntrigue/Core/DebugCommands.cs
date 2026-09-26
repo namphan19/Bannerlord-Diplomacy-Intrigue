@@ -423,6 +423,21 @@ namespace DiplomacyIntrigue.Core
         /// also appears, earlier in the widget tree, in vanilla's hidden Clans list).
         /// Usage: diplomacy.test_court_select Harfit
         /// </summary>
+        /// <summary>
+        /// Selects a seat on the Court tab's offices strip (design 09 C2), as its row click does, or
+        /// deselects it when it is already selected. The seat names ("Envoy") also appear elsewhere in
+        /// the Kingdom screen's widget tree, so a click by text cannot be trusted to land here.
+        /// Usage: diplomacy.test_court_seat &lt;Envoy|Steward|Treasurer|Spymaster|Watch&gt;
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_court_seat", "diplomacy")]
+        public static string TestCourtSeat(List<string> args)
+        {
+            var court = UI.KingdomScreen.DiCourtVM.Current;
+            if (court == null) return "The Kingdom screen is not open.";
+            if (args == null || args.Count == 0) return "Usage: diplomacy.test_court_seat <seat>";
+            return court.SelectSeatByName(string.Join(" ", args));
+        }
+
         [CommandLineFunctionality.CommandLineArgumentFunction("test_court_select", "diplomacy")]
         public static string TestCourtSelect(List<string> args)
         {
@@ -768,6 +783,74 @@ namespace DiplomacyIntrigue.Core
                 if (only == null) return "No clan matching \"" + parts[1] + "\".";
             }
             return Intrigue.Amends.Describe(state, kingdom, only);
+        }
+
+        /// <summary>
+        /// Design 09 C2, the diagnostic: a realm's five seats, who holds each and who speaks for it,
+        /// the houses in favour, and what its AI ruler would do with a seat today. Every realm when no
+        /// kingdom is named. A dry run.
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("offices", "diplomacy")]
+        public static string OfficesCommand(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+            if (args != null && args.Count > 0)
+            {
+                var kingdom = FindKingdom(string.Join(" ", args));
+                return kingdom == null ? "No such kingdom." : Intrigue.Offices.Describe(state, kingdom);
+            }
+            var sb = new StringBuilder();
+            foreach (var kingdom in Kingdom.All)
+                if (kingdom.IsRealm()) sb.AppendLine(Intrigue.Offices.Describe(state, kingdom));
+            return sb.ToString().TrimEnd();
+        }
+
+        /// <summary>
+        /// Test lever: the realm's crown gives a seat to a hero, paying the real price through
+        /// <see cref="Intrigue.Offices.Appoint"/> - the call the Court tab and the AI make.
+        /// Usage: diplomacy.test_appoint &lt;kingdom&gt; | &lt;seat&gt; | &lt;hero&gt;
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_appoint", "diplomacy")]
+        public static string TestAppoint(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+            var parts = SplitOnPipe(args);
+            if (parts.Count < 3) return "Usage: diplomacy.test_appoint <kingdom> | <seat> | <hero>. Seats: Envoy, Steward, Treasurer, Spymaster, Watch";
+            var kingdom = FindKingdom(parts[0]);
+            if (kingdom == null) return "No kingdom matching \"" + parts[0] + "\".";
+            if (!Enum.TryParse(parts[1], true, out Portfolio seat) || seat == Portfolio.Ruler)
+                return "Unknown seat \"" + parts[1] + "\". Seats: Envoy, Steward, Treasurer, Spymaster, Watch";
+            var hero = FindHero(parts[2]);
+            if (hero == null) return "No hero matching \"" + parts[2] + "\".";
+
+            var q = Intrigue.Offices.QuoteAppointment(state, kingdom, seat, hero);
+            if (!Intrigue.Offices.Appoint(state, kingdom, seat, hero, out var failed)) return "Refused: " + failed;
+            return hero.Name + " appointed " + seat + " of " + kingdom.Name + ": " + q.Influence + " influence, "
+                   + q.Gold.ToString("N0") + " denars." + (q.FavouredHouse == null ? "" : " " + q.FavouredHouse.Name + " loyalty "
+                   + q.LoyaltyBefore.ToString("0.0") + " -> " + Intrigue.LoyaltyModel.Of(state, q.FavouredHouse).ToString("0.0")
+                   + " (predicted " + q.LoyaltyAfter.ToString("0.0") + ").");
+        }
+
+        /// <summary>
+        /// Test lever: the realm's crown takes a seat back through <see cref="Intrigue.Offices.Dismiss"/>.
+        /// Usage: diplomacy.test_dismiss &lt;kingdom&gt; | &lt;seat&gt;
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_dismiss", "diplomacy")]
+        public static string TestDismiss(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+            var parts = SplitOnPipe(args);
+            if (parts.Count < 2) return "Usage: diplomacy.test_dismiss <kingdom> | <seat>";
+            var kingdom = FindKingdom(parts[0]);
+            if (kingdom == null) return "No kingdom matching \"" + parts[0] + "\".";
+            if (!Enum.TryParse(parts[1], true, out Portfolio seat)) return "Unknown seat \"" + parts[1] + "\".";
+            var holder = Intrigue.Offices.RecordOf(state, kingdom, seat)?.Holder;
+            return Intrigue.Offices.Dismiss(state, kingdom, seat, out var failed)
+                ? holder?.Name + " no longer holds the " + seat + "'s seat of " + kingdom.Name + "."
+                : "Refused: " + failed;
         }
 
         /// <summary>
@@ -1122,7 +1205,7 @@ namespace DiplomacyIntrigue.Core
 
             // The AI rulers' amends, before the internal-war check, as the campaign's daily
             // handler runs them (design 09, the lead's call of 2026-09-26).
-            Intrigue.Amends.AiDaily(state);
+            Intrigue.IntrigueUpkeep.AiCourtDaily(state);
 
             // Advances every internal war and looks for a new one. Exhaustion accrues here; the
             // cooldown after a war is measured in dates and, like the peace dividend, cannot.

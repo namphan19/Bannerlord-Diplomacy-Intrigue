@@ -55,6 +55,7 @@ namespace DiplomacyIntrigue.Behaviors
                 SuccessionModel.Reset();
                 InternalWars.Reset();
                 SideChange.Reset();
+                Offices.Reset();
                 InternalWars.RebuildIndex(CoreBehavior.State);
 
                 // The engine never saves a kingdom's clan and fief lists, so a rising comes back
@@ -94,7 +95,7 @@ namespace DiplomacyIntrigue.Behaviors
             // check below.
             try
             {
-                Amends.AiDaily(state);
+                IntrigueUpkeep.AiCourtDaily(state);
             }
             catch (Exception ex)
             {

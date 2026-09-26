@@ -465,6 +465,33 @@ namespace DiplomacyIntrigue.Intrigue
         public const float AiAmendsWarCostReserve = 2f;
 
         /// <summary>
+        /// Loyalty a house gains while one of its own holds a court seat (design 09 C2, D9), and
+        /// the smaller step for a second seat; a third adds nothing. UN-TUNED. +8 is about what
+        /// answering five points of grievance buys, which is what the appointment's price was set
+        /// against.
+        /// </summary>
+        public const float OfficePatronageFirst = 8f;
+        public const float OfficePatronageSecond = 4f;
+
+        /// <summary>
+        /// A seat's pull toward the Centralists (design 09 C2): the source of "benefits from crown
+        /// patronage" that design 02 §3 names and nothing supplied, so the bloc never formed (STATUS
+        /// 2.3). UN-TUNED. Against the pressures it competes with: a claimant's own claim is 200,
+        /// a Pretenders backer at relation 80 is 40, a land-hungry house 40.
+        /// </summary>
+        public const float CentralistPressureFromOffice = 25f;
+
+        /// <summary>An appointment's price at median skills (design 09 D11), by the pricing rule. UN-TUNED.</summary>
+        public const float OfficeInfluencePrice = 200f;
+        public const float OfficeGoldPrice = 25000f;
+
+        /// <summary>Taking a seat back is free and the house does not forget it (design 09 D10). UN-TUNED.</summary>
+        public const float GrievanceDismissedFromOffice = 4f;
+
+        /// <summary>Days before an AI ruler offers a seat again to a player who declined one. UN-TUNED.</summary>
+        public const float OfficeOfferAgainDays = 60f;
+
+        /// <summary>
         /// The starting weight for a type. One place, so a source cannot disagree with the
         /// ledger about what a slight is worth.
         /// </summary>
@@ -482,6 +509,7 @@ namespace DiplomacyIntrigue.Intrigue
                 case GrievanceType.RequestRefused: return GrievanceRequestRefused;
                 case GrievanceType.SuccessionPassedOver: return GrievanceSuccessionPassedOver;
                 case GrievanceType.ForgedLetters: return GrievanceForgedLetters;
+                case GrievanceType.DismissedFromOffice: return GrievanceDismissedFromOffice;
                 default: return 0f;
             }
         }

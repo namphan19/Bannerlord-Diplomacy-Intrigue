@@ -244,7 +244,11 @@ Encyclopedia page describes it: bands only, plus the exact ledger while the play
 live ReadCourt on that realm), `amends <kingdom> [| clan]` (every grievance against a crown priced
 term by term, and the AI's pick this week; a dry run) and the lever `test_amends <clan> [| type]`
 (the real act, paid by whoever rules - `test_player_rule` cannot move a player who already rules a
-realm, so this is how a crisis court's own ruler is made to act). Espionage: `diplomacy.networks`, `mission_odds <clan> | <kingdom>`, `missions`, `bribes` (every
+realm, so this is how a crisis court's own ruler is made to act), `offices [kingdom]` (each seat,
+its holder, who speaks for it, the houses in favour, and the AI's plan today), the levers
+`test_appoint <kingdom> | <seat> | <hero>` and `test_dismiss <kingdom> | <seat>`, and
+`test_court_seat <seat>` (selects a seat on the Court tab: "Envoy" also appears elsewhere in the
+widget tree, so a click by text is not reliable). Espionage: `diplomacy.networks`, `mission_odds <clan> | <kingdom>`, `missions`, `bribes` (every
 bribe still on the record and whether it binds anybody), `counter_intelligence [kingdom]` (every
 realm's defence term by term), `ai_espionage [kingdom]` (each AI realm's espionage plan for the week,
 a dry run), and the levers `test_set_network`, `test_counter_budget <kingdom> | <denars>`,
@@ -330,19 +334,20 @@ reuse a save-definer local id for a different type, never change the definer bas
 (`2749100`, block `2749100`–`2749199`). `Treaty` currently uses ids **1-17** (14 `Hold`, 15
 defiance marks, 16 last defiance, 17 the revolt clock), so the next free id there is **18**. `TrustRecord` uses **1-6** (5 `LastPositiveChange`, 6
 `LastOfferRefused`), next free **7**. `ModState` uses
-properties **1-17** (11 `Grievances`, 12 `Legitimacy`, 13 `Pretenders`, 14 `InternalWars`,
-15 `SpyNetworks`, 16 `SpyMissions`, 17 `CounterIntelligenceBudgets`), next free **18**. The definer's class ids run to **17**
+properties **1-18** (11 `Grievances`, 12 `Legitimacy`, 13 `Pretenders`, 14 `InternalWars`,
+15 `SpyNetworks`, 16 `SpyMissions`, 17 `CounterIntelligenceBudgets`, 18 `Offices`), next free **19**. The definer's class ids run to **18**
 (10 `Grievance`, 11 `KingdomLegitimacy`, 12 `Pretender`, 13 `InternalWar`, 14 `InternalWarMember`,
-15 `SpyNetwork`, 16 `SpyMission`, 17 `CounterIntelligenceBudget`), next free **18**. **Only 18 and 19
-are left below the enum block**: the definer adds its base to class and enum ids alike, and they are
+15 `SpyNetwork`, 16 `SpyMission`, 17 `CounterIntelligenceBudget`, 18 `CourtOffice`), next free **19**. **Only 19
+is left below the enum block**: the definer adds its base to class and enum ids alike, and they are
 believed to share one id space (not verified - the reference assemblies carry no method bodies), so
-the class after 19 takes **28** or above rather than risk 20. Enums are **20-27**
-(26 `GrievanceType`, 27 `InternalWarOutcome`), next free **28**. `Grievance` uses
+the class after 19 takes **29** or above rather than risk 20 - not 28, which `Portfolio` took. Enums are **20-28**
+(26 `GrievanceType`, 27 `InternalWarOutcome`, 28 `Portfolio`, whose values 0-5 are now frozen), next free **29**. `CourtOffice` uses
+properties 1-4 (next free **5**). `Grievance` uses
 properties 1-7 (6 `AnsweredOn`, 7 `Answers`, design 09; next free **8**), `KingdomLegitimacy` 1-5, `Pretender` 1-4, `InternalWar` 1-14 (13 `Faction`,
 14 `SideChanges`, next free **15**), `InternalWarMember` 1, `SpyNetwork` 1-8 (next free **9**), `SpyMission` 1-11 (next free **12**),
 `CounterIntelligenceBudget` 1-3 (next free **4**). A new *value* on an enum the definer
-already registers is safe (`GrievanceType.SuccessionPassedOver = 9` and `ForgedLetters = 10` were
-added that way; next free value there is **11**);
+already registers is safe (`GrievanceType.SuccessionPassedOver = 9`, `ForgedLetters = 10` and
+`DismissedFromOffice = 11` were added that way; next free value there is **12**);
 renumbering or reusing one is not. Adding a new savable type means a class definition
 **and** a container definition in `ModSaveDefiner` — a missing container definition crashes
 on save, which is the single most common way to break a Bannerlord mod.

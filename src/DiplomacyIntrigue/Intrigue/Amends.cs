@@ -215,25 +215,14 @@ namespace DiplomacyIntrigue.Intrigue
             var ruler = kingdom.Leader;
             if (ruling == null || ruler == null) { choice.Why = "no ruler"; return choice; }
 
-            // Who is in danger: below the defection line, or in a Pretenders bloc.
-            var danger = new HashSet<Clan>();
-            foreach (var bloc in BlocModel.BlocsOf(state, kingdom))
-                if (bloc.Agenda == CourtAgenda.Pretenders)
-                    foreach (var member in bloc.Members) danger.Add(member);
-            var clans = kingdom.Clans;
-            for (var i = 0; i < clans.Count; i++)
-            {
-                var clan = clans[i];
-                if (!Court.IsMember(clan) || clan == ruling) continue;
-                if (LoyaltyModel.Of(state, clan) < IntrigueConstants.LoyaltyDisaffected) danger.Add(clan);
-            }
-            if (danger.Count == 0) { choice.Why = "the court is not under threat"; return choice; }
-
-            var influenceReserve = IntrigueConstants.AiAmendsWarCostReserve
-                                   * AiDiplomacy.WarDeclarationCost(state, kingdom, CasusBelli.Legitimacy(CasusBelliType.Conquest));
-            var spendableInfluence = ruling.Influence - influenceReserve;
-            var spendableGold = ruler.Gold - DiplomacyConstants.AiGoldReserve;
-
+            // Who is in danger, and what the crown keeps back: one answer for both court acts.
+            var danger = CourtThreat.DangerHouses(state, kingdom);
+            if (danger.Count == 0) { choice.Why = "the court is not under threat"; return choice; }
+
+            var influenceReserve = CourtThreat.InfluenceReserve(state, kingdom);
+            var spendableInfluence = ruling.Influence - influenceReserve;
+            var spendableGold = ruler.Gold - DiplomacyConstants.AiGoldReserve;
+
             foreach (var clan in danger)
             {
                 foreach (var g in GrievanceRegistry.Of(state, clan))
@@ -264,34 +253,20 @@ namespace DiplomacyIntrigue.Intrigue
             return choice;
         }
 
-        /// <summary>
-        /// The daily AI pass, run before the internal-war check each day - the lead's call of 2026-09-26
-        /// (design 09 D17): a ruler looks at its court as often as the court is checked for a rising. The
-        /// player's realm is skipped: the player decides for the player, on the Court tab.
-        /// </summary>
-        public static void AiDaily(ModState state)
-        {
-            if (state == null || !Settings.Current.EnableIntrigue) return;
-
-            foreach (var kingdom in Kingdom.All)
-            {
-                if (!kingdom.IsRealm()) continue;
-                if (kingdom.Leader == null || kingdom.Leader == Hero.MainHero) continue;
-
-                try
-                {
-                    var choice = PlanFor(state, kingdom);
-                    if (choice.Pick == null) continue;
-                    if (!Execute(state, choice.Pick.Grievance, out var failed))
-                        Log.Info("Amends", kingdom.Name + " meant to answer " + choice.Pick.House.Name + " and could not: " + failed);
-                }
-                catch (Exception ex)
-                {
-                    Log.Error("Amends", "The daily amends of " + kingdom.Name + " failed.", ex);
-                }
-            }
-        }
-
+        /// <summary>
+        /// The AI ruler of <paramref name="kingdom"/> makes today's amends, if its court is under threat
+        /// and it can pay. Called by <see cref="IntrigueUpkeep.AiCourtDaily"/>, which gives each AI realm
+        /// one court act a day, before the internal-war check (design 09 D17). Returns whether it acted.
+        /// </summary>
+        public static bool TryAi(ModState state, Kingdom kingdom)
+        {
+            var choice = PlanFor(state, kingdom);
+            if (choice.Pick == null) return false;
+            if (Execute(state, choice.Pick.Grievance, out var failed)) return true;
+            Log.Info("Amends", kingdom.Name + " meant to answer " + choice.Pick.House.Name + " and could not: " + failed);
+            return false;
+        }
+
         // ----- Words ---------------------------------------------------------------------
 
         /// <summary>

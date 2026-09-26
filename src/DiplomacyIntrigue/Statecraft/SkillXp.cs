@@ -126,5 +126,13 @@ namespace DiplomacyIntrigue.Statecraft
             Grant(quote.Envoy, DefaultSkills.Charm, xp, "amends");
             Grant(quote.Treasurer, DefaultSkills.Trade, xp, "amends");
         }
+
+        /// <summary>Design 09 C2: an appointment trains the ruler's Leadership and the treasurer's Trade.</summary>
+        public static void AppointmentMade(Intrigue.Offices.AppointQuote quote)
+        {
+            if (quote == null) return;
+            Grant(quote.Ruler, DefaultSkills.Leadership, StatecraftConstants.XpAppointment, "appointment");
+            Grant(quote.Treasurer, DefaultSkills.Trade, StatecraftConstants.XpAppointment, "appointment");
+        }
     }
 }

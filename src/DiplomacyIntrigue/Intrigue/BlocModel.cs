@@ -89,9 +89,12 @@ namespace DiplomacyIntrigue.Intrigue
             // holding more land than its standing demands, which is what a favoured clan looks
             // like from outside.
             var patronage = FiefStanding.Satisfaction(clan);
-            result[CourtAgenda.Centralists] = patronage > 0f
+            result[CourtAgenda.Centralists] = (patronage > 0f
                 ? patronage * IntrigueConstants.CentralistPressureFromPatronage
-                : 0f;
+                : 0f)
+                // Design 09 C2: a seat at court is the crown patronage design 02 §3 names - the source
+                // the bloc lacked, which is why it never formed (STATUS 2.3).
+                + (Offices.SeatsHeldBy(state, clan) > 0 ? IntrigueConstants.CentralistPressureFromOffice : 0f);
 
             // Pretenders need a claim on the throne AND crown legitimacy below 40 (design 02
             // §3). Both halves are real as of 2.5. The clan either holds the claim itself or

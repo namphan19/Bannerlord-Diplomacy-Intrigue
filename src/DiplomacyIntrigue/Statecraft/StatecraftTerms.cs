@@ -1,4 +1,5 @@
 using DiplomacyIntrigue.Diplomacy;
+using DiplomacyIntrigue.Models;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.CharacterDevelopment;
 using TaleWorlds.Core;

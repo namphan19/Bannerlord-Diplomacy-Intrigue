@@ -1,4 +1,5 @@
 using System;
+using DiplomacyIntrigue.Models;
 using System.Collections.Generic;
 using System.Text;
 using DiplomacyIntrigue.Behaviors;

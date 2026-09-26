@@ -1,6 +1,6 @@
 # Design 09 — Court verbs: the ruler's hands
 
-Status: **decided** 2026-09-26 (§7). **C1 built and run live** the same day (§8); C2 and C3 not built.
+Status: **decided** 2026-09-26 (§7). **C1 and C2 built and run live** the same day (§8, §9); C3 not built.
 
 The lead's call of 2026-09-26: build R-2 of the 2026-09-24 mechanics review (court and patron
 verbs for the player) so that Phase 2 meets its acceptance line. Espionage's default and the
@@ -372,3 +372,65 @@ an AI ruler answered their house (the message exists; no test put the player's h
 receiving end); the Encyclopedia ledger, which now leaves answered records out; the test lever
 `test_set_skill`, which sets a skill without its XP, so the first XP grant puts the old value back -
 the player's Charm read 503 again after one amends.
+
+---
+
+## 9. C2 as built and run live, 2026-09-26
+
+Built: `Models/CourtOffice` (class id **18**, properties 1-4), `ModState.Offices` (property **18**),
+`Portfolio` moved to `Models` and registered as enum **28** with its values frozen,
+`GrievanceType.DismissedFromOffice = 11`; `Intrigue/Offices.cs` (the seats, the one price
+`QuoteAppointment`, `Appoint`, `Dismiss`, the daily vacancies, the AI's plan and the offer to a
+vassal player); `Intrigue/CourtThreat.cs` (the danger set and the reserves, now shared by both AI
+court acts); `StatecraftModel.Actor` reading the seat first; the `office` term in the loyalty
+breakdown; the Centralist pull; the Court tab's offices strip and seat mode; `diplomacy.offices`,
+`test_appoint`, `test_dismiss`, `test_court_seat`. The save check counts 18 classes, 131 members.
+
+### Where the build differs from §2, and why
+
+- **Not under threat, the AI seats nobody.** §2 said it fills an empty seat from its own house by
+  skill. An empty seat already speaks through the ruling house's best, so that appointment would
+  cost 200 influence and 25,000 denars to change nothing; doing nothing is the same world run 08
+  measured.
+- **One court act a day per AI realm**, amends first, a seat when there is no amends to make
+  (`IntrigueUpkeep.AiCourtDaily`), before the internal-war check as D17 set for amends.
+- **The AI never takes a seat from a house in danger**, and prefers an empty seat or one held by the
+  crown's own house over one another house would lose; among those, the smallest loss of skill.
+- **The house is chosen from the roster, not from a chooser.** Column 3 is 310 wide and already
+  full; selecting a seat in column 1 turns column 3 from the house's grievances and loyalty sum
+  into that seat for that house. To make room, the realm's worst war moved from column 1 into the
+  header, and taking a seat back moved into column 3.
+- **Replacing a holder with another of the same house adds no favour** - found live: the first build
+  priced Koltit's second envoy as a second seat.
+
+### Checked live
+
+`di_grievance_test` (Khuzait, the player rules, Okhon's skills at 503-584, so both price factors are
+x0.50), every figure predicted first:
+
+| Check | Result |
+|---|---|
+| Koltit's envoy, predicted 100 influence, 12,500 denars, loyalty 41.4 -> 49.4, Charm 503 -> 218 | exact, on the Court tab |
+| Two clicks from the Court tab | appointed Sokhatai; the offices strip and `diplomacy.offices` show him |
+| The realm's envoy | Sokhatai speaks (Charm 218) - the resolver change |
+| Loyalty | Koltit 49.4 with "office +8.0" |
+| **The Centralist bloc** | **formed for the first time**: Koltit, pull 25 against Hawks 13.3, 11% of the court |
+| Taking the seat back, two clicks | Koltit 49.4 -> **35.4** (-8 favour, -6 grievance), `DismissedFromOffice` 4.0 in the ledger |
+| Save, a new process, load (`di_offices_test`) | "1 court offices"; Khada of Arkit still Spymaster, Arkit still +8, and now leading the Centralists |
+
+`di_pretender_test`, the AI, one day of upkeep: Western Empire, Sturgia and Vlandia gave seats,
+Battania and Aserai made amends - one act each, all before the internal-war check. Vlandia's
+Treasurer went from Philenora (Trade 125) to Elbet of dey Cortain (179), and dey Cortain from 17.9 to
+25.9, out of the defection band. Five more days brought one more seat (Aserai) and no churn. 0 errors.
+
+### Not checked
+
+- **The offer to a vassal player** (the inquiry): no save puts the player's house in danger in an AI
+  realm. The code path is the one side changes already use for their offer.
+- A holder who is captured (the seat stands, the ruling house's best speaks) and a holder who dies
+  (the seat falls empty with no grievance): both are in `Stands`/`Speaker`, neither was staged.
+- **Balance.** Five of seven AI realms on `di_pretender_test` were "under threat" by D6's test on
+  day one, one house below 25 being enough, and seated someone at once. Seats change who speaks for
+  a realm and so the medians every statecraft Level is measured against. How far that moves the AI
+  world is a run's question.
+- The selected seat's row is highlighted only faintly by the vanilla tuple brush.

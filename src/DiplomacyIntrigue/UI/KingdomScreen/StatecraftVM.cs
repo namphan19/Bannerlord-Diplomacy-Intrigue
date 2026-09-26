@@ -1,5 +1,6 @@
 using System;
 using DiplomacyIntrigue.Core;
+using DiplomacyIntrigue.Models;
 using DiplomacyIntrigue.Diplomacy;
 using DiplomacyIntrigue.Intrigue;
 using DiplomacyIntrigue.Statecraft;

@@ -83,6 +83,13 @@ namespace DiplomacyIntrigue.Core
         /// </summary>
         [SaveableProperty(17)] public List<CounterIntelligenceBudget> CounterIntelligenceBudgets { get; private set; }
 
+        /// <summary>
+        /// The seats at each realm's court and who holds them (design 09 C2). Added without a schema
+        /// bump: a save that predates it loads with the list empty, every seat empty, which is exactly
+        /// how the realms stood - their ruling house's best spoke for them.
+        /// </summary>
+        [SaveableProperty(18)] public List<CourtOffice> Offices { get; private set; }
+
         public ModState()
         {
             SchemaVersion = CurrentSchemaVersion;
@@ -101,6 +108,7 @@ namespace DiplomacyIntrigue.Core
             SpyNetworks = new List<SpyNetwork>();
             SpyMissions = new List<SpyMission>();
             CounterIntelligenceBudgets = new List<CounterIntelligenceBudget>();
+            Offices = new List<CourtOffice>();
             NextTreatyId = 1;
         }
 
@@ -125,6 +133,7 @@ namespace DiplomacyIntrigue.Core
             if (SpyNetworks == null) SpyNetworks = new List<SpyNetwork>();
             if (SpyMissions == null) SpyMissions = new List<SpyMission>();
             if (CounterIntelligenceBudgets == null) CounterIntelligenceBudgets = new List<CounterIntelligenceBudget>();
+            if (Offices == null) Offices = new List<CourtOffice>();
             if (NextTreatyId < 1) NextTreatyId = 1;
 
             Migrate();
@@ -147,6 +156,7 @@ namespace DiplomacyIntrigue.Core
             SpyNetworks.RemoveAll(n => n == null || n.Owner == null || n.Target == null);
             SpyMissions.RemoveAll(m => m == null || m.Owner == null || m.Target == null);
             CounterIntelligenceBudgets.RemoveAll(b => b == null || b.Kingdom == null);
+            Offices.RemoveAll(o => o == null || o.Kingdom == null || o.Holder == null);
 
             Log.Info("State", "Loaded: " + Treaties.Count + " treaties, " + Wars.Count
                               + " war records, " + Weariness.Count + " weariness entries, "
@@ -158,7 +168,8 @@ namespace DiplomacyIntrigue.Core
                               + " internal wars, " + SpyNetworks.Count
                               + " spy networks, " + SpyMissions.Count
                               + " spy missions, " + CounterIntelligenceBudgets.Count
-                              + " counter-intelligence budgets, schema v" + SchemaVersion + ".");
+                              + " counter-intelligence budgets, " + Offices.Count
+                              + " court offices, schema v" + SchemaVersion + ".");
         }
 
         private void Migrate()

@@ -458,6 +458,8 @@ Each grant writes `[EVENT] skill_xp hero= skill= xp= act=`, so a run can total i
 
 ## 8. Offices (S4, optional)
 
+*Built as design/09 C2 on 2026-09-26, the same concept of a court seat - see design/09 §2 and §9. The text below is the proposal as written.*
+
 The automatic "house's best" rule gives companions a political job with no UI. Offices would
 make it a choice, and would also answer the gap raised on 2026-09-25, that a king has few verbs
 to manage his court.

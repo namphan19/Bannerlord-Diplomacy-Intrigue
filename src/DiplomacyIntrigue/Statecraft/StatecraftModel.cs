@@ -1,26 +1,12 @@
 using System;
 using System.Collections.Generic;
 using DiplomacyIntrigue.Core;
+using DiplomacyIntrigue.Models;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 
 namespace DiplomacyIntrigue.Statecraft
 {
-    /// <summary>
-    /// The six political jobs of a realm (design 08 §4.1). Leadership belongs to the ruler; the
-    /// other five are filled by the house's best hero in that skill, family or companion.
-    /// Never saved: an enum the definer does not know, read only by live code.
-    /// </summary>
-    public enum Portfolio
-    {
-        Ruler,
-        Envoy,
-        Steward,
-        Treasurer,
-        Spymaster,
-        Watch
-    }
-
     /// <summary>
     /// Who acts for a realm or a house, and how that hero's skill becomes a number. Every formula
     /// that reads a skill comes through here (design 08 §4), so there is one answer to "whose Charm
@@ -128,7 +114,11 @@ namespace DiplomacyIntrigue.Statecraft
         public static Hero Actor(Kingdom kingdom, Portfolio portfolio)
         {
             if (kingdom == null) return null;
-            return portfolio == Portfolio.Ruler ? kingdom.Leader : BestOf(kingdom.RulingClan, SkillOf(portfolio));
+            if (portfolio == Portfolio.Ruler) return kingdom.Leader;
+
+            // Design 09 C2: an appointed holder speaks for the seat; an empty seat, or one whose
+            // holder cannot act today, falls back to the ruling house's best - the rule before C2.
+            return Intrigue.Offices.Speaker(kingdom, portfolio) ?? BestOf(kingdom.RulingClan, SkillOf(portfolio));
         }
 
         /// <summary>Who holds a portfolio for a house bargaining for itself: its head for Leadership, its best otherwise.</summary>

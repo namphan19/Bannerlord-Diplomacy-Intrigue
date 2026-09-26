@@ -111,5 +111,11 @@ namespace DiplomacyIntrigue.Statecraft
         /// answered. A weight-8 wrong gives 2,000, a non-aggression pact's worth. UN-TUNED.
         /// </summary>
         public const float XpAmendsPerPoint = 250f;
+
+        /// <summary>
+        /// Design 09 C2: an appointment, to the skills that priced it - the ruler's Leadership and the
+        /// treasurer's Trade, each. A non-aggression pact's worth. UN-TUNED.
+        /// </summary>
+        public const float XpAppointment = 2000f;
     }
 }

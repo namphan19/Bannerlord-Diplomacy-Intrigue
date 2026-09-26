@@ -121,6 +121,11 @@ namespace DiplomacyIntrigue.Models
         /// on loyalty exactly as a real slight would. Value 10, added the way 9 was.
         /// </summary>
         ForgedLetters = 10,
+        /// <summary>
+        /// The crown took a court seat back from one of the house's own (design 09 C2). Value 11,
+        /// added the way 9 and 10 were.
+        /// </summary>
+        DismissedFromOffice = 11,
     }
 
     /// <summary>
@@ -170,5 +175,24 @@ namespace DiplomacyIntrigue.Models
         Failure = 2,
         /// <summary>Failed, and the agent was traced back to us - a diplomatic incident.</summary>
         Exposed = 3,
+    }
+
+    /// <summary>
+    /// The six political jobs of a realm (design 08 §4.1). Leadership belongs to the ruler; the
+    /// other five are filled by an appointed holder (design 09 C2, <c>CourtOffice</c>) or, while a
+    /// seat is empty, by the ruling house's best hero in that skill.
+    ///
+    /// Saved since design 09 C2 (a court seat is one of these), registered at definer enum id 28.
+    /// The values are frozen from then on: never renumber them. Moved here from Statecraft then,
+    /// since a saved type has to live in this layer.
+    /// </summary>
+    public enum Portfolio
+    {
+        Ruler = 0,
+        Envoy = 1,
+        Steward = 2,
+        Treasurer = 3,
+        Spymaster = 4,
+        Watch = 5
     }
 }

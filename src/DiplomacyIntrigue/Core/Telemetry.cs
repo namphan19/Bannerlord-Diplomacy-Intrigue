@@ -426,12 +426,12 @@ namespace DiplomacyIntrigue.Core
             Pair(line, "trustOut", others == 0 ? 0f : trustOut / others);
             Pair(line, "lastMove", AiDiplomacy.LastMove(k));
             // Design 08 §12 point 3: each portfolio's actor skill, so a run can track AI drift.
-            Pair(line, "rulerLeadership", SkillOfActor(k, Statecraft.Portfolio.Ruler));
-            Pair(line, "envoyCharm", SkillOfActor(k, Statecraft.Portfolio.Envoy));
-            Pair(line, "stewardSteward", SkillOfActor(k, Statecraft.Portfolio.Steward));
-            Pair(line, "treasurerTrade", SkillOfActor(k, Statecraft.Portfolio.Treasurer));
-            Pair(line, "spymasterRoguery", SkillOfActor(k, Statecraft.Portfolio.Spymaster));
-            Pair(line, "watchScouting", SkillOfActor(k, Statecraft.Portfolio.Watch));
+            Pair(line, "rulerLeadership", SkillOfActor(k, Models.Portfolio.Ruler));
+            Pair(line, "envoyCharm", SkillOfActor(k, Models.Portfolio.Envoy));
+            Pair(line, "stewardSteward", SkillOfActor(k, Models.Portfolio.Steward));
+            Pair(line, "treasurerTrade", SkillOfActor(k, Models.Portfolio.Treasurer));
+            Pair(line, "spymasterRoguery", SkillOfActor(k, Models.Portfolio.Spymaster));
+            Pair(line, "watchScouting", SkillOfActor(k, Models.Portfolio.Watch));
             return line.ToString();
         }
 
@@ -601,7 +601,7 @@ namespace DiplomacyIntrigue.Core
         }
 
         /// <summary>The skill of whoever holds a realm's portfolio, raw (the Level needs the median beside it).</summary>
-        private static int SkillOfActor(Kingdom kingdom, Statecraft.Portfolio portfolio)
+        private static int SkillOfActor(Kingdom kingdom, Models.Portfolio portfolio)
         {
             var actor = Statecraft.StatecraftModel.Actor(kingdom, portfolio);
             return actor == null ? 0 : actor.GetSkillValue(Statecraft.StatecraftModel.SkillOf(portfolio));

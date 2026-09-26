@@ -118,6 +118,9 @@ namespace DiplomacyIntrigue.Intrigue
             if (Bribes.IsBought(state, clan))
                 result.ForeignGold = -EspionageConstants.BribeLoyaltyLoss;
 
+            // Design 09 C2: a house with a seat at court is in the crown's favour.
+            result.Office = Offices.Patronage(state, clan);
+
             return result;
         }
     }
@@ -148,7 +151,10 @@ namespace DiplomacyIntrigue.Intrigue
         /// </summary>
         public float ForeignGold;
 
-        public float Raw => Base + Relation + Grievances + Fiefs + WarExhaustion + Legitimacy + Presence + ForeignGold;
+        /// <summary>Royal favour from a court seat (design 09 C2): +8, +4 for a second. Shown only when not zero.</summary>
+        public float Office;
+
+        public float Raw => Base + Relation + Grievances + Fiefs + WarExhaustion + Legitimacy + Presence + ForeignGold + Office;
 
         /// <summary>Clamped to 0-100. Bands read this.</summary>
         public float Total
@@ -168,6 +174,7 @@ namespace DiplomacyIntrigue.Intrigue
                + ", war " + WarExhaustion.ToString("+0.0;-0.0;0.0")
                + ", legitimacy " + Legitimacy.ToString("+0.0;-0.0;0.0")
                + (Presence != 0f ? ", presence " + Presence.ToString("+0.0;-0.0;0.0") : "")
-               + (ForeignGold != 0f ? ", foreign gold " + ForeignGold.ToString("+0.0;-0.0;0.0") : "") + ")";
+               + (ForeignGold != 0f ? ", foreign gold " + ForeignGold.ToString("+0.0;-0.0;0.0") : "")
+               + (Office != 0f ? ", office " + Office.ToString("+0.0;-0.0;0.0") : "") + ")";
     }
 }

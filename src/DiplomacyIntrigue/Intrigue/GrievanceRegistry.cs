@@ -113,6 +113,7 @@ namespace DiplomacyIntrigue.Intrigue
                 // the court is placed to know the crown's hand from a forgery - the forger's or a
                 // third realm's alike.
                 case GrievanceType.ForgedLetters: return "Letters in the crown's hand - forged";
+                case GrievanceType.DismissedFromOffice: return "A seat at court taken back";
                 default: return "An old slight";
             }
         }

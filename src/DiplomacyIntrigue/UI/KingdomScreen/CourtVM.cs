@@ -273,6 +273,251 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
         [DataSourceProperty] public bool NoGrievances => _grievances.Count == 0;
 
+        // ----- The offices (design 09 C2, the court canvas's "The offices" board) -------------
+        //
+        // Column 1 lists the five seats; selecting one turns the lower half of column 3 from the
+        // selected house's grievances into giving that seat to the selected house. The approved
+        // mockup had a separate chooser; column 3 is 310 wide and already full, so the house is
+        // chosen from the roster instead, the way every other act on a house is.
+
+        private MBBindingList<DiCourtSeatVM> _seats = new MBBindingList<DiCourtSeatVM>();
+        private Portfolio? _selectedSeat;
+        private bool _mayAct;
+        private bool _dismissArmed;
+        private bool _appointArmed;
+        private Offices.AppointQuote _appointQuote;
+        private bool _canDismiss;
+        private string _dismissText = string.Empty;
+        private string _dismissNote = string.Empty;
+        private string _seatHeader = string.Empty;
+        private bool _hasAppoint;
+        private bool _appointEnabled;
+        private string _appointOutcome = string.Empty;
+        private string _appointText = string.Empty;
+        private string _appointNote = string.Empty;
+        private MBBindingList<DiCourtTermVM> _appointLines = new MBBindingList<DiCourtTermVM>();
+
+        private void Set<T>(ref T field, T value, string name) where T : class
+        {
+            if (Equals(field, value)) return;
+            field = value;
+            OnPropertyChangedWithValue(value, name);
+        }
+
+        private void Set(ref bool field, bool value, string name)
+        {
+            if (field == value) return;
+            field = value;
+            OnPropertyChangedWithValue(value, name);
+        }
+
+        [DataSourceProperty] public MBBindingList<DiCourtSeatVM> Seats { get => _seats; set => Set(ref _seats, value, nameof(Seats)); }
+        [DataSourceProperty] public bool SeatMode => _selectedSeat.HasValue;
+        [DataSourceProperty] public bool GrievanceMode => !_selectedSeat.HasValue;
+        [DataSourceProperty] public bool CanDismiss { get => _canDismiss; set => Set(ref _canDismiss, value, nameof(CanDismiss)); }
+        [DataSourceProperty] public string DismissText { get => _dismissText; set => Set(ref _dismissText, value, nameof(DismissText)); }
+        [DataSourceProperty] public string DismissNote { get => _dismissNote; set => Set(ref _dismissNote, value, nameof(DismissNote)); }
+        [DataSourceProperty] public string SeatHeader { get => _seatHeader; set => Set(ref _seatHeader, value, nameof(SeatHeader)); }
+        [DataSourceProperty] public bool HasAppoint { get => _hasAppoint; set => Set(ref _hasAppoint, value, nameof(HasAppoint)); }
+        [DataSourceProperty] public bool AppointEnabled { get => _appointEnabled; set => Set(ref _appointEnabled, value, nameof(AppointEnabled)); }
+        [DataSourceProperty] public string AppointOutcome { get => _appointOutcome; set => Set(ref _appointOutcome, value, nameof(AppointOutcome)); }
+        [DataSourceProperty] public string AppointText { get => _appointText; set => Set(ref _appointText, value, nameof(AppointText)); }
+        [DataSourceProperty] public string AppointNote { get => _appointNote; set => Set(ref _appointNote, value, nameof(AppointNote)); }
+        [DataSourceProperty] public MBBindingList<DiCourtTermVM> AppointLines { get => _appointLines; set => Set(ref _appointLines, value, nameof(AppointLines)); }
+
+        /// <summary>A seat row was clicked: select it, or clicked again, go back to the grievances.</summary>
+        internal void SelectSeat(DiCourtSeatVM row)
+        {
+            try
+            {
+                _selectedSeat = _selectedSeat == row.Seat ? (Portfolio?)null : row.Seat;
+                _dismissArmed = false;
+                _appointArmed = false;
+                for (var i = 0; i < _seats.Count; i++) _seats[i].IsSelected = _seats[i].Seat == _selectedSeat;
+                OnPropertyChangedWithValue(SeatMode, nameof(SeatMode));
+                OnPropertyChangedWithValue(GrievanceMode, nameof(GrievanceMode));
+                ComposeDismiss();
+                ComposeAppoint();
+            }
+            catch (Exception ex)
+            {
+                Log.Error("UI", "Selecting a court seat failed.", ex);
+            }
+        }
+
+        /// <summary>Selects a seat by name, as a row click would. Test hook for <c>diplomacy.test_court_seat</c>.</summary>
+        internal string SelectSeatByName(string name)
+        {
+            for (var i = 0; i < _seats.Count; i++)
+            {
+                if (!string.Equals(_seats[i].Seat.ToString(), name, StringComparison.OrdinalIgnoreCase)) continue;
+                SelectSeat(_seats[i]);
+                return SeatMode ? "Selected the " + _seats[i].Seat + "'s seat. " + (HasAppoint ? AppointText : AppointNote)
+                                : "Back to the grievances.";
+            }
+            return "No seat named \"" + name + "\".";
+        }
+
+        /// <summary>Two clicks: the first names what taking the seat back costs, the second does it.</summary>
+        public void ExecuteDismiss()
+        {
+            try
+            {
+                if (!_canDismiss || !_selectedSeat.HasValue) return;
+                if (!_dismissArmed)
+                {
+                    _dismissArmed = true;
+                    ComposeDismiss();
+                    return;
+                }
+                var kingdom = Clan.PlayerClan?.Kingdom;
+                if (!Offices.Dismiss(CoreBehavior.State, kingdom, _selectedSeat.Value, out var failed))
+                    Log.Notify("The seat could not be taken back: " + failed, Colors.Red);
+                _dismissArmed = false;
+                Rebuild();
+            }
+            catch (Exception ex)
+            {
+                Log.Error("UI", "Taking a court seat back failed.", ex);
+            }
+        }
+
+        /// <summary>Two clicks, as amends: the first names the price, the second pays it.</summary>
+        public void ExecuteAppoint()
+        {
+            try
+            {
+                var q = _appointQuote;
+                if (q == null || !q.Eligible || !q.Affordable) return;
+                if (!_appointArmed)
+                {
+                    _appointArmed = true;
+                    ComposeAppoint();
+                    return;
+                }
+                if (!Offices.Appoint(CoreBehavior.State, q.Kingdom, q.Seat, q.Candidate, out var failed))
+                    Log.Notify("The seat could not be given: " + failed, Colors.Red);
+                _appointArmed = false;
+                Rebuild();
+            }
+            catch (Exception ex)
+            {
+                Log.Error("UI", "Giving a court seat failed.", ex);
+            }
+        }
+
+        /// <summary>The five seats, with who holds each and who speaks for it.</summary>
+        private void ComposeSeats(ModState state, Kingdom kingdom)
+        {
+            var seats = new MBBindingList<DiCourtSeatVM>();
+            foreach (var seat in Offices.Seats)
+            {
+                var record = Offices.RecordOf(state, kingdom, seat);
+                var speaker = Statecraft.StatecraftModel.Actor(kingdom, seat);
+                var skill = Statecraft.StatecraftModel.SkillOf(seat);
+                var holder = record != null && Offices.Stands(record)
+                    ? Statecraft.StatecraftModel.NameOf(record.Holder) + (record.Holder.Clan == kingdom.RulingClan ? "" : ", " + record.Holder.Clan?.Name)
+                      + (record.Holder == speaker ? "" : " (cannot act)")
+                    : "Empty - " + Statecraft.StatecraftModel.NameOf(speaker);
+                var row = new DiCourtSeatVM(this, seat, Statecraft.StatecraftModel.TitleOf(seat), holder,
+                    Statecraft.StatecraftModel.SkillName(skill) + " " + (speaker == null ? 0 : speaker.GetSkillValue(skill)));
+                row.IsSelected = seat == _selectedSeat;
+                seats.Add(row);
+            }
+            Seats = seats;
+            ComposeDismiss();
+        }
+
+        private void ComposeDismiss()
+        {
+            var state = CoreBehavior.State;
+            var kingdom = Clan.PlayerClan?.Kingdom;
+            var record = _selectedSeat.HasValue ? Offices.RecordOf(state, kingdom, _selectedSeat.Value) : null;
+            if (!_mayAct || record == null)
+            {
+                CanDismiss = false;
+                DismissText = string.Empty;
+                DismissNote = string.Empty;
+                return;
+            }
+            var name = Statecraft.StatecraftModel.NameOf(record.Holder);
+            var title = Statecraft.StatecraftModel.TitleOf(record.Seat);
+            CanDismiss = true;
+            DismissText = _dismissArmed ? "Confirm: take the seat from " + name : "Take the " + title + "'s seat back";
+            var house = record.Holder?.Clan;
+            DismissNote = house != null && house != kingdom.RulingClan
+                ? "Free, but " + house.Name + " takes a grievance (" + IntrigueConstants.GrievanceDismissedFromOffice.ToString("0")
+                  + "): loyalty -" + (IntrigueConstants.GrievanceDismissedFromOffice * IntrigueConstants.LoyaltyGrievanceFactor).ToString("0.0")
+                  + " and the favour gone."
+                : "Free; your own house takes no grievance.";
+        }
+
+        /// <summary>Giving the selected seat to the selected house: the price, term by term, and the button.</summary>
+        private void ComposeAppoint()
+        {
+            var state = CoreBehavior.State;
+            var house = _selected?.Clan;
+            var kingdom = Clan.PlayerClan?.Kingdom;
+            _appointQuote = null;
+            var lines = new MBBindingList<DiCourtTermVM>();
+            HasAppoint = false;
+            AppointEnabled = false;
+            AppointOutcome = string.Empty;
+            AppointText = string.Empty;
+
+            if (!_selectedSeat.HasValue || house == null || kingdom == null)
+            {
+                SeatHeader = string.Empty;
+                AppointNote = string.Empty;
+                AppointLines = lines;
+                return;
+            }
+
+            var seat = _selectedSeat.Value;
+            var skill = Statecraft.StatecraftModel.SkillOf(seat);
+            SeatHeader = "THE " + Statecraft.StatecraftModel.TitleOf(seat).ToUpperInvariant() + "'S SEAT ("
+                         + Statecraft.StatecraftModel.SkillName(skill).ToUpperInvariant() + ") FOR THIS HOUSE";
+
+            if (!_mayAct)
+            {
+                AppointNote = "Only the ruler gives seats. Click the seat again to see the grievances.";
+                AppointLines = lines;
+                return;
+            }
+
+            var candidate = Offices.CandidateFrom(state, house, seat);
+            if (candidate == null)
+            {
+                AppointNote = "Nobody of this house can take the seat today. Click the seat again to see the grievances.";
+                AppointLines = lines;
+                return;
+            }
+
+            var q = Offices.QuoteAppointment(state, kingdom, seat, candidate);
+            if (!q.Eligible)
+            {
+                AppointNote = "Cannot be given: " + q.Reason + ".";
+                AppointLines = lines;
+                return;
+            }
+
+            _appointQuote = q;
+            foreach (var term in Offices.PriceTerms(q)) lines.Add(new DiCourtTermVM(term.Key, term.Value));
+            AppointLines = lines;
+            HasAppoint = true;
+            AppointEnabled = q.Affordable;
+            AppointOutcome = q.FavouredHouse == null
+                ? "Your own house: a skilled voice, no favour to give"
+                : "In your favour: loyalty " + q.LoyaltyBefore.ToString("0.0") + " -> " + q.LoyaltyAfter.ToString("0.0")
+                  + ", " + LoyaltyModel.Band(q.LoyaltyAfter);
+            var price = q.Influence.ToString("N0") + " influence, " + q.Gold.ToString("N0") + " denars";
+            var who = Statecraft.StatecraftModel.NameOf(candidate);
+            AppointText = _appointArmed ? "Confirm: pay " + price : "Appoint " + who + " - " + price;
+            AppointNote = !q.Affordable ? "Cannot pay: " + q.Short + "."
+                : _appointArmed ? "Click again to pay. Anything else leaves it unpaid."
+                : "The denars are " + who + "'s stipend; the influence is spent.";
+        }
+
         // ----- commands --------------------------------------------------------
 
         /// <summary>The tab button: take the panel area over and fill it.</summary>
@@ -298,6 +543,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             {
                 for (var i = 0; i < _clans.Count; i++) _clans[i].IsSelected = _clans[i] == row;
                 Selected = row;
+                _appointArmed = false;
                 ComposeSelection();
             }
             catch (Exception ex)
@@ -347,6 +593,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 LegitimacyAmount = 0;
                 ClanCountText = string.Empty;
                 AmendsAllText = string.Empty;
+                _mayAct = false;
+                _selectedSeat = null;
+                Seats = new MBBindingList<DiCourtSeatVM>();
                 WorstWarText = string.Empty;
                 WorstWarNote = string.Empty;
                 SuccessionTitle = string.Empty;
@@ -396,7 +645,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             if (Statecraft.StatecraftModel.Enabled)
             {
                 // Design 08 S-6: what the steward makes of a year of peace.
-                var steward = Statecraft.StatecraftModel.Actor(kingdom, Statecraft.Portfolio.Steward);
+                var steward = Statecraft.StatecraftModel.Actor(kingdom, Portfolio.Steward);
                 var dividend = "A year of peace restores " + LegitimacyRegistry.PeaceDividendOf(kingdom).ToString("0.0")
                                + (steward == null ? "." : ", at the pace of " + Statecraft.StatecraftModel.Who(steward, TaleWorlds.Core.DefaultSkills.Steward) + ".");
                 LegitimacyNote = string.IsNullOrEmpty(LegitimacyNote) ? dividend : LegitimacyNote + " " + dividend;
@@ -441,6 +690,10 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             // Design 09 C1: what answering the whole court would cost - the line that says the
             // verbs are for choosing, not for keeping everybody content. The ruler's view only.
             AmendsAllText = playerRules && war == null ? (Amends.AllOpenCost(state, kingdom) ?? string.Empty) : string.Empty;
+
+            // Design 09 C2: the seats. Only the ruler's view acts on them, and not in a civil war.
+            _mayAct = playerRules && war == null;
+            ComposeSeats(state, kingdom);
 
             // The succession watch.
             var claims = SuccessionModel.PretendersTo(state, kingdom);
@@ -532,6 +785,8 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 }
                 if (e.ForeignGold != 0f)
                     terms.Add(new DiCourtTermVM("Foreign gold - nobody knows whose", e.ForeignGold));
+                if (e.Office != 0f)
+                    terms.Add(new DiCourtTermVM("In the crown's favour: a seat at court", e.Office));
 
                 // Design 09 C1: only the ruler makes amends, so only the ruler's view carries the
                 // price and the button. A vassal reads the same ledger, and no civil war is running.
@@ -546,6 +801,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
             Terms = terms;
             Grievances = grievances;
+            ComposeAppoint();
         }
 
         private static string LastLegitimacyReason(ModState state, Kingdom kingdom)
@@ -711,6 +967,47 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             catch (Exception ex)
             {
                 Log.Error("UI", "Selecting a court clan failed.", ex);
+            }
+        }
+    }
+
+    /// <summary>One seat at court in column 1 (design 09 C2). A button, as the clan rows are.</summary>
+    internal sealed class DiCourtSeatVM : ViewModel
+    {
+        private readonly DiCourtVM _owner;
+        private bool _isSelected;
+
+        public DiCourtSeatVM(DiCourtVM owner, Portfolio seat, string title, string holderText, string skillText)
+        {
+            _owner = owner;
+            Seat = seat;
+            Title = title;
+            HolderText = holderText;
+            SkillText = skillText;
+        }
+
+        internal Portfolio Seat { get; }
+
+        [DataSourceProperty] public string Title { get; }
+        [DataSourceProperty] public string HolderText { get; }
+        [DataSourceProperty] public string SkillText { get; }
+
+        [DataSourceProperty]
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set { if (value == _isSelected) return; _isSelected = value; OnPropertyChangedWithValue(value, nameof(IsSelected)); }
+        }
+
+        public void OnSelect()
+        {
+            try
+            {
+                _owner?.SelectSeat(this);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("UI", "Selecting a court seat failed.", ex);
             }
         }
     }

@@ -36,6 +36,7 @@ namespace DiplomacyIntrigue.Core
             AddClassDefinition(typeof(SpyNetwork), 15);
             AddClassDefinition(typeof(SpyMission), 16);
             AddClassDefinition(typeof(CounterIntelligenceBudget), 17);
+            AddClassDefinition(typeof(CourtOffice), 18);
         }
 
         protected override void DefineEnumTypes()
@@ -48,6 +49,7 @@ namespace DiplomacyIntrigue.Core
             AddEnumDefinition(typeof(MissionOutcome), 25);
             AddEnumDefinition(typeof(GrievanceType), 26);
             AddEnumDefinition(typeof(InternalWarOutcome), 27);
+            AddEnumDefinition(typeof(Portfolio), 28);
         }
 
         protected override void DefineContainerDefinitions()
@@ -68,6 +70,7 @@ namespace DiplomacyIntrigue.Core
             ConstructContainerDefinition(typeof(List<SpyNetwork>));
             ConstructContainerDefinition(typeof(List<SpyMission>));
             ConstructContainerDefinition(typeof(List<CounterIntelligenceBudget>));
+            ConstructContainerDefinition(typeof(List<CourtOffice>));
         }
     }
 }
