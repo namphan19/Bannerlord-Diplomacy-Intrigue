@@ -76,8 +76,10 @@ and tribute happen, and the unmerged 2026-09-24 mechanics review.
 
 **Phase 2's court verbs (R-2), decided by the lead on 2026-09-26.** The spec is
 [design/09](design/09-court-verbs.md): make amends, offices and patronage, tribute per vassal.
-It waits on the lead's D1-D15; then a mockup, then C1. Espionage's default and civil war's
-rarity stay as they are, the same call.
+D1-D15 were decided the same day, with a standing rule from the lead: a political act costs
+influence and gold together, each scaled ×0.5-×2 by the skill doing it, and priced high
+(CLAUDE.md §3). Next: the mockup, then C1. Espionage's default and civil war's rarity stay as
+they are, the same call.
 
 Work that needs no decision:
 

@@ -1,6 +1,6 @@
 # Design 09 — Court verbs: the ruler's hands
 
-Status: **spec for review**, 2026-09-26. Phase 2. Nothing is built.
+Status: **decided**, 2026-09-26 (§7). Phase 2. Nothing is built yet; the mockup comes first.
 
 The lead's call of 2026-09-26: build R-2 of the 2026-09-24 mechanics review (court and patron
 verbs for the player) so that Phase 2 meets its acceptance line. Espionage's default and the
@@ -40,10 +40,29 @@ legitimacy is below 35, and at least two sworn houses sit below loyalty 25. A ho
 three. Grievances reach the first through the loyalty-70 exclusion and the third directly.
 
 **What the ruler has to spend.** Run 08, 1,904 weekly samples of AI rulers over 20 in-game
-years: influence p10 **624**, median **2,374**, p90 **5,330**; gold median **551,000**. Gold
-does not bite at these sizes (review finding F), so the court verbs are priced in **influence**,
-the currency a ruler also needs for votes, wars and armies. That is the trade-off that makes
-them decisions.
+years: influence p10 **624**, median **2,374**, p90 **5,330**; gold median **551,000**.
+
+**The pricing rule** — the lead's, 2026-09-26, for these verbs and for every political act
+built after them:
+
+1. **An act costs influence and gold, both.** Neither alone buys it. Influence is what a ruler
+   also needs for votes, wars and armies; gold, at a median of 551,000, only bites when the
+   price is sized to it (review finding F). Asking for both is what makes the act a decision.
+2. **Each part scales with the skill that does the work**, strongly: a factor of
+   `2^(−level)`, where `level` is the statecraft Level (skill against the realms' median, −1 to
+   +1 over 150 points, design 08 §4.2) or, where the act is a bargain with another party, the
+   Contest of the two sides' Levels. At the top of the scale a part costs **half**, at the
+   bottom **double**. The influence part follows the act's political skill (Charm to persuade,
+   Leadership to command, Roguery to act covertly); the gold part follows the Treasurer's Trade,
+   who handles the money. One function, `StatecraftTerms.PriceFactor`, so every act prices skill
+   the same way. With statecraft off the factor is 1.
+3. **The prices are high on purpose.** Sized so that answering one heavy wrong is a real outlay
+   for a median ruler and answering a whole court is out of reach: the verbs are for choosing
+   which houses matter, not for keeping everyone content.
+
+Acts built before this rule (the war-declaration cost, fabricating a claim, espionage's mission
+prices, a civil war's side-change price, counter-intelligence) do not follow it yet. The rule
+applies from here on; bringing them into line is the lead's call.
 
 ---
 
@@ -57,29 +76,38 @@ reads.
 **Effect:** the grievance's weight goes to 0. The house's loyalty rises at once by
 `weight × 1.5`, the same factor that took it away; one resolver, no second number.
 
-**Price, in influence:**
+**Price, influence and gold together** (§0's rule):
 
-    price = weight × AmendsPerPoint × Standing(house) × Memory × Persuasion
+    influence = weight × AmendsInfluencePerPoint × Standing × Memory × PriceFactor(Charm contest)
+    gold      = weight × AmendsGoldPerPoint      × Standing × Memory × PriceFactor(Trade contest)
 
-- `AmendsPerPoint` = **10**. A weight-8 wrong, the heaviest single grievance, costs 80 from an
-  ordinary house: a third of a p10 ruler's purse, a thirtieth of the median's. Clearing a whole
-  nine-house court after one maximal unjust war (72 points) costs ~720: a real choice for the
-  median ruler, out of reach for a poor one.
+- `AmendsInfluencePerPoint` = **40**, `AmendsGoldPerPoint` = **5,000**. A weight-8 wrong, the
+  heaviest single grievance, costs an ordinary house **320 influence and 40,000 gold** at median
+  skills: half the purse of a p10 ruler, a seventh of the median's influence, 7% of the
+  median's gold. Undoing a forged letter costs more than forging it (15,000 gold, design 03):
+  repair is dearer than harm. Clearing a whole nine-house court after one maximal unjust war
+  (72 points) would cost ~2,900 influence and 360,000 gold, more influence than the median
+  ruler holds: a ruler answers the houses that tip the balance, not all of them.
+- **Charm contest:** the crown's Envoy against the house's best Charm. A persuasive envoy
+  facing a plain house pays half; a clumsy one facing a silver-tongued house pays double.
+- **Trade contest:** the crown's Treasurer against the house's, the pairing the civil war's
+  side-change price already uses (design 08 S-10).
 - `Standing` = the house's influence against the court's average, clamped to 0.5–2.0. A great
   house is dearer to placate. It reads `SuccessionModel.InfluenceRatio`, the resolver the
   magnate test and the Encyclopedia's "house weight" band already share.
 - `Memory` = **×2** if this house has had amends from this crown within the last two years. A
   king who keeps apologising to the same house pays more for it.
-- `Persuasion` = the realm's Envoy (Charm) against the realms' median, ±15%, the shape of the
-  existing haggling term (design 08). Off with statecraft off.
 
 **A wrong repeated after amends weighs more.** When a grievance of the same type from the same
 house against the same crown is raised again within two years of being answered, it arrives at
 **×1.5**. The house forgave once, on terms.
 
 **Worked example** (`di_grievance_test`, STATUS 2.2): Harfit holds `UnjustWar` 7.8 against the
-Khuzait crown, −11.7 loyalty, total 30.5 (Disaffected). An average house: price 78 influence;
-Harfit's loyalty goes to 42.2 (Transactional).
+Khuzait crown, −11.7 loyalty, total 30.5 (Disaffected). An average house, both sides at the
+median: **312 influence and 39,000 gold**, and Harfit's loyalty goes to 42.2 (Transactional).
+With an envoy 150 Charm above Harfit's best, the influence part halves to 156; with a treasurer
+150 Trade below Harfit's, the gold part doubles to 78,000. The first version of this spec
+priced it at 78 influence and no gold; the lead judged that far too cheap.
 
 **What it cannot rescue, said now rather than found later.** Amends clear the grievance term
 and nothing else. After a contested succession, the relation term collapses (a new king starts
@@ -92,10 +120,12 @@ lever for it.
 threat (a Pretenders bloc has formed, or a sworn house is below 25) makes **one** amends: the
 grievance whose answer moves the most bloc power out of danger per point of influence, paid only
 from influence above a reserve of **twice** its current war-declaration cost, so it can still go
-to war. An AI ruler that answers a grievance held by the player's house tells the player.
+to war, and from gold above the AI's gold reserve (50,000, today `EspionageConstants.AiGoldReserve`;
+one number for "what an AI ruler keeps back", moved to a shared place when C1 is built). An AI
+ruler that answers a grievance held by the player's house tells the player.
 
-**Statecraft:** amends trains the ruler's Charm (XP per point of weight answered), on the same
-list as design 08's other political acts.
+**Statecraft:** amends trains the skills that priced them, on design 08's list of political
+acts: the Envoy's Charm and the Treasurer's Trade, XP per point of weight answered.
 
 **Save data:** two properties on `Grievance`, the next free there: **6** `AnsweredOn`
 (`CampaignTime`) and **7** `Answers` (`int`). An answered grievance stays in the ledger at
@@ -120,8 +150,11 @@ two answers to "who speaks for the realm", which CLAUDE.md §3 forbids.
   more after that), a new `LoyaltyBreakdown` term, "office". It also pulls toward the
   Centralists, which gives that bloc a source for the first time: STATUS 2.3 found it could
   never form.
-- **Cost:** an appointment costs **50** influence, below the 72 an AI pays to declare a war on
-  a Conquest claim (STATUS, 2.8 A-1): a real price, not a war's.
+- **Cost**, by §0's rule: an appointment costs **200 influence and 25,000 gold** at median
+  skills, the influence part scaled by the ruler's Leadership (the authority to raise a house),
+  the gold part by the Treasurer's Trade. No contest: an honour offered is not a bargain. It is
+  priced near what amends would charge for the same loyalty (+8 is about five points of weight),
+  because a seat is also a skilled voice for the realm and lasts until it is taken back.
   Dismissing a holder is free in influence and costs a grievance: their house takes
   `DismissedFromOffice`, weight **4**, a new `GrievanceType` value **11**. Design 08 §8 also had
   houses *passed over* take a grievance; that is left out of the first version, because it
@@ -210,22 +243,27 @@ and C2 together, before C1's UI is built.
 
 ---
 
-## 7. Decisions for the lead
+## 7. Decisions — taken by the lead, 2026-09-26
 
-| # | Question | Options | Recommendation |
-|---|---|---|---|
-| D1 | Scope now | C1 only / C1 + C2 / **C1 + C2 + C3** | **All three, in that order.** They are all R-2; C1 alone may not rescue a court after a contested succession (§1) |
-| D2 | What amends cost | **Influence** / gold / gold for land wrongs, influence for honour | **Influence.** Gold does not bite at a median of 551k (§0) |
-| D3 | The price | **10 per point × standing 0.5–2** | as written; un-tuned |
-| D4 | Memory | **×2 price for repeat amends and ×1.5 for a repeated wrong, within two years** / none | **Memory.** Without it a rich crown keeps any court loyal forever |
-| D5 | Statecraft | **Envoy's Charm ±15% on the price, amends train Charm** / neither | **Both**, the design 08 pattern |
-| D6 | How eager the AI is | **Only under threat, one a week, above a reserve** / never unprompted / freely | **Under threat.** Same rules as the player (CLAUDE.md §3); the reserve keeps it able to wage war |
-| D7 | Seats | **Five, one per portfolio** / four (design 08 §8 merged Spymaster and Watch) | **Five.** One seat per resolver input, no special case |
-| D8 | Holders from other houses | **Yes** / ruling house only | **Yes.** It is the whole point of patronage |
-| D9 | Patronage strength | **+8, +4 for a second seat** | as written; un-tuned |
-| D10 | Grievances from offices | **Dismissal only (weight 4)** / also houses passed over (design 08 §8) | **Dismissal only** at first |
-| D11 | Appointment cost | **50 influence** / free | **50** |
-| D12 | The AI's appointments | **Own house by skill; patronage under threat** | as written: neutral to run 08 when no court is in danger |
-| D13 | Seat offers to the player as a vassal | **Yes, as an inquiry** / no | **Yes** |
-| D14 | Tribute levels | **None / 250 / 500 / 1,000, AI by Hold** | as written |
-| D15 | UI | **Mockup first, then build** | as the Court and Intelligence tabs were |
+The lead agreed to the recommendations, with two changes: every payment scales with the skills
+involved, for these verbs and for every mechanism after them, and the prices go much higher and
+take influence and gold together (§0's pricing rule). The first version priced Harfit's amends at
+78 influence and no gold; the lead judged it far too cheap.
+
+| # | Question | Decision |
+|---|---|---|
+| D1 | Scope | **C1, C2, C3, in that order** |
+| D2 | What amends cost | **Influence and gold, both** — changed by the lead from "influence only" |
+| D3 | The price | **40 influence and 5,000 gold per point, × standing 0.5–2** — raised by the lead from 10 influence per point |
+| D4 | Memory | **×2 price for repeat amends and ×1.5 for a repeated wrong, within two years** |
+| D5 | Statecraft | **Each part scaled by its skill, ×0.5 to ×2 (`PriceFactor`): influence by the Charm contest, gold by the Trade contest; amends train both** — strengthened by the lead from ±15% on the influence alone |
+| D6 | How eager the AI is | **Only under threat, one a week, above an influence and a gold reserve** |
+| D7 | Seats | **Five, one per portfolio** |
+| D8 | Holders from other houses | **Yes** |
+| D9 | Patronage strength | **+8, +4 for a second seat** (un-tuned) |
+| D10 | Grievances from offices | **Dismissal only (weight 4)** |
+| D11 | Appointment cost | **200 influence and 25,000 gold, by Leadership and Trade** — changed with D2 and D5 from 50 influence |
+| D12 | The AI's appointments | **Own house by skill; patronage under threat** |
+| D13 | Seat offers to the player as a vassal | **Yes, as an inquiry** |
+| D14 | Tribute levels | **None / 250 / 500 / 1,000, AI by Hold** |
+| D15 | UI | **Mockup first, then build** |

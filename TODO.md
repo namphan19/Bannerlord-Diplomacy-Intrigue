@@ -38,9 +38,10 @@ checked Phase 2 against its acceptance line.
 
 - [x] **Decided 2026-09-26: build R-2** to meet the line. Espionage's default (item 3) and civil
       war's rarity (item 4) stay as they are, the same call.
-- [ ] Answer D1-D15 of [design/09](docs/design/09-court-verbs.md), the spec for R-2: make
-      amends (C1), offices and patronage (C2, absorbing design/08 §8), tribute per vassal (C3).
-      Then the mockup, then C1.
+- [x] D1-D15 of [design/09](docs/design/09-court-verbs.md) decided 2026-09-26, with the lead's
+      pricing rule: influence and gold together, each scaled ×0.5-×2 by its skill, priced high
+      (design/09 §0, CLAUDE.md §3).
+- [ ] The mockup of the Court tab's amends and offices, for the lead. Then C1, C2, C3.
 
 ### 2. The court does not reach the AI's foreign policy
 

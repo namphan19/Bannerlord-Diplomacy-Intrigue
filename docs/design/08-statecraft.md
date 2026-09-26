@@ -218,7 +218,7 @@ Found while writing this plan. Each item says how it was established.
    submission threat cap, the war-value strength cap). An additive term is at most about a
    third of the threshold it feeds. A multiplier on an outcome stays within ±15%. One on a
    rate, a chance or a ranking may reach ±50%, because it changes how fast or who, not how
-   much.
+   much. **Prices are the exception** (rule 10): a skill may halve or double what an act costs.
 6. **Shown where the AI's number is shown.** Every term is a named line in a breakdown that
    already exists, carrying the hero's name, the skill and its value: *"Our envoy, <hero>
    (Charm 145; the realms' median 225): −5.3"*. The formulas take no "is this the player"
@@ -228,6 +228,13 @@ Found while writing this plan. Each item says how it was established.
 8. **Derived, never saved.** Every term reads live hero data. No save id is spent before
    offices (S4, optional).
 9. **Repair before adding.** Fix what the takeover broke (§2) before building anything new.
+10. **What an act costs follows the skills that do it** — the lead's rule, 2026-09-26, for every
+    political act built from then on. An act costs influence and gold together; each part is
+    multiplied by `StatecraftTerms.PriceFactor`, `2^(−level)`, ×0.5 at the top of the scale and
+    ×2 at the bottom: the influence part by the act's political skill, the gold part by the
+    Treasurer's Trade, as a contest where the act is a bargain with another party. The prices
+    are set high. Full statement and first use: [design/09 §0](09-court-verbs.md). Acts built
+    before it (the S0-S2 terms above among them) are not retrofitted unless the lead says so.
 
 ---
 

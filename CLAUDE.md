@@ -375,6 +375,13 @@ and both times a kingdom honouring a treaty was punished as an aggressor.
 `CasusBelli.Resolve` is now the only resolver. When a value is derived in more than one
 place, that is the bug, not the symptom.
 
+**What a political act costs follows the skills that do it.** The lead's rule of 2026-09-26, for
+every mechanism built from then on: the act costs **influence and gold together**, each part
+scaled by the skill doing the work through the one function `StatecraftTerms.PriceFactor`
+(×0.5 to ×2), and the prices are set **high** - the lead judged a first draft at 78 influence
+for answering a grievance far too cheap. Design 09 §0 has it in full; design 08 rule 10 is where
+it meets the statecraft terms. Acts built before it are not retrofitted without the lead's say.
+
 ## 4. Style
 
 - Comments explain **why**, not what. Where a decision was made against an obvious
