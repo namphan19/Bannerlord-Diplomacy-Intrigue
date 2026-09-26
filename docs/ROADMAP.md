@@ -151,7 +151,10 @@ Deviation from this spec, deliberately: the design listed demand **tiers**
 ("45-70: one castle OR tribute and prisoners"). That became a **point budget** - each demand
 costs war-score points and the package must fit what the war earned. Same intent, no
 exclusive-or branches, and a new demand type is one constant instead of a rewritten table.
-The reference points still hold: 45 buys a castle, 90 buys two towns.
+Prices today: prisoners 5, castle 25, town 45, tribute 60, subjugation 70 (75 with the prisoners
+it carries), money 8 per 1,000 denars. The budget is the war score × the envoys' contest (design 08
+S-2), zero at a raw score of 20 or below; from 75 up the winner demands subjugation and nothing
+less (design/04 §13). War score itself is unbounded since 2026-09-20.
 
 **1.6 Call to arms** ✅ **implemented** — alliances, defensive pacts and vassalage pull
 signatories into wars. A defensive pact never answers a war of conquest. Refusing an
@@ -171,8 +174,8 @@ Code: `Diplomacy/CallToArms.cs`, `Behaviors/CallToArmsBehavior.cs`.
 >
 > Calling 1.6 implemented was fair. Leaving the impression that vassalage was *playable* was
 > not: a feature with no way to occur is not finished, and this one was the foundation the
-> whole hegemony design sits on. 1.9 added the routes - peace table at war score 90, voluntary
-> submission, poaching.
+> whole hegemony design sits on. 1.9 added the routes - peace table at war score 90 (75 since
+> design/04 §13), voluntary submission, poaching.
 
 Two things worth recording:
 
@@ -291,7 +294,7 @@ A cornered kingdom may also kneel to the kingdom attacking it. Thresholds as of 
 | Piece | Code |
 |---|---|
 | The system: who holds whom, Hold and its terms, defiance, revolt, collapse, poaching | `Diplomacy/Hegemony.cs` |
-| The top rung of the concession ladder at 90 | `Diplomacy/PeaceTable.cs`, `Models/PeaceTerms.cs` |
+| The top rung of the concession ladder at 75 (90 when first built) | `Diplomacy/PeaceTable.cs`, `Models/PeaceTerms.cs` |
 | Voluntary submission as a weekly AI move, and the player's prompt to accept or refuse | `Diplomacy/AiDiplomacy.cs` |
 | Hold-gated service, the cascade cap, excused-versus-defiant refusals | `Diplomacy/CallToArms.cs` |
 | Foreign policy finally enforced for treaties, withheld tribute, no chains of patrons | `Diplomacy/TreatyRegistry.cs` |

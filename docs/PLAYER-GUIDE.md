@@ -157,13 +157,26 @@ refused, because stopping a war has to stay possible however badly everyone has 
 Open the Diplomacy tab, select the kingdom, and press **Negotiate peace**. You will be told
 exactly what the war has earned you:
 
-- **War score below ~17** — nothing has been earned. White peace only.
-- **Around 45** — a castle, or tribute and prisoners.
+- **War score 20 or below** — nothing has been earned. White peace only.
+- **Around 30** — a castle and your prisoners back.
+- **Around 50** — a town and your prisoners back.
+- **Around 65** — a tributary pact.
 - **75 or more** — their submission as a vassal. If they already hold vassals of their own they
   cannot kneel, so you may instead make them release every one of them.
 
-Each demand costs points from that budget, and the package has to fit. You can always ask for
-less. You cannot ask for land without a territorial claim, however well the war has gone.
+Each demand costs points from that budget, and the package has to fit: prisoners 5, a castle
+25, a town 45, tribute 60, submission 70 (and it always brings the prisoners, so 75), money 8
+per 1,000 denars. You can always ask for less. You cannot ask for land without a territorial
+claim, however well the war has gone.
+
+The budget is the war score **adjusted by your envoy**. An envoy with better Charm than theirs
+stretches it by up to 15%, a worse one shrinks it as much, so submission can come within reach
+anywhere from a war score of about 65 to about 88. The floor of 20 is the raw score: no envoy
+talks a stalemate into a victory.
+
+What earns war score: a field battle is worth 1 to 8 by how lopsided the losses were; taking a
+town 12, a castle 6; raiding a village 1.5. A siege assault's own casualties earn nothing - only
+the capture does. An idle war slides back toward zero by 0.05 a day.
 
 Above 75 the AI stops accepting anything smaller: a victory that can take a kingdom's standing
 asks for it, rather than settling for tribute. Between about 65 and 75 tribute is still what a
@@ -204,7 +217,7 @@ hegemon stops being one.
 
 Three routes:
 
-1. **At the peace table**, at war score 75 — submission is the top rung of the ladder. You
+1. **At the peace table**, at war score 75 (after your envoy's adjustment) — submission is the top rung of the ladder. You
    have to be the stronger of the two: a war won on points does not make you able to hold them.
    War score has no ceiling, so a crushing win can exceed 100.
 2. **Voluntarily**, when a cornered kingdom decides a protector is better than the war it is
@@ -212,7 +225,7 @@ Three routes:
    actually take off its hands** — not an enemy you are bound by treaty not to fight, and not
    more than you could match. It also weighs how close you are, how worn down it is, and
    whether it trusts you, against its own pride and the insult of serving a foreign culture.
-   It kneels at 55.
+   It kneels at 50.
 3. **By poaching** a rival hegemon's neglected vassal — which means war with that rival. The
    price is yours, not the vassal's. The **Court them** button appears on a resentful vassal's
    row and says what the move would cost before anything is torn up.

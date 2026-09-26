@@ -64,9 +64,12 @@ that just fought a long war cannot immediately start another.
 
 ### 1.4 War score
 
-Separate from exhaustion, range **−100..100**, positive = aggressor winning. Exhaustion says
-*how tired*; war score says *who is winning*. Peace terms read war score; peace *willingness*
-reads exhaustion.
+Separate from exhaustion, positive = aggressor winning, and **unbounded**. It was clamped to
+−100..100 until 2026-09-20, which made peace-table vassalage arithmetically unreachable; the
+bound now lives on the demand side ([design 04 §12.4.1](04-hegemony.md), `WarRecord.AddWarScore`).
+Exhaustion says *how tired*; war score says *who is winning*. Peace terms read war score; peace
+*willingness* reads exhaustion. The score belongs to the war, not to a party: a battle fought by
+any lord of the kingdom counts for the kingdom.
 
 | Event | War score delta |
 |---|---|
@@ -78,6 +81,10 @@ reads exhaustion.
 
 The drift matters: a stalemate should trend to white peace rather than sit at a stale score
 from one battle two years ago.
+
+Only **field battles** score by casualties. A siege assault scores nothing for its losses and
++12 / +6 only if the fortification falls, so the assault is not counted twice
+(`WarExhaustion.ApplyBattleResult`). Casualties of every battle, sieges included, still feed exhaustion.
 
 ---
 
@@ -268,12 +275,24 @@ score** and gated by **casus belli**.
 > | Castle | 25 |
 > | Town | 45 |
 > | Tributary pact | 60 |
-> | **Submission as a vassal** | **90** |
+> | **Subjugation** | **70** (+5 for the prisoners it always carries = **75**) |
 >
-> Submission is the top rung and the one that changes what the loser *is* rather than what it
-> owns - it is also what makes the winner a hegemon. See
-> [design 04](04-hegemony.md) for everything downstream of it.
+> Subjugation is the top rung and the one that changes what the loser *is* rather than what it
+> owns. It has two faces at one price: a **free kingdom submits as a vassal** (which makes the
+> winner a hegemon), a **hegemon gives up its sphere** and keeps its throne. They were separate
+> rungs at 90 and 75 until the lead merged them on 2026-09-20
+> ([design 04 §13](04-hegemony.md#13-one-subjugation-rung-and-a-cliff-2026-09-20-after-run-07)).
+> Submission also requires the winner to be the stronger kingdom (`Hegemony.IsStrongEnoughToHold`)
+> and the loser to answer to no other patron. A vassalage cannot be combined with a tributary
+> pact (it carries its own tribute).
+>
+> **The budget is not the raw score.** The winner's budget is war score × the envoys' contest
+> (×0.85 to ×1.15, [design 08 S-2](08-statecraft.md)), and zero at or below a raw score of 20. So
+> the subjugation cliff at 75 is reached anywhere from a raw score of about 65 to 88.
 
+
+The original tier table, kept as the calibration reference only - **it is not what the code
+does**; the budget above is:
 
 | War score (winner's view) | May demand |
 |---|---|
@@ -291,9 +310,14 @@ Acceptance takes **two** signatures, and the second was missing for the project'
 thirteen measured in-game years:
 
 - **The loser signs** when `exhaustion >= 60 - warScoreAgainstThem/2` and the package costs no
-  more than `warScoreAgainstThem x 1.25`.
-- **The winner signs** when the package is worth at least **half** of what the war earned, or
-  it earned nothing, or the winner's own exhaustion has reached 70 and it no longer cares.
+  more than `warScoreAgainstThem x negotiation x 1.25`.
+- **The winner signs** when it earned nothing, or its own exhaustion has reached 70 and it no
+  longer cares, or the package is worth at least `PeaceTable.MinimumAcceptable`:
+  - if this war can produce subjugation at all, **exactly 75** - a cliff, not a slope (design 04
+    §13): a victory that can take the loser's standing does not settle for tribute;
+  - otherwise **half** the budget, capped at the dearest package this war could actually
+    produce, so a demand never sits above anything reachable (run 07's Khuzait-Sturgia war at
+    225.6 ended in a white peace for exactly that reason).
 
 Without the second rule the side suing for peace offered a white peace, the only willingness
 check asked *that same side*, and it granted itself a free peace - `terms=white_peace` 13 times

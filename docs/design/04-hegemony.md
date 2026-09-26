@@ -95,7 +95,15 @@ relationship starts in.
 
 ### 3.1 Imposed at the peace table
 
-A new rung at the top of the existing concession ladder:
+> **Superseded - the numbers in this section are history.** Today subjugation costs **70 + 5
+> prisoners = 75**, one rung for both vassalage and a hegemon's dissolution; the winner demands
+> exactly that whenever the war can produce it; the winner must be the stronger kingdom; and the
+> budget is the war score × the envoys' contest, so 75 is reached from a raw score of about
+> 65 to 88. See [§13](#13-one-subjugation-rung-and-a-cliff-2026-09-20-after-run-07) and
+> [design 01 §4.2](01-diplomacy.md). The 90 below, and the ±100 clamp the run figures were
+> measured under, no longer apply.
+
+A new rung at the top of the existing concession ladder, as first designed:
 
 | Demand | War-score cost |
 |---|---|
@@ -153,7 +161,8 @@ submissionValue =  70 * (threatFromOthers / ownStrength)     // who is about to 
                  - 20 * cultureMismatch
 ```
 
-Submits at **≥ 55**. Starting state: **Hold 60**, no grievance. A volunteer is a much steadier
+Submits at **≥ 55** as first designed; **50** since [§13.5](#135-voluntary-submission-drops-to-50),
+and §12 replaced how the patron is chosen. Starting state: **Hold 60**, no grievance. A volunteer is a much steadier
 vassal than a defeated one, and that difference should be visible in play.
 
 ### 3.3 Player routes
@@ -379,7 +388,7 @@ six are the code finally doing what this spec already said.
 | §5.3: the poached vassal's old link | Closed without charging the client; the poacher pays. Checked with `CanSign(replacing:)` before anything is torn up | Charging both parties priced one act twice, and the client's lost trust could make the new signing fail after the old link was already gone |
 | §4.1 fear: `25 * clamp(strength(patron)/strength(vassal) - 1, -1, +1)` | `25 * clamp(log2(ratio), -1, +1)` | The linear form is lopsided - twice as strong scored +25, half as strong only -12.5 - and the run-04 world was the case it hid: a patron weaker than six of its seven vassals |
 | §4.2 / §6.3: secession below a fixed Hold 15 | The line is `15 + 15 * clamp(log2(vassal/patron), -1, +1)`, from 0 to 30 | Resentment is the motive, strength is whether revolt is anything but suicide. A fixed line sent weak vassals to certain defeat and left strong ones under a patron they could throw off |
-| §3.1: submission imposed at war score 90 | Also requires the winner to be the stronger of the two | Every route into vassalage now asks the same question, `Hegemony.IsStrongEnoughToHold` |
+| §3.1: submission imposed at war score 90 (75 since §13) | Also requires the winner to be the stronger of the two | Every route into vassalage now asks the same question, `Hegemony.IsStrongEnoughToHold` |
 | (Not in the spec — run 06, F3) | A neglected vassal may **defect to the kingdom attacking it**: Hold under 40, defender in a war it is losing by 20+ score, patron not fighting the aggressor. The submission is the peace; the old bond is broken *by the patron* (its breach in every court), siblings take the contagion hit, and the new patron is called into the vassal's other defensive wars at once. The attacker must not itself be a vassal. A player attacker is asked; a refusal holds for 42 days | Run 06 showed a patron barred by truce or the cascade guard simply watching a vassal die. Rather than override those rules, the vassal gets an exit and the patron's name pays for it |
 
 Also worth recording: a coerced submission was measured starting at Hold 35 with a target of
@@ -509,6 +518,12 @@ The consequence is that submission now arises from the economics rather than fro
 
 This is graduated rather than a cliff, which matches the lead's own narrative: a decisive victory
 takes a tributary, an overwhelming one takes a vassal.
+
+> **Superseded by [§13.1-§13.2](#132-the-demand-is-a-cliff-at-that-rung-not-a-slope).** This table
+> never shipped as the final rule. Run 07 showed tribute absorbing almost every victory under it,
+> so subjugation became one rung at **75** and the winner's demand a **cliff** there: whenever the
+> war can produce subjugation, the winner wants exactly 75, at any score from 75 up. Below that
+> it wants half its budget, as before. The bands above are history.
 
 **Two consequences to watch.** `WouldAccept`'s willingness threshold is
 `ExhaustionSeekPeace - score/2`, so at a large score it goes deeply negative and exhaustion stops
@@ -747,7 +762,8 @@ this was not a measured run, and nothing here says the balance is right.
 | 12e, the formula | Western Empire → Sturgia: `relief 0.38` is exactly 16572/43565, and `threat +19.0` is exactly `clamp(5.03, 0, 2) · 0.38 · 25`. The `enemy -10.0` charge applies only to an attacker-patron |
 
 **Still unverified.** 12f (`ReconcileWithSiblings`) has not executed a single line: it lives
-inside `Hegemony.Submit`, and reaching that needs a real vassalage, which needs war score ≥ 95.
+inside `Hegemony.Submit`, and reaching that needs a real vassalage, which needed war score ≥ 95
+at the time (vassalage 90 + prisoners 5; 75 since §13).
 `diplomacy.sign_treaty` is **not** a substitute — it calls `TreatyRegistry.Sign` directly and
 skips Submit's starting Hold, its call to arms and this reconciliation, so a link made that way
 is not a vassalage in any sense the system recognises. 12b and 12c had no situation that would
@@ -762,7 +778,7 @@ and the enemy charge (−10). **12.4.4 opens the door; nothing yet walks through
 
 **A structural point the drift makes, now measured.** War score bleeds 0.05/day while exhaustion
 builds 0.08/day, and the peace table only opens at exhaustion 60. Measured here: 120 days took
-the score from 92.16 to 85.81 while waiting for a side to tire. So to still hold ≥ 95 when the
+the score from 92.16 to 85.81 while waiting for a side to tire. So to still hold ≥ 95 (the price then; 75 since §13) when the
 table finally opens, a war has to have **peaked well above 100** — which the old clamp made
 impossible. That is a stronger argument for 12a than 12.4.1 makes, and it means the 130 band is
 reachable only by a genuinely enormous victory.
@@ -820,6 +836,10 @@ The consequence is a sharp change in the shape of the ladder's output:
 | under 65 | score × 0.5 | prisoners, money or land |
 | 65 – 75 | score × 0.5 | tributary pact |
 | **75 and above** | **75** | **subjugation** |
+
+Since [design 08 S-2](08-statecraft.md) (2026-09-26) "war score" in this table means the
+**budget** - raw score × the envoys' contest, ×0.85 to ×1.15 - so the cliff sits at a raw score of
+about 65 to 88 depending on the envoys. The white-peace floor at 20 still reads the raw score.
 
 **Tribute is now a ten-point band.** Run 07 settled 18 tributary pacts and 13 of them were at a
 score of 75 or more, so most of those become subjugations. That was the lead's intent and it is
