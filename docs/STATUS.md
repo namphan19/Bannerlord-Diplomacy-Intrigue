@@ -74,8 +74,12 @@ and tribute happen, and the unmerged 2026-09-24 mechanics review.
 
 ## What to do next
 
-The lead's calls come first: TODO.md items 1-4 decide what Phase 2 still has to build. Work that
-needs no decision:
+**Phase 2's court verbs (R-2), decided by the lead on 2026-09-26.** The spec is
+[design/09](design/09-court-verbs.md): make amends, offices and patronage, tribute per vassal.
+It waits on the lead's D1-D15; then a mockup, then C1. Espionage's default and civil war's
+rarity stay as they are, the same call.
+
+Work that needs no decision:
 
 1. **A civil-war balance run** from a save with a strained court. Run 08 saw no internal war and
    no contested succession in 20 in-game years.

@@ -36,8 +36,11 @@ has no act that reduces a grievance: the Court tab shows and selects, and nothin
 the 2026-09-24 review's headline (R-2, court verbs), and it is still open. Nobody has formally
 checked Phase 2 against its acceptance line.
 
-- [ ] Build the court verbs (R-2: appease, patronage, per-vassal tribute were the review's
-      recommendation), or change the acceptance line.
+- [x] **Decided 2026-09-26: build R-2** to meet the line. Espionage's default (item 3) and civil
+      war's rarity (item 4) stay as they are, the same call.
+- [ ] Answer D1-D15 of [design/09](docs/design/09-court-verbs.md), the spec for R-2: make
+      amends (C1), offices and patronage (C2, absorbing design/08 §8), tribute per vassal (C3).
+      Then the mockup, then C1.
 
 ### 2. The court does not reach the AI's foreign policy
 
@@ -55,7 +58,7 @@ because vanilla makes its handler a governor or a party leader within days (the 
 [design/03 §10](docs/design/03-espionage.md)). The code keeps "the AI plays by the same rules";
 the outcome does not.
 
-- [ ] Default it off until the handler blocker is solved, or keep it on knowingly.
+- [x] **Kept on, knowingly** — the lead, 2026-09-26.
 
 ### 4. Civil war, tribute at the table and cadet branches almost never happen
 
@@ -65,8 +68,8 @@ needs a war score of 65-75; the mean final score was 21-27). A new cadet branch 
 influence, so soon after a split it cannot reach the 30% a pretender needs (STATUS, 2026-09-26).
 A player can play a whole campaign and see none of it.
 
-- [ ] Civil war: a run from a strained court first (`test_set_legitimacy`), or revisit the
-      trigger thresholds, which design/02 §6 calls guesses and which were deferred on 2026-09-23.
+- [x] Civil war: **kept as it is** — the lead, 2026-09-26. The trigger thresholds stay. Note that
+      design/09's AI amends will make AI civil wars rarer still; its §5 run measures by how much.
 - [ ] Tribute: move the §13 bands or not (design/04 §13.7).
 - [ ] Cadet branches: should a cadet founder inherit some of the parent house's influence or
       backers, so that 2.6b can lead to 2.6?
