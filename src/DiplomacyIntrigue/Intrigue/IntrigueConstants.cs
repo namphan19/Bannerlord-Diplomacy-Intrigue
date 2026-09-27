@@ -111,8 +111,19 @@ namespace DiplomacyIntrigue.Intrigue
         /// <summary>Granted for each full year without a war. UN-TUNED.</summary>
         public const float LegitimacyPeaceDividend = 3f;
 
-        /// <summary>How long that year is. UN-TUNED, and a year by definition.</summary>
-        public const float LegitimacyPeaceDividendYears = 1f;
+        /// <summary>
+        /// Days of **continuous** peace - no foreign war and no internal war - that earn one
+        /// dividend: one campaign year, 4 seasons of 21 days. Design 02 §4's "per year of peace".
+        /// UN-TUNED as a rate, but the length is the definition of a year, not a guess.
+        ///
+        /// In days rather than the <c>LegitimacyPeaceDividendYears = 1</c> it replaced
+        /// (2026-09-27, review R-4). That value was read through <c>ElapsedYearsUntilNow</c>,
+        /// which counts the engine's own year, so it was not the 365-day bug (the year's length
+        /// is a static field in the reference assemblies, not a constant, so it was not read
+        /// from them). It moved to days so `diplomacy.legitimacy` can say how many are left,
+        /// and so no reader has to know which year a "1" means.
+        /// </summary>
+        public const float LegitimacyPeaceDividendDays = 84f;
 
         /// <summary>At or above this war justification, a victory counts as a just one. UN-TUNED.</summary>
         public const float LegitimacyJustWar = 0.7f;

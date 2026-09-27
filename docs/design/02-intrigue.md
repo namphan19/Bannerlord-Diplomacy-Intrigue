@@ -109,6 +109,16 @@ A per-kingdom pool, 0–100, starting at 60.
 Effects: legitimacy feeds vassal loyalty (§2), gates pretender bids (§5), and scales the
 influence cost of pushing decisions through a hostile court.
 
+**"Per year of peace", made exact on 2026-09-27** (review R-4, the lead's decision). The code paid
+the dividend on any peaceful day once a year had passed since the last one, so a war neither
+stopped nor reset the clock and a realm at war most of the year still collected it. It now pays
+once per campaign year (**84 days**) of **continuous** peace: no foreign war and no internal war.
+A war resets the clock, which counts again from the day the last war ended, or from the last
+dividend if that is later (`LegitimacyRegistry.PeaceOf`, derived from the war records, nothing new
+saved). The review's alternative, mean reversion toward 50, was **rejected**: a weak crown must
+not heal on its own, and civil war is already rare. `diplomacy.legitimacy` shows each realm's days
+of continuous peace and the days to its next dividend.
+
 ## 5. Succession
 
 When a ruler dies, vanilla silently assigns the throne. Instead:

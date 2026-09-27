@@ -134,16 +134,22 @@ namespace DiplomacyIntrigue.Intrigue
         // ----- Upkeep ---------------------------------------------------------
 
         /// <summary>
-        /// Pays the peace dividend to every kingdom that has gone a full year without a war.
-        /// Design 02 §4's "per year of peace".
+        /// Pays the peace dividend to every kingdom that has gone a full campaign year without
+        /// a war. Design 02 §4's "per year of peace".
         ///
-        /// Driven daily but paid at most once a year per kingdom, against a stored mark. The
-        /// alternatives were both wrong: an 84th paid daily (the campaign year is 84 days)
-        /// rounds to nothing in a float pool, and a yearly event pays a kingdom that spent 83
-        /// of those days fighting.
+        /// Driven daily but paid once per <see cref="IntrigueConstants.LegitimacyPeaceDividendDays"/>
+        /// of **continuous** peace, read from <see cref="PeaceOf"/>. The alternatives were both
+        /// wrong: an 84th paid daily rounds to nothing in a float pool, and a yearly event pays
+        /// a kingdom that spent 83 of those days fighting.
+        ///
+        /// Until 2026-09-27 the clock only measured the time since the last payment, so a war
+        /// neither stopped nor reset it: a realm at war for most of a year was paid on its first
+        /// peaceful day once a year had passed (review R-4). The lead chose the spec's reading,
+        /// and chose it over the review's proposed mean reversion toward 50, on purpose: a weak
+        /// crown must not heal on its own, and civil war is already rare.
         ///
         /// Note what this does *not* do: it cannot run under `diplomacy.tick_days`, because
-        /// the mark is a date and `CampaignTime.Now` does not move there. That is stated in
+        /// the clock is dates and `CampaignTime.Now` does not move there. That is stated in
         /// the diagnostic rather than hidden - CLAUDE.md §1's rule about diagnostics that
         /// drive part of a tick.
         /// </summary>
@@ -156,14 +162,111 @@ namespace DiplomacyIntrigue.Intrigue
                 if (!kingdom.IsRealm()) continue;
                 if (IsAtWar(state, kingdom)) continue;
 
+                // Created here, with its dividend mark at today, the first day a realm is seen at
+                // peace - as before. PeaceOf reads a missing record the same way.
                 var record = RecordFor(state, kingdom);
-                if (record.LastPeaceDividend.ElapsedYearsUntilNow < IntrigueConstants.LegitimacyPeaceDividendYears)
-                    continue;
+                var peace = Clock(state, kingdom, record);
+                if (peace.DaysToDividend > 0f) continue;
 
                 record.MarkPeaceDividend();
                 Adjust(state, kingdom, PeaceDividendOf(kingdom), "a year of peace");
                 Statecraft.SkillXp.PeaceDividend(kingdom);
             }
+        }
+
+        /// <summary>Where a crown stands against its next peace dividend. What <see cref="PeaceOf"/> returns.</summary>
+        public sealed class PeaceClock
+        {
+            /// <summary>At war abroad or with itself: no peace is running, and no dividend comes.</summary>
+            public bool AtWar;
+
+            /// <summary>
+            /// False when no war of this kingdom's is on record at all, so the start of its
+            /// peace is not known - only that it began before this mod started keeping records.
+            /// </summary>
+            public bool HasWarOnRecord;
+
+            /// <summary>When the present peace began: the end of the kingdom's last war, foreign or internal.</summary>
+            public CampaignTime PeaceSince = CampaignTime.Never;
+
+            /// <summary>Days of continuous peace, or 0 at war. Meaningless when <see cref="HasWarOnRecord"/> is false.</summary>
+            public float DaysOfPeace;
+
+            /// <summary>
+            /// What the dividend clock counts from: the later of the last dividend paid and the
+            /// start of this peace. A year of peace already paid for is not paid twice.
+            /// </summary>
+            public CampaignTime ClockFrom;
+
+            /// <summary>Days until the next dividend, 0 when it is due. Meaningless at war.</summary>
+            public float DaysToDividend;
+        }
+
+        /// <summary>
+        /// How long this crown has been at peace and when its next dividend falls. The one
+        /// resolver for it: the daily upkeep pays by it and `diplomacy.legitimacy` prints it.
+        ///
+        /// **Derived from the war ledgers, not stored.** A peace begins when the kingdom's last
+        /// war ended, and every war it fought is still on record with its end date (`WarRecord`
+        /// and `InternalWar` are never pruned), so a new saved "peace began" date would be a
+        /// second copy of a fact already kept - and would be wrong on every save made before it
+        /// existed. The stored dividend mark keeps its meaning (when the dividend was last paid),
+        /// which is why no schema change was needed.
+        /// </summary>
+        public static PeaceClock PeaceOf(ModState state, Kingdom kingdom)
+        {
+            KingdomLegitimacy record = null;
+            if (state != null && kingdom != null)
+                for (var i = 0; i < state.Legitimacy.Count; i++)
+                    if (state.Legitimacy[i].Kingdom == kingdom) record = state.Legitimacy[i];
+            return Clock(state, kingdom, record);
+        }
+
+        /// <summary>
+        /// <see cref="PeaceOf"/> against a known record. A kingdom with no record yet reads as
+        /// the daily upkeep would create it: its dividend clock starting today.
+        /// </summary>
+        private static PeaceClock Clock(ModState state, Kingdom kingdom, KingdomLegitimacy record)
+        {
+            var clock = new PeaceClock();
+            if (state == null || kingdom == null) return clock;
+
+            if (IsAtWar(state, kingdom))
+            {
+                clock.AtWar = true;
+                return clock;
+            }
+
+            for (var i = 0; i < state.Wars.Count; i++)
+            {
+                var war = state.Wars[i];
+                if (war.IsOngoing || !war.Involves(kingdom)) continue;
+                Later(clock, war.EndedOn);
+            }
+            for (var i = 0; i < state.InternalWars.Count; i++)
+            {
+                var war = state.InternalWars[i];
+                if (war.IsOngoing || war.Kingdom != kingdom) continue;
+                Later(clock, war.EndedOn);
+            }
+
+            var now = CampaignTime.Now;
+            if (clock.HasWarOnRecord) clock.DaysOfPeace = (float)(now - clock.PeaceSince).ToDays;
+
+            var mark = record?.LastPeaceDividend ?? now;
+            clock.ClockFrom = clock.HasWarOnRecord && clock.PeaceSince > mark ? clock.PeaceSince : mark;
+
+            var left = IntrigueConstants.LegitimacyPeaceDividendDays - (float)(now - clock.ClockFrom).ToDays;
+            clock.DaysToDividend = left > 0f ? left : 0f;
+            return clock;
+        }
+
+        private static void Later(PeaceClock clock, CampaignTime ended)
+        {
+            if (ended == CampaignTime.Never) return;
+            if (clock.HasWarOnRecord && ended <= clock.PeaceSince) return;
+            clock.PeaceSince = ended;
+            clock.HasWarOnRecord = true;
         }
 
         /// <summary>

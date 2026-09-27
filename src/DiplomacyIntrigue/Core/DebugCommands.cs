@@ -541,6 +541,25 @@ namespace DiplomacyIntrigue.Core
                               + (record == null
                                   ? "   (no record yet; reads as the starting value)"
                                   : "   last: " + record.LastReason));
+
+                // The same clock the daily upkeep pays by (LegitimacyRegistry.PeaceOf).
+                var peace = LegitimacyRegistry.PeaceOf(state, kingdom);
+                if (peace.AtWar)
+                {
+                    sb.AppendLine("    at war - no peace is running; the clock starts again when the last war ends");
+                }
+                else
+                {
+                    sb.AppendLine("    "
+                                  + (peace.HasWarOnRecord
+                                      ? "at peace " + peace.DaysOfPeace.ToString("0") + " days (since " + peace.PeaceSince + ")"
+                                      : "at peace, with no war on record")
+                                  + "; next dividend +" + LegitimacyRegistry.PeaceDividendOf(kingdom).ToString("0.0")
+                                  + (peace.DaysToDividend <= 0f
+                                      ? " is due at the next daily tick"
+                                      : " in " + peace.DaysToDividend.ToString("0") + " days")
+                                  + " (counting from " + peace.ClockFrom + ")");
+                }
             }
 
             sb.AppendLine("Starts at " + IntrigueConstants.LegitimacyStart.ToString("0")
@@ -548,8 +567,11 @@ namespace DiplomacyIntrigue.Core
                           + " a crown is weak enough for a pretender's party to gather, if a claim"
                           + " stands (diplomacy.pretenders); below " + IntrigueConstants.LegitimacyNeutral.ToString("0")
                           + " it costs every clan loyalty.");
-            sb.AppendLine("The peace dividend cannot be driven by diplomacy.tick_days - it is"
-                          + " measured in dates, and the clock does not move there.");
+            sb.AppendLine("The peace dividend is paid once per " + IntrigueConstants.LegitimacyPeaceDividendDays.ToString("0")
+                          + " days of continuous peace (no foreign war, no internal war), counted from the later of the"
+                          + " last dividend and the end of the last war.");
+            sb.AppendLine("It cannot be driven by diplomacy.tick_days - it is measured in dates, and the clock"
+                          + " does not move there.");
             return sb.ToString();
         }
 
