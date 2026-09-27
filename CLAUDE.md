@@ -348,7 +348,7 @@ the class after 19 takes **29** or above rather than risk 20 - not 28, which `Po
 (26 `GrievanceType`, 27 `InternalWarOutcome`, 28 `Portfolio`, whose values 0-5 are now frozen), next free **29**. `CourtOffice` uses
 properties 1-4 (next free **5**). `Grievance` uses
 properties 1-7 (6 `AnsweredOn`, 7 `Answers`, design 09; next free **8**), `KingdomLegitimacy` 1-5, `Pretender` 1-4, `InternalWar` 1-14 (13 `Faction`,
-14 `SideChanges`, next free **15**), `InternalWarMember` 1, `SpyNetwork` 1-8 (next free **9**), `SpyMission` 1-11 (next free **12**),
+14 `SideChanges`, next free **15**), `InternalWarMember` 1, `SpyNetwork` 1-8 (next free **9**), `SpyMission` 1-12 (12 `OfferOwed`, 2026-09-27; next free **13**),
 `CounterIntelligenceBudget` 1-3 (next free **4**). A new *value* on an enum the definer
 already registers is safe (`GrievanceType.SuccessionPassedOver = 9`, `ForgedLetters = 10` and
 `DismissedFromOffice = 11` were added that way; next free value there is **12**);

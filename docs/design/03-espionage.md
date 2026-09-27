@@ -521,11 +521,12 @@ Assassinate (3) and SabotageGarrison (4); and the text above says an open bribe 
 succeeded - the operation stays `Pending` until the answer, and the inquiry is not saved - so a save
 made while the offer is open reloads with the operation pending and due, and the next daily tick rolls
 it again: it may succeed and ask again, fail, or be **exposed**. A second offer that finds the first one
-still open is rolled again the next day the same way. Not fixed: keeping the first roll needs one saved
-field on `SpyMission` - property 12, a `CampaignTime` for the day the offer was made, set when it is
-asked and read in `Resolve` to skip the roll and ask again - which is new save data, outside this pass.
-About fifteen lines with it. Whether a save can be made at all while the inquiry is up (it pauses the
-game; an autosave or a quicksave might still run) is not known, so how often this bites is not known
+still open is rolled again the next day the same way. **Fixed the same day** by the tech lead:
+`SpyMission` property 12, `OfferOwed` (a bool - nothing reads the day, and false is what every older
+save should read), set when the roll for the player succeeds; `Resolve` then skips the roll and asks
+again, after the same handler and mark checks. That covers the reload and the second offer alike. Not
+run in game. Whether a save can be made at all while the inquiry is up (it pauses the game; an
+autosave or a quicksave might still run) is not known, so how often the old fault bit is not known
 either.
 
 ### 3.7, the UI - built and verified live, 2026-09-26

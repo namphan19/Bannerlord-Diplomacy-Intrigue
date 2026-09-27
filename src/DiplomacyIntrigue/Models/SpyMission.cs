@@ -50,6 +50,16 @@ namespace DiplomacyIntrigue.Models
         /// </summary>
         [SaveableProperty(11)] public Hero Handler { get; private set; }
 
+        /// <summary>
+        /// A bribe aimed at the player's house whose roll has already succeeded: the offer is owed
+        /// to the player and is shown again, never rolled again. Saved because the roll is: without
+        /// it a save made while the offer was open reloaded the operation as pending and due, and
+        /// the next day rolled it afresh - so a reload could turn an offer into an exposure
+        /// (design 03 §10). A bool rather than the day of the offer: nothing reads the day, and
+        /// false is exactly what every mission saved before this field existed should read.
+        /// </summary>
+        [SaveableProperty(12)] public bool OfferOwed { get; private set; }
+
         internal SpyMission() { }
 
         internal SpyMission(Clan owner, Kingdom target, SpyMissionType type, Hero handler,
@@ -68,6 +78,8 @@ namespace DiplomacyIntrigue.Models
         }
 
         public bool IsPending => Outcome == MissionOutcome.Pending;
+
+        internal void MarkOfferOwed() => OfferOwed = true;
 
         internal void Resolve(MissionOutcome outcome)
         {

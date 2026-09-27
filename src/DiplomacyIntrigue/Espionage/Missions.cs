@@ -366,6 +366,15 @@ namespace DiplomacyIntrigue.Espionage
                 return MissionOutcome.Failure;
             }
 
+            // A bribe whose roll already succeeded and is waiting on the player's answer is asked
+            // again, not rolled again - after a reload, or after another offer held the one-at-a-time
+            // guard. The checks above still apply: an offer whose handler or mark is gone lapses.
+            if (mission.OfferOwed && !forced.HasValue)
+            {
+                if (!_askingPlayer) OfferBribeToPlayer(state, mission, " (the roll made before this offer was first shown)");
+                return MissionOutcome.Pending;
+            }
+
             var odds = OddsOf(state, network, mission.Type);
             MissionOutcome outcome;
             if (forced.HasValue) outcome = forced.Value;
@@ -380,15 +389,15 @@ namespace DiplomacyIntrigue.Espionage
             // the lord taking the gold; for the player, the roll only gets the offer to them. It
             // stays pending until they answer, and an inquiry stops the clock.
             //
-            // It is NOT simply asked again after a reload, as this comment used to say. Nothing
-            // saved records that this roll succeeded, so a save made while the offer is open reloads
-            // with the operation pending and due, and the next daily tick rolls it again: it may
-            // succeed and ask again, fail, or be exposed. The same happens to a second offer that
-            // finds this guard up. Keeping the first roll needs one saved field on SpyMission (the
-            // day the offer was made), which is new save data (design 03 §10, 3.6's findings).
+            // The success is recorded on the mission (OfferOwed, SpyMission property 12, since
+            // 2026-09-27), so a save made while the offer is open reloads it still owed and the
+            // next daily tick asks again rather than rolling again; a second offer that finds the
+            // guard up is asked the day after, the same way. Before that field, a reload re-rolled
+            // the operation and could turn an offer into an exposure (design 03 §10).
             if (outcome == MissionOutcome.Success && mission.Type == SpyMissionType.BribeLord
                 && mission.TargetHero != null && mission.TargetHero == Hero.MainHero)
             {
+                mission.MarkOfferOwed();
                 if (!_askingPlayer) OfferBribeToPlayer(state, mission, note);
                 return MissionOutcome.Pending;
             }
