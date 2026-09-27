@@ -445,52 +445,16 @@ ButterLib/UIExtenderEx/MCM which were off) and the GABS launch script
 (`Desktop\Agent_Bannerlord\Bannerlord.GABS\launch-bannerlord.ps1`, whose `_MODULES_` list is
 hardcoded and does not read LauncherData).
 
-## 7. Roles, and delegating to opencode
+## 7. Roles
 
 - **Product owner**: the user. Makes design and priority calls.
-- **Claude Code (you)**: BA / tech lead. Breaks work down, decides what to delegate to
-  opencode versus do directly, reviews what opencode produces before reporting to the owner.
-- **opencode CLI**: dev / tester. Implements and tests whatever Claude Code delegates to it.
+- **Claude Code (you)**: BA / tech lead and developer. Breaks the work down, builds it, tests it
+  in the live game, and reports to the owner.
 
-Claude and opencode work in **two separate clones** of the same GitHub repo
-(`namphan19/Bannerlord-Diplomacy-Intrigue`) — this one (`bannerlord.mod`, branch `development`)
-and opencode's own `bannerlord.mod.opencode` (one `feature/*` branch per brief) — not one shared
-folder. opencode's actual output therefore travels through three channels: the `opencode-bridge`
-MCP server for synchronous delegation, **git** for what it actually built (its commits sit
-in its own clone against the shared origin; review them there, e.g. `git fetch` + diff, or a
-PR), and `claude-bridge` for opencode to page Claude mid-task with a question.
-
-Delegate through the `opencode-bridge` MCP server (`tools/opencode-bridge/`, registered in
-`.mcp.json` with `OPENCODE_PROJECT_DIR` pointed at opencode's checkout, not this one):
-`opencode_delegate(task, session_id?, agent?, title?, timeout_seconds?)` — pass
-`session_id` from a prior call to continue the same conversation (follow-ups, fix requests on
-the same piece of work). `opencode_list_sessions` / `opencode_delete_session` for housekeeping.
-Details and setup: [tools/opencode-bridge/README.md](tools/opencode-bridge/README.md).
-
-The reverse direction is `tools/claude-bridge/` (registered in opencode's own
-`opencode.jsonc`, not here): `ask_claude(question, session_id?, timeout_seconds?)` lets
-opencode consult Claude without a human relaying. It runs read-only (`claude -p
---allowedTools "Read Grep Glob"`, no permission-bypass flag) — deliberately, since a
-headless Claude with write access could collide with an interactive session editing the
-same tree, and answering a question is not the same job as acting on one. Not live-verified
-end to end: this harness blocks a Claude Code session from spawning a nested `claude -p`
-itself ("Create Unsafe Agents"), so only opencode's side of the handshake (`opencode mcp
-list` showing `claude-bridge` as `connected`) has been confirmed — the first real
-`ask_claude` call is the first live test of the `claude -p` invocation. Setup and the full
-safety reasoning: [tools/claude-bridge/README.md](tools/claude-bridge/README.md).
-
-opencode runs with `--auto` — it has no TTY through this bridge, so a permission prompt would
-hang forever with nothing able to answer it — and the owner granted it full permissions on
-2026-09-22. A delegated task can therefore run any shell command in this repo unsupervised.
-Review what comes back before passing it on; the rules in §3 (save ids, Harmony as last
-resort, one resolver per concept, no throw across the engine boundary) still apply to code
-opencode wrote — delegating a task doesn't relax them.
-
-opencode's working rules live in [AGENTS.md](AGENTS.md), which opencode reads on its own: a
-branch per brief off `origin/development`, a PR into `development`, **never merging its own
-PR** (you review, then merge or send fixes back through the same `session_id`), and a fixed
-PR body (what / how verified / not verified / save data / Harmony). The lead enabled GABS
-for opencode on 2026-09-23, so it deploys and drives the game itself. There is **one game
-and one deploy target for both clones**: do not touch the game while a delegated task that
-tests in game is running, and after one finishes, check which branch it left deployed
-before you test anything of your own.
+There is no second agent. opencode was a dev / tester working from its own clone through an
+`opencode-bridge` MCP server, with a `claude-bridge` server in the other direction; the lead
+removed it on 2026-09-27, along with both bridges, `AGENTS.md` and `.mcp.json`. Its old
+`feature/*` branches may still sit on origin: the merged ones are history, and anything unmerged
+is reviewed like any other branch before it goes near `development`. Earlier docs that say
+"briefed to opencode" or "opencode's merge" describe how that work was done, not how it is done
+now.

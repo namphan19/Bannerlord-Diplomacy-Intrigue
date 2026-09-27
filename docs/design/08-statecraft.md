@@ -574,10 +574,10 @@ PLAYER-GUIDE §"Your skills in politics". Design 03 (Phase 3) re-expressed in `L
 with the spymaster as the default handler: its raw terms (`agentRoguery / 200`,
 `0.004 × (roguery + charm) / 2`) predate this layer. A row in CLAUDE.md §6. STATUS and ROADMAP.
 
-**Who builds it (CLAUDE.md §7).** S0 by Claude: it sets the resolver every later stage reads,
-and A-1 touches the player's war path. S1 and S2 are briefed to opencode, one branch each, and
-reviewed against §3's rules before merge. The game is shared by both clones, so S3 runs only
-when no delegated task is testing in game.
+**Who builds it (CLAUDE.md §7).** The plan was S0 by Claude, since it sets the resolver every
+later stage reads and A-1 touches the player's war path, with S1 and S2 briefed to opencode. In
+the event Claude built S0-S2 together (commit `669a431`), and opencode has since been removed
+from the project (2026-09-27).
 
 ---
 
