@@ -814,8 +814,13 @@ namespace DiplomacyIntrigue.Diplomacy
         public const float TrustGrudgeDecayPerDay = 0.15f;
 
         /// <summary>
-        /// Days after a positive change during which no decay runs at all - the lead's F2
-        /// decision: a good act buys a stretch in which the relationship cannot fade.
+        /// Days after a positive change during which the peacetime drift does not run - the
+        /// lead's F2 decision: a good act buys a stretch in which the relationship cannot fade.
+        ///
+        /// It never shields a war (2026-09-27, TODO 7): a pair at war bleeds from the war's
+        /// first day whatever passed between them before, or a kingdom attacking a partner
+        /// whose pact had just paid its "honoured" dividend fought a month for free
+        /// (<see cref="TrustRegistry.DailyTick"/>).
         ///
         /// Not scaled with the decay rates when they rose twelvefold: the window is measured
         /// against how often a tended relationship produces a good act, not against how fast

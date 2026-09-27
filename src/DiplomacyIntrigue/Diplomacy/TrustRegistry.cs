@@ -136,13 +136,23 @@ namespace DiplomacyIntrigue.Diplomacy
         ///     being maintained fades - and so does a grudge, which is the ledger's only
         ///     way back from the bottom. A grudge fades at a quarter of the speed
         ///     (<see cref="DiplomacyConstants.TrustGrudgeDecayPerDay"/>).
-        ///   - A positive change suspends all decay for
+        ///   - A positive change suspends that peacetime drift for
         ///     <see cref="DiplomacyConstants.TrustDecayGraceDays"/> days, so a relationship
         ///     still being tended never drains.
         ///   - At war the record moves *down* instead - goodwill erodes, enmity deepens -
         ///     and the bleed grows with each day the war has run, down to
         ///     <see cref="DiplomacyConstants.TrustWarFloor"/> and no further. Deeper than that
-        ///     is what treachery earns, not fighting.
+        ///     is what treachery earns, not fighting. **The grace does not shield a war**
+        ///     (2026-09-27, TODO 7): the war is checked first and bleeds from its first day.
+        ///
+        /// Why the war comes before the grace. With the grace checked first, a pact seen
+        /// through to expiry paid its +12 "honoured" and opened 30 days in which nothing could
+        /// move the record - so a kingdom that attacked its former partner days after the pact
+        /// lapsed fought the first month of that war for free. The 2026-09-19 max-speed run saw
+        /// it three times, each attack ~6 days after a defensive pact expired. The +12 itself is
+        /// kept, not clawed back: the pact *was* honoured to its end, and what went wrong was
+        /// only that the war that followed cost nothing. A grace is a reward for tending a
+        /// relationship; a war is not tending it.
         ///
         /// A pair at war with no record yet bleeds too. <see cref="Get"/> already reads a
         /// missing record as zero, so skipping it here would make "no history" the one
@@ -172,10 +182,7 @@ namespace DiplomacyIntrigue.Diplomacy
                 var war = state.OngoingWarBetween(from, to);
                 if (war == null && record.Value == 0f) continue;
 
-                var daysSincePositive =
-                    (float)(CampaignTime.Now - record.LastPositiveChange).ToDays;
-                if (daysSincePositive < DiplomacyConstants.TrustDecayGraceDays) continue;
-
+                // Before the grace, not after it: see the summary above.
                 if (war != null)
                 {
                     // Down to the war floor and no further; a breach may already sit below it.
@@ -186,6 +193,10 @@ namespace DiplomacyIntrigue.Diplomacy
                             + war.DaysElapsed * DiplomacyConstants.TrustDecayWarRampPerDay));
                     continue;
                 }
+
+                var daysSincePositive =
+                    (float)(CampaignTime.Now - record.LastPositiveChange).ToDays;
+                if (daysSincePositive < DiplomacyConstants.TrustDecayGraceDays) continue;
 
                 var value = record.Value;
                 record.Decay(value > 0f

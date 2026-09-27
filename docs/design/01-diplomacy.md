@@ -249,6 +249,15 @@ season, but a reputation that outlasts it (since run 06 not forever; see below).
 > made. Only a breach goes deeper. "Follows you for the rest of the campaign" is no longer true.
 > Constants un-tuned; run 07 is the first measurement.
 >
+> **The grace does not shield a war** (2026-09-27, TODO 7). The 30-day grace used to be
+> checked before the war bleed. A pact seen through to expiry paid its +12 and then froze the
+> record for a month, and a kingdom that attacked its former partner days later fought that
+> month for free. The 2026-09-19 max-speed run saw it three times, each attack ~6 days after a
+> defensive pact lapsed. A pair at war now bleeds from the war's first day, and the grace
+> suspends only the peacetime drift. The +12 is kept, not clawed back: the pact *was*
+> honoured to its end, and what was wrong was only that the war after it cost nothing
+> (`TrustRegistry.DailyTick`).
+>
 > **The floor does not bind the terms that end a war** (the lead's call, 2026-09-19): tribute
 > or vassalage imposed at the peace table, and a vassal's defection to its attacker, sign
 > whatever the parties think of each other - the reason the truce was always exempt. At the
