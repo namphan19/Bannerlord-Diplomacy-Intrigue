@@ -2157,7 +2157,9 @@ namespace DiplomacyIntrigue.Diplomacy
             // Theirs, only as bands (design 02 §9.1): the player weighing the same rival sees
             // exactly these signs and no figure, and this valuation may not know more.
             terms.TargetSigns = Intrigue.CourtBands.SignsOf(state, them);
-            terms.FromTargetWeakness = TargetWeakness(terms.TargetSigns, out terms.TargetWeaknessCapped);
+            terms.FromTargetWeakness = Settings.Current.EnableIntrigue
+                ? TargetWeakness(terms.TargetSigns, out terms.TargetWeaknessCapped)
+                : 0f;
 
             terms.Raw = terms.FromRatio + terms.FromLegitimacy + terms.FromProximity
                         + terms.FromHunger + terms.FromWeariness + terms.FromAmbition + terms.FromAnnexation

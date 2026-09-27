@@ -201,12 +201,25 @@ namespace DiplomacyIntrigue.Intrigue
         {
             if (state == null || kingdom == null) return 0f;
 
+            // With the court pillar switched off a court has no voice anywhere: not in votes, not
+            // in foreign policy (design 02 §7.2). Blocs still form - BuildBlocs is ungated - so the
+            // switch is asked here, where every reader of a bloc's weight outside the pillar comes.
+            if (!Settings.Current.EnableIntrigue) return 0f;
+
             var total = CourtInfluence(kingdom);
             if (total <= 0f) return 0f;
 
             var blocs = BlocsOf(state, kingdom);
             for (var i = 0; i < blocs.Count; i++)
-                if (blocs[i].Agenda == agenda) return blocs[i].EffectivePower / total;
+            {
+                if (blocs[i].Agenda != agenda) continue;
+                // Clamped: the blocs are cached for the day and the total is read live, so a house
+                // that leaves the realm mid-day can leave the cached bloc bigger than the court -
+                // and a share above 1 would carry the peace bars and the war value past the limits
+                // design 02 §7.2 promises (review, 2026-09-27).
+                var share = blocs[i].EffectivePower / total;
+                return share < 0f ? 0f : (share > 1f ? 1f : share);
+            }
             return 0f;
         }
 

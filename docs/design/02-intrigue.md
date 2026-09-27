@@ -281,6 +281,11 @@ already did. The realm still defends: a war declared on it, or one a treaty call
 chosen. A vassal's revolt against its patron (`Hegemony.ExecuteRevolt`) is not gated either - it
 is driven by Hold, not by this valuation.
 
+**Two guards, added on review (2026-09-27).** With `EnableIntrigue` off every one of these terms
+is zero - blocs still form, but a switched-off pillar has no voice in foreign policy either. And a
+bloc's share is clamped to [0, 1]: the blocs are cached for the day while the court's total is
+read live, so a house leaving mid-day could otherwise carry the bars past the limits above.
+
 **Where to see them:** `diplomacy.war_value A | B` prints `internal war`, `value from our court`
 and `value from their court` as their own lines; `diplomacy.peace_allowance A | B` ends with each
 side's court pull and the three bars it produces. The peace log lines (`sued for peace`,

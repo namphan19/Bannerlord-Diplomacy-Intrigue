@@ -62,6 +62,13 @@ namespace DiplomacyIntrigue.Diplomacy
         /// constant's own "the enemy still holds", and against the internal war's count of the
         /// same thing (<c>Intrigue.InternalWarFiefs.OccupiedFrom</c>). Those counters stay, for
         /// telemetry. A fief lost twice in one war counts once: it is one fief the enemy holds.
+        ///
+        /// Only a loss **to the enemy** counts: the loser's record must be followed directly by
+        /// the enemy's (a record opened at the moment it closed). The ledger moves only on a
+        /// change of owner, not when a clan changes kingdom with its fiefs, so a record can stay
+        /// open after a defection and close much later on some other transfer; without the
+        /// successor test that stale close would charge the realm for a fief it lost by defection
+        /// or to a third party (review, 2026-09-27).
         /// </summary>
         public static int OccupiedFrom(ModState state, WarRecord war, Kingdom loser)
         {
@@ -76,9 +83,21 @@ namespace DiplomacyIntrigue.Diplomacy
                 if (record.Kingdom != loser || record.IsCurrent || record.Settlement == null) continue;
                 if (record.To < war.StartedOn) continue;
                 if (record.Settlement.MapFaction != enemy) continue;
+                if (!TakenBy(state, record, enemy)) continue;
                 counted.Add(record.Settlement);
             }
             return counted.Count;
+        }
+
+        /// <summary>Whether the record that followed <paramref name="closed"/> on its fief was <paramref name="taker"/>'s.</summary>
+        private static bool TakenBy(ModState state, FiefOwnershipRecord closed, Kingdom taker)
+        {
+            for (var i = 0; i < state.FiefHistory.Count; i++)
+            {
+                var next = state.FiefHistory[i];
+                if (next.Settlement == closed.Settlement && next.From == closed.To) return next.Kingdom == taker;
+            }
+            return false;
         }
 
         public static void DailyTick(ModState state)

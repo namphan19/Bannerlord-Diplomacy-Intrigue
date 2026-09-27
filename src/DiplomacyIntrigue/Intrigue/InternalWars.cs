@@ -1084,27 +1084,46 @@ namespace DiplomacyIntrigue.Intrigue
                 var loser = oldOwner?.Clan;
                 if (!war.IsRebel(gainer) && !war.IsRebel(loser)) continue;
 
+                // The capture first, in its own try: it is saved state (InternalWar.Captures) that
+                // restitution reads at the war's end, and must not be lost to a failure in the
+                // re-sync or the log line below, which share the caller's try with the grievances.
+                try
+                {
+                    NoteCapture(war, settlement, gainer, loser, detail);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error("InternalWar", "Recording the capture of " + settlement.Name + " failed.", ex);
+                }
+
                 SyncFaction(war);
                 Log.Info("InternalWar", war.Kingdom.Name + ": " + settlement.Name + " passed from "
                                         + loser?.Name + " to " + gainer?.Name
-                                        + " - the rising now holds " + war.Faction.Fiefs.Count + " fiefs.");
-
-                // Across the line: one side a rebel, the other a house of the realm that is not.
-                // Both still read Clan.Kingdom as the realm - a rebel never leaves it (design 07 §3b).
-                if (detail != ChangeOwnerOfSettlementAction.ChangeOwnerOfSettlementDetail.BySiege) continue;
-                if (gainer?.Kingdom != war.Kingdom || loser?.Kingdom != war.Kingdom) continue;
-                var loserIsRebel = war.IsRebel(loser);
-                if (loserIsRebel == war.IsRebel(gainer)) continue;
-
-                // The first capture of a fief is what a crown win restores (InternalWarFiefs).
-                war.RecordCapture(settlement, loser);
-
-                var amount = WarExhaustion.FiefLost(settlement) * Settings.Current.WarExhaustionRate;
-                Accrue(war, loserIsRebel, amount);
-                Log.Info("InternalWar", war.Kingdom.Name + ": losing " + settlement.Name + " costs "
-                                        + (loserIsRebel ? "the rising" : "the crown") + " exhaustion -> rebels "
-                                        + war.RebelExhaustion.ToString("0.0") + " / crown " + war.CrownExhaustion.ToString("0.0"));
+                                        + " - the rising now holds " + (war.Faction?.Fiefs.Count ?? 0) + " fiefs.");
             }
+        }
+
+        /// <summary>
+        /// A fief taken by siege across the war's line: recorded (the first time only - what a
+        /// crown win restores, <see cref="InternalWarFiefs"/>), and its loss worn by the side that
+        /// lost it. Across the line means one side a rebel, the other a house of the realm that is
+        /// not; both still read Clan.Kingdom as the realm - a rebel never leaves it (design 07 §3b).
+        /// </summary>
+        private static void NoteCapture(InternalWar war, Settlement settlement, Clan gainer, Clan loser,
+            ChangeOwnerOfSettlementAction.ChangeOwnerOfSettlementDetail detail)
+        {
+            if (detail != ChangeOwnerOfSettlementAction.ChangeOwnerOfSettlementDetail.BySiege) return;
+            if (gainer?.Kingdom != war.Kingdom || loser?.Kingdom != war.Kingdom) return;
+            var loserIsRebel = war.IsRebel(loser);
+            if (loserIsRebel == war.IsRebel(gainer)) return;
+
+            war.RecordCapture(settlement, loser);
+
+            var amount = WarExhaustion.FiefLost(settlement) * Settings.Current.WarExhaustionRate;
+            Accrue(war, loserIsRebel, amount);
+            Log.Info("InternalWar", war.Kingdom.Name + ": losing " + settlement.Name + " costs "
+                                    + (loserIsRebel ? "the rising" : "the crown") + " exhaustion -> rebels "
+                                    + war.RebelExhaustion.ToString("0.0") + " / crown " + war.CrownExhaustion.ToString("0.0"));
         }
 
         /// <summary>
