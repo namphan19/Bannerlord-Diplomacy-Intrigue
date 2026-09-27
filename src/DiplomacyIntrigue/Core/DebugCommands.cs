@@ -17,18 +17,64 @@ using TaleWorlds.Library;
 namespace DiplomacyIntrigue.Core
 {
     /// <summary>
-    /// Developer console commands, all under the "diplomacy" namespace.
-    /// Open the console with Alt+~ in a debug-enabled build, then e.g.
+    /// Developer console commands, all under the "diplomacy" namespace, e.g.
     ///     diplomacy.status
     ///     diplomacy.wars
     ///     diplomacy.claims
+    /// The retail game has no console of its own: these are reached through the GABS bridge
+    /// (<c>bannerlord.core.run_command</c>), or a console mod.
     ///
     /// These exist so every system can be inspected and driven before it has any UI.
     /// They are also how the systems get verified in a live campaign.
+    ///
+    /// Two kinds, and the line between them is cheat mode (TODO 11). A read-only diagnostic is
+    /// open to anyone. A command that changes the campaign for testing - every <c>test_*</c>
+    /// lever, and <c>sign_treaty</c>, <c>break_treaty</c>, <c>offer_peace</c>,
+    /// <c>fabricate_claim</c>, <c>tick_days</c>, <c>ai_week</c>, <c>set_smoothed_strength</c>
+    /// and <c>set_war_score</c> - opens with <see cref="CheatsAllowed"/> and refuses without it.
     /// </summary>
     public static partial class DebugCommands
     {
         private const string NoCampaign = "Diplomacy & Intrigue: no campaign loaded.";
+
+        /// <summary>
+        /// The gate on every command that changes the campaign for testing: allowed only in cheat
+        /// mode, asked through <c>CampaignCheats.CheckCheatUsage</c> - the check vanilla's own
+        /// <c>campaign.*</c> cheats make - so one switch covers both, and the lead's test loop,
+        /// which turns cheat mode on before any <c>campaign.*</c> command, needs nothing new.
+        /// A second rule of our own (a mod setting, a build flag) was the alternative; it lost
+        /// because a player would then meet two switches for one idea.
+        ///
+        /// With no campaign loaded it lets the command through, so the command's own "no
+        /// campaign" answer is what is printed: there is nothing to change without one.
+        ///
+        /// Every test_* command is gated, even the few that only read (<c>test_vote</c>,
+        /// <c>test_map_faction</c>) or only open a screen: the prefix is the contract, and the
+        /// screen openers lead to buttons that act (the peace table, the Intelligence tab).
+        /// </summary>
+        private static bool CheatsAllowed(string command, out string refusal)
+        {
+            refusal = null;
+            if (Campaign.Current == null) return true;
+
+            var why = string.Empty;
+            bool allowed;
+            try
+            {
+                allowed = CampaignCheats.CheckCheatUsage(ref why);
+            }
+            catch (Exception)
+            {
+                // Vanilla's check is not expected to throw; if it ever does, fall back to the flag it reads.
+                allowed = Game.Current != null && Game.Current.CheatMode;
+                why = string.Empty;
+            }
+            if (allowed) return true;
+
+            refusal = "Refused: diplomacy." + command + " changes the campaign for testing and needs cheat mode ("
+                      + (string.IsNullOrEmpty(why) ? "cheat mode is off" : why.Trim().TrimEnd('.', '!')) + ").";
+            return false;
+        }
 
         [CommandLineFunctionality.CommandLineArgumentFunction("status", "diplomacy")]
         public static string Status(List<string> args)
@@ -174,6 +220,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("fabricate_claim", "diplomacy")]
         public static string FabricateClaim(List<string> args)
         {
+            if (!CheatsAllowed("fabricate_claim", out var cheatRefusal)) return cheatRefusal;
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
             if (args == null || args.Count == 0)
@@ -207,6 +254,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("tick_days", "diplomacy")]
         public static string TickDays(List<string> args)
         {
+            if (!CheatsAllowed("tick_days", out var cheatRefusal)) return cheatRefusal;
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
 
@@ -281,6 +329,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_vote", "diplomacy")]
         public static string TestVote(List<string> args)
         {
+            if (!CheatsAllowed("test_vote", out var cheatRefusal)) return cheatRefusal;
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
 
@@ -434,6 +483,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_court_seat", "diplomacy")]
         public static string TestCourtSeat(List<string> args)
         {
+            if (!CheatsAllowed("test_court_seat", out var cheatRefusal)) return cheatRefusal;
             var court = UI.KingdomScreen.DiCourtVM.Current;
             if (court == null) return "The Kingdom screen is not open.";
             if (args == null || args.Count == 0) return "Usage: diplomacy.test_court_seat <seat>";
@@ -443,6 +493,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_court_select", "diplomacy")]
         public static string TestCourtSelect(List<string> args)
         {
+            if (!CheatsAllowed("test_court_select", out var cheatRefusal)) return cheatRefusal;
             var court = UI.KingdomScreen.DiCourtVM.Current;
             if (court == null) return "The Kingdom screen is not open.";
             if (args == null || args.Count == 0) return "Usage: diplomacy.test_court_select <clan>";
@@ -496,6 +547,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_open_encyclopedia", "diplomacy")]
         public static string TestOpenEncyclopedia(List<string> args)
         {
+            if (!CheatsAllowed("test_open_encyclopedia", out var cheatRefusal)) return cheatRefusal;
             if (Campaign.Current == null) return NoCampaign;
             if (args == null || args.Count == 0) return "Usage: diplomacy.test_open_encyclopedia <kingdom>";
 
@@ -816,6 +868,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_appoint", "diplomacy")]
         public static string TestAppoint(List<string> args)
         {
+            if (!CheatsAllowed("test_appoint", out var cheatRefusal)) return cheatRefusal;
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
             var parts = SplitOnPipe(args);
@@ -861,6 +914,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_vassal_tribute", "diplomacy")]
         public static string TestVassalTribute(List<string> args)
         {
+            if (!CheatsAllowed("test_vassal_tribute", out var cheatRefusal)) return cheatRefusal;
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
             var parts = SplitOnPipe(args);
@@ -885,6 +939,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_dismiss", "diplomacy")]
         public static string TestDismiss(List<string> args)
         {
+            if (!CheatsAllowed("test_dismiss", out var cheatRefusal)) return cheatRefusal;
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
             var parts = SplitOnPipe(args);
@@ -906,6 +961,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_amends", "diplomacy")]
         public static string TestAmends(List<string> args)
         {
+            if (!CheatsAllowed("test_amends", out var cheatRefusal)) return cheatRefusal;
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
             var parts = SplitOnPipe(args);
@@ -948,6 +1004,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("sign_treaty", "diplomacy")]
         public static string SignTreaty(List<string> args)
         {
+            if (!CheatsAllowed("sign_treaty", out var cheatRefusal)) return cheatRefusal;
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
 
@@ -986,6 +1043,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("break_treaty", "diplomacy")]
         public static string BreakTreaty(List<string> args)
         {
+            if (!CheatsAllowed("break_treaty", out var cheatRefusal)) return cheatRefusal;
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
 
@@ -1022,6 +1080,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_expire_treaty", "diplomacy")]
         public static string TestExpireTreaty(List<string> args)
         {
+            if (!CheatsAllowed("test_expire_treaty", out var cheatRefusal)) return cheatRefusal;
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
 
@@ -1111,6 +1170,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("offer_peace", "diplomacy")]
         public static string OfferPeace(List<string> args)
         {
+            if (!CheatsAllowed("offer_peace", out var cheatRefusal)) return cheatRefusal;
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
 
@@ -1281,6 +1341,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("ai_week", "diplomacy")]
         public static string AiWeek(List<string> args)
         {
+            if (!CheatsAllowed("ai_week", out var cheatRefusal)) return cheatRefusal;
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
 
@@ -1478,6 +1539,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_demand_tribute", "diplomacy")]
         public static string TestDemandTribute(List<string> args)
         {
+            if (!CheatsAllowed("test_demand_tribute", out var cheatRefusal)) return cheatRefusal;
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
 
@@ -1660,6 +1722,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("set_smoothed_strength", "diplomacy")]
         public static string SetSmoothedStrength(List<string> args)
         {
+            if (!CheatsAllowed("set_smoothed_strength", out var cheatRefusal)) return cheatRefusal;
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
 
@@ -1696,6 +1759,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_set_player_age", "diplomacy")]
         public static string TestSetPlayerAge(List<string> args)
         {
+            if (!CheatsAllowed("test_set_player_age", out var cheatRefusal)) return cheatRefusal;
             if (Campaign.Current == null || Hero.MainHero == null) return NoCampaign;
             if (args == null || args.Count == 0 || !int.TryParse(args[0], out var years) || years < 18 || years > 100)
                 return "Usage: diplomacy.test_set_player_age <18-100>";
@@ -1730,6 +1794,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_set_speed", "diplomacy")]
         public static string TestSetSpeed(List<string> args)
         {
+            if (!CheatsAllowed("test_set_speed", out var cheatRefusal)) return cheatRefusal;
             if (Campaign.Current == null) return NoCampaign;
 
             var before = Campaign.Current.SpeedUpMultiplier;
@@ -1769,6 +1834,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_open_kingdom", "diplomacy")]
         public static string TestOpenKingdom(List<string> args)
         {
+            if (!CheatsAllowed("test_open_kingdom", out var cheatRefusal)) return cheatRefusal;
             if (Campaign.Current == null) return NoCampaign;
             if (Clan.PlayerClan?.Kingdom == null)
                 return "The player is not in a kingdom - vanilla never offers this screen here, "
@@ -1798,6 +1864,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_intel", "diplomacy")]
         public static string TestIntel(List<string> args)
         {
+            if (!CheatsAllowed("test_intel", out var cheatRefusal)) return cheatRefusal;
             if (Campaign.Current == null) return NoCampaign;
             var words = args ?? new List<string>();
             var verb = words.Count > 0 ? words[0].ToLowerInvariant() : "show";
@@ -1881,6 +1948,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("set_war_score", "diplomacy")]
         public static string SetWarScore(List<string> args)
         {
+            if (!CheatsAllowed("set_war_score", out var cheatRefusal)) return cheatRefusal;
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
 
@@ -1915,6 +1983,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_open_peace", "diplomacy")]
         public static string TestOpenPeace(List<string> args)
         {
+            if (!CheatsAllowed("test_open_peace", out var cheatRefusal)) return cheatRefusal;
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
 
@@ -1952,6 +2021,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_open_incoming", "diplomacy")]
         public static string TestOpenIncoming(List<string> args)
         {
+            if (!CheatsAllowed("test_open_incoming", out var cheatRefusal)) return cheatRefusal;
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
 
@@ -2135,6 +2205,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_start_internal_war", "diplomacy")]
         public static string TestStartInternalWar(List<string> args)
         {
+            if (!CheatsAllowed("test_start_internal_war", out var cheatRefusal)) return cheatRefusal;
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
             if (args == null || args.Count == 0) return "Usage: diplomacy.test_start_internal_war <kingdom>";
@@ -2160,6 +2231,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_end_internal_war", "diplomacy")]
         public static string TestEndInternalWar(List<string> args)
         {
+            if (!CheatsAllowed("test_end_internal_war", out var cheatRefusal)) return cheatRefusal;
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
 
@@ -2243,6 +2315,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_change_side", "diplomacy")]
         public static string TestChangeSide(List<string> args)
         {
+            if (!CheatsAllowed("test_change_side", out var cheatRefusal)) return cheatRefusal;
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
 
@@ -2274,6 +2347,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_player_side", "diplomacy")]
         public static string TestPlayerSide(List<string> args)
         {
+            if (!CheatsAllowed("test_player_side", out var cheatRefusal)) return cheatRefusal;
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
 
@@ -2326,6 +2400,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_player_rule", "diplomacy")]
         public static string TestPlayerRule(List<string> args)
         {
+            if (!CheatsAllowed("test_player_rule", out var cheatRefusal)) return cheatRefusal;
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
             if (args == null || args.Count == 0) return "Usage: diplomacy.test_player_rule <kingdom>";
@@ -2364,6 +2439,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_concede", "diplomacy")]
         public static string TestConcede(List<string> args)
         {
+            if (!CheatsAllowed("test_concede", out var cheatRefusal)) return cheatRefusal;
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
 
@@ -2396,6 +2472,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_map_faction", "diplomacy")]
         public static string TestMapFaction(List<string> args)
         {
+            if (!CheatsAllowed("test_map_faction", out var cheatRefusal)) return cheatRefusal;
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
             if (args == null || args.Count == 0) return "Usage: diplomacy.test_map_faction <kingdom>";
@@ -2531,6 +2608,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_divide_clan", "diplomacy")]
         public static string TestDivideClan(List<string> args)
         {
+            if (!CheatsAllowed("test_divide_clan", out var cheatRefusal)) return cheatRefusal;
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
             if (args == null || args.Count == 0) return "Usage: diplomacy.test_divide_clan <clan> [| <hero>]";
@@ -2634,6 +2712,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_assign_handler", "diplomacy")]
         public static string TestAssignHandler(List<string> args)
         {
+            if (!CheatsAllowed("test_assign_handler", out var cheatRefusal)) return cheatRefusal;
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
 
@@ -2657,6 +2736,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_network_budget", "diplomacy")]
         public static string TestNetworkBudget(List<string> args)
         {
+            if (!CheatsAllowed("test_network_budget", out var cheatRefusal)) return cheatRefusal;
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
 
@@ -2681,6 +2761,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_set_network", "diplomacy")]
         public static string TestSetNetwork(List<string> args)
         {
+            if (!CheatsAllowed("test_set_network", out var cheatRefusal)) return cheatRefusal;
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
 
@@ -2708,6 +2789,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_network_week", "diplomacy")]
         public static string TestNetworkWeek(List<string> args)
         {
+            if (!CheatsAllowed("test_network_week", out var cheatRefusal)) return cheatRefusal;
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
             EspionageUpkeep.Weekly(state);
@@ -2785,6 +2867,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_counter_budget", "diplomacy")]
         public static string TestCounterBudget(List<string> args)
         {
+            if (!CheatsAllowed("test_counter_budget", out var cheatRefusal)) return cheatRefusal;
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
 
@@ -2908,6 +2991,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_launch_mission", "diplomacy")]
         public static string TestLaunchMission(List<string> args)
         {
+            if (!CheatsAllowed("test_launch_mission", out var cheatRefusal)) return cheatRefusal;
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
 
@@ -2942,6 +3026,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_resolve_mission", "diplomacy")]
         public static string TestResolveMission(List<string> args)
         {
+            if (!CheatsAllowed("test_resolve_mission", out var cheatRefusal)) return cheatRefusal;
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
 
@@ -2976,6 +3061,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_hire_companion", "diplomacy")]
         public static string TestHireCompanion(List<string> args)
         {
+            if (!CheatsAllowed("test_hire_companion", out var cheatRefusal)) return cheatRefusal;
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
             if (args == null || args.Count == 0) return "Usage: diplomacy.test_hire_companion <wanderer>";

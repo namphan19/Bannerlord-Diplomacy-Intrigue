@@ -371,7 +371,10 @@ Not checked: the AI's zero-gain skip in a case where it changes the pick; a vass
 an AI ruler answered their house (the message exists; no test put the player's house on the
 receiving end); the Encyclopedia ledger, which now leaves answered records out; the test lever
 `test_set_skill`, which sets a skill without its XP, so the first XP grant puts the old value back -
-the player's Charm read 503 again after one amends.
+the player's Charm read 503 again after one amends. **Fixed 2026-09-27** (compiled, not seen in game):
+the lever now also puts the hero's skill XP at what the new level requires and prints the check
+("Skill XP N, what 232 requires ..." or "they DISAGREE"), so a later grant builds from the level set.
+Like every `test_*` lever it now needs cheat mode.
 
 ---
 

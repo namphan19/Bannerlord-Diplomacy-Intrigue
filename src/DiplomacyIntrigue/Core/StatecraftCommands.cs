@@ -102,10 +102,17 @@ namespace DiplomacyIntrigue.Core
         /// <summary>
         /// Sets a hero's skill, for predicting a term by hand and reading it back.
         /// Usage: diplomacy.test_set_skill hero | skill | value (skill: charm, leadership, steward, trade, roguery, scouting)
+        ///
+        /// The level and the hero's skill XP are set together. The first version set the level
+        /// alone, and it did not stick: vanilla keeps a separate XP total per skill, and the next
+        /// XP grant recomputes the level from that total, so Charm set from 503 to 232 read 503
+        /// again after one amends. The XP is now put at exactly what the new level requires, so a
+        /// later grant builds from the level that was set.
         /// </summary>
         [CommandLineFunctionality.CommandLineArgumentFunction("test_set_skill", "diplomacy")]
         public static string TestSetSkill(List<string> args)
         {
+            if (!CheatsAllowed("test_set_skill", out var cheatRefusal)) return cheatRefusal;
             if (CoreBehavior.State == null) return NoCampaign;
             var parts = SplitOnPipe(args);
             if (parts.Count < 3) return "Usage: diplomacy.test_set_skill <hero> | <skill> | <value>";
@@ -118,11 +125,47 @@ namespace DiplomacyIntrigue.Core
 
             var before = hero.GetSkillValue(skill);
             hero.SetSkillValue(skill, value);
+            var xpLine = AlignSkillXp(hero, skill, value);
             BlocModel.Invalidate();
             return hero.Name + " (" + hero.Clan?.Name + "): " + StatecraftModel.SkillName(skill) + " " + before + " -> "
-                   + hero.GetSkillValue(skill) + ". Level now "
+                   + hero.GetSkillValue(skill) + ". " + xpLine + " Level now "
                    + StatecraftModel.Level(hero, skill).ToString("+0.00;-0.00;0.00") + " against the median "
                    + StatecraftModel.Pivot(skill).ToString("0") + ".";
+        }
+
+        /// <summary>
+        /// Puts a hero's XP in a skill at exactly what <paramref name="level"/> requires, and says
+        /// whether it took. Two public vanilla calls can do it, and the reference assemblies carry
+        /// no bodies to say which one does what its name says, so this tries
+        /// <c>HeroDeveloper.InitializeSkillXp</c> (the XP of the level the hero now has - the level
+        /// was set just before) and falls back to <c>SetInitialSkillLevel</c> (level and XP
+        /// together), then reads the XP back against the development model's own requirement. The
+        /// line it returns is the check: a lever that silently failed to stick is what this replaces.
+        /// </summary>
+        private static string AlignSkillXp(Hero hero, SkillObject skill, int level)
+        {
+            var developer = hero.HeroDeveloper;
+            var model = Campaign.Current?.Models?.CharacterDevelopmentModel;
+            if (developer == null || model == null)
+                return "Skill XP NOT set (the hero has no developer) - the next XP grant may move the level back.";
+
+            try
+            {
+                var needed = model.GetXpRequiredForSkillLevel(level);
+                developer.InitializeSkillXp(skill);
+                if (Math.Abs(developer.GetSkillXp(skill) - needed) > 0.5f)
+                    developer.SetInitialSkillLevel(skill, level);
+
+                var xp = developer.GetSkillXp(skill);
+                return Math.Abs(xp - needed) <= 0.5f && hero.GetSkillValue(skill) == level
+                    ? "Skill XP " + xp.ToString("N0") + ", what " + level + " requires, so the next XP grant builds from " + level + "."
+                    : "Skill XP " + xp.ToString("N0") + " but " + level + " requires " + needed.ToString("N0")
+                      + " - they DISAGREE, and the next XP grant will move the level.";
+            }
+            catch (Exception ex)
+            {
+                return "Setting the skill XP failed (" + ex.Message + ") - the next XP grant may move the level back.";
+            }
         }
 
         /// <summary>
@@ -132,6 +175,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_add_perk", "diplomacy")]
         public static string TestAddPerk(List<string> args)
         {
+            if (!CheatsAllowed("test_add_perk", out var cheatRefusal)) return cheatRefusal;
             if (CoreBehavior.State == null) return NoCampaign;
             var parts = SplitOnPipe(args);
             if (parts.Count < 2) return "Usage: diplomacy.test_add_perk <hero> | <perk>";
@@ -168,6 +212,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_statecraft", "diplomacy")]
         public static string TestStatecraft(List<string> args)
         {
+            if (!CheatsAllowed("test_statecraft", out var cheatRefusal)) return cheatRefusal;
             var settings = Settings.Current;
             var arg = args == null || args.Count == 0 ? "" : args[0].Trim().ToLowerInvariant();
             if (arg == "on") settings.EnableStatecraft = true;
@@ -186,6 +231,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_player_join", "diplomacy")]
         public static string TestPlayerJoin(List<string> args)
         {
+            if (!CheatsAllowed("test_player_join", out var cheatRefusal)) return cheatRefusal;
             if (CoreBehavior.State == null) return NoCampaign;
             if (args == null || args.Count == 0) return "Usage: diplomacy.test_player_join <kingdom>";
             var kingdom = FindKingdom(string.Join(" ", args));
@@ -215,6 +261,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_imprison", "diplomacy")]
         public static string TestImprison(List<string> args)
         {
+            if (!CheatsAllowed("test_imprison", out var cheatRefusal)) return cheatRefusal;
             if (CoreBehavior.State == null) return NoCampaign;
             var parts = SplitOnPipe(args);
             if (parts.Count < 2) return "Usage: diplomacy.test_imprison <prisoner> | <captor>";
@@ -240,6 +287,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_set_legitimacy", "diplomacy")]
         public static string TestSetLegitimacy(List<string> args)
         {
+            if (!CheatsAllowed("test_set_legitimacy", out var cheatRefusal)) return cheatRefusal;
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
             var parts = SplitOnPipe(args);
