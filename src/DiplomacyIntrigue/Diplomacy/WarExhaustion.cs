@@ -267,12 +267,21 @@ namespace DiplomacyIntrigue.Diplomacy
             var war = state.OngoingWarBetween(captor, formerOwner);
             if (war == null) return;
 
-            var exhaustion = settlement.IsTown
+            Accrue(war, formerOwner, FiefLost(settlement) * Settings.Current.WarExhaustionRate);
+            war.AddFiefCapture(captor);
+        }
+
+        /// <summary>
+        /// What losing this fortification costs the side that held it, before the rate and the
+        /// resolve factor. One formula for "a realm losing ground": a foreign war reads it here,
+        /// and an internal war reads it for a capture across its line (review R-6, 2026-09-27).
+        /// </summary>
+        public static float FiefLost(Settlement settlement)
+        {
+            if (settlement == null || !settlement.IsFortification) return 0f;
+            return settlement.IsTown
                 ? DiplomacyConstants.ExhaustionPerTownLost
                 : DiplomacyConstants.ExhaustionPerCastleLost;
-
-            Accrue(war, formerOwner, exhaustion * Settings.Current.WarExhaustionRate);
-            war.AddFiefCapture(captor);
         }
 
         /// <summary>

@@ -153,6 +153,10 @@ Everything here routes through existing Phase 1 machinery: the civil war is a wa
 war record, exhaustion, and a peace table. That is deliberate — a civil war that ends by
 negotiation rather than annihilation is the interesting case.
 
+*As built* the civil war is design 07's option C (a rising inside the realm, its own record, no
+secession). *2026-09-27* (review R-6): fiefs lost now count toward its exhaustion as in a foreign
+war, and a crown win returns what the rebels took - design 07 §3a Q1 and §3b.
+
 ## 7. Where this couples to the other pillars
 
 | From | To | Through |

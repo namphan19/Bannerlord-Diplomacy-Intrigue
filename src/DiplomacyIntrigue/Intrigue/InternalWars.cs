@@ -901,6 +901,24 @@ namespace DiplomacyIntrigue.Intrigue
             Accrue(war, true, DiplomacyConstants.ExhaustionPerDayAtWar * rate);
             Accrue(war, false, DiplomacyConstants.ExhaustionPerDayAtWar * rate);
 
+            // Losing ground keeps hurting while the other side holds it, as in a foreign war
+            // (review R-6): the same constant per fief, per day. Counted from the game's log,
+            // so it reads 0 if that log does not carry the war's captures (InternalWarFiefs).
+            // Its own try: a failure reading the log must not stop the war's day - the end
+            // conditions below still have to be checked.
+            try
+            {
+                var fiefs = InternalWarFiefs.Read(state, war);
+                Accrue(war, true, InternalWarFiefs.OccupiedFrom(war, fiefs, rebelSide: true)
+                                  * DiplomacyConstants.ExhaustionPerDayPerOccupiedFief * rate);
+                Accrue(war, false, InternalWarFiefs.OccupiedFrom(war, fiefs, rebelSide: false)
+                                   * DiplomacyConstants.ExhaustionPerDayPerOccupiedFief * rate);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("InternalWar", "Counting the fiefs held across the line in " + kingdom.Name + " failed.", ex);
+            }
+
             var claimantHeld = HeldBy(war.Claimant, kingdom);
             var rulerHeld = HeldBy(kingdom.Leader, faction);
             war.SetCaptiveDays(claimantHeld ? war.ClaimantCaptiveDays + 1 : 0,
@@ -1007,8 +1025,16 @@ namespace DiplomacyIntrigue.Intrigue
         /// A fief changed hands. If a rebel clan gained or lost one, the rising's fief list must
         /// follow at once: the AI picks siege targets from it, and a castle the rebels just took
         /// that is missing from it is a castle nobody will try to retake.
+        ///
+        /// A fief taken by siege across the war's line also wears down the side that lost it, by
+        /// the same amount a foreign war charges (<see cref="WarExhaustion.FiefLost"/>: 6 a town,
+        /// 3 a castle) - review R-6, decided 2026-09-27. Before, only the calendar and the
+        /// casualties of the siege counted, so taking a castle did nothing to win a civil war.
+        /// Read from the event, not the game's log, so this half does not rest on anything
+        /// unverified (<see cref="InternalWarFiefs"/>).
         /// </summary>
-        public static void OnSettlementOwnerChanged(ModState state, Settlement settlement, Hero newOwner, Hero oldOwner)
+        public static void OnSettlementOwnerChanged(ModState state, Settlement settlement, Hero newOwner, Hero oldOwner,
+            ChangeOwnerOfSettlementAction.ChangeOwnerOfSettlementDetail detail)
         {
             if (!Any || state == null || settlement?.Town == null) return;
 
@@ -1016,12 +1042,28 @@ namespace DiplomacyIntrigue.Intrigue
             {
                 var war = state.InternalWars[i];
                 if (!war.IsOngoing) continue;
-                if (!war.IsRebel(newOwner?.Clan) && !war.IsRebel(oldOwner?.Clan)) continue;
+
+                var gainer = newOwner?.Clan;
+                var loser = oldOwner?.Clan;
+                if (!war.IsRebel(gainer) && !war.IsRebel(loser)) continue;
 
                 SyncFaction(war);
                 Log.Info("InternalWar", war.Kingdom.Name + ": " + settlement.Name + " passed from "
-                                        + oldOwner?.Clan?.Name + " to " + newOwner?.Clan?.Name
+                                        + loser?.Name + " to " + gainer?.Name
                                         + " - the rising now holds " + war.Faction.Fiefs.Count + " fiefs.");
+
+                // Across the line: one side a rebel, the other a house of the realm that is not.
+                // Both still read Clan.Kingdom as the realm - a rebel never leaves it (design 07 §3b).
+                if (detail != ChangeOwnerOfSettlementAction.ChangeOwnerOfSettlementDetail.BySiege) continue;
+                if (gainer?.Kingdom != war.Kingdom || loser?.Kingdom != war.Kingdom) continue;
+                var loserIsRebel = war.IsRebel(loser);
+                if (loserIsRebel == war.IsRebel(gainer)) continue;
+
+                var amount = WarExhaustion.FiefLost(settlement) * Settings.Current.WarExhaustionRate;
+                Accrue(war, loserIsRebel, amount);
+                Log.Info("InternalWar", war.Kingdom.Name + ": losing " + settlement.Name + " costs "
+                                        + (loserIsRebel ? "the rising" : "the crown") + " exhaustion -> rebels "
+                                        + war.RebelExhaustion.ToString("0.0") + " / crown " + war.CrownExhaustion.ToString("0.0"));
             }
         }
 
@@ -1165,6 +1207,19 @@ namespace DiplomacyIntrigue.Intrigue
                     LegitimacyRegistry.Adjust(state, kingdom, IntrigueConstants.LegitimacyWonJustWar,
                         "put down " + war.Claimant?.Name + "'s rising");
                     Log.Notify(kingdom.Leader?.Name + " has put down the rising in " + kingdom.Name + ".", Colors.Cyan);
+
+                    // What the rebels took goes back (review R-6, the lead's decision of 2026-09-27).
+                    // Here, after the rising is destroyed, so every house is of the realm again and
+                    // no rising fief list has to follow the transfers. Its own try: the war has
+                    // already ended, and a failed restitution must not undo that.
+                    try
+                    {
+                        InternalWarFiefs.Restore(state, war);
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error("InternalWar", "Restoring the fiefs the rebels took in " + kingdom.Name + " failed.", ex);
+                    }
                     break;
 
                 default:

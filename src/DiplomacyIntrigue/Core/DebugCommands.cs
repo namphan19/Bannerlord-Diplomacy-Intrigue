@@ -2126,6 +2126,46 @@ namespace DiplomacyIntrigue.Core
                     names.Append(war.Rebels[r].Clan?.Name);
                 }
                 sb.AppendLine("    rebels: " + names);
+
+                // Review R-6: what the game's ownership log shows for this war, read by the same
+                // InternalWarFiefs calls the daily tick and the crown's win use. If this reads 0
+                // changes for a war known to have seen captures, the game's log does not carry
+                // them and neither the occupation term nor restitution can work.
+                var fiefs = InternalWarFiefs.Read(state, war);
+                sb.AppendLine("    game's ownership log during the war: " + (fiefs.Readable ? "" : "NOT READABLE, ")
+                              + fiefs.Changes + " change(s) of a fortification's owner, " + fiefs.Captures
+                              + " captured across the line" + (fiefs.SiegeFlagKnown ? "" : " (siege flag unreadable: every change counted)"));
+                foreach (var pair in fiefs.BySettlement)
+                {
+                    if (!InternalWarFiefs.Touches(war, pair.Key, pair.Value)) continue;
+                    var line = new StringBuilder(pair.Value[0].From?.Name?.ToString() ?? "?");
+                    for (var c = 0; c < pair.Value.Count; c++)
+                    {
+                        var change = pair.Value[c];
+                        line.Append(" -> ").Append(change.To?.Name?.ToString() ?? "?")
+                            .Append(change.IsCapture ? " (captured)" : "");
+                    }
+                    sb.AppendLine("        " + pair.Key.Name + ": " + line + "; held now by " + pair.Key.OwnerClan?.Name);
+                }
+                if (war.IsOngoing)
+                {
+                    var perDay = DiplomacyConstants.ExhaustionPerDayPerOccupiedFief * Settings.Current.WarExhaustionRate;
+                    var lostByCrown = InternalWarFiefs.OccupiedFrom(war, fiefs, rebelSide: false);
+                    var lostByRebels = InternalWarFiefs.OccupiedFrom(war, fiefs, rebelSide: true);
+                    sb.AppendLine("    held across the line: the crown has lost " + lostByCrown + " (+"
+                                  + (lostByCrown * perDay).ToString("0.00") + "/day before resolve), the rising "
+                                  + lostByRebels + " (+" + (lostByRebels * perDay).ToString("0.00") + "/day)");
+                    var plan = InternalWarFiefs.Plan(war, fiefs);
+                    sb.AppendLine("    if the crown won today, " + plan.Count + " fief(s) would be restored"
+                                  + (plan.Count == 0 ? "." : ":"));
+                    for (var p = 0; p < plan.Count; p++)
+                        sb.AppendLine("        " + plan[p].Settlement.Name + ": " + plan[p].Holder.Name + " -> "
+                                      + plan[p].ReturnsTo.Name
+                                      + (plan[p].ReturnsTo == plan[p].HeldAtStart
+                                          ? " (held it when the war began)"
+                                          : " (the crown; " + (plan[p].HeldAtStart?.Name?.ToString() ?? "?")
+                                            + " held it and is not of the realm now)"));
+                }
             }
 
             sb.AppendLine();

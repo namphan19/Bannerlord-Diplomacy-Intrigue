@@ -269,7 +269,7 @@ namespace DiplomacyIntrigue.Behaviors
 
             try
             {
-                InternalWars.OnSettlementOwnerChanged(state, settlement, newOwner, oldOwner);
+                InternalWars.OnSettlementOwnerChanged(state, settlement, newOwner, oldOwner, detail);
                 GrievanceSources.OnSettlementOwnerChanged(state, settlement, newOwner, oldOwner, detail);
             }
             catch (Exception ex)
