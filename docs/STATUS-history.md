@@ -12,6 +12,81 @@ design", below.
 
 ---
 
+## Handoff, 2026-09-26
+
+**Phase 2.8, Statecraft, is built and run live** ([design/08](design/08-statecraft.md) §16-§17).
+The lead delegated D1-D10 on 2026-09-26 and asked for every open item to be handled and then
+one test pass over everything. Each decision was taken as §15 recommended; the reasons are §16.
+
+- **S0-S2 built** (commit `669a431`): the six political skills in ten terms, the XP grants,
+  the Realm tab's Statecraft strip and the breakdown lines, `EnableStatecraft` (default on).
+  **A-1 fixed a real fairness bug:** the player's Declare war now charges the AI's price (72 on a
+  Conquest claim) instead of vanilla's 200. Firebrand and Silver Tongue reach the mod's own acts.
+  No save data. No Harmony; one `GameModel` override.
+- **Verified live** with every term predicted by hand first: design/08 §17 has the table. What is
+  not verified is listed there too - most importantly, the regression proof was off against on,
+  not against the previous build.
+- **Balance run 08** is the S3 measurement: 10 years with the layer on, 10 with it off, from
+  `di_fresh_1084`, 0 errors in both. The war economy is unchanged (chosen wars 71 vs 73 days,
+  white peace 28 vs 29), and XP does not inflate skills (Envoy Charm median 232 to 235 over ten
+  years). The one large difference is pacts (47 AI pacts with the layer on, 31 off), which one
+  pair cannot separate from world divergence. It also answers design/04 §13.7. No civil war
+  happened in either run. [balance/run-08.md](balance/run-08.md).
+
+**The open items of 2026-09-26, handled:**
+
+| Item | What was done |
+|---|---|
+| Unpushed commit `8e41561` (Phase 3.7) | Pushed with this work |
+| 2.6c price lines named the player | "you"/"your" throughout the price column, for the buyer, the claimant and the player's own house |
+| Diplomacy row read "Independent" after the player's own tribute demand | The row now rebuilds after any action that changes the pair on the spot (pact, tribute, renounce, war). Not seen live: no tribute demand was available on the test saves; a pact through the same wrapper was not completed either (the bridge clicked a vanilla "Propose" first; the button now has `Id="DiPactPropose"`) |
+| A rebel player sees vanilla's Kingdom tabs as the rising (design question) | **Kept, on purpose**: those tabs are what a rebel commands (the rising's clans, fiefs and armies), and showing the realm would need Harmony on four vanilla VMs with no case under CLAUDE.md §3. The Court line now tells the player so |
+| "Raise your banner?" never reached | **Reached by the real path** on `di_fresh_1084`: the player made a pretender at a contested succession (81%), the crown at legitimacy 25, `tick_days 1` - the prompt, answered "Raise the banner", and the war began ("you raised your banner") |
+| The side-choice prompt at a war's start | **Reached** (Battania, Ergeon's rising): "Civil war in Battania … Join the rebellion / Stay loyal", answered Stay loyal |
+| The 30-day captivity ending | **Holds**: the ruler held by a rebel party, 30 daily ticks, RebelsWon "held by the rebels for 30 days"; a claimant held by a *foreign* power correctly counts nothing |
+| A cadet branch starting an internal war | **Reached the claimant stage, not the war.** A cadet founder stands at the next succession (it did, "Mengus 0% (1 clan)") but a new cadet branch has almost no influence, so it cannot reach the 30% a pretender needs. Finding: this path is structurally near-impossible soon after a split. A design question for the lead, below |
+| Esc over the peace table | **Not testable here**: the machine had no display attached, so no key reaches the game (CLAUDE.md §2). Still open |
+| `AiTributeCourtRefusalShare` untuned; how often the weekly demand fires | Run 08: the weekly demand was accepted twice in 20 in-game years (both in run B). Refusals are not logged, so the share could not be measured - a `tribute_refused` telemetry event is the next step |
+| Long-run balance of side changes and concession at 75 | **Not measured.** Run 08 had no internal war in either half: a fresh 1084 world does not strain a court within ten years. Needs a run from a save with a low-legitimacy realm |
+
+**A project review, the same day** (Claude, at the lead's request). The code is healthy: a clean
+build, save declarations consistent, every campaign event handler and Harmony patch behind a
+try/catch, and every player branch in the core rules one that asks the player rather than
+deciding for them. Commit `65913a4` holds what the review fixed: a save-data check that build and
+deploy now run (`scripts/check-save-ids.ps1`); stale "next free id" comments in six model files,
+InternalWar's naming an id already in use; a static cache that kept the previous campaign alive
+after every load (`AiDiplomacy.LastMoves`); dead code (`GrievanceRegistry.Forgive`); and the
+war-veto patch split into one file per method as CLAUDE.md §3 requires, verified live. The review
+also moved this file's history out. What needs the lead is in TODO.md, items 1-4 and 12: Phase 2's
+acceptance line, the court and the AI's foreign policy, espionage's default, how rarely civil war
+and tribute happen, and the unmerged 2026-09-24 mechanics review.
+
+**Then 2.9, court verbs (R-2), the same day.** The lead decided R-2 and set the pricing rule
+(CLAUDE.md §3); design/09 was written, decided and mocked up, and the lead approved the mockup.
+**C1, make amends, is built and run live** (design/09 §8): every price matched a hand prediction,
+the Court tab's two-click button paid, the save round trip held the new `Grievance` properties 6-7,
+and an AI ruler made amends through the weekly pass. Running it corrected the spec twice (standing
+now counts peer houses only; the AI scores the loyalty an answer really moves). Measured on
+Battania one tick from rising, two amends shrank the bloc (61% to 56%) and the rising (5 houses to
+4), and the rising still came, held by crown legitimacy 25 and by relation. **The lead then decided
+(design/09 D16-D17):** the acceptance line means prevention, which C1 meets; and AI rulers consider
+amends daily, before the internal-war check - built and run live the same day.
+
+**Then C2, offices and patronage, the same day** (design/09 §9): five seats per realm, the seat
+holder speaking for the realm in its skill, +8 loyalty to the holder's house and a Centralist pull.
+Run live: every price predicted and matched; the Centralist bloc formed for the first time; taking a
+seat back left its grievance; the new save type came back from a fresh process; AI realms under
+threat gave seats and made amends, one act a day. New save data: class 18, `ModState` 18, enum 28.
+
+**Then C3, tribute per vassal** (design/09 §10): four levels on a vassal's Diplomacy-tab row, a
+28-day lock (`Treaty` property 18, so it survives a save), the AI easing or squeezing by Hold. Run
+live, with the real clock: a Heavy tribute at Hold 40 pushed the vassal under the line where it
+withholds, so the preview now warns; a Heavy period paid once Hold recovered; an AI patron eased both
+its vassals. A fault older than C3 was found and fixed: a Diplomacy-tab action showed "Diplomatic
+Trust" twice. **2.9 is built: C1, C2, C3.**
+
+---
+
 ## Handoff, 2026-09-25
 
 **Phase 2 is built. Phase 3, espionage, has started (the lead's call, 2026-09-25).**

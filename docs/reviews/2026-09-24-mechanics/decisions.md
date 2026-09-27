@@ -30,6 +30,7 @@ after 2026-09-24 point to the design doc that now holds them.
 | **R-10 / U-4** | Assassination kept as specified; the AI assassinates only at war, and only a commander in the field, never a ruler or the player's house | 2026-09-25 | [design/03 §9](../../design/03-espionage.md), decisions 1 and 11 |
 | **U-5** | An exposed handler is captured, never killed, and can be ransomed | 2026-09-25 | design/03 §9, decision 3 |
 | **U-7** | The player can be a target of AI espionage, clearly telegraphed | 2026-09-25 | design/03 §9, decisions 2 and 12 |
+| **U-2, U-8, U-9** | Deferred: petitions, secession's trigger and the loser's fate are not built in this phase; secession stays unbuilt | 2026-09-27 | — |
 
 ## Superseded
 
@@ -40,6 +41,8 @@ after 2026-09-24 point to the design doc that now holds them.
 | R-8 | A 1.25× margin on `IsStrongEnoughToHold` | No margin: balance run 08 found no link doomed at signing (TODO.md, "Answered") |
 | U-3 | Espionage v1 with four missions | Phase 3 was specified and built with all eight (design/03) |
 | U-6 | A network loses half when war is declared | Networks survive a war, growing at half rate (design/03 §9, decision 4) |
+| R-3 | A bloc's agenda biases its vote; a Crown party of the clans at loyalty ≥ 70 | **No** (2026-09-27): C2's seats already give the Centralists a source, and the bloc vote already follows its leader's preference; agenda bias waits until a run measures bloc votes |
+| R-5 | Rally round the flag eases a divided realm's internal pressure | **No** (2026-09-27): civil war is already too rare (run 08 saw none); this would make it rarer |
 
 ## Overtaken
 
@@ -47,24 +50,7 @@ after 2026-09-24 point to the design doc that now holds them.
 |---|---|---|
 | U-1 | A Phase 2.8 of court verbs, then a wiring pass, before Phase 3? | The lead started Phase 3 on 2026-09-25; 2.8 became Statecraft and the court verbs were built afterwards as 2.9. The wiring pass (R-1) is still open |
 
-## Open — from the review of the built mechanics ([01](01-built-mechanics-review.md))
+## Open
 
-| Id | Question | Recommendation | Finding |
-|---|---|---|---|
-| **R-1** | Should court state feed the AI's foreign policy? | Yes: Doves share lowers the peace threshold; a divided or illegitimate neighbour is a war-valuation term; a standing pretender grants rivals `SupportClaimant` | A. Also TODO.md item 2 |
-| **R-3** | Should a bloc's agenda bias its vote? | Yes; and add a Crown party of the clans at loyalty ≥ 70 | C |
-| **R-4** | Flat peace dividend or mean reversion toward 50? And should the dividend need a real year of peace (the spec) or any peaceful day after a year (the code)? | Mean reversion; the second question then matters less | D |
-| **R-5** | Rally round the flag: a foreign attack on a divided realm eases internal pressure? | Yes, once a run confirms the spiral. Run 08 had no internal war, so it has not | D |
-| **R-6** | Fiefs lost count toward internal-war exhaustion; the ruler redistributes rebel-taken fiefs after a crown win? | Yes to both | E |
-| **R-9** | Relax the pact trust floor under a balancing threat? | Defensive pacts only, not alliances | I |
-
-## Open — from the discussion of the unbuilt mechanics ([02](02-unbuilt-mechanics.md))
-
-U-2 was put to the lead on 2026-09-24 and has not been answered. U-8 and U-9 are
-recommendations recorded in 02 and not yet asked as questions.
-
-| Id | Question | Recommendation | Source |
-|---|---|---|---|
-| **U-2** | Petitions — houses ask the ruler, and the player can petition an AI ruler — in scope? | Yes; the single largest proposal | 02 §3 |
-| **U-8** | What triggers secession? | A third rising by a claimant who has twice fought the crown to a stalemate | 02 §5 |
-| **U-9** | The loser's fate after an internal war | The victor chooses clemency, exile or execution, each with a price; the AI chooses by the same rule | 02 §5 |
+Nothing. Every R- and U- question was answered by 2026-09-27: the rows are under Decided,
+Superseded or Overtaken above.

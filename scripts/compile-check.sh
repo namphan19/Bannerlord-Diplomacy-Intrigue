@@ -53,5 +53,15 @@ cp "$CACHE"/pkgs/bannerlord.butterlib/lib/net472/*.dll "$MODS/Bannerlord.ButterL
 cp "$CACHE"/pkgs/bannerlord.uiextenderex/lib/netstandard2.0/*.dll "$MODS/Bannerlord.UIExtenderEx/bin/Win64_Shipping_Client/"
 cp "$CACHE"/pkgs/bannerlord.mcm/lib/netstandard2.0/*.dll "$MODS/Bannerlord.MBOptionScreen/bin/Win64_Shipping_Client/"
 
-dotnet build "$REPO/src/DiplomacyIntrigue/DiplomacyIntrigue.csproj" -c Release \
+# The reference assemblies lag the lead's game by at least one member: 1.4.8.119303 has no
+# MapEvent.BattleTypes.SiegeAmbush, which the real v1.4.8 install has and WarExhaustion uses (found
+# 2026-09-27). So the build runs on a copy of src/ with that one line dropped; the source itself is
+# right for the game and is left alone. If a later reference package gains the member, the sed
+# simply matches nothing.
+SRC="$CACHE/src"
+rm -rf "$SRC" && cp -r "$REPO/src" "$SRC"
+cp "$REPO/Directory.Build.props" "$CACHE/" 2>/dev/null || true
+sed -i '/MapEvent.BattleTypes.SiegeAmbush/d' "$SRC/DiplomacyIntrigue/Diplomacy/WarExhaustion.cs"
+
+dotnet build "$SRC/DiplomacyIntrigue/DiplomacyIntrigue.csproj" -c Release \
   -p:GameFolder="$GAME" -p:OutputPath="$OUT/" -p:BaseOutputPath="$OUT/"

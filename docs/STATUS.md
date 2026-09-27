@@ -14,6 +14,37 @@ Last completed measurement: **balance run 08** (statecraft on/off) — [balance/
 Branch `development`. `main` sits well behind on purpose: cutting a release is Phase 4's job.
 opencode was removed from the project on 2026-09-27 (CLAUDE.md §7).
 
+## Start here — 2026-09-27, evening: the delegated pass
+
+**The lead handed every open decision to the tech lead** ("toàn quyền quyết định", 2026-09-27),
+except the Kingdom-UI loose ends, and asked for it to be built with sub-agents and run later on
+the lead's machine. It was: TODO.md's table "Decided 2026-09-27" has each decision in one line,
+and the design docs carry the rules. **Nothing of it has run in a game.** Everything was
+compile-checked here against the v1.4.8 reference assemblies (`scripts/compile-check.sh`), and the
+save-id check passes. **The next step is [run 09](balance/run-09-plan.md)**, on the lead's machine.
+
+- **What changed for the player and the AI:** the court now moves a realm's peace bars and war
+  value, and a rival's visible weakness is a reason for war; a threat relaxes the defensive-pact
+  floor; trust bleeds from a war's first day; at most two tributes at once, and none re-demanded
+  for a year after one ends; an indemnity priced against the loser's treasury; legal neglect at
+  half weight; a cadet branch takes part of its house's influence; an internal war's captured
+  fiefs wear the loser down and go back after a crown win; the legitimacy dividend needs a real
+  year of peace; a retaken fief stops costing its owner.
+- **Found and fixed on the way:** the bribe window (730 calendar days, meant two campaign years:
+  now 168); the trust dividend paid for a peace that had been broken; an open bribe offer was
+  re-rolled after a reload; a siege garrison that could count on neither side; stale figures in
+  six design docs.
+- **New save data:** `SpyMission` 12, `InternalWar` 15, `InternalWarMember` 2 (CLAUDE.md §3). Run
+  09's first step is loading an old save.
+- **The test levers need cheat mode now** (CLAUDE.md §2, step 3).
+- **Build note for a cloud session:** the NuGet reference assemblies for v1.4.8
+  (`1.4.8.119303`) lack `MapEvent.BattleTypes.SiegeAmbush`, which the lead's game has and
+  `WarExhaustion.ScoresAsBattle` uses. `scripts/compile-check.sh` now builds a copy of `src/` with
+  that one line dropped, and says why; the source is right for the game and the lead's build is
+  unaffected.
+- **Merged branches** (`feature/*`, `review/game-mechanics`) stay on origin for now, the lead's
+  call; all of them hold nothing `development` lacks except the review branch's vendored skill.
+
 ## Start here — 2026-09-27
 
 **Phase 2 is accepted by the lead (2026-09-27).** Like Phase 1's, the acceptance is a decision,
@@ -23,8 +54,8 @@ not a claim that everything under it is measured; the carried debt is one table 
 **Housekeeping, the same day.** The 2026-09-24 mechanics review is merged into `development` at
 [reviews/2026-09-24-mechanics/](reviews/2026-09-24-mechanics/README.md), its register brought up
 to date (TODO 12). Every `feature/*` branch on origin was checked (full history, not a shallow
-clone) and holds nothing `development` lacks, as does `main`. They are **not deleted yet**: that
-waits on the lead. `review/game-mechanics` still holds its three original commits and the vendored
+clone) and holds nothing `development` lacks, as does `main`. They are **kept for now** (the
+lead's call). `review/game-mechanics` still holds its three original commits and the vendored
 `vietnamese-tech-writing` skill, which `development` did not take.
 
 **Design 10, war score measured in the fighting, is built (W1+W2) and had its first live check**
@@ -60,79 +91,6 @@ and the lords each side holds prisoner — the same rework that also touched war
   decade, which component closed each war) — blocked on D1/D2 being settled, since the numbers
   would be re-measured under whatever weights the lead picks.
 
-## Start here — 2026-09-26
-
-**Phase 2.8, Statecraft, is built and run live** ([design/08](design/08-statecraft.md) §16-§17).
-The lead delegated D1-D10 on 2026-09-26 and asked for every open item to be handled and then
-one test pass over everything. Each decision was taken as §15 recommended; the reasons are §16.
-
-- **S0-S2 built** (commit `669a431`): the six political skills in ten terms, the XP grants,
-  the Realm tab's Statecraft strip and the breakdown lines, `EnableStatecraft` (default on).
-  **A-1 fixed a real fairness bug:** the player's Declare war now charges the AI's price (72 on a
-  Conquest claim) instead of vanilla's 200. Firebrand and Silver Tongue reach the mod's own acts.
-  No save data. No Harmony; one `GameModel` override.
-- **Verified live** with every term predicted by hand first: design/08 §17 has the table. What is
-  not verified is listed there too - most importantly, the regression proof was off against on,
-  not against the previous build.
-- **Balance run 08** is the S3 measurement: 10 years with the layer on, 10 with it off, from
-  `di_fresh_1084`, 0 errors in both. The war economy is unchanged (chosen wars 71 vs 73 days,
-  white peace 28 vs 29), and XP does not inflate skills (Envoy Charm median 232 to 235 over ten
-  years). The one large difference is pacts (47 AI pacts with the layer on, 31 off), which one
-  pair cannot separate from world divergence. It also answers design/04 §13.7. No civil war
-  happened in either run. [balance/run-08.md](balance/run-08.md).
-
-**The open items of 2026-09-26, handled:**
-
-| Item | What was done |
-|---|---|
-| Unpushed commit `8e41561` (Phase 3.7) | Pushed with this work |
-| 2.6c price lines named the player | "you"/"your" throughout the price column, for the buyer, the claimant and the player's own house |
-| Diplomacy row read "Independent" after the player's own tribute demand | The row now rebuilds after any action that changes the pair on the spot (pact, tribute, renounce, war). Not seen live: no tribute demand was available on the test saves; a pact through the same wrapper was not completed either (the bridge clicked a vanilla "Propose" first; the button now has `Id="DiPactPropose"`) |
-| A rebel player sees vanilla's Kingdom tabs as the rising (design question) | **Kept, on purpose**: those tabs are what a rebel commands (the rising's clans, fiefs and armies), and showing the realm would need Harmony on four vanilla VMs with no case under CLAUDE.md §3. The Court line now tells the player so |
-| "Raise your banner?" never reached | **Reached by the real path** on `di_fresh_1084`: the player made a pretender at a contested succession (81%), the crown at legitimacy 25, `tick_days 1` - the prompt, answered "Raise the banner", and the war began ("you raised your banner") |
-| The side-choice prompt at a war's start | **Reached** (Battania, Ergeon's rising): "Civil war in Battania … Join the rebellion / Stay loyal", answered Stay loyal |
-| The 30-day captivity ending | **Holds**: the ruler held by a rebel party, 30 daily ticks, RebelsWon "held by the rebels for 30 days"; a claimant held by a *foreign* power correctly counts nothing |
-| A cadet branch starting an internal war | **Reached the claimant stage, not the war.** A cadet founder stands at the next succession (it did, "Mengus 0% (1 clan)") but a new cadet branch has almost no influence, so it cannot reach the 30% a pretender needs. Finding: this path is structurally near-impossible soon after a split. A design question for the lead, below |
-| Esc over the peace table | **Not testable here**: the machine had no display attached, so no key reaches the game (CLAUDE.md §2). Still open |
-| `AiTributeCourtRefusalShare` untuned; how often the weekly demand fires | Run 08: the weekly demand was accepted twice in 20 in-game years (both in run B). Refusals are not logged, so the share could not be measured - a `tribute_refused` telemetry event is the next step |
-| Long-run balance of side changes and concession at 75 | **Not measured.** Run 08 had no internal war in either half: a fresh 1084 world does not strain a court within ten years. Needs a run from a save with a low-legitimacy realm |
-
-**A project review, the same day** (Claude, at the lead's request). The code is healthy: a clean
-build, save declarations consistent, every campaign event handler and Harmony patch behind a
-try/catch, and every player branch in the core rules one that asks the player rather than
-deciding for them. Commit `65913a4` holds what the review fixed: a save-data check that build and
-deploy now run (`scripts/check-save-ids.ps1`); stale "next free id" comments in six model files,
-InternalWar's naming an id already in use; a static cache that kept the previous campaign alive
-after every load (`AiDiplomacy.LastMoves`); dead code (`GrievanceRegistry.Forgive`); and the
-war-veto patch split into one file per method as CLAUDE.md §3 requires, verified live. The review
-also moved this file's history out. What needs the lead is in TODO.md, items 1-4 and 12: Phase 2's
-acceptance line, the court and the AI's foreign policy, espionage's default, how rarely civil war
-and tribute happen, and the unmerged 2026-09-24 mechanics review.
-
-**Then 2.9, court verbs (R-2), the same day.** The lead decided R-2 and set the pricing rule
-(CLAUDE.md §3); design/09 was written, decided and mocked up, and the lead approved the mockup.
-**C1, make amends, is built and run live** (design/09 §8): every price matched a hand prediction,
-the Court tab's two-click button paid, the save round trip held the new `Grievance` properties 6-7,
-and an AI ruler made amends through the weekly pass. Running it corrected the spec twice (standing
-now counts peer houses only; the AI scores the loyalty an answer really moves). Measured on
-Battania one tick from rising, two amends shrank the bloc (61% to 56%) and the rising (5 houses to
-4), and the rising still came, held by crown legitimacy 25 and by relation. **The lead then decided
-(design/09 D16-D17):** the acceptance line means prevention, which C1 meets; and AI rulers consider
-amends daily, before the internal-war check - built and run live the same day.
-
-**Then C2, offices and patronage, the same day** (design/09 §9): five seats per realm, the seat
-holder speaking for the realm in its skill, +8 loyalty to the holder's house and a Centralist pull.
-Run live: every price predicted and matched; the Centralist bloc formed for the first time; taking a
-seat back left its grievance; the new save type came back from a fresh process; AI realms under
-threat gave seats and made amends, one act a day. New save data: class 18, `ModState` 18, enum 28.
-
-**Then C3, tribute per vassal** (design/09 §10): four levels on a vassal's Diplomacy-tab row, a
-28-day lock (`Treaty` property 18, so it survives a save), the AI easing or squeezing by Hold. Run
-live, with the real clock: a Heavy tribute at Hold 40 pushed the vassal under the line where it
-withholds, so the preview now warns; a Heavy period paid once Hold recovered; an AI patron eased both
-its vassals. A fault older than C3 was found and fixed: a Diplomacy-tab action showed "Diplomatic
-Trust" twice. **2.9 is built: C1, C2, C3.**
-
 ## Where the work stands
 
 | Phase | State |
@@ -140,36 +98,25 @@ Trust" twice. **2.9 is built: C1, C2, C3.**
 | **0 — Foundation** | ✅ done, verified in a live campaign |
 | **1 — Diplomacy core (1.1–1.12)** | ✅ **accepted by the lead, 2026-09-23**. Code complete including submission and hegemony (1.9/1.10), the vanilla takeover (1.11) and power (1.12). Measured over runs 01–08; run 08 answered the §13.7 questions the §13 rework had left open. **War score is being reworked under it since 2026-09-27** ([design/10](design/10-war-score.md), built, live-checked, D1/D2 decided and D6 dropped 2026-09-27; its balance run is owed) — acceptance stands, but the numbers behind it are mid-change. Carried debt: [ROADMAP.md](ROADMAP.md#phase-1--accepted-by-the-project-lead-2026-09-23) and "Not verified — carried" below |
 | **2 — Court intrigue** | ✅ **accepted by the lead, 2026-09-27.** 2.1–2.7 built and verified live on their main paths; **2.8 Statecraft** built and run live 2026-09-26 (S0–S2; S3 is run 08; S4 became design/09's C2; S5 traits waits); **2.9 Court verbs** C1, C2 and C3 built and run live 2026-09-26. The acceptance line is met by C1 under the lead's reading (prevention, design/09 D16). Carried debt — no balance run with the court verbs, civil war's rate unmeasured, 2.8's own §12 unmet — is listed in [ROADMAP.md](ROADMAP.md#phase-2--accepted-by-the-project-lead-2026-09-27) |
-| **3 — Espionage** | ⏸ **parked by the lead, 2026-09-26.** 3.1–3.7 built and run live ([design/03 §10](design/03-espionage.md)). The AI's handlers are still taken by vanilla, so an AI network never grows (TODO 3) |
-| **4 — Integration, balance, release** | 🔄 runs 01–08 archived; **run 08** is the current reference. The civil-war balance needs its own run (TODO 4) |
+| **3 — Espionage** | ⏸ **parked by the lead, 2026-09-26.** 3.1–3.7 built and run live ([design/03 §10](design/03-espionage.md)). The AI's handlers are still taken by vanilla, so an AI network never grows (TODO, "Still open"). Fixed 2026-09-27 while parked: the bribe window in campaign years, the 3.5 wording, the reloaded bribe offer |
+| **4 — Integration, balance, release** | 🔄 runs 01–08 archived; **run 08** is the current reference. **Run 09 is planned** ([balance/run-09-plan.md](balance/run-09-plan.md)): design 10's 20-year run, the second statecraft pair, the civil-war run, and a check of everything built on 2026-09-27 |
 
 ## What to do next
 
-**Design 10, war score — decisions closed, balance run owed.** D1 as recommended, D2 kept, D6
-dropped (2026-09-27). Next is the 20-year balance run design/10 §9 asks for; the prisoner term's
-share of each war's closing score is the first thing to read, since D2 was kept knowing it
-dominated the live check. Worth ten minutes first: the unexplained zero-manpower siege defender in
-the §9a check, before trusting the breakdown fully.
-
-**Phase 2 is accepted (the lead, 2026-09-27).** What it leaves owed is a balance run with the
-court verbs in the world - five of seven AI realms seated someone on day one, seats move the
-statecraft medians, AI patrons now set tribute by Hold - which can share a campaign with design
-10's run. Espionage's default and civil war's rarity stay as they are, the lead's call of
-2026-09-26.
-
-Work that needs no decision:
-
-1. **A civil-war balance run** from a save with a strained court. Run 08 saw no internal war and
-   no contested succession in 20 in-game years. `InternalWarCooldownDays`'s 2026-09-27 fix (365 →
-   84) may already change this — worth a fresh look before scheduling a dedicated run.
-2. **A `tribute_refused` telemetry event**, so `AiTributeCourtRefusalShare` can be tuned.
-3. **Espionage, when the lead unparks it:** the 3.6 handler blocker first (TODO.md, pending work).
-4. **The carried unverified items below**, whenever a session is in the game anyway.
+1. **Run 09, on the lead's machine** - [balance/run-09-plan.md](balance/run-09-plan.md): first the
+   old-save load and the cheat-mode gate (§0), then the targeted checks (A), then the balance runs
+   (B, C). `tools/analyse-log.py` reads the new telemetry.
+2. **Then decide from its numbers:** the §13 tribute band (run 09 question 3), whether D2's
+   prisoner weights stand (question 1), whether the indemnity bites too hard (question 4).
+3. **Still open, not blocking:** espionage 3.6 (parked), and whether the peace hint should show a
+   rival's bar as a band (TODO, "Still open").
 
 ## Not verified — carried
 
 Short on purpose; each line points to where the detail is.
 
+- **Everything built on 2026-09-27** (the delegated pass): compile-checked only. Each item's check
+  is in [balance/run-09-plan.md](balance/run-09-plan.md) §A.
 - **Phase 1:** two peace-table surfaces have never been seen working, the multi-selection
   checklist against a real budget and the AI→player incoming offer (history, "What acceptance did
   and did not mean"). `ReconcileWithSiblings`, the AI choosing the dissolution rung, and
@@ -184,8 +131,8 @@ Short on purpose; each line points to where the detail is.
   player's own tribute demand (a pact through the same path was not completed either).
 - **Phase 2.8:** the regression proof was statecraft off against on, not against the build before
   it, and design/08 §12's acceptance is not yet met ([design/08 §17](design/08-statecraft.md)).
-- **Phase 3:** the AI handler blocker, two 3.5 wording faults, a reloaded bribe offer
-  ([design/03 §10](design/03-espionage.md)).
+- **Phase 3:** the AI handler blocker; the 3.5 wording and the reloaded bribe offer were fixed
+  2026-09-27, not run ([design/03 §10](design/03-espionage.md)).
 - **2026-09-26:** the `DeclareWarAction.ApplyByKingdomDecision` prefix since its split: applied,
   not run.
 - **2.9 C3:** the AI raising a link to Heavy; a vassal player told of a new tribute; the Diplomacy tab's action grid overlapping a vanilla label on a ten-button row (design/09 §10).
@@ -193,8 +140,9 @@ Short on purpose; each line points to where the detail is.
 - **2.9 C1:** the AI skipping an answer that moves nothing, in a case where that changes its pick; a
   player serving an AI king being told the king answered their house; the Encyclopedia ledger,
   which now leaves answered records out ([design/09 §8](design/09-court-verbs.md)).
-- **Design 10, war score:** the 20-year balance run (no longer blocked); a siege where the
-  defender's manpower read 0 in the §9a check, unexplained; carrying an old-save `WarScore` over
+- **Design 10, war score:** the 20-year balance run (run 09 B); a siege where the defender's
+  manpower read 0 in the §9a check - a likely cause found in code and fixed 2026-09-27, with a
+  decisive log line, not yet seen; carrying an old-save `WarScore` over
   as `BattleScore` under the new decay, never exercised on a real reload ([design/10 §9a](design/10-war-score.md)).
 
 ## Saves

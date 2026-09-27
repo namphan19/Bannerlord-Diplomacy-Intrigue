@@ -22,7 +22,9 @@ everything else is a recommendation waiting on the lead.
   ruler's reputation (S-2); no cap on skill effects to protect the AI (S-3).
 - **Since then** (register updated 2026-09-27): R-2 was built as Phase 2.9, S-1 as 2.8, and the
   espionage questions were settled in design/03 §9. With R-2 built, Phase 2 met its acceptance line
-  and the lead accepted it on 2026-09-27. [decisions.md](decisions.md) has each row.
+  and the lead accepted it on 2026-09-27. Every remaining question was decided the same day, on
+  the lead's delegation (R-1, R-4, R-6 and R-9 built; R-3 and R-5 no; U-2, U-8, U-9 deferred).
+  [decisions.md](decisions.md) has each row.
 - **The two findings that matter most:** the court never feeds back into the AI's foreign
   policy (R-1), and the player has almost no verbs in the court (R-2) — which also means Phase
   2's own acceptance line, *"the player can survive it by managing grievances"*, cannot be met

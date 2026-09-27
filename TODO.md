@@ -27,168 +27,53 @@ Kept as one line each so nobody re-opens them.
 - ~~Run 08~~ — run 2026-09-26, [balance/run-08.md](docs/balance/run-08.md). It answers
   [design/04 §13.7](docs/design/04-hegemony.md#137-what-the-next-run-must-answer).
 
-## Decisions for the lead
+## Decided 2026-09-27 — built, waiting on run 09
 
-### 1. Phase 2's acceptance line — met, and Phase 2 accepted 2026-09-27
+The lead handed every open decision below to the tech lead on 2026-09-27 ("toàn quyền quyết
+định"), except the Kingdom-UI loose ends, which are out of this pass. Each was decided, built and
+compile-checked the same day; **none has run in game**. What to run, and what to expect, is
+[docs/balance/run-09-plan.md](docs/balance/run-09-plan.md). The design docs named carry the rules.
 
-ROADMAP's line for Phase 2 ends *"The player can survive it by managing grievances."* The player
-has no act that reduces a grievance: the Court tab shows and selects, and nothing else. This was
-the 2026-09-24 review's headline (R-2, court verbs), and it is still open. Nobody has formally
-checked Phase 2 against its acceptance line.
+| Item | Decision | Where |
+|---|---|---|
+| 1. Phase 2's acceptance | Accepted by the lead, 2026-09-27 (ROADMAP carries its debt) | ROADMAP |
+| 2. The court and the AI's foreign policy (R-1) | **Wired**, every term capped under a third of the bar it feeds. Own court: Doves lower, Hawks raise the three peace bars (×0.70-×1.15) and the war value (±6). A rival's weakness, read **only through the bands** the player sees (internal war +4, crown Failing +3, claimant +2, Questioned +1, cap 6). A realm at war with itself chooses no new foreign war | design/02 §7.2 |
+| R-9 | A balancing threat lowers the trust floor for **defensive pacts only**, to −30 at full pull; the AI offers a defensive pact when trust alone refuses the alliance | design/02 §7.2, design/06 |
+| 3. Espionage on by default | Kept on (the lead, 2026-09-26) | — |
+| 4a. Tribute at the table (§13 bands) | **Not moved.** Design 10 changes how war score is earned, so run 08's "0 of 123" says nothing about the new score. Run 09 question 3 decides it | run-09-plan |
+| 4b. Cadet branches | At a split the cadet takes the parent's influence **in proportion to the adults who leave, at most 50%**. On the code's numbers that reaches a pretender's 30% only when the ruling house held most of the court's influence - recorded, nothing more built | design/07 §5 |
+| 5. Pacts under statecraft | **Run the second pair**: run 09B (statecraft off, 10 years) against 09A's first decade | run-09-plan |
+| 6. Should money bite? | **Yes.** An indemnity is priced against the loser's ruler's gold: 0.5% a point, never under 125 denars, never over 40% of it | design/01 §4.2, design/04 §13.4 |
+| 7. Grace shields a war | War is checked before the grace: trust bleeds from a war's first day. **No clawback** of the +12 - the pact was honoured to its end | design/01 §4.1 |
+| 8. The weakest kingdom eaten | **At most 2 tributes paid at once** (vassalage counts), in `CanSign`, so demand, peace table and console agree. **No** "don't dogpile" term. Submission is not capped | design/01 §3.3 |
+| 9. F3 legal neglect | **(a) fractional**: a war the patron is treaty-bound to stay out of counts as half an ignored one. A war between two clients of the same patron does not count | design/04 §10a |
+| 10. Tribute re-imposed on expiry | A receiver cannot demand tribute of the same payer for **84 days** after one ends. The peace table is not bound | design/01 §3.3 |
+| 10a. Design 10 | D1 as recommended, D2 kept, D6 dropped (the lead) | design/10 §10 |
+| 11. Before a release | The test levers and every state-changing command **need cheat mode** (`CampaignCheats.CheckCheatUsage`); diagnostics stay open. `EnableTelemetry` **defaults off in a release build** - applied when Phase 4 cuts one | CLAUDE.md §2 |
+| 12. The 2026-09-24 review | Merged; its register is current. R-3 (agenda bias, Crown party), R-5 (rally round the flag): **no**. R-4: **no mean reversion**; the dividend now needs a real year of unbroken peace. R-6: **yes to both** (fiefs lost wear an internal war's side down; a crown win restores what the rebels took). U-2 petitions, U-8 secession, U-9 the loser's fate: **deferred** | review decisions.md |
 
-- [x] **Decided 2026-09-26: build R-2** to meet the line. Espionage's default (item 3) and civil
-      war's rarity (item 4) stay as they are, the same call.
-- [x] D1-D15 of [design/09](docs/design/09-court-verbs.md) decided 2026-09-26, with the lead's
-      pricing rule: influence and gold together, each scaled ×0.5-×2 by its skill, priced high
-      (design/09 §0, CLAUDE.md §3).
-- [x] The mockup approved by the lead, 2026-09-26.
-- [x] **C1, make amends: built and run live, 2026-09-26** ([design/09 §8](docs/design/09-court-verbs.md)).
-- [x] **Decided 2026-09-26 (design/09 D16): the line means prevention**, and C1 meets it. A court
-      already at the trigger after a contested succession may rise; no verb for legitimacy or
-      relation is added.
-- [x] **Decided 2026-09-26 (D17): AI rulers consider amends daily, before the internal-war check.**
-      Built and run live: on `di_pretender_test` Battania's ruler answered fen Penraic before the
-      check, and the rising took 4 houses instead of 5.
-- [x] **Phase 2 accepted by the lead, 2026-09-27.** What it carries is in ROADMAP, "Phase 2 — accepted
-      by the project lead".
-- [x] **C2, offices and patronage: built and run live, 2026-09-26** ([design/09 §9](docs/design/09-court-verbs.md)).
-- [x] **C3, tribute per vassal: built and run live, 2026-09-26** ([design/09 §10](docs/design/09-court-verbs.md)). 2.9 is complete.
-- [ ] A balance run with C1 and C2 in the world: five of seven AI realms on `di_pretender_test`
-      seated someone on day one (one house below 25 is "under threat"), and seats move the statecraft
-      medians, and AI patrons now ease or squeeze tribute by Hold. How far the AI world moves, and
-      whether civil war gets rarer still, is the run's.
+Found and fixed in the same pass, not on any list before: the bribe window was 730 calendar days
+(8.7 campaign years) instead of two campaign years; the trust peace dividend paid a peace that had
+been broken and remade; a foreign war kept charging a retaken fief daily; an open bribe offer was
+re-rolled after a reload (now saved, `SpyMission` 12); stale figures in six design docs.
 
-### 2. The court does not reach the AI's foreign policy
+## Still open
 
-`AiDiplomacy`'s war and peace valuations read no bloc, loyalty, crown legitimacy or pretender.
-The only place the diplomacy layer reads a court is the tribute demand (`Intrigue/TributeCourt`).
-Review item R-1.
-
-- [ ] Wire it (a Doves share lowering the peace threshold, a divided or illegitimate neighbour as
-      a war-valuation term), or leave the pillars apart on purpose.
-
-### 3. Espionage is on by default while the AI cannot use it
-
-`EnableEspionage` defaults to true. The player's networks grow; an AI network never does,
-because vanilla makes its handler a governor or a party leader within days (the 3.6 blocker,
-[design/03 §10](docs/design/03-espionage.md)). The code keeps "the AI plays by the same rules";
-the outcome does not.
-
-- [x] **Kept on, knowingly** — the lead, 2026-09-26.
-
-### 4. Civil war, tribute at the table and cadet branches almost never happen
-
-Run 08 (20 in-game years across both halves): **zero** internal wars, contested successions,
-divided houses or side changes; **0 of 123** peace settlements conceded a tributary pact (it
-needs a war score of 65-75; the mean final score was 21-27). A new cadet branch has almost no
-influence, so soon after a split it cannot reach the 30% a pretender needs (STATUS, 2026-09-26).
-A player can play a whole campaign and see none of it.
-
-- [x] Civil war: **kept as it is** — the lead, 2026-09-26. The trigger thresholds stay. Note that
-      design/09's AI amends will make AI civil wars rarer still; its §5 run measures by how much.
-- [ ] Tribute: move the §13 bands or not (design/04 §13.7).
-- [ ] Cadet branches: should a cadet founder inherit some of the parent house's influence or
-      backers, so that 2.6b can lead to 2.6?
-
-### 5. Pacts under statecraft
-
-Run 08 signed 47 AI pacts with statecraft on against 31 off. One pair cannot separate that from
-world divergence.
-
-- [ ] A second A/B pair from another seed before any constant moves — say if it should be run.
-
-### 6. Should money bite?
-
-Run 07 used the indemnity rung in **0 of 100** settlements; after §13.4's sizing fix, run 08
-used it in **35 of 123** (24 with statecraft on, 11 off). The *price* is untouched: at 8 points
-per 1,000 denars a 60-point indemnity is 7,500 denars, trivial to a ruler holding several hundred
-thousand.
-
-- [ ] Decide whether `PeaceCostPerThousandIndemnity` should change. Balance, not a fix.
-
-### 7. Grace shields the first month of a war
-
-The 30-day trust grace is checked **before** the war bleed in `TrustRegistry.DailyTick`. Three
-times in the 2026-09-19 max-speed run a kingdom attacked its former defensive-pact partner ~6
-days after the pact lapsed; the expiry's +12 "honoured" and its grace meant the first ~30 days
-of each war bled nothing. See [balance/live-2026-09-19-review.md](docs/balance/live-2026-09-19-review.md).
-
-- [ ] **Recommended:** war bleed ignores grace (check for war before grace — a one-line reorder).
-- [ ] Design call: a cooling-off period after a pact lapses, or claw back the +12 dividend if the
-      payee attacks within some window.
-
-### 8. The weakest isolated kingdom gets eaten
-
-Observed on the old evolved save: Southern Empire went 10 fortifications → 2 while paying
-tribute to **three** kingdoms at once (stacking is allowed — only Vassalage subordinates foreign
-policy). **Run 07 did not reproduce the death spiral** on a fresh map; Western Empire was
-eliminated but by an ordinary dogpile.
-
-- [ ] Decide whether tribute stacking on one payer should be capped.
-- [ ] Decide whether the AI should weigh a target already at war with several others.
-
-### 9. F3 "legal neglect"
-
-`Hegemony.Protection` does not count a patron treaty-bound to its vassal's attacker as neglect,
-so Hold stays healthy and defection never opens on that path. Run 07's defection fired through
-the ordinary neglect route instead, so this is no longer blocking anything.
-
-- [ ] Options: (a) fractional neglect, (b) a Hold/trust hit for treating with the attacker,
-      (c) accept it.
-
-### 10. Tribute re-imposition on the expiry day
-
-Happens on the exact expiry day, every cycle.
-
-- [ ] Add a cooldown, or let the payer refuse?
-
-### 10a. Design 10, war score: D1, D2, D6
-
-Built (W1+W2), given a first live check on `testmod_claude_1` and committed (`44a12a9`),
-2026-09-27 ([design/10 §9a-§10](docs/design/10-war-score.md)).
-
-- [x] **D1** — 120, cap 30, +3 for a battle whose loser fielded 100+ men: the recommendation,
-      taken by the lead 2026-09-27.
-- [x] **D2** — ruler 20 / clan leader 10 / lord 5, uncapped: **kept** by the lead 2026-09-27,
-      after the live check had reopened it (the term alone swung a war's score by 30-75 points
-      within two weeks).
-- [x] ~~**D6**~~ — annexing the rest of a realm at the table: **dropped** by the lead 2026-09-27.
-- [ ] The 20-year balance run design/10 §9 asks for, now unblocked (pending work, below).
-
-### 11. Before a release (Phase 4)
-
-- [ ] The 75 `diplomacy.*` console commands, the `test_*` levers among them, need no cheat mode.
-      The retail game has no console, but a console mod reaches them. Gate the levers, or strip
-      them from a release build.
-- [ ] `EnableTelemetry` defaults to true and writes weekly reports into Documents. Right for a
-      test build; decide for a release.
-
-### 12. The 2026-09-24 mechanics review — merged 2026-09-27
-
-- [x] Merged into `development` without the vendored `vietnamese-tech-writing` skill (the project
-      has its own `vietnamese-writing`), and its register brought up to date:
-      [docs/reviews/2026-09-24-mechanics/decisions.md](docs/reviews/2026-09-24-mechanics/decisions.md).
-      Still open there: R-1 (item 2 above), R-3 to R-6, R-9, U-2, U-8, U-9.
+- [ ] **Espionage 3.6, the AI handler blocker** - parked by the lead. Needs vanilla IL of the real
+      game (what makes an AI hero a governor or a party leader); the cloud reference assemblies
+      have no method bodies. `tools/CallSites` on the lead's machine.
+- [ ] **A rival's court can be read off the peace hint.** "They start listening at N" shows a
+      rival's exact exhaustion (older than today) and now its court-moved bar, from which its
+      Doves/Hawks balance can be inferred - against the band rule (design 02 §9 decision 1).
+      Show those as bands, or accept. Found by package A; left as it was.
+- [ ] **The Kingdom-UI loose ends** - the Realm tab widening the tab strip, `ConcessionLadder`'s
+      `townsFirst` flag. Out of this pass by the lead's call.
 
 ## Pending work
 
-- [ ] **Design 10's 20-year balance run** (design/10 §9, step 4): tributes and subjugations per
-      decade, and which component closed each war. Read the prisoner term's share first: D2 was
-      kept knowing it dominated the first live check. Look at the zero-manpower siege defender
-      (§9a) before trusting the battle breakdown fully.
-- [ ] **A civil-war balance run** from a save with a strained court — item 4.
-- [ ] **A `tribute_refused` telemetry event.** Acceptances of a tribute demand are logged,
-      refusals are not, so `AiTributeCourtRefusalShare` cannot be tuned (run 08 §6).
-- [ ] **Espionage, when the lead unparks it:** the 3.6 handler blocker (find from vanilla's IL
-      what assigns governors and parties to an AI clan's heroes, then choose the lever with that
-      evidence), then 3.6's long AI-only run, then the two 3.5 wording faults and the note on a
-      reloaded bribe offer ([design/03 §10](docs/design/03-espionage.md)).
-      **Found 2026-09-26:** `EspionageConstants.BribeWindowDays = 730` implements the lead's "two
-      years" (design/03 §9 decision 7) in calendar days, which is 8.7 game years at 84 days each;
-      every other "years" constant in the mod is game years. Not changed, since espionage is parked.
-- [ ] `diplomacy.test_set_skill` sets a skill without its XP, so the hero's next XP grant puts the old
-      value back (seen 2026-09-26: Charm 232 read 503 again after one amends). A test built on it has
-      to set the skill after any act that grants XP.
+- [ ] **Run 09**, all of [docs/balance/run-09-plan.md](docs/balance/run-09-plan.md): the targeted
+      checks (A), the 20-year balance run and the second statecraft pair (B), the civil-war run (C).
+      It closes design 10's balance run, the §13 tribute question, and the civil-war balance.
 
 ## Not verified in game
 
