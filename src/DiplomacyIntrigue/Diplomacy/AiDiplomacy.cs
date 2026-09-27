@@ -121,16 +121,30 @@ namespace DiplomacyIntrigue.Diplomacy
             }
 
             if (worst == null) return false;
-            if (worstExhaustion < DiplomacyConstants.ExhaustionSeekPeace)
+
+            // The bar is the court's as well as the war's (design 02 §7.2, R-1): a court of
+            // Doves sues sooner, one of Hawks holds out. Read from the peace table's resolver,
+            // which both signatures and the player's peace button read too.
+            var bar = PeaceTable.SeekPeaceBar(state, kingdom);
+            if (worstExhaustion < bar)
                 return TryEndDormantWar(state, kingdom);
 
             var enemy = worst.Other(kingdom);
             if (enemy == null || enemy.IsEliminated) return false;
 
             return WarScore.For(worst, kingdom) > DiplomacyConstants.PeaceWhitePeaceOnlyBelow
-                ? TryCollectPeace(state, worst, kingdom, enemy, worstExhaustion)
-                : TryBuyPeace(state, worst, kingdom, enemy, worstExhaustion);
+                ? TryCollectPeace(state, worst, kingdom, enemy, worstExhaustion, bar)
+                : TryBuyPeace(state, worst, kingdom, enemy, worstExhaustion, bar);
         }
+
+        /// <summary>
+        /// " (its court's bar 45.2)" when the court moved the bar, nothing when it did not - so a
+        /// balance run can count the peaces a court hastened or delayed from the log alone.
+        /// </summary>
+        private static string BarNote(float bar)
+            => System.Math.Abs(bar - DiplomacyConstants.ExhaustionSeekPeace) < 0.05f
+                ? ""
+                : " (its court's bar " + bar.ToString("0.0") + ")";
 
         /// <summary>
         /// Closes a war nobody is fighting.
@@ -183,7 +197,7 @@ namespace DiplomacyIntrigue.Diplomacy
         /// past what their victory entitles them to.
         /// </summary>
         private static bool TryBuyPeace(ModState state, WarRecord war, Kingdom kingdom,
-            Kingdom enemy, float exhaustion)
+            Kingdom enemy, float exhaustion, float bar)
         {
             // A player who turned this kingdom's peace down recently is not asked again
             // yet; the war carries on and the week looks elsewhere for a move.
@@ -199,7 +213,7 @@ namespace DiplomacyIntrigue.Diplomacy
                 if (PeaceTable.Apply(state, war, white, out _))
                 {
                     Log.Info("AI", kingdom.Name + " sued for peace with " + enemy.Name
-                                   + " at exhaustion " + exhaustion.ToString("0.0") + ": white peace.");
+                                   + " at exhaustion " + exhaustion.ToString("0.0") + BarNote(bar) + ": white peace.");
                     return true;
                 }
             }
@@ -215,7 +229,7 @@ namespace DiplomacyIntrigue.Diplomacy
                 if (PeaceTable.Apply(state, war, terms, out _))
                 {
                     Log.Info("AI", kingdom.Name + " bought peace from " + enemy.Name
-                                   + " at exhaustion " + exhaustion.ToString("0.0") + ": " + terms + ".");
+                                   + " at exhaustion " + exhaustion.ToString("0.0") + BarNote(bar) + ": " + terms + ".");
                     return true;
                 }
             }
@@ -232,7 +246,7 @@ namespace DiplomacyIntrigue.Diplomacy
         /// accept; collecting, the dearest thing they will bear.
         /// </summary>
         private static bool TryCollectPeace(ModState state, WarRecord war, Kingdom kingdom,
-            Kingdom enemy, float exhaustion)
+            Kingdom enemy, float exhaustion, float bar)
         {
             // Same refusal window as the buying path: a player who turned this
             // kingdom's offer down recently is left in their war, not asked again.
@@ -252,7 +266,7 @@ namespace DiplomacyIntrigue.Diplomacy
                 if (PeaceTable.Apply(state, war, terms, out _))
                 {
                     Log.Info("AI", kingdom.Name + " imposed terms on " + enemy.Name
-                                   + " at exhaustion " + exhaustion.ToString("0.0")
+                                   + " at exhaustion " + exhaustion.ToString("0.0") + BarNote(bar)
                                    + " (war score " + WarScore.For(war, kingdom).ToString("0")
                                    + "): " + terms + ".");
                     return true;
@@ -268,7 +282,7 @@ namespace DiplomacyIntrigue.Diplomacy
                 if (PeaceTable.Apply(state, war, white, out _))
                 {
                     Log.Info("AI", kingdom.Name + " let " + enemy.Name + " go at exhaustion "
-                                   + exhaustion.ToString("0.0")
+                                   + exhaustion.ToString("0.0") + BarNote(bar)
                                    + ": nothing collectable, white peace.");
                     return true;
                 }
@@ -1115,6 +1129,17 @@ namespace DiplomacyIntrigue.Diplomacy
                     : mutual >= DiplomacyConstants.AiDefensivePactThreshold ? TreatyType.DefensivePact
                     : TreatyType.NonAggressionPact;
 
+                // R-9: a common threat lowers the trust floor for a defensive pact alone. A pair
+                // that values an alliance but sits between the two floors signs the rung trust
+                // allows - the player's chooser offers each rung on its own, and without this the
+                // AI in the same seat would get nothing. Only when trust is what refuses the
+                // alliance, and never beside an alliance already signed.
+                if (type == TreatyType.Alliance
+                    && state.ActiveTreatyBetween(kingdom, other, TreatyType.Alliance) == null
+                    && !TreatyRegistry.TrustAllows(state, kingdom, other, TreatyType.Alliance, out _)
+                    && TreatyRegistry.TrustAllows(state, kingdom, other, TreatyType.DefensivePact, out _))
+                    type = TreatyType.DefensivePact;
+
                 if (mutual < DiplomacyConstants.AiNonAggressionThreshold) continue;
                 if (mutual <= bestValue) continue;
 
@@ -1855,6 +1880,12 @@ namespace DiplomacyIntrigue.Diplomacy
         /// pursue its own quarrel. Without this the rate is set purely by the value
         /// threshold, and run 02 shows where that lands - 1.4 chosen wars per kingdom per
         /// year, which only worked because vanilla ended every war in six days.
+        ///
+        /// Nor while the realm is at war with itself (R-1, 2026-09-27). Until then nothing
+        /// stopped it: an internal war lives in its own record, never among the wars
+        /// <see cref="ChosenWarCount"/> counts or <see cref="WarExhaustion.Worst"/> reads, so a
+        /// crown fighting its own rising could open a foreign war the same week. It still
+        /// defends - a war declared on it, or one a treaty calls it into, is not chosen here.
         /// </summary>
         public static bool CanTakeOnAnotherWar(ModState state, Kingdom kingdom)
         {
@@ -1862,6 +1893,7 @@ namespace DiplomacyIntrigue.Diplomacy
             if (ChosenWarCount(state, kingdom) >= MaxChosenWars(kingdom)) return false;
             if (WarExhaustion.Worst(state, kingdom) > DiplomacyConstants.AiMaxExhaustionToExpand) return false;
             if (state.WearinessOf(kingdom) > DiplomacyConstants.AiMaxWearinessToExpand) return false;
+            if (Intrigue.InternalWars.OngoingIn(state, kingdom) != null) return false;
             return true;
         }
 
@@ -1984,7 +2016,8 @@ namespace DiplomacyIntrigue.Diplomacy
                 "fromRatio", terms.FromRatio, "fromLegitimacy", terms.FromLegitimacy,
                 "fromProximity", terms.FromProximity, "fromHunger", terms.FromHunger,
                 "fromWeariness", terms.FromWeariness, "fromAmbition", terms.FromAmbition,
-                "fromAnnexation", terms.FromAnnexation);
+                "fromAnnexation", terms.FromAnnexation, "fromOwnCourt", terms.FromOwnCourt,
+                "fromTargetWeakness", terms.FromTargetWeakness);
             Log.Info("AI", kingdom.Name + (opened ? " declared war on " : " tried and failed to declare war on ")
                            + target.Name
                            + (annexation ? " to annex its former vassal" : "")
@@ -2032,6 +2065,18 @@ namespace DiplomacyIntrigue.Diplomacy
             public float FromWeariness;
             public float FromAmbition;
             public float FromAnnexation;
+
+            /// <summary>Our own court's Doves and Hawks, as effective shares of its influence.</summary>
+            public float OwnDoves;
+            public float OwnHawks;
+            /// <summary>Hawks add, Doves take away (design 02 §7.2, R-1).</summary>
+            public float FromOwnCourt;
+
+            /// <summary>Their court as the Encyclopedia shows it: bands and public facts, no figures.</summary>
+            public Intrigue.CourtBands.CourtSigns TargetSigns;
+            /// <summary>What those signs add, after the cap.</summary>
+            public float FromTargetWeakness;
+            public bool TargetWeaknessCapped;
 
             /// <summary>Before the player's aggressiveness setting.</summary>
             public float Raw;
@@ -2101,10 +2146,61 @@ namespace DiplomacyIntrigue.Diplomacy
                 terms.FromAnnexation = Power.Greed(state, us) * DiplomacyConstants.AnnexGreedWeight
                                        - DiplomacyConstants.AnnexBreachPenalty;
 
+            // Our own court (design 02 §7.2, R-1). The shares are the blocs' effective share of
+            // the court's influence, the figure the internal-war trigger reads, and the court is
+            // our own, so the exact figure is ours to act on.
+            terms.OwnDoves = Intrigue.BlocModel.EffectiveShare(state, us, CourtAgenda.Doves);
+            terms.OwnHawks = Intrigue.BlocModel.EffectiveShare(state, us, CourtAgenda.Hawks);
+            terms.FromOwnCourt = terms.OwnHawks * DiplomacyConstants.WarValueOwnCourtHawks
+                                 - terms.OwnDoves * DiplomacyConstants.WarValueOwnCourtDoves;
+
+            // Theirs, only as bands (design 02 §9.1): the player weighing the same rival sees
+            // exactly these signs and no figure, and this valuation may not know more.
+            terms.TargetSigns = Intrigue.CourtBands.SignsOf(state, them);
+            terms.FromTargetWeakness = TargetWeakness(terms.TargetSigns, out terms.TargetWeaknessCapped);
+
             terms.Raw = terms.FromRatio + terms.FromLegitimacy + terms.FromProximity
-                        + terms.FromHunger + terms.FromWeariness + terms.FromAmbition + terms.FromAnnexation;
+                        + terms.FromHunger + terms.FromWeariness + terms.FromAmbition + terms.FromAnnexation
+                        + terms.FromOwnCourt + terms.FromTargetWeakness;
             terms.Total = terms.Raw * Settings.Current.AiAggressiveness;
             return terms;
+        }
+
+        /// <summary>
+        /// A rival's internal weakness as a reason for war (R-1): internal war, then a Failing
+        /// crown, then a standing claimant, then a Questioned crown, summed and capped at a
+        /// third of the threshold so it can tip a war that is nearly worth fighting and never
+        /// start one alone. The two crown bands exclude each other by construction.
+        /// </summary>
+        private static float TargetWeakness(Intrigue.CourtBands.CourtSigns signs, out bool capped)
+        {
+            var value = 0f;
+            if (signs.AtWarWithItself) value += DiplomacyConstants.WarValueTargetInternalWar;
+            if (signs.Crown == Intrigue.CrownStanding.Failing) value += DiplomacyConstants.WarValueTargetCrownFailing;
+            else if (signs.Crown == Intrigue.CrownStanding.Questioned) value += DiplomacyConstants.WarValueTargetCrownQuestioned;
+            if (signs.PretenderStands) value += DiplomacyConstants.WarValueTargetPretender;
+
+            capped = value > DiplomacyConstants.WarValueTargetWeaknessCap;
+            return capped ? DiplomacyConstants.WarValueTargetWeaknessCap : value;
+        }
+
+        /// <summary>The signs <see cref="TargetWeakness"/> read, in the Encyclopedia's words, each with its weight.</summary>
+        private static string DescribeSigns(Intrigue.CourtBands.CourtSigns signs)
+        {
+            if (signs.Quiet) return "crown Secure, no claimant, no rising";
+
+            var parts = new List<string>();
+            if (signs.AtWarWithItself)
+                parts.Add("at war with itself +" + DiplomacyConstants.WarValueTargetInternalWar.ToString("0"));
+            if (signs.Crown == Intrigue.CrownStanding.Failing)
+                parts.Add("crown Failing +" + DiplomacyConstants.WarValueTargetCrownFailing.ToString("0"));
+            else if (signs.Crown == Intrigue.CrownStanding.Questioned)
+                parts.Add("crown Questioned +" + DiplomacyConstants.WarValueTargetCrownQuestioned.ToString("0"));
+            else
+                parts.Add("crown Secure");
+            if (signs.PretenderStands)
+                parts.Add("a claimant stands +" + DiplomacyConstants.WarValueTargetPretender.ToString("0"));
+            return string.Join(", ", parts.ToArray());
         }
 
         /// <summary>
@@ -2191,6 +2287,13 @@ namespace DiplomacyIntrigue.Diplomacy
                           + " (must be <= " + DiplomacyConstants.AiMaxWearinessToExpand.ToString("0") + ")"
                           + (weariness > DiplomacyConstants.AiMaxWearinessToExpand ? "   BLOCKED" : ""));
 
+            var ownRising = Intrigue.InternalWars.OngoingIn(state, us);
+            sb.AppendLine("  internal war:   " + (ownRising == null
+                ? "none"
+                : "at war with its own rising for "
+                  + (CampaignTime.Now - ownRising.StartedOn).ToDays.ToString("0")
+                  + " days - it defends, it chooses no new war   BLOCKED"));
+
             // Same resolver the decision uses, so this cannot describe a formula the AI
             // does not run.
             var terms = EvaluateWar(state, us, them, annexation);
@@ -2220,6 +2323,18 @@ namespace DiplomacyIntrigue.Diplomacy
             if (terms.Annexation)
                 sb.AppendLine("  annexation (greed - breach):   " + terms.FromAnnexation.ToString("0.0")
                               + "   (greed " + Power.Greed(state, us).ToString("0.00") + ")");
+            sb.AppendLine("  value from our court:          " + terms.FromOwnCourt.ToString("0.0")
+                          + "   (Hawks " + (terms.OwnHawks * 100f).ToString("0") + "% of the court x "
+                          + DiplomacyConstants.WarValueOwnCourtHawks.ToString("0")
+                          + ", Doves " + (terms.OwnDoves * 100f).ToString("0") + "% x -"
+                          + DiplomacyConstants.WarValueOwnCourtDoves.ToString("0")
+                          + "; of " + Intrigue.BlocModel.CourtInfluence(us).ToString("0") + " court influence)");
+            sb.AppendLine("  value from their court:        " + terms.FromTargetWeakness.ToString("0.0")
+                          + "   (" + DescribeSigns(terms.TargetSigns)
+                          + (terms.TargetWeaknessCapped
+                              ? "; capped at " + DiplomacyConstants.WarValueTargetWeaknessCap.ToString("0")
+                              : "")
+                          + ")");
             sb.AppendLine("  total: " + terms.Raw.ToString("0.0")
                           + " x aggressiveness " + Settings.Current.AiAggressiveness.ToString("0.00")
                           + " = " + terms.Total.ToString("0.0")

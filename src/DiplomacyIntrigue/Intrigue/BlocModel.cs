@@ -181,6 +181,44 @@ namespace DiplomacyIntrigue.Intrigue
             return new List<CourtBloc>();
         }
 
+        /// <summary>
+        /// The share of the court's influence that the bloc with this agenda can actually
+        /// spend, 0-1: its <see cref="CourtBloc.EffectivePower"/> over the influence of every
+        /// house at court, the crown's own included. Zero when no such bloc has formed.
+        ///
+        /// **One figure for every reader.** The internal-war trigger (design 02 §6) and the
+        /// court's pull on foreign policy (design 02 §7.2, R-1) both read it here; the trigger
+        /// used to divide inline, and a second copy for the foreign-policy terms would have been
+        /// the duplication CLAUDE.md §3 forbids.
+        ///
+        /// Effective, not nominal: a member at or above the reliable band follows the ruler
+        /// whatever its bloc (design 02 §3), so it presses for nothing. The crown's influence
+        /// stays in the denominator - the obvious alternative, the court without the crown, lost
+        /// because a ruler holding most of the realm's influence *is* less moved by its lords,
+        /// and because the trigger has measured it this way since 2.6.
+        /// </summary>
+        public static float EffectiveShare(ModState state, Kingdom kingdom, CourtAgenda agenda)
+        {
+            if (state == null || kingdom == null) return 0f;
+
+            var total = CourtInfluence(kingdom);
+            if (total <= 0f) return 0f;
+
+            var blocs = BlocsOf(state, kingdom);
+            for (var i = 0; i < blocs.Count; i++)
+                if (blocs[i].Agenda == agenda) return blocs[i].EffectivePower / total;
+            return 0f;
+        }
+
+        /// <summary>Every seated house's influence, counting none below zero - what a bloc's share is of.</summary>
+        public static float CourtInfluence(Kingdom kingdom)
+        {
+            var total = 0f;
+            foreach (var clan in Court.MembersOf(kingdom))
+                if (clan.Influence > 0f) total += clan.Influence;
+            return total;
+        }
+
         private static List<CourtBloc> BuildBlocs(ModState state, Kingdom kingdom)
         {
             var blocs = new List<CourtBloc>();

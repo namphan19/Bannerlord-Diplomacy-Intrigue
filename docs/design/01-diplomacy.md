@@ -62,6 +62,12 @@ that just fought a long war cannot immediately start another.
 | ≥ 80 | AI accepts unfavourable terms; fief loyalty penalty **−1.0/day** while at war |
 | = 100 | Kingdom must offer peace at the next weekly evaluation; heavy legitimacy loss if refused |
 
+> **Since R-1 (2026-09-27) 60 and 70 are base bars, which the kingdom's own court moves.** Every
+> peace bar is multiplied by `1 + 0.15 x Hawks share - 0.30 x Doves share` (effective shares of
+> the court's influence): a court of Doves sues from 42 at the lowest, one of Hawks holds out to 69;
+> a winner's 70 moves between 49 and 80.5. `PeaceTable.SeekPeaceBar`, `LoserSignsAt` and
+> `WinnerSettlesAt` are the only readers. The exhaustion bands keep the base edges. Design 02 §7.2.
+
 ### 1.4 War score
 
 Separate from exhaustion, positive = aggressor winning, and **unbounded**. It was clamped to
@@ -296,6 +302,15 @@ season, but a reputation that outlasts it (since run 06 not forever; see below).
 > whatever the parties think of each other - the reason the truce was always exempt. At the
 > rates above a war puts a neutral pair under the floor in ~27 days, so without this the
 > table could almost never impose a treaty.
+>
+> **A common threat lowers the floor for a defensive pact** (R-9, 2026-09-27): while
+> `BalancingPull` names a sphere that outweighs the pair, the floor for that one type is
+> `-20 - 10 x pull`, so −30 at full pull; non-aggression pacts and alliances keep −20. The enemy of
+> my enemy will guard my back even if I would not follow him into a war. −30 stays above the −35
+> war floor on purpose: a pair fresh from fighting each other still spends ~33 days of peace before
+> it can stand together, rather than ~100. One resolver, `TrustRegistry.PactFloor`, read by
+> `TreatyRegistry.CanSign` - so the player's chooser and the AI's scan meet the same floor - and the
+> AI's scan, refused an alliance by trust alone, signs the defensive pact instead. Design 06 §4.
 
 ### 4.2 Peace terms
 
@@ -362,9 +377,10 @@ Acceptance takes **two** signatures, and the second was missing for the project'
 thirteen measured in-game years:
 
 - **The loser signs** when `exhaustion >= 60 - warScoreAgainstThem/2` and the package costs no
-  more than `warScoreAgainstThem x negotiation x 1.25`.
-- **The winner signs** when it earned nothing, or its own exhaustion has reached 70 and it no
-  longer cares, or the package is worth at least `PeaceTable.MinimumAcceptable`:
+  more than `warScoreAgainstThem x negotiation x 1.25`. The 60 is its court-moved seek bar since
+  R-1 (§1.3; design 02 §7.2).
+- **The winner signs** when it earned nothing, or its own exhaustion has reached 70 (court-moved
+  likewise) and it no longer cares, or the package is worth at least `PeaceTable.MinimumAcceptable`:
   - if this war can produce subjugation at all, **exactly 75** - a cliff, not a slope (design 04
     §13): a victory that can take the loser's standing does not settle for tribute;
   - otherwise **half** the budget, capped at the dearest package this war could actually
@@ -396,6 +412,19 @@ tick. Each kingdom scores its options and takes **at most one** diplomatic actio
 Rate limiting is a design feature, not an optimisation. AI diplomacy that fires daily reads
 as random noise to the player; weekly, with a visible reason attached to each action, reads
 as intent.
+
+**The court in the war valuation (R-1, 2026-09-27).** `AiDiplomacy.EvaluateWar` - the one war
+valuation, printed term by term by `diplomacy.war_value` - gained two terms, each capped at a third
+of `AiWarThreshold` (18) so neither, nor both together, can clear it alone:
+
+- **our court**: `+6 x Hawks share - 6 x Doves share`. The Doves half cannot bind today, because
+  Doves form above exhaustion 40 and a kingdom above 40 already starts no war;
+- **their court, as bands**: at war with itself +4, crown Failing +3, a claimant stands +2, crown
+  Questioned +1, summed and capped at 6 - read through `CourtBands.SignsOf`, exactly what the
+  Encyclopedia shows the player of that court, never a figure.
+
+And a gate: a kingdom at war with its own rising chooses no new foreign war
+(`CanTakeOnAnotherWar`); it still defends. Full terms and reasoning: design 02 §7.2.
 
 ---
 

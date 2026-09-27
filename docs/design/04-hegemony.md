@@ -704,6 +704,11 @@ Open design call: should a high `pull` relax the pact trust floor, in the same s
 `CanSign(settlesWar:)` exemption already granted to the peace table? **Not decided, not
 implemented, and not measured** — this is inference from two verified facts, not an observation.
 
+> **Decided and built, 2026-09-27 (R-9):** for defensive pacts only, the floor is
+> `−20 − 10 × pull` while the pull names a sphere to stand against; alliances and non-aggression
+> pacts keep −20. [Design 06 §4](06-power.md#4-coalitions-that-hold) has the rule. Still **not
+> measured**: whether it changes how coalitions form after a great war is for a long run to say.
+
 **One term is inconsistent, and it is a bug.** The threat side reads `SmoothedSphere` (head plus
 vassals); the counterweight side reads `Power.Smoothed(us) + Power.Smoothed(them)` — the two
 kingdoms alone, without their spheres. Two measures of "how strong is a side" that disagree, which

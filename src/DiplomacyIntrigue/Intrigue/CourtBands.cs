@@ -1,3 +1,4 @@
+using DiplomacyIntrigue.Core;
 using DiplomacyIntrigue.Models;
 using TaleWorlds.CampaignSystem;
 
@@ -30,7 +31,9 @@ namespace DiplomacyIntrigue.Intrigue
     /// away from the behaviour. Each edge below names the code that acts on it.
     ///
     /// This is the one place those edges are drawn. The Encyclopedia section and the Court
-    /// tab's legitimacy colour both read it, and <c>diplomacy.court_bands</c> prints it.
+    /// tab's legitimacy colour both read it, and <c>diplomacy.court_bands</c> prints it. Since
+    /// R-1 (2026-09-27) the AI's war valuation reads a rival through it too
+    /// (<see cref="SignsOf"/>), so the AI sees a rival court exactly as the player does.
     /// </summary>
     public static class CourtBands
     {
@@ -75,6 +78,45 @@ namespace DiplomacyIntrigue.Intrigue
                 default:
                     return "Firm enough to steady " + his + " court.";
             }
+        }
+
+        // ----- what a rival can see of a court's trouble -------------------------------
+
+        /// <summary>
+        /// The signs of a divided realm that anyone outside it can read. What a rival's war
+        /// valuation weighs (design 02 §7.2, R-1), and nothing more.
+        /// </summary>
+        public struct CourtSigns
+        {
+            /// <summary>The crown band the Encyclopedia shows.</summary>
+            public CrownStanding Crown;
+            /// <summary>Somebody presses a claim to the throne - named on the Encyclopedia page.</summary>
+            public bool PretenderStands;
+            /// <summary>The realm is fighting its own rising - a war on the map, which nobody can hide.</summary>
+            public bool AtWarWithItself;
+
+            /// <summary>No sign of trouble at all.</summary>
+            public bool Quiet => Crown == CrownStanding.Secure && !PretenderStands && !AtWarWithItself;
+        }
+
+        /// <summary>
+        /// A court's trouble as an outsider sees it: bands and public facts, never a figure.
+        ///
+        /// Read by the AI weighing a war on this realm, and built from exactly what the player
+        /// weighing the same realm is shown - the crown's band, the claimants the Encyclopedia
+        /// names, a rising in the field. Design 02 §9.1 shows a rival court only as bands; an AI
+        /// acting on the exact legitimacy or bloc shares would be acting on what the player is
+        /// never allowed to see, which is a hidden advantage by another name (CLAUDE.md §3).
+        /// </summary>
+        public static CourtSigns SignsOf(ModState state, Kingdom kingdom)
+        {
+            var signs = new CourtSigns { Crown = CrownStanding.Secure };
+            if (state == null || kingdom == null) return signs;
+
+            signs.Crown = CrownOf(LegitimacyRegistry.Of(state, kingdom));
+            signs.PretenderStands = SuccessionModel.PretendersTo(state, kingdom).Count > 0;
+            signs.AtWarWithItself = InternalWars.OngoingIn(state, kingdom) != null;
+            return signs;
         }
 
         // ----- a house's mood ---------------------------------------------------------

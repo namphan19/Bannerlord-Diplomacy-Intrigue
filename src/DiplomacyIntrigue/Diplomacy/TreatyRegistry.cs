@@ -76,16 +76,7 @@ namespace DiplomacyIntrigue.Diplomacy
                 return false;
             }
 
-            if (!settlesWar && !TrustRegistry.WillConsiderPacts(state, b, a))
-            {
-                reason = b.Name + " does not trust " + a.Name + " enough to sign anything but a truce.";
-                return false;
-            }
-            if (!settlesWar && !TrustRegistry.WillConsiderPacts(state, a, b))
-            {
-                reason = a.Name + " does not trust " + b.Name + " enough to sign anything but a truce.";
-                return false;
-            }
+            if (!settlesWar && !TrustAllows(state, a, b, type, out reason)) return false;
 
             // An alliance cannot be signed with someone at war with an existing ally: it
             // would oblige us to both sides of the same war.
@@ -150,6 +141,49 @@ namespace DiplomacyIntrigue.Diplomacy
             if (IsForbiddenByPatron(state, b, a, type, replacing, out reason)) return false;
 
             return true;
+        }
+
+        /// <summary>
+        /// Whether each side trusts the other enough to sign <paramref name="type"/>: the trust
+        /// half of <see cref="CanSign"/>, on its own so the AI's pact scan can ask which rung
+        /// trust allows (see <see cref="TrustRegistry.PactFloor"/>) without re-deriving the
+        /// floor. False with a player-facing reason.
+        /// </summary>
+        public static bool TrustAllows(ModState state, Kingdom a, Kingdom b, TreatyType type, out string reason)
+        {
+            reason = null;
+            if (!TrustRegistry.WillConsiderPacts(state, b, a, type))
+            {
+                reason = TrustRefusal(state, b, a, type);
+                return false;
+            }
+            if (!TrustRegistry.WillConsiderPacts(state, a, b, type))
+            {
+                reason = TrustRefusal(state, a, b, type);
+                return false;
+            }
+            return true;
+        }
+
+        private static string TrustRefusal(ModState state, Kingdom from, Kingdom to, TreatyType type)
+        {
+            var trust = TrustRegistry.Get(state, from, to);
+            var floor = TrustRegistry.PactFloor(state, from, to, type, out _, out var against);
+            if (against != null)
+                return from.Name + " does not trust " + to.Name + " enough even for a defensive pact against "
+                       + against.Name + ": trust " + trust.ToString("0")
+                       + ", and the threat lowers the bar only to " + floor.ToString("0") + ".";
+
+            // When a common threat would still carry a defensive pact, say so rather than
+            // "nothing but a truce": the player should not have to find that rung by trying it.
+            var pactFloor = TrustRegistry.PactFloor(state, from, to, TreatyType.DefensivePact, out _, out var threat);
+            if (threat != null && trust > pactFloor)
+                return from.Name + " does not trust " + to.Name + " enough for that (trust " + trust.ToString("0")
+                       + ", needs above " + floor.ToString("0") + "), but would stand with them in a defensive pact"
+                       + " against " + threat.Name + ".";
+
+            return from.Name + " does not trust " + to.Name + " enough to sign anything but a truce"
+                   + " (trust " + trust.ToString("0") + ", needs above " + floor.ToString("0") + ").";
         }
 
         /// <summary>

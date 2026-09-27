@@ -31,11 +31,46 @@ namespace DiplomacyIntrigue.Diplomacy
 
         /// <summary>
         /// False when <paramref name="from"/> distrusts <paramref name="to"/> too much to
-        /// sign anything but a truce. A truce is always available: ending a war has to stay
-        /// possible however badly the parties have behaved, or wars become unendable.
+        /// sign a <paramref name="type"/> with it. A truce is always available: ending a war
+        /// has to stay possible however badly the parties have behaved, or wars become
+        /// unendable - <see cref="TreatyRegistry.CanSign"/> never asks this for one.
         /// </summary>
-        public static bool WillConsiderPacts(ModState state, Kingdom from, Kingdom to)
-            => Get(state, from, to) > DiplomacyConstants.TrustFloorForPacts;
+        public static bool WillConsiderPacts(ModState state, Kingdom from, Kingdom to, TreatyType type)
+            => Get(state, from, to) > PactFloor(state, from, to, type, out _, out _);
+
+        /// <summary>
+        /// The trust below which <paramref name="from"/> will not sign <paramref name="type"/> with
+        /// <paramref name="to"/>. <see cref="DiplomacyConstants.TrustFloorForPacts"/> for every
+        /// type but one.
+        ///
+        /// R-9, 2026-09-27: a **defensive pact** against a real balancing threat has a lower
+        /// floor, by <see cref="DiplomacyConstants.DefensivePactTrustFloorRelief"/> times the
+        /// pull. The pull and the sphere it names are <see cref="AiDiplomacy.BalancingPull"/>'s,
+        /// symmetric in the pair, so both directions of a signature read the same relief. After a
+        /// great war most of the realms that must stand against the winner have just fought each
+        /// other, and the plain floor vetoed the very coalition the pull asks for (design 04
+        /// §12.5). Only the defensive pact: it obliges each side to guard the other, which the
+        /// threat justifies; an alliance asks them to follow each other into wars of choice, and a
+        /// non-aggression pact does nothing against the threat at all.
+        ///
+        /// No "is this the player" anywhere: the player's pact chooser and the AI's weekly scan
+        /// both reach this through <see cref="TreatyRegistry.CanSign"/>.
+        /// </summary>
+        public static float PactFloor(ModState state, Kingdom from, Kingdom to, TreatyType type,
+            out float pull, out Kingdom against)
+        {
+            pull = 0f;
+            against = null;
+            if (type != TreatyType.DefensivePact) return DiplomacyConstants.TrustFloorForPacts;
+
+            pull = AiDiplomacy.BalancingPull(state, from, to, out against);
+            if (against == null || pull <= 0f)
+            {
+                pull = 0f;
+                return DiplomacyConstants.TrustFloorForPacts;
+            }
+            return DiplomacyConstants.TrustFloorForPacts - pull * DiplomacyConstants.DefensivePactTrustFloorRelief;
+        }
 
         // ----- Writing --------------------------------------------------------
 

@@ -82,7 +82,12 @@ namespace DiplomacyIntrigue.Diplomacy
         /// <summary>Doves start gaining support in the court.</summary>
         public const float ExhaustionCourtPressure = 40f;
 
-        /// <summary>AI actively seeks peace and will accept a white peace.</summary>
+        /// <summary>
+        /// AI actively seeks peace and will accept a white peace - the base bar, which the
+        /// kingdom's own court moves (<see cref="PeaceCourtDovesPull"/>,
+        /// <see cref="PeaceCourtHawksPull"/>). Decisions read <c>PeaceTable.SeekPeaceBar</c>,
+        /// never this constant directly.
+        /// </summary>
         public const float ExhaustionSeekPeace = 60f;
 
         /// <summary>AI accepts unfavourable terms; fiefs start losing loyalty.</summary>
@@ -401,9 +406,43 @@ namespace DiplomacyIntrigue.Diplomacy
         /// loser cannot afford anything the winner would accept.
         ///
         /// At the 0.65/day accrual measured in run 02 this arrives around day 108, which is
-        /// inside the 100-200 day band wars are meant to occupy.
+        /// inside the 100-200 day band wars are meant to occupy. The base bar: the winner's
+        /// court moves it (<c>PeaceTable.WinnerSettlesAt</c>).
         /// </summary>
         public const float ExhaustionAcceptWhitePeaceWhenWinning = 70f;
+
+        /// <summary>
+        /// How far a court made wholly of Doves lowers every exhaustion bar its kingdom makes
+        /// peace by, as a fraction of the bar (design 02 §7.2, R-1): the bar at which it sues
+        /// (<see cref="ExhaustionSeekPeace"/>), the one at which it signs as the loser, and the one
+        /// at which a winner gives up its demands (<see cref="ExhaustionAcceptWhitePeaceWhenWinning"/>).
+        /// Scaled by the Doves' effective share of the court's influence
+        /// (<c>BlocModel.EffectiveShare</c>), so 0.30 is reached only by a court whose every
+        /// ounce of influence presses for peace: 60 becomes 42, 70 becomes 49.
+        ///
+        /// The full 0.30 is all but out of reach in practice: the ruling clan's influence is in the
+        /// denominator and a member loyal enough to follow the ruler is not counted, so even the
+        /// court STATUS 2.3 saw flip to "a single Doves bloc at 100%" (Khuzait at exhaustion 93 -
+        /// 100% of the blocs, not of the court) moves its bars by less.
+        ///
+        /// A third of the bar, the tech lead's cap for the term: enough that a peace party
+        /// holding the court makes its realm visibly readier to stop, not so much that the
+        /// court decides alone - 42 still sits above
+        /// <see cref="ExhaustionCourtPressure"/>, the exhaustion at which Doves start to form, so
+        /// a realm has to be bleeding before its court can hurry the peace.
+        /// A fraction rather than points so the three bars move together and keep their order.
+        /// **UN-TUNED.**
+        /// </summary>
+        public const float PeaceCourtDovesPull = 0.30f;
+
+        /// <summary>
+        /// The other way: how far a court made wholly of Hawks raises the same bars. Half the
+        /// Doves' reach (60 becomes 69, 70 becomes 80.5) - a war party can make a realm hold out
+        /// longer, but exhaustion is the realm's real condition, and a court that could postpone
+        /// peace as far as another hastens it would make a bleeding kingdom unable to stop.
+        /// **UN-TUNED.**
+        /// </summary>
+        public const float PeaceCourtHawksPull = 0.15f;
 
         // ---- Submission and hegemony (1.9 / 1.10) ----------------------------
         //
@@ -991,9 +1030,32 @@ namespace DiplomacyIntrigue.Diplomacy
         /// punishment for treachery: not a relation penalty that fades in a season, but a
         /// reputation that outlasts it. Since run 06 it is not permanent: a -35 breach from
         /// neutral holds the victim under this line for ~100 days
-        /// (<see cref="TrustGrudgeDecayPerDay"/>).
+        /// (<see cref="TrustGrudgeDecayPerDay"/>). A defensive pact against a common threat has
+        /// a lower floor (<see cref="DefensivePactTrustFloorRelief"/>); gates read
+        /// <c>TrustRegistry.PactFloor</c>.
         /// </summary>
         public const float TrustFloorForPacts = -20f;
+
+        /// <summary>
+        /// How far below <see cref="TrustFloorForPacts"/> a **defensive pact** may still be
+        /// signed at full balancing pull (R-9, 2026-09-27): the floor for that one type is
+        /// <c>TrustFloorForPacts - pull x this</c>, where pull is <c>AiDiplomacy.BalancingPull</c>
+        /// (0..1), and only when that pull names a sphere to stand against. Non-aggression pacts
+        /// and alliances keep the plain floor: the enemy of my enemy will guard my back even if
+        /// I would not follow him into a war, and a non-aggression pact does nothing against the
+        /// threat that would justify it.
+        ///
+        /// 10 is half the gap between the plain floor and zero trust, the most the tech lead's
+        /// brief allowed, and it leaves the relaxed floor (-30 at full pull) above
+        /// <see cref="TrustWarFloor"/> (-35) on purpose: a pair that has just fought each other
+        /// to the bottom of the war bleed, or whose trust a broken treaty put there, still has
+        /// to spend some peace together before they can stand together - ~33 days at
+        /// <see cref="TrustGrudgeDecayPerDay"/> rather than the ~100 the plain floor asks. A
+        /// larger relief would have let a coalition form straight out of the war its members
+        /// fought each other in, and a smaller one would barely move design 04 §12.5's risk.
+        /// **UN-TUNED.**
+        /// </summary>
+        public const float DefensivePactTrustFloorRelief = 10f;
 
         // ---- Per-type lookups -----------------------------------------------
 
@@ -1185,6 +1247,58 @@ namespace DiplomacyIntrigue.Diplomacy
         /// quieter or bloodier world have the AiAggressiveness multiplier in the settings.
         /// </summary>
         public const float AiWarThreshold = 18f;
+
+        // ---- The court in the war valuation (design 02 §7.2, R-1, 2026-09-27) --------
+        //
+        // Each capped at a third of the threshold, the tech lead's cap: a court may tip a
+        // decision the realm's strength and claims have nearly made, never make one alone.
+        // Both terms together reach at most two thirds of it. Written as fractions of
+        // AiWarThreshold so a retuned threshold keeps that promise without anyone remembering.
+
+        /// <summary>
+        /// War value added by a court made wholly of Hawks, scaled by their effective share of
+        /// the court's influence (<c>BlocModel.EffectiveShare</c>) - 6 at today's threshold.
+        /// **UN-TUNED.**
+        /// </summary>
+        public const float WarValueOwnCourtHawks = AiWarThreshold / 3f;
+
+        /// <summary>
+        /// War value taken away by a court made wholly of Doves, scaled the same way.
+        ///
+        /// **Dead today, knowingly.** Doves form only above <see cref="ExhaustionCourtPressure"/>
+        /// (40) and <see cref="AiMaxExhaustionToExpand"/> (40) already refuses every new war
+        /// above the same exhaustion, so a court with Doves in it never reaches this valuation's
+        /// decision - only its diagnostic. Built anyway because the brief asked for the term,
+        /// and because it becomes live the day either 40 moves. **UN-TUNED.**
+        /// </summary>
+        public const float WarValueOwnCourtDoves = AiWarThreshold / 3f;
+
+        /// <summary>
+        /// A rival's court at war with itself: the strongest public sign of a divided realm - its
+        /// lords are fighting each other instead of any invader. Read as
+        /// <c>CourtBands.SignsOf</c>, never as a figure. **UN-TUNED.**
+        /// </summary>
+        public const float WarValueTargetInternalWar = 4f;
+
+        /// <summary>A rival crown in the Failing band - low enough that a claimant may gather openly. **UN-TUNED.**</summary>
+        public const float WarValueTargetCrownFailing = 3f;
+
+        /// <summary>
+        /// A claimant stands against the rival's throne. Below the Failing crown because a claim
+        /// under a steady crown is a grievance rather than a party (design 02 §3). **UN-TUNED.**
+        /// </summary>
+        public const float WarValueTargetPretender = 2f;
+
+        /// <summary>A rival crown in the Questioned band - doubted, costing it loyalty, not yet failing. **UN-TUNED.**</summary>
+        public const float WarValueTargetCrownQuestioned = 1f;
+
+        /// <summary>
+        /// The most a rival's weakness adds to the war valuation, whatever the signs sum to -
+        /// 6 at today's threshold, so a divided neighbour is a reason to strike one that is
+        /// already nearly worth it, never a reason on its own. Only a realm at war with itself
+        /// reaches it: with a claimant (4 + 2), a Failing crown (4 + 3), or both.
+        /// </summary>
+        public const float WarValueTargetWeaknessCap = AiWarThreshold / 3f;
 
         /// <summary>
         /// Influence to declare war, before the legitimacy multiplier. A war with no case

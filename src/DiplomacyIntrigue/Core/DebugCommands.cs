@@ -648,8 +648,13 @@ namespace DiplomacyIntrigue.Core
                 for (var i = 0; i < blocs.Count; i++)
                 {
                     var bloc = blocs[i];
+                    // Two different shares, both named: the first is among the blocs only; the
+                    // second is BlocModel.EffectiveShare, the one the civil-war trigger and the
+                    // court's pull on foreign policy read (design 02 §7.2).
                     sb.AppendLine("    " + bloc + "  ["
-                                  + (bloc.PowerShare(totalInfluence) * 100f).ToString("0") + "% of the court]");
+                                  + (bloc.PowerShare(totalInfluence) * 100f).ToString("0") + "% of the blocs' power, "
+                                  + (BlocModel.EffectiveShare(state, kingdom, bloc.Agenda) * 100f).ToString("0")
+                                  + "% of the court's influence effective]");
                     for (var m = 0; m < bloc.Members.Count; m++)
                         sb.AppendLine("        " + bloc.Members[m].Name
                                       + "  influence " + bloc.Members[m].Influence.ToString("0")
@@ -1154,6 +1159,12 @@ namespace DiplomacyIntrigue.Core
             sb.AppendLine();
             sb.AppendLine("From " + b.Name + "'s side:");
             sb.AppendLine(PeaceTable.DescribeAllowance(state, war, b));
+            sb.AppendLine();
+            // The bars each court moves (design 02 §7.2, R-1) - what "they start listening at"
+            // above and every AI peace decision read.
+            sb.AppendLine("Where each court puts its peace bars:");
+            sb.AppendLine(PeaceTable.ExplainCourtPull(state, war, a));
+            sb.AppendLine(PeaceTable.ExplainCourtPull(state, war, b));
             return sb.ToString();
         }
 
@@ -1468,6 +1479,26 @@ namespace DiplomacyIntrigue.Core
                           + ", defensive pact " + DiplomacyConstants.AiDefensivePactThreshold.ToString("0")
                           + ", alliance " + DiplomacyConstants.AiAllianceThreshold.ToString("0"));
             sb.AppendLine("The lower of the two decides: both sides have to want it.");
+
+            // The trust gate in CanSign, with R-9's relief for a defensive pact - the floor both
+            // the AI's scan and the player's chooser are refused by.
+            var dpFloor = TrustRegistry.PactFloor(state, a, b, Models.TreatyType.DefensivePact, out var floorPull, out var floorAgainst);
+            sb.AppendLine("Trust floor: " + a.Name + " trusts " + b.Name + " "
+                          + TrustRegistry.Get(state, a, b).ToString("0.0") + ", " + b.Name + " trusts " + a.Name + " "
+                          + TrustRegistry.Get(state, b, a).ToString("0.0")
+                          + "; both must be above the floor.");
+            sb.AppendLine("  non-aggression pact, alliance: " + DiplomacyConstants.TrustFloorForPacts.ToString("0.0"));
+            sb.AppendLine("  defensive pact:                " + dpFloor.ToString("0.0")
+                          + (floorAgainst == null
+                              ? "   (no relief: no sphere outweighs the two of them)"
+                              : "   (" + DiplomacyConstants.TrustFloorForPacts.ToString("0") + " - pull "
+                                + floorPull.ToString("0.00") + " x " + DiplomacyConstants.DefensivePactTrustFloorRelief.ToString("0")
+                                + ", against " + floorAgainst.Name + ")"));
+            foreach (var type in new[] { Models.TreatyType.NonAggressionPact, Models.TreatyType.DefensivePact, Models.TreatyType.Alliance })
+            {
+                var trusts = TreatyRegistry.TrustAllows(state, a, b, type, out var why);
+                sb.AppendLine("  " + type + ": " + (trusts ? "trust allows it" : "BLOCKED - " + why));
+            }
             return sb.ToString();
         }
 
