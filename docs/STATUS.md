@@ -16,6 +16,10 @@ opencode was removed from the project on 2026-09-27 (CLAUDE.md §7).
 
 ## Start here — 2026-09-27
 
+**Phase 2 is accepted by the lead (2026-09-27).** Like Phase 1's, the acceptance is a decision,
+not a claim that everything under it is measured; the carried debt is one table in
+[ROADMAP.md](ROADMAP.md#phase-2--accepted-by-the-project-lead-2026-09-27).
+
 **Design 10, war score measured in the fighting, is built (W1+W2) and had its first live check**
 ([design/10](design/10-war-score.md)). It replaces the old fief/raid-based war score with one
 earned from battles (each side's manpower lost, as a share of what it fielded, sieges included)
@@ -128,7 +132,7 @@ Trust" twice. **2.9 is built: C1, C2, C3.**
 |---|---|
 | **0 — Foundation** | ✅ done, verified in a live campaign |
 | **1 — Diplomacy core (1.1–1.12)** | ✅ **accepted by the lead, 2026-09-23**. Code complete including submission and hegemony (1.9/1.10), the vanilla takeover (1.11) and power (1.12). Measured over runs 01–08; run 08 answered the §13.7 questions the §13 rework had left open. **War score is being reworked under it since 2026-09-27** ([design/10](design/10-war-score.md), built, live-checked, D1/D2 decided and D6 dropped 2026-09-27; its balance run is owed) — acceptance stands, but the numbers behind it are mid-change. Carried debt: [ROADMAP.md](ROADMAP.md#phase-1--accepted-by-the-project-lead-2026-09-23) and "Not verified — carried" below |
-| **2 — Court intrigue** | 🔄 2.1–2.7 built and verified live on their main paths; **2.8 Statecraft** built and run live 2026-09-26 (S0–S2; S3 is run 08; S4 became design/09's C2; S5 traits waits); **2.9 Court verbs**: C1 make amends built and run live 2026-09-26, C1, C2 and C3 built and run live. The acceptance line is met by C1 under the lead's reading (prevention, design/09 D16); formal acceptance is the lead's |
+| **2 — Court intrigue** | ✅ **accepted by the lead, 2026-09-27.** 2.1–2.7 built and verified live on their main paths; **2.8 Statecraft** built and run live 2026-09-26 (S0–S2; S3 is run 08; S4 became design/09's C2; S5 traits waits); **2.9 Court verbs** C1, C2 and C3 built and run live 2026-09-26. The acceptance line is met by C1 under the lead's reading (prevention, design/09 D16). Carried debt — no balance run with the court verbs, civil war's rate unmeasured, 2.8's own §12 unmet — is listed in [ROADMAP.md](ROADMAP.md#phase-2--accepted-by-the-project-lead-2026-09-27) |
 | **3 — Espionage** | ⏸ **parked by the lead, 2026-09-26.** 3.1–3.7 built and run live ([design/03 §10](design/03-espionage.md)). The AI's handlers are still taken by vanilla, so an AI network never grows (TODO 3) |
 | **4 — Integration, balance, release** | 🔄 runs 01–08 archived; **run 08** is the current reference. The civil-war balance needs its own run (TODO 4) |
 
@@ -140,11 +144,11 @@ share of each war's closing score is the first thing to read, since D2 was kept 
 dominated the live check. Worth ten minutes first: the unexplained zero-manpower siege defender in
 the §9a check, before trusting the breakdown fully.
 
-**Phase 2's court verbs (R-2), [design/09](design/09-court-verbs.md).** C1 is built and run live.
-2.9 is built (C1, C2, C3, D16-D17). Next: a balance run with the court verbs in the world - five of
-seven AI realms seated someone on day one, seats move the statecraft medians, AI patrons now set
-tribute by Hold - and the lead's formal acceptance of Phase 2 when they choose. Espionage's default and civil war's rarity
-stay as they are, the lead's call of 2026-09-26.
+**Phase 2 is accepted (the lead, 2026-09-27).** What it leaves owed is a balance run with the
+court verbs in the world - five of seven AI realms seated someone on day one, seats move the
+statecraft medians, AI patrons now set tribute by Hold - which can share a campaign with design
+10's run. Espionage's default and civil war's rarity stay as they are, the lead's call of
+2026-09-26.
 
 Work that needs no decision:
 

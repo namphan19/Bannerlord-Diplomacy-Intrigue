@@ -419,7 +419,7 @@ stays open on the indemnity price, which run 08 does not settle.
 
 ---
 
-## Phase 2 — Court intrigue 🔄 started 2026-09-23
+## Phase 2 — Court intrigue ✅ accepted 2026-09-27
 
 Playable target: *being a king is a political problem, not just a military one.*
 
@@ -443,7 +443,9 @@ Playable target: *being a king is a political problem, not just a military one.*
 
 **Acceptance:** an AI kingdom that loses a long illegitimate war visibly fractures — blocs shift, then either sues for peace or splits. The player can survive it by managing grievances.
 
-*Met by C1 under the lead's reading of 2026-09-26 (design/09 D16): "survive" means prevention* - the ruler answers grievances before the court reaches the brink, and amends move a house across a band (Khuzait, Disaffected to Transactional) and can pull a great house out of a pretender bloc. A court already at the trigger after a contested succession may still rise, by design: in Battania two amends shrank the rising from 5 houses to 4 and it still came, held by crown legitimacy 25 and by relation. AI rulers look at their courts daily, before the trigger is checked (D17). The first sentence of the line was verified in 2.1-2.6. Formal acceptance of Phase 2 is the lead's.
+*Met by C1 under the lead's reading of 2026-09-26 (design/09 D16): "survive" means prevention* - the ruler answers grievances before the court reaches the brink, and amends move a house across a band (Khuzait, Disaffected to Transactional) and can pull a great house out of a pretender bloc. A court already at the trigger after a contested succession may still rise, by design: in Battania two amends shrank the rising from 5 houses to 4 and it still came, held by crown legitimacy 25 and by relation. AI rulers look at their courts daily, before the trigger is checked (D17). The first sentence of the line was verified in 2.1-2.6. **The lead accepted Phase 2 on
+2026-09-27** - see "Phase 2 — accepted by the project lead" at the end of this section for what
+the acceptance carries.
 
 ### What Phase 1 already left waiting for it
 
@@ -480,6 +482,26 @@ project lead on 2026-09-23; the reasoning is in that section.
 | 2 | Is the player's own clan subject to this when serving another king? | **Yes**, on the same terms as any AI clan |
 | 3 | Kingdom decisions: extend `KingdomDecision` or replace it? | **Extend**, until it visibly constrains us |
 | 4 | Civil-war trigger thresholds (§6) | **Still open** — guesses by admission, deferred to a long AI-only run. Blocks nothing in 2.1–2.5 |
+
+### Phase 2 — accepted by the project lead, 2026-09-27
+
+Phase 2 is **closed**. 2.1-2.9 are built and each was run live on its main path; the acceptance
+line is met under the lead's reading of it (design/09 D16, prevention), by C1.
+
+As with Phase 1, **acceptance is a decision, not a claim that everything under it is measured.**
+No balance run has yet had the court verbs in the world, and no run has produced a civil war on
+its own. What is carried forward unresolved:
+
+| Carried debt | State | Lands in |
+|---|---|---|
+| A balance run with 2.9 in the world (amends, seats, tribute by Hold) | **not run** — five of seven AI realms seated someone on day one; how far that moves the AI world, and whether civil war gets rarer still, is unmeasured | Phase 4 |
+| Civil war's rate, side changes, conceding at 75, prices against purses | **not measured** — run 08 had no internal war in 20 in-game years; the cooldown fix (365 → 84 days, 2026-09-27) may change that. Trigger thresholds (decision 4 above) still guesses | Phase 4, a run from a strained court |
+| 2.8 Statecraft's own acceptance (design/08 §12) | **not met** — total wars +20%, pacts 47 against 31 on one pair; the regression proof was off against on, not against the build before | Phase 4 (TODO 5) |
+| The court does not reach the AI's foreign policy | **open design question** (TODO 2, review R-1): war and peace valuations read no bloc, loyalty, legitimacy or pretender | the lead |
+| Cadet branches cannot lead to civil war; tribute never settles at the table | **open design questions** (TODO 4) | the lead |
+| Legitimacy from a decisive win or loss, the peace dividend, a lost fief, a caught fabrication | **unverified in a live game** — they need a real war score or the clock (STATUS-history.md, 2.4). Design 10's battle-earned war score makes the first reachable | first run with decisive wars |
+| Court tab past ~13 sworn clans; a physical click on its rows | **unverified** | whenever the court UI is touched |
+| 2.9 edge paths: the seat offered to a vassal player, a captured or dead holder, the AI raising a link to Heavy, a vassal player told of a new tribute or of amends | **unverified** (design/09 §8-§10) | when a session is in the game anyway |
 
 ---
 

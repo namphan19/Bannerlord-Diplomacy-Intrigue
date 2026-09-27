@@ -29,7 +29,7 @@ Kept as one line each so nobody re-opens them.
 
 ## Decisions for the lead
 
-### 1. Phase 2's acceptance line cannot be met yet
+### 1. Phase 2's acceptance line — met, and Phase 2 accepted 2026-09-27
 
 ROADMAP's line for Phase 2 ends *"The player can survive it by managing grievances."* The player
 has no act that reduces a grievance: the Court tab shows and selects, and nothing else. This was
@@ -49,7 +49,8 @@ checked Phase 2 against its acceptance line.
 - [x] **Decided 2026-09-26 (D17): AI rulers consider amends daily, before the internal-war check.**
       Built and run live: on `di_pretender_test` Battania's ruler answered fen Penraic before the
       check, and the rising took 4 houses instead of 5.
-- [ ] Formal acceptance of Phase 2, the lead's call.
+- [x] **Phase 2 accepted by the lead, 2026-09-27.** What it carries is in ROADMAP, "Phase 2 — accepted
+      by the project lead".
 - [x] **C2, offices and patronage: built and run live, 2026-09-26** ([design/09 §9](docs/design/09-court-verbs.md)).
 - [x] **C3, tribute per vassal: built and run live, 2026-09-26** ([design/09 §10](docs/design/09-court-verbs.md)). 2.9 is complete.
 - [ ] A balance run with C1 and C2 in the world: five of seven AI realms on `di_pretender_test`
