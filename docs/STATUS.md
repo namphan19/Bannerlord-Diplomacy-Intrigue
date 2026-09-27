@@ -21,7 +21,7 @@ except the Kingdom-UI loose ends, and asked for it to be built with sub-agents a
 the lead's machine. It was: TODO.md's table "Decided 2026-09-27" has each decision in one line,
 and the design docs carry the rules. **Nothing of it has run in a game.** Everything was
 compile-checked here against the v1.4.8 reference assemblies (`scripts/compile-check.sh`), and the
-save-id check passes. **The next step is [run 09](balance/run-09-plan.md)**, on the lead's machine.
+save-id check passes. **The next step is [run 09](balance/run-09-runbook.md)**, on the lead's machine.
 
 - **What changed for the player and the AI:** the court now moves a realm's peace bars and war
   value, and a rival's visible weakness is a reason for war; a threat relaxes the defensive-pact
@@ -99,24 +99,28 @@ and the lords each side holds prisoner — the same rework that also touched war
 | **1 — Diplomacy core (1.1–1.12)** | ✅ **accepted by the lead, 2026-09-23**. Code complete including submission and hegemony (1.9/1.10), the vanilla takeover (1.11) and power (1.12). Measured over runs 01–08; run 08 answered the §13.7 questions the §13 rework had left open. **War score is being reworked under it since 2026-09-27** ([design/10](design/10-war-score.md), built, live-checked, D1/D2 decided and D6 dropped 2026-09-27; its balance run is owed) — acceptance stands, but the numbers behind it are mid-change. Carried debt: [ROADMAP.md](ROADMAP.md#phase-1--accepted-by-the-project-lead-2026-09-23) and "Not verified — carried" below |
 | **2 — Court intrigue** | ✅ **accepted by the lead, 2026-09-27.** 2.1–2.7 built and verified live on their main paths; **2.8 Statecraft** built and run live 2026-09-26 (S0–S2; S3 is run 08; S4 became design/09's C2; S5 traits waits); **2.9 Court verbs** C1, C2 and C3 built and run live 2026-09-26. The acceptance line is met by C1 under the lead's reading (prevention, design/09 D16). Carried debt — no balance run with the court verbs, civil war's rate unmeasured, 2.8's own §12 unmet — is listed in [ROADMAP.md](ROADMAP.md#phase-2--accepted-by-the-project-lead-2026-09-27) |
 | **3 — Espionage** | ⏸ **parked by the lead, 2026-09-26.** 3.1–3.7 built and run live ([design/03 §10](design/03-espionage.md)). The AI's handlers are still taken by vanilla, so an AI network never grows (TODO, "Still open"). Fixed 2026-09-27 while parked: the bribe window in campaign years, the 3.5 wording, the reloaded bribe offer |
-| **4 — Integration, balance, release** | 🔄 runs 01–08 archived; **run 08** is the current reference. **Run 09 is planned** ([balance/run-09-plan.md](balance/run-09-plan.md)): design 10's 20-year run, the second statecraft pair, the civil-war run, and a check of everything built on 2026-09-27 |
+| **4 — Integration, balance, release** | 🔄 runs 01–08 archived; **run 08** is the current reference. **Run 09 is planned** ([balance/run-09-runbook.md](balance/run-09-runbook.md)): design 10's 20-year run, the second statecraft pair, the civil-war run, and a check of everything built on 2026-09-27 |
 
 ## What to do next
 
-1. **Run 09, on the lead's machine** - [balance/run-09-plan.md](balance/run-09-plan.md): first the
+1. **Run 09, on the lead's machine** - [balance/run-09-runbook.md](balance/run-09-runbook.md): first the
    old-save load and the cheat-mode gate (§0), then the targeted checks (A), then the balance runs
    (B, C). `tools/analyse-log.py` reads the new telemetry.
 2. **Then decide from its numbers:** the §13 tribute band (run 09 question 3), whether D2's
    prisoner weights stand (question 1), whether the indemnity bites too hard (question 4).
-3. **Still open, not blocking:** espionage 3.6 (parked), and whether the peace hint should show a
-   rival's bar as a band (TODO, "Still open").
+3. **Phase 3 and the same-rules principle** (the lead's question, 2026-09-27): the rules are shared,
+   but four asymmetries sit outside them - AI networks never grow (vanilla takes the handlers), AI
+   bribe targets are picked from exact rival figures the player sees as bands, and the AI never
+   assassinates or forges against the player's house. Run 09 §4 gathers the evidence and the IL;
+   the lead decides from it (TODO, "Still open").
+4. **Still open, not blocking:** whether the peace hint should show a rival's bar as a band.
 
 ## Not verified — carried
 
 Short on purpose; each line points to where the detail is.
 
 - **Everything built on 2026-09-27** (the delegated pass): compile-checked only. Each item's check
-  is in [balance/run-09-plan.md](balance/run-09-plan.md) §A.
+  is in [balance/run-09-runbook.md](balance/run-09-runbook.md) §A.
 - **Phase 1:** two peace-table surfaces have never been seen working, the multi-selection
   checklist against a real budget and the AI→player incoming offer (history, "What acceptance did
   and did not mean"). `ReconcileWithSiblings`, the AI choosing the dissolution rung, and

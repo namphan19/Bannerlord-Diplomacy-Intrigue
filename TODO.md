@@ -32,7 +32,7 @@ Kept as one line each so nobody re-opens them.
 The lead handed every open decision below to the tech lead on 2026-09-27 ("toàn quyền quyết
 định"), except the Kingdom-UI loose ends, which are out of this pass. Each was decided, built and
 compile-checked the same day; **none has run in game**. What to run, and what to expect, is
-[docs/balance/run-09-plan.md](docs/balance/run-09-plan.md). The design docs named carry the rules.
+[docs/balance/run-09-runbook.md](docs/balance/run-09-runbook.md). The design docs named carry the rules.
 
 | Item | Decision | Where |
 |---|---|---|
@@ -40,9 +40,9 @@ compile-checked the same day; **none has run in game**. What to run, and what to
 | 2. The court and the AI's foreign policy (R-1) | **Wired**, every term capped under a third of the bar it feeds. Own court: Doves lower, Hawks raise the three peace bars (×0.70-×1.15) and the war value (±6). A rival's weakness, read **only through the bands** the player sees (internal war +4, crown Failing +3, claimant +2, Questioned +1, cap 6). A realm at war with itself chooses no new foreign war | design/02 §7.2 |
 | R-9 | A balancing threat lowers the trust floor for **defensive pacts only**, to −30 at full pull; the AI offers a defensive pact when trust alone refuses the alliance | design/02 §7.2, design/06 |
 | 3. Espionage on by default | Kept on (the lead, 2026-09-26) | — |
-| 4a. Tribute at the table (§13 bands) | **Not moved.** Design 10 changes how war score is earned, so run 08's "0 of 123" says nothing about the new score. Run 09 question 3 decides it | run-09-plan |
+| 4a. Tribute at the table (§13 bands) | **Not moved.** Design 10 changes how war score is earned, so run 08's "0 of 123" says nothing about the new score. Run 09 question 3 decides it | run-09-runbook |
 | 4b. Cadet branches | At a split the cadet takes the parent's influence **in proportion to the adults who leave, at most 50%**. On the code's numbers that reaches a pretender's 30% only when the ruling house held most of the court's influence - recorded, nothing more built | design/07 §5 |
-| 5. Pacts under statecraft | **Run the second pair**: run 09B (statecraft off, 10 years) against 09A's first decade | run-09-plan |
+| 5. Pacts under statecraft | **Run the second pair**: run 09B (statecraft off, 10 years) against 09A's first decade | run-09-runbook |
 | 6. Should money bite? | **Yes.** An indemnity is priced against the loser's ruler's gold: 0.5% a point, never under 125 denars, never over 40% of it | design/01 §4.2, design/04 §13.4 |
 | 7. Grace shields a war | War is checked before the grace: trust bleeds from a war's first day. **No clawback** of the +12 - the pact was honoured to its end | design/01 §4.1 |
 | 8. The weakest kingdom eaten | **At most 2 tributes paid at once** (vassalage counts), in `CanSign`, so demand, peace table and console agree. **No** "don't dogpile" term. Submission is not capped | design/01 §3.3 |
@@ -59,9 +59,16 @@ re-rolled after a reload (now saved, `SpyMission` 12); stale figures in six desi
 
 ## Still open
 
-- [ ] **Espionage 3.6, the AI handler blocker** - parked by the lead. Needs vanilla IL of the real
-      game (what makes an AI hero a governor or a party leader); the cloud reference assemblies
-      have no method bodies. `tools/CallSites` on the lead's machine.
+- [ ] **Phase 3 and "the AI plays by the same rules"** (the lead's question, 2026-09-27). The rule
+      layer is shared (same launch, odds, prices, exposure), but four asymmetries sit outside it:
+      1. AI networks never grow - vanilla makes AI handlers governors or party leaders (3.6, parked);
+         the lever needs vanilla IL (`tools/CallSites` on the lead's machine).
+      2. AI bribe/forgery targets are chosen from exact rival loyalty and legitimacy the player sees
+         only as bands (`AiEspionage.cs:230, 242`) - the fault R-1 fixed for the war valuation.
+         Recommended: read the bands, like R-1.
+      3. The AI never assassinates anyone of the player's house (`:510`, the lead's decision 11).
+      4. The AI never forges letters to the player's house (`:250`).
+      Run 09 §4 gathers the evidence; then the lead decides 1's lever, 2, and whether 3-4 stay.
 - [ ] **A rival's court can be read off the peace hint.** "They start listening at N" shows a
       rival's exact exhaustion (older than today) and now its court-moved bar, from which its
       Doves/Hawks balance can be inferred - against the band rule (design 02 §9 decision 1).
@@ -71,7 +78,7 @@ re-rolled after a reload (now saved, `SpyMission` 12); stale figures in six desi
 
 ## Pending work
 
-- [ ] **Run 09**, all of [docs/balance/run-09-plan.md](docs/balance/run-09-plan.md): the targeted
+- [ ] **Run 09**, all of [docs/balance/run-09-runbook.md](docs/balance/run-09-runbook.md): the targeted
       checks (A), the 20-year balance run and the second statecraft pair (B), the civil-war run (C).
       It closes design 10's balance run, the §13 tribute question, and the civil-war balance.
 
