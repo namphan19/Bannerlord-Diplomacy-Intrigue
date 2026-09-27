@@ -23,9 +23,8 @@ artifacts/
 # Archived balance runs are data, not build noise
 !docs/balance/*.log
 
-# Node tooling dependencies (the bridges)
+# Node tooling dependencies
 node_modules/
-
 
 # Local play aids (lead-provided, for base-game GABS play; not part of the mod)
 .claude/skills/bannerlord-gabs/
