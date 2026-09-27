@@ -351,10 +351,8 @@ namespace DiplomacyIntrigue.Intrigue
             a.Legitimacy = LegitimacyRegistry.Of(state, kingdom);
 
             var ruling = kingdom.RulingClan;
-            var total = 0f;
             foreach (var clan in Court.MembersOf(kingdom))
             {
-                if (clan.Influence > 0f) total += clan.Influence;
                 if (clan != ruling && LoyaltyModel.Of(state, clan) < IntrigueConstants.LoyaltyDisaffected)
                     a.DisloyalClans++;
             }
@@ -365,8 +363,9 @@ namespace DiplomacyIntrigue.Intrigue
 
             // Measured on effective power, not nominal: a member at or above the reliable band
             // follows the ruler regardless of its bloc (design 02 §3), and a member who will
-            // not rebel cannot count toward a rebellion.
-            a.BlocShare = a.Bloc == null || total <= 0f ? 0f : a.Bloc.EffectivePower / total;
+            // not rebel cannot count toward a rebellion. BlocModel.EffectiveShare is the one
+            // definition; the court's pull on foreign policy reads the same figure.
+            a.BlocShare = a.Bloc == null ? 0f : BlocModel.EffectiveShare(state, kingdom, CourtAgenda.Pretenders);
             a.Claim = ClaimBehind(state, kingdom, a.Bloc);
 
             if (a.Claim != null)

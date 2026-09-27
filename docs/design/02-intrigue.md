@@ -150,6 +150,9 @@ negotiation rather than annihilation is the interesting case.
 | `BribeLord` mission (Phase 3) | Loyalty penalty, defection on civil war | §6 |
 | `ForgeLetters` mission (Phase 3) | Manufactured grievance | §1 |
 | A demand for tribute (Phase 1) | The target's court answers it | §7.1 |
+| Doves and Hawks at court (§3) | The kingdom's peace bars, and its war valuation | §7.2 |
+| A rival's crown band, claimant, internal war | A reason for war on that rival | §7.2 |
+| An internal war (§6) | No new foreign war of the crown's choosing | §7.2 |
 
 ### 7.1 A demand for tribute asks the target's court (built 2026-09-25)
 
@@ -176,6 +179,83 @@ courts would refuse. Two were courts made to be in crisis - Battania (60%) after
 succession, Khuzait (75%, the player's) after unjust wars - but the third was Aserai (43%), whose
 crown read Secure: two of its houses sat at loyalty 0-3 on vanilla relation alone. Whether 0.34
 is too eager is for a long run to say.
+
+### 7.2 Court → foreign policy (R-1), 2026-09-27
+
+Until this, the coupling ran one way: diplomacy wrote into the court (a broken treaty costs crown
+legitimacy, an unjust war grieves the court) and nothing the court did reached foreign policy -
+a court all Doves did not make its AI seek peace one day sooner (review 2026-09-24, finding A;
+decision R-1, taken by the tech lead with the lead's authority). Four couplings, each one term in
+an existing resolver, so each is printed where that resolver is explained. **All constants
+UN-TUNED**; none has been observed in a running game.
+
+**The shares.** A bloc's weight is its **effective share of the court's influence**:
+`CourtBloc.EffectivePower` (members below loyalty 70 - a house that follows the ruler presses for
+nothing) over the influence of every seated house, the crown's own included.
+`BlocModel.EffectiveShare` is the one definition; the §6 trigger reads it too. The crown in the
+denominator is deliberate: a ruler holding most of the realm's influence is less moved by its
+lords. So a court that is "all Doves" among its blocs (`diplomacy.blocs`) reads well below 100%.
+
+**1. The kingdom's own court moves its peace bars** - `PeaceTable.CourtPeaceFactor`:
+
+```
+factor = +0.15 x Hawks share - 0.30 x Doves share        (PeaceCourtHawksPull, PeaceCourtDovesPull)
+seeks peace at        60 x (1 + factor)                  PeaceTable.SeekPeaceBar    (42 .. 69)
+signs as the loser at 60 x (1 + factor) - scoreAgainst/2 PeaceTable.LoserSignsAt
+settles as the winner 70 x (1 + factor)                  PeaceTable.WinnerSettlesAt (49 .. 80.5)
+```
+
+A fraction of each bar rather than points, so the three move together and keep their order. The
+Doves' reach is a third of the bar, the Hawks' half that: a war party can make a realm hold out,
+but not as far as a peace party can hurry it. Doves only form above exhaustion 40 (§3), and the
+lowest bar is 42, so a court can hasten a peace only once the realm is actually bleeding. The AI's
+decision to sue (`AiDiplomacy.TrySeekPeace`), both signatures, the allowance the player's peace
+button describes and the Kingdom screen's own-exhaustion hint all read these three functions; no
+site reads the constants for a decision any more. A rival's exhaustion **band** keeps the base
+edges on purpose - drawing it at the court-moved bar would show the rival's bloc shares (§9.1).
+
+**2. The kingdom's own court in its war valuation** - `EvaluateWar`'s `FromOwnCourt`:
+`+6 x Hawks share - 6 x Doves share` (a third of `AiWarThreshold` each). The Doves half is
+**dead today**: Doves form above exhaustion 40, and `CanTakeOnAnotherWar` already refuses any new
+war above exhaustion 40 (`AiMaxExhaustionToExpand`), so a court with Doves in it never reaches
+the decision - only `diplomacy.war_value`. It comes alive the day either 40 moves.
+
+**3. A rival's weakness is a reason for war** - `FromTargetWeakness`, read **only through bands**
+(`CourtBands.SignsOf`): the crown band the Encyclopedia shows, whether a claimant stands (named
+there), and whether the realm is at war with its own rising (a war on the map). The AI weighing a
+rival knows exactly what the player weighing the same rival is shown, never a figure.
+
+| Sign | Value |
+|---|---|
+| At war with itself | +4 |
+| Crown Failing (legitimacy < 40) | +3 |
+| A claimant stands | +2 |
+| Crown Questioned (< 50) | +1 |
+| **Cap on the sum** | **6** - a third of `AiWarThreshold` |
+
+It can tip a war that is nearly worth fighting and never start one: 6 < 18, and with our own
+Hawks at their full 6 the two court terms together still fall short of the threshold. An internal
+war starts from a standing claimant and a crown under 35, so a realm at war with itself usually
+sits at the cap. **Not built, by
+decision:** `SupportClaimant` for rivals of a realm with a standing pretender (the §7 row above,
+and the review's third proposal). This is the valuation term only; there is no intervention.
+
+**4. A realm at war with itself chooses no new foreign war.** Checked first: nothing stopped it.
+An internal war lives in its own record, never among the `WarRecord`s that `ChosenWarCount`
+counts or `WarExhaustion.Worst` reads, so a crown fighting its rising could open a foreign war the
+same week. `CanTakeOnAnotherWar` now refuses while `InternalWars.OngoingIn` is set. That one gate
+also covers poaching another sphere's vassal, the player's button included, as its other gates
+already did. The realm still defends: a war declared on it, or one a treaty calls it into, is not
+chosen. A vassal's revolt against its patron (`Hegemony.ExecuteRevolt`) is not gated either - it
+is driven by Hold, not by this valuation.
+
+**Where to see them:** `diplomacy.war_value A | B` prints `internal war`, `value from our court`
+and `value from their court` as their own lines; `diplomacy.peace_allowance A | B` ends with each
+side's court pull and the three bars it produces. The peace log lines (`sued for peace`,
+`bought peace`, `imposed terms`, `let ... go`) add `(its court's bar N)` whenever the court moved
+the bar, and the `ai_war_declared` telemetry event carries `fromOwnCourt` and
+`fromTargetWeakness`. `diplomacy.blocs` now names both shares it prints: the old one, among the
+blocs only, and the effective share of the court these terms read.
 
 ## 8. Implementation order
 

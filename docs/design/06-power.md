@@ -84,6 +84,19 @@ already at war with the opponent. The vassal cascade cap applies.
 
 The balancing pull itself now reads smoothed sphere strength.
 
+**The trust floor gives way for a defensive pact (R-9, 2026-09-27).** A coalition is made of
+kingdoms that have usually just fought each other, and a war drags a pair to −35 trust, under the
+−20 pact floor for ~100 days (design 04 §12.5). So while `BalancingPull` names a sphere that
+outweighs the pair, the floor **for a defensive pact only** is `−20 − 10 × pull` (−30 at full
+pull, `DefensivePactTrustFloorRelief`, UN-TUNED). Not for an alliance - that asks each side to
+follow the other into wars of choice - nor a non-aggression pact, which does nothing against the
+threat. −30 stays above the −35 war floor, so a pair fresh from fighting each other still waits
+~33 days of peace. The pull is symmetric in the pair, so both signatures read the same relief, and
+the rule sits in `TrustRegistry.PactFloor` behind `TreatyRegistry.CanSign`: the player's chooser and
+the AI's scan meet one floor. The AI's scan, when trust alone refuses the alliance it values,
+signs the defensive pact instead - the rung the player's chooser would offer in the same seat.
+`diplomacy.pact_value A | B` prints both floors and which rungs trust allows.
+
 ## 5. Greed, dread, and annexation — smoothed
 
 ```

@@ -351,6 +351,89 @@ namespace DiplomacyIntrigue.Diplomacy
             return true;
         }
 
+        // ----- The court's pull on peace (design 02 §7.2, R-1, 2026-09-27) -----------
+        //
+        // Every exhaustion bar a kingdom makes peace by is read here, and nowhere else: the AI's
+        // decision to sue (AiDiplomacy.TrySeekPeace), both signatures below, the allowance the
+        // player's peace button describes, and the console. Before R-1 each site read the
+        // constant directly, and a court that was all Doves did not make its realm seek peace
+        // one day sooner (review 2026-09-24, finding A).
+
+        /// <summary>
+        /// How far this kingdom's own court moves its peace bars, as a fraction of each bar:
+        /// negative makes it readier (Doves), positive makes it hold out (Hawks). The shares
+        /// are the blocs' effective share of the court's influence - the same figure the
+        /// internal-war trigger reads - so nothing here decides who belongs to which bloc.
+        /// </summary>
+        public static float CourtPeaceFactor(ModState state, Kingdom kingdom, out float doves, out float hawks)
+        {
+            doves = Intrigue.BlocModel.EffectiveShare(state, kingdom, CourtAgenda.Doves);
+            hawks = Intrigue.BlocModel.EffectiveShare(state, kingdom, CourtAgenda.Hawks);
+            return hawks * DiplomacyConstants.PeaceCourtHawksPull - doves * DiplomacyConstants.PeaceCourtDovesPull;
+        }
+
+        /// <summary>
+        /// The exhaustion at which this kingdom sues for peace:
+        /// <see cref="DiplomacyConstants.ExhaustionSeekPeace"/> moved by its court.
+        /// </summary>
+        public static float SeekPeaceBar(ModState state, Kingdom kingdom)
+            => DiplomacyConstants.ExhaustionSeekPeace * (1f + CourtPeaceFactor(state, kingdom, out _, out _));
+
+        /// <summary>
+        /// The exhaustion at which the losing side signs: its <see cref="SeekPeaceBar"/>, lowered
+        /// by half the war score against it - a side being dismantled settles sooner than a side
+        /// merely tired. The court moves the bar, not the score's half: how badly a war is going
+        /// is the war's fact, how soon a realm admits it is its court's.
+        /// </summary>
+        public static float LoserSignsAt(ModState state, WarRecord war, Kingdom loser)
+        {
+            var scoreAgainstThem = -WarScore.For(war, loser);
+            return SeekPeaceBar(state, loser) - scoreAgainstThem / 2f;
+        }
+
+        /// <summary>
+        /// The exhaustion at which a winning side stops holding out for terms and takes a white
+        /// peace: <see cref="DiplomacyConstants.ExhaustionAcceptWhitePeaceWhenWinning"/> moved by
+        /// the same factor as its seek bar, so the two keep their order.
+        /// </summary>
+        public static float WinnerSettlesAt(ModState state, Kingdom winner)
+            => DiplomacyConstants.ExhaustionAcceptWhitePeaceWhenWinning
+               * (1f + CourtPeaceFactor(state, winner, out _, out _));
+
+        /// <summary>
+        /// One kingdom's peace bars in this war, with the court term that moved them - for
+        /// <c>diplomacy.peace_allowance</c>. Exact figures: a diagnostic, not the rival court the
+        /// player is shown (design 02 §9.1).
+        /// </summary>
+        public static string ExplainCourtPull(ModState state, WarRecord war, Kingdom kingdom)
+        {
+            var factor = CourtPeaceFactor(state, kingdom, out var doves, out var hawks);
+            var dovesPart = doves * DiplomacyConstants.PeaceCourtDovesPull * 100f;
+            var hawksPart = hawks * DiplomacyConstants.PeaceCourtHawksPull * 100f;
+            var lines = new List<string>
+            {
+                kingdom.Name + ": exhaustion " + war.ExhaustionOf(kingdom).ToString("0.0")
+                    + ", war score " + WarScore.For(war, kingdom).ToString("0.0"),
+                "  court pull on peace:  Doves " + (doves * 100f).ToString("0") + "% of the court x -"
+                    + (DiplomacyConstants.PeaceCourtDovesPull * 100f).ToString("0") + "% = -"
+                    + dovesPart.ToString("0.0") + "%"
+                    + ", Hawks " + (hawks * 100f).ToString("0") + "% x +"
+                    + (DiplomacyConstants.PeaceCourtHawksPull * 100f).ToString("0") + "% = +"
+                    + hawksPart.ToString("0.0") + "%"
+                    + "  ->  every bar x" + (1f + factor).ToString("0.000"),
+                "      (shares are effective bloc power over the court's "
+                    + Intrigue.BlocModel.CourtInfluence(kingdom).ToString("0")
+                    + " influence, the crown's own included - diplomacy.blocs lists each bloc's power)",
+                "  seeks peace at:       " + SeekPeaceBar(state, kingdom).ToString("0.0")
+                    + "   (base " + DiplomacyConstants.ExhaustionSeekPeace.ToString("0") + ")",
+                "  signs as the loser:   " + LoserSignsAt(state, war, kingdom).ToString("0.0")
+                    + "   (its bar less half the war score against it)",
+                "  settles as the winner: " + WinnerSettlesAt(state, kingdom).ToString("0.0")
+                    + "   (base " + DiplomacyConstants.ExhaustionAcceptWhitePeaceWhenWinning.ToString("0") + ")",
+            };
+            return string.Join("\n", lines);
+        }
+
         /// <summary>
         /// Whether the loser would sign. Willingness comes from exhaustion, moderated by
         /// how badly they are losing: a side being dismantled settles sooner than a side
@@ -368,7 +451,7 @@ namespace DiplomacyIntrigue.Diplomacy
             // extract by simply waiting.
             if (terms.IsWhitePeace && IsDormant(war)) { reason = null; return true; }
 
-            var threshold = DiplomacyConstants.ExhaustionSeekPeace - scoreAgainstThem / 2f;
+            var threshold = LoserSignsAt(state, war, loser);
             if (exhaustion < threshold)
             {
                 reason = loser.Name + " is not worn down enough: exhaustion "
@@ -427,7 +510,8 @@ namespace DiplomacyIntrigue.Diplomacy
             if (budget <= 0f) return true;
 
             var exhaustion = war.ExhaustionOf(winner);
-            if (exhaustion >= DiplomacyConstants.ExhaustionAcceptWhitePeaceWhenWinning) return true;
+            var settlesAt = WinnerSettlesAt(state, winner);
+            if (exhaustion >= settlesAt) return true;
 
             var cost = CostOf(terms);
             var wanted = MinimumAcceptable(state, war, winner);
@@ -437,7 +521,7 @@ namespace DiplomacyIntrigue.Diplomacy
                      + cost.ToString("0") + " against a war score of " + budget.ToString("0")
                      + ", so they want at least " + wanted.ToString("0")
                      + ", and they are only at exhaustion " + exhaustion.ToString("0.0")
-                     + " of the " + DiplomacyConstants.ExhaustionAcceptWhitePeaceWhenWinning.ToString("0")
+                     + " of the " + settlesAt.ToString("0")
                      + " that would make them stop caring.";
             return false;
         }
@@ -665,8 +749,7 @@ namespace DiplomacyIntrigue.Diplomacy
                     + " per 1000 denars, at most "
                     + LargestIndemnity(war, winner, loser).ToString("0") + " here",
                 "Their exhaustion is " + war.ExhaustionOf(loser).ToString("0.0")
-                    + "; they start listening at " + (DiplomacyConstants.ExhaustionSeekPeace
-                        - (-WarScore.For(war, loser)) / 2f).ToString("0.0") + "."
+                    + "; they start listening at " + LoserSignsAt(state, war, loser).ToString("0.0") + "."
             };
             return string.Join("\n", lines);
         }

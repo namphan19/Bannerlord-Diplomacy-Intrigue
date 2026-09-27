@@ -10,7 +10,16 @@ namespace DiplomacyIntrigue.Diplomacy
     /// taken from <see cref="DiplomacyConstants"/>. That is the whole point: "Exhausted"
     /// literally means "will now accept a white peace", so a band is a statement about what
     /// the enemy will do, not a decorative label. Deriving the edges from the same
-    /// constants the AI reads also means the bar can never disagree with the behaviour.
+    /// constants the AI reads also means the bar cannot drift away from the behaviour.
+    ///
+    /// Since R-1 (2026-09-27) the edges are the **base** bars, and a court moves the real
+    /// one: a court of Doves sues and signs up to 30% below the Exhausted edge, one of Hawks
+    /// up to 15% above it (<see cref="PeaceTable.SeekPeaceBar"/>). The band does not follow,
+    /// deliberately - drawing it at the court-moved bar would show a rival's bloc shares,
+    /// which the player sees only as bands (design 02 §9.1). "Exhausted" therefore reads
+    /// "will accept a white peace unless its court holds it back"; an earlier version of
+    /// this comment said the bar could never disagree with the behaviour, which stopped
+    /// being true here.
     /// </summary>
     public enum ExhaustionBand
     {

@@ -466,10 +466,20 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 return "A tributary pays and nothing more. A vassal pays and fights - "
                        + "that is a peace-table demand, not a proposal.";
 
+            // The same gate CanSign applies (trust must be above the floor), read through its
+            // resolver: since R-9 a common threat keeps the defensive pact open a little lower.
             var theirTrust = TrustRegistry.Get(state, them, us);
-            if (theirTrust < DiplomacyConstants.TrustFloorForPacts)
+            if (theirTrust <= DiplomacyConstants.TrustFloorForPacts)
+            {
+                var pactFloor = TrustRegistry.PactFloor(state, them, us, TreatyType.DefensivePact, out _, out var against);
+                if (against != null && theirTrust > pactFloor)
+                    return "Below a trust of " + DiplomacyConstants.TrustFloorForPacts.ToString("0")
+                           + " they sign no ordinary pact - but while " + against.Name
+                           + " outweighs you both, they would stand with you in a defensive pact down to "
+                           + pactFloor.ToString("0") + ".";
                 return "Below a trust of " + DiplomacyConstants.TrustFloorForPacts.ToString("0")
                        + " they will sign nothing but a truce or the terms that end a war.";
+            }
 
             return "They trust you enough to talk. Whether they sign is their own valuation, shown below.";
         }
@@ -666,8 +676,8 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
             if (war != null)
             {
-                var exhaustHint1 = ExhaustionHint(war, faction1, exact1);
-                var exhaustHint2 = ExhaustionHint(war, faction2, exact2);
+                var exhaustHint1 = ExhaustionHint(state, war, faction1, exact1);
+                var exhaustHint2 = ExhaustionHint(state, war, faction2, exact2);
                 rows.Add(new KingdomWarComparableStatVM(
                     DisplayExhaustion(war, faction1, exact1),
                     DisplayExhaustion(war, faction2, exact2),
@@ -721,13 +731,24 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             return exact ? (int)value : (int)ExhaustionBands.Floor(ExhaustionBands.Of(value));
         }
 
-        private static string ExhaustionHint(WarRecord war, Kingdom side, bool exact)
+        private static string ExhaustionHint(ModState state, WarRecord war, Kingdom side, bool exact)
         {
             var value = war.ExhaustionOf(side);
             if (exact)
+            {
+                // The bar the AI reads (design 02 §7.2): the court moves it, so the constant
+                // alone would quote the player a number no decision uses.
+                var bar = PeaceTable.SeekPeaceBar(state, side);
                 return side.Name + " exhaustion exactly: " + value.ToString("0.0")
-                       + ". A court sues for peace at "
-                       + DiplomacyConstants.ExhaustionSeekPeace.ToString("0") + ".";
+                       + ". This court sues for peace at " + bar.ToString("0")
+                       + (Math.Abs(bar - DiplomacyConstants.ExhaustionSeekPeace) < 0.5f
+                           ? "."
+                           : bar < DiplomacyConstants.ExhaustionSeekPeace
+                               ? ", brought down from " + DiplomacyConstants.ExhaustionSeekPeace.ToString("0")
+                                 + " by the Doves at court."
+                               : ", pushed up from " + DiplomacyConstants.ExhaustionSeekPeace.ToString("0")
+                                 + " by the Hawks at court.");
+            }
             var band = ExhaustionBands.Of(value);
             return "Shown as a band, never a figure: " + ExhaustionBands.Name(band) + " - "
                    + ExhaustionBands.Meaning(band)
@@ -740,7 +761,8 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                    + value.ToString("0") + ". Trust is reputation, not feeling: it fades only if"
                    + " nobody tends it - goodwill within two years, a grudge far more slowly - and"
                    + " a war drives it down. Below " + DiplomacyConstants.TrustFloorForPacts.ToString("0")
-                   + " they will sign nothing but a truce or the terms that end a war.";
+                   + " they will sign nothing but a truce or the terms that end a war - save a defensive"
+                   + " pact, a little lower, while a greater power outweighs you both.";
         }
 
         private static string ClaimHint(Kingdom holder, Kingdom other, Claim best)
