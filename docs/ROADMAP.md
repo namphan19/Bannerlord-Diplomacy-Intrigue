@@ -497,9 +497,9 @@ its own. What is carried forward unresolved:
 | A balance run with 2.9 in the world (amends, seats, tribute by Hold) | **not run** — five of seven AI realms seated someone on day one; how far that moves the AI world, and whether civil war gets rarer still, is unmeasured | Phase 4 |
 | Civil war's rate, side changes, conceding at 75, prices against purses | **not measured** — run 08 had no internal war in 20 in-game years; the cooldown fix (365 → 84 days, 2026-09-27) may change that. Trigger thresholds (decision 4 above) still guesses | Phase 4, a run from a strained court |
 | 2.8 Statecraft's own acceptance (design/08 §12) | **not met** — total wars +20%, pacts 47 against 31 on one pair; the regression proof was off against on, not against the build before | Phase 4 (TODO 5) |
-| The court does not reach the AI's foreign policy | **open design question** (TODO 2, review R-1): war and peace valuations read no bloc, loyalty, legitimacy or pretender | the lead |
-| Cadet branches cannot lead to civil war; tribute never settles at the table | **open design questions** (TODO 4) | the lead |
-| Legitimacy from a decisive win or loss, the peace dividend, a lost fief, a caught fabrication | **unverified in a live game** — they need a real war score or the clock (STATUS-history.md, 2.4). Design 10's battle-earned war score makes the first reachable | first run with decisive wars |
+| The court does not reach the AI's foreign policy | **built 2026-09-27** (R-1, design/02 §7.2), on the lead's delegation; not run | run 09 |
+| Cadet branches cannot lead to civil war; tribute never settles at the table | **decided 2026-09-27**: a cadet takes part of its house's influence (built, design/07 §5); the §13 tribute band waits on run 09 under design 10's score | run 09 |
+| Legitimacy from a decisive win or loss, the peace dividend, a lost fief, a caught fabrication | **unverified in a live game** — they need a real war score or the clock (STATUS-history.md, 2.4). Design 10's battle-earned war score makes the first reachable; the dividend now needs a real year of unbroken peace (2026-09-27) | first run with decisive wars |
 | Court tab past ~13 sworn clans; a physical click on its rows | **unverified** | whenever the court UI is touched |
 | 2.9 edge paths: the seat offered to a vassal player, a captured or dead holder, the AI raising a link to Heavy, a vassal player told of a new tribute or of amends | **unverified** (design/09 §8-§10) | when a session is in the game anyway |
 
