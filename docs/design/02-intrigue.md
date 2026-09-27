@@ -133,6 +133,10 @@ When a ruler dies, vanilla silently assigns the throne. Instead:
 4. A losing claimant with more than 30% support becomes a standing **pretender**, which is
    what gives a rival kingdom the `SupportClaimant` casus belli from Phase 1.
 
+*2026-09-27:* a cadet branch founded when a house divides (design 07 §5) now takes a share of its
+parent's influence, up to half, so a founder who split from the ruling house can be counted in
+step 2 at all. Design 07 §5 has the rule and whether it is enough.
+
 ## 6. Civil war
 
 The end state of unmanaged internal pressure, not a random event. Triggers when **all** hold:

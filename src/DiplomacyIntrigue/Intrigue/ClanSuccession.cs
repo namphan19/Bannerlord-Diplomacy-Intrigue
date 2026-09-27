@@ -213,7 +213,10 @@ namespace DiplomacyIntrigue.Intrigue
         /// `OnClanCreated`. Two steps differ, both on purpose. No fief is granted - a cadet
         /// branch starts landless, which is also what makes it hungry at court (`FiefStanding`).
         /// Its tier comes from a share of the parent's renown rather than the companion tier,
-        /// because a younger son of a great house is not a freed companion.
+        /// because a younger son of a great house is not a freed companion. And one step vanilla's
+        /// recipe has no counterpart for: the branch takes a share of the parent's influence
+        /// (<see cref="SplitInfluence"/>), since a claim at court is weighed in influence and a
+        /// branch founded with none could never be counted.
         /// </summary>
         public static Clan Divide(ModState state, Assessment a)
         {
@@ -222,10 +225,15 @@ namespace DiplomacyIntrigue.Intrigue
             var home = parent.HomeSettlement ?? parent.InitialHomeSettlement;
             if (home == null) return null;
 
+            var household = Household(founder, parent);
+
+            // Counted while the household is still in the parent house: the share is of the
+            // adults the house had before the split.
+            var split = SplitInfluence(parent, household);
+
             // Out of any party first: a hero changing clan does not take their party along
             // (Hero.set_Clan only moves them between lord lists), and a party of the old house
             // led by a lord of the new one is a state vanilla never produces.
-            var household = Household(founder, parent);
             for (var i = 0; i < household.Count; i++)
             {
                 var member = household[i];
@@ -260,6 +268,16 @@ namespace DiplomacyIntrigue.Intrigue
 
             CampaignEventDispatcher.Instance.OnClanCreated(cadet, false);
 
+            // The founder's share of the house's standing (design 07 §5, 2026-09-27). After
+            // OnClanCreated, so nothing a creation listener does to a new clan's influence can
+            // land on top of it. Vanilla's own action both ways, so the influence moves rather
+            // than being minted: the court's total is what it was before the split.
+            if (split.Amount > 0f)
+            {
+                ChangeClanInfluenceAction.Apply(parent, -split.Amount);
+                ChangeClanInfluenceAction.Apply(cadet, split.Amount);
+            }
+
             ChangeRelationAction.ApplyRelationChangeBetweenHeroes(founder, a.Successor,
                 -IntrigueConstants.ClanSuccessionRelationPenalty, false);
 
@@ -279,7 +297,7 @@ namespace DiplomacyIntrigue.Intrigue
             }
             Log.Info("ClanSuccession", parent.Name + " divides: " + founder.Name + " founds " + cadet.Name
                                        + " (" + cadet.StringId + ", tier " + cadet.Tier + ") with " + names
-                                       + " in " + parent.Kingdom?.Name + "."
+                                       + " in " + parent.Kingdom?.Name + ". " + split.Describe(parent, cadet)
                                        + (parent.Kingdom?.RulingClan == parent
                                            ? " The ruling house has split; the succession watch will weigh the claim."
                                            : ""));
@@ -287,6 +305,87 @@ namespace DiplomacyIntrigue.Intrigue
                        + parent.Name + " to found " + cadet.Name + ".", Colors.Yellow);
             return cadet;
         }
+
+        /// <summary>What a cadet branch takes of its parent house's influence. What <see cref="CadetInfluence"/> returns.</summary>
+        public sealed class InfluenceSplit
+        {
+            /// <summary>Adults leaving with the founder, the founder included.</summary>
+            public int Leaving;
+
+            /// <summary>Adults of the parent house before the split, the leavers included.</summary>
+            public int Adults;
+
+            /// <summary>Leaving over adults, capped at <see cref="IntrigueConstants.ClanSuccessionCadetInfluenceShareMax"/>.</summary>
+            public float Share;
+
+            /// <summary>The influence that moves. Zero when the parent house holds none, or is in debt.</summary>
+            public float Amount;
+
+            /// <summary>The parent's influence the share was taken of.</summary>
+            public float ParentInfluence;
+
+            public string Describe(Clan parent, Clan cadet)
+                => Amount > 0f
+                    ? cadet?.Name + " takes " + Amount.ToString("0") + " of " + parent?.Name + "'s "
+                      + ParentInfluence.ToString("0") + " influence (" + Leaving + " of " + Adults + " adults, share "
+                      + (Share * 100f).ToString("0") + "%)."
+                    : cadet?.Name + " takes no influence (" + parent?.Name + " holds "
+                      + ParentInfluence.ToString("0") + "; " + Leaving + " of " + Adults + " adults).";
+        }
+
+        /// <summary>
+        /// The share of the parent house's influence a cadet branch founded by
+        /// <paramref name="founder"/> would take, if the house divided today. `diplomacy.heirs`
+        /// prints it; <see cref="Divide"/> pays the same computation.
+        /// </summary>
+        public static InfluenceSplit CadetInfluence(Clan parent, Hero founder)
+            => parent == null || founder == null
+                ? new InfluenceSplit()
+                : SplitInfluence(parent, Household(founder, parent));
+
+        /// <summary>
+        /// A cadet branch takes the parent's influence in proportion to the adults who leave with
+        /// it (design 07 §5, the lead's decision of 2026-09-27), capped.
+        ///
+        /// **Adults, not heroes.** A house's influence is the standing of its grown members;
+        /// counting the minor children who go with the founder would let a young family carry
+        /// off more of the house than its own elders keep. **Counted with vanilla's heir filter**
+        /// (<see cref="IsEligible"/>, read from `Clan.GetHeirApparents`), except that it does not
+        /// leave out a living head: "the house's adults" are the people vanilla weighs when it
+        /// picks a head, plus the head. A head who dies at the split is already death-marked
+        /// when this runs, so is not counted as someone the influence is shared with.
+        ///
+        /// **Only positive influence is shared.** A house in debt has no standing to divide, and
+        /// handing a new branch its parent's debt would bury the founder before the claim is
+        /// counted. The same rule the succession tally follows: a clan at or below 0 carries no
+        /// weight at court (<see cref="SuccessionModel.InfluenceRatio"/>).
+        /// </summary>
+        private static InfluenceSplit SplitInfluence(Clan parent, List<Hero> household)
+        {
+            var split = new InfluenceSplit { ParentInfluence = parent.Influence };
+
+            var comesOfAge = Campaign.Current?.Models?.AgeModel?.HeroComesOfAge ?? 18;
+            for (var i = 0; i < parent.Heroes.Count; i++)
+            {
+                var hero = parent.Heroes[i];
+                if (!IsAdultMember(hero, comesOfAge)) continue;
+                split.Adults++;
+                if (household.Contains(hero)) split.Leaving++;
+            }
+
+            if (split.Adults <= 0 || split.Leaving <= 0) return split;
+
+            var share = split.Leaving / (float)split.Adults;
+            split.Share = share > IntrigueConstants.ClanSuccessionCadetInfluenceShareMax
+                ? IntrigueConstants.ClanSuccessionCadetInfluenceShareMax
+                : share;
+            split.Amount = parent.Influence > 0f ? parent.Influence * split.Share : 0f;
+            return split;
+        }
+
+        private static bool IsAdultMember(Hero hero, float comesOfAge)
+            => Living(hero) && !hero.IsNotSpawned && !hero.IsDisabled && !hero.IsWanderer && !hero.IsNotable
+               && hero.Age >= comesOfAge;
 
         /// <summary>
         /// Who leaves with the founder: their spouse, if in the same house, and their children

@@ -2511,6 +2511,16 @@ namespace DiplomacyIntrigue.Core
                                   + (a.RunnerUp == null ? "" : ", runner-up " + a.RunnerUp.Hero.Name + " (" + a.RunnerUp.Points
                                                                + ", relation " + a.Relation + ")")
                                   + " => " + (a.Divides ? "WOULD DIVIDE" : "holds") + " - " + a.Reason);
+                    if (a.RunnerUp != null && (a.Divides || only != null))
+                    {
+                        // The same computation Divide pays (ClanSuccession.CadetInfluence). Today's
+                        // head is still alive and counted here; at a real death they are not, so
+                        // the share at the split is a little larger than this.
+                        var split = ClanSuccession.CadetInfluence(clan, a.RunnerUp.Hero);
+                        sb.AppendLine("    a cadet branch would take " + split.Amount.ToString("0") + " of "
+                                      + split.ParentInfluence.ToString("0") + " influence (" + split.Leaving + " of "
+                                      + split.Adults + " adults, share " + (split.Share * 100f).ToString("0") + "%)");
+                    }
                     if (only != null)
                         for (var i = 0; i < a.Heirs.Count; i++)
                             sb.AppendLine("    " + a.Heirs[i].Hero.Name + "  " + a.Heirs[i].Points
@@ -2577,6 +2587,7 @@ namespace DiplomacyIntrigue.Core
                 if (a.RunnerUp == null) return clan.Name + ": no eligible heir named " + wanted + ".";
             }
 
+            var influenceBefore = clan.Influence;
             var cadet = ClanSuccession.Divide(state, a);
             if (cadet == null) return clan.Name + ": the division did not happen - see the log.";
 
@@ -2584,6 +2595,9 @@ namespace DiplomacyIntrigue.Core
             sb.AppendLine(clan.Name + " divided: " + cadet.Name + " (" + cadet.StringId + "), tier " + cadet.Tier
                           + ", led by " + cadet.Leader?.Name + ", in " + cadet.Kingdom?.Name
                           + ", home " + cadet.HomeSettlement?.Name + ".");
+            sb.AppendLine("Influence: " + clan.Name + " " + influenceBefore.ToString("0") + " -> "
+                          + clan.Influence.ToString("0") + ", " + cadet.Name + " " + cadet.Influence.ToString("0")
+                          + " (the split line in the log has the share).");
             for (var i = 0; i < cadet.Heroes.Count; i++)
                 sb.AppendLine("    " + cadet.Heroes[i].Name + "  party: "
                               + (cadet.Heroes[i].PartyBelongedTo?.Name?.ToString() ?? "none")

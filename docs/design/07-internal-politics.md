@@ -442,6 +442,36 @@ claimant path here would be a second resolver for the same question.
 **The player's house is under the same rule.** Vanilla lets the player choose their heir.
 Passing over a higher-scoring heir who dislikes the choice can split the player's own house.
 
+**A cadet branch takes part of its house's standing, since 2026-09-27** (the lead's decision, TODO
+4). A new cadet branch started at 0 influence, and a claimant's support at a succession is the
+influence of the houses backing them, so a founder who split from a ruling house counted 0% of the
+court ("Mengus 0% (1 clan)", 2026-09-26) and could never reach the 30% a pretender needs: 2.6b
+could not lead to 2.6. Now, at the split, the cadet takes a share of the parent's influence equal
+to the adults who leave with it over the house's adults before the split (the heir filter vanilla
+uses, a dying head not counted), **capped at 50%** (`ClanSuccessionCadetInfluenceShareMax`,
+UN-TUNED). A founder leaving alone from a house of five adults takes a fifth; a founder and spouse
+from a house of three take half, not two thirds. Only positive influence is shared: a house in
+debt passes on none. It is a real transfer by `ChangeClanInfluenceAction`, both ways, so the
+court's total does not change, and it is logged on the split line. Same rule for the player's
+house. `diplomacy.heirs` prints what a dividing house's cadet would take; `test_divide_clan`
+prints both houses' influence before and after.
+
+*Is it enough?* On the numbers in the code, only sometimes, and that is by design rather than a
+gap in the transfer. The tally gives each claimant the influence of every house that backs them:
+the cadet backs its founder, the ruling house its new head, and every other house backs whoever it
+scores higher, the incumbent getting half the house's loyalty on top of relation. Moving a share
+`s` of the ruling house's influence `P` gives the founder `s·P` of a court total that does not
+change. So the transfer alone reaches 30% only when `s·P` is 30% of the court - with the cap, only
+when the ruling house held at least 60% of the court's influence. Run 08's AI rulers held a median
+2,374 influence (p10 624, p90 5,330; design 09 §0); against eight houses of ~300 (an assumption:
+no run logs a house's influence, but Battania's five-house Pretenders bloc weighed 1,560), a founder and
+spouse leaving two of five adults take ~20% of the court at the median, ~28% at p90, ~8% at p10.
+The rest has to come from houses that like the founder better than the new ruler by more than
+half their loyalty - 20 to 30 relation points in a court at loyalty 40-60, much less in a crisis
+court. What still stands between a pretender and a civil war is unchanged: the Pretenders bloc at
+40% of effective power, legitimacy below 35, and two houses below loyalty 25. A contested
+succession costs only 15 of a starting 60.
+
 ### Tools
 
 - `diplomacy.heirs [clan]` shows, for every house or one, what would happen if its head died

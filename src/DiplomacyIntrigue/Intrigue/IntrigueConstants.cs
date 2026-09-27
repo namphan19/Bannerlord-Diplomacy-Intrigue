@@ -432,6 +432,21 @@ namespace DiplomacyIntrigue.Intrigue
         /// </summary>
         public const float ClanSuccessionCadetRenownShare = 0.25f;
 
+        /// <summary>
+        /// The most of the parent house's influence a cadet branch can take at the split
+        /// (design 07 §5, the lead's decision of 2026-09-27). Below the cap the share is the
+        /// adults who leave over the adults of the house, so a founder who walks out alone
+        /// from a house of six takes a sixth. UN-TUNED.
+        ///
+        /// Capped so that the house that kept the name and the headship always keeps at least
+        /// half its standing: a founder and spouse leaving a house of three adults would
+        /// otherwise take two thirds of it. Why the transfer exists at all: a new cadet branch
+        /// started at 0 influence, and succession support is the influence of a claimant's
+        /// backers, so a founder who split from a ruling house counted 0% of the court (live,
+        /// 2026-09-26: "Mengus 0% (1 clan)") and 2.6b could never lead to 2.6.
+        /// </summary>
+        public const float ClanSuccessionCadetInfluenceShareMax = 0.5f;
+
         // ----- Court verbs (design 09) ------------------------------------------------------
         //
         // The lead's pricing rule of 2026-09-26 (design 09 §0, CLAUDE.md §3): an act costs
