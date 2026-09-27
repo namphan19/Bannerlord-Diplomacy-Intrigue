@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 using DiplomacyIntrigue.Core;
 using DiplomacyIntrigue.Models;
@@ -50,6 +51,36 @@ namespace DiplomacyIntrigue.Diplomacy
             return worst;
         }
 
+        /// <summary>
+        /// Fortifications <paramref name="loser"/> has lost in this war that the other side still
+        /// holds - what <see cref="DiplomacyConstants.ExhaustionPerDayPerOccupiedFief"/> charges.
+        ///
+        /// Read from the fief ledger (<see cref="FiefHistory"/>): a record of the loser's that
+        /// closed after the war began, on a fief the enemy holds today. Until 2026-09-27 this read
+        /// <c>WarRecord.FiefsTakenBy*</c>, a count of captures that only ever rises, so a fief
+        /// retaken went on costing its owner every day for the rest of the war - against the
+        /// constant's own "the enemy still holds", and against the internal war's count of the
+        /// same thing (<c>Intrigue.InternalWarFiefs.OccupiedFrom</c>). Those counters stay, for
+        /// telemetry. A fief lost twice in one war counts once: it is one fief the enemy holds.
+        /// </summary>
+        public static int OccupiedFrom(ModState state, WarRecord war, Kingdom loser)
+        {
+            if (state == null || war == null || loser == null) return 0;
+            var enemy = war.Other(loser);
+            if (enemy == null) return 0;
+
+            var counted = new HashSet<Settlement>();
+            for (var i = 0; i < state.FiefHistory.Count; i++)
+            {
+                var record = state.FiefHistory[i];
+                if (record.Kingdom != loser || record.IsCurrent || record.Settlement == null) continue;
+                if (record.To < war.StartedOn) continue;
+                if (record.Settlement.MapFaction != enemy) continue;
+                counted.Add(record.Settlement);
+            }
+            return counted.Count;
+        }
+
         public static void DailyTick(ModState state)
         {
             var rate = Settings.Current.WarExhaustionRate;
@@ -67,9 +98,9 @@ namespace DiplomacyIntrigue.Diplomacy
 
                 // Losing ground keeps hurting for as long as the enemy holds it.
                 Accrue(war, war.Aggressor,
-                    war.FiefsTakenByDefender * DiplomacyConstants.ExhaustionPerDayPerOccupiedFief * rate);
+                    OccupiedFrom(state, war, war.Aggressor) * DiplomacyConstants.ExhaustionPerDayPerOccupiedFief * rate);
                 Accrue(war, war.Defender,
-                    war.FiefsTakenByAggressor * DiplomacyConstants.ExhaustionPerDayPerOccupiedFief * rate);
+                    OccupiedFrom(state, war, war.Defender) * DiplomacyConstants.ExhaustionPerDayPerOccupiedFief * rate);
 
                 ApplySiegePressure(war, war.Aggressor, war.Defender, rate);
                 ApplySiegePressure(war, war.Defender, war.Aggressor, rate);

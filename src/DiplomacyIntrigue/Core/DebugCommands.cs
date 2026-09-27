@@ -114,6 +114,8 @@ namespace DiplomacyIntrigue.Core
                 sb.AppendLine(war + " days=" + war.DaysElapsed.ToString("0")
                               + " casualties=" + war.AggressorCasualties + "/" + war.DefenderCasualties
                               + " fiefs=" + war.FiefsTakenByAggressor + "/" + war.FiefsTakenByDefender
+                              + " (held now " + WarExhaustion.OccupiedFrom(state, war, war.Defender) + "/"
+                              + WarExhaustion.OccupiedFrom(state, war, war.Aggressor) + ")"
                               + " manpowerAtStart=" + war.AggressorManpowerAtStart + "/" + war.DefenderManpowerAtStart);
                 sb.AppendLine("  " + war.Aggressor.Name + ": " + WarScore.Describe(war, war.Aggressor));
                 count++;
