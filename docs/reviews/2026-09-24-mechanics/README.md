@@ -40,8 +40,8 @@ everything else is a recommendation waiting on the lead.
   - *inference*: follows from formulas and constants, not observed; a hypothesis for run 08.
 - **Code paths** are relative to `src/DiplomacyIntrigue/`. Line numbers are as of branch
   `review/game-mechanics` on 2026-09-24 and will drift; search for the named symbol if a line
-  no longer matches. That branch was merged into `development` on 2026-09-27 without the
-  `vietnamese-tech-writing` skill it also carried, and then deleted.
+  no longer matches. This folder was brought into `development` on 2026-09-27 without the
+  `vietnamese-tech-writing` skill that branch also carried.
 - **Scope of the evidence.** Nothing was run in the game for this review. Figures from runs are
   the runs' own (`docs/balance/`, `docs/STATUS.md`, the design docs).
 

@@ -22,8 +22,10 @@ not a claim that everything under it is measured; the carried debt is one table 
 
 **Housekeeping, the same day.** The 2026-09-24 mechanics review is merged into `development` at
 [reviews/2026-09-24-mechanics/](reviews/2026-09-24-mechanics/README.md), its register brought up
-to date (TODO 12). Every `feature/*` branch and `review/game-mechanics` was deleted from origin once
-checked to hold nothing `development` lacks; origin now carries `development` and `main`.
+to date (TODO 12). Every `feature/*` branch on origin was checked (full history, not a shallow
+clone) and holds nothing `development` lacks, as does `main`. They are **not deleted yet**: that
+waits on the lead. `review/game-mechanics` still holds its three original commits and the vendored
+`vietnamese-tech-writing` skill, which `development` did not take.
 
 **Design 10, war score measured in the fighting, is built (W1+W2) and had its first live check**
 ([design/10](design/10-war-score.md)). It replaces the old fief/raid-based war score with one
