@@ -50,6 +50,19 @@ namespace DiplomacyIntrigue.Intrigue
             return explained.Total;
         }
 
+        /// <summary>
+        /// Loyalty as it would stand had the house taken no foreign gold - the same sum with the
+        /// bribe's term at zero. For the internal war's rising, which has to tell a house the gold
+        /// moved from one that would have risen anyway (design 03 §10); the same number as
+        /// <see cref="Of"/> for a house nobody bought.
+        /// </summary>
+        public static float WithoutForeignGold(ModState state, Clan clan)
+        {
+            var explained = Explain(state, clan);
+            explained.ForeignGold = 0f;
+            return explained.Total;
+        }
+
         public static LoyaltyBand Band(float loyalty)
         {
             if (loyalty >= IntrigueConstants.LoyaltyReliable) return LoyaltyBand.Reliable;

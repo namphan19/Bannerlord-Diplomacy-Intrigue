@@ -276,6 +276,47 @@ and the mobile parties inside it (`Town.GetDefenderParties`, by IL), so a garris
 Either that castle held militia only, or garrisons are being missed. `battle_scored` now also
 logs every man on each side (`attackerSideMen`, `defenderSideMen`) so the next run can tell.
 
+**Read from the code, 2026-09-27** (a cloud session, no game: nothing below has been seen in a
+battle). The code has one way to drop a real garrison from the count, and the row fits it:
+
+- `CountLosses` decided which realm a party fought for by the party's **live** map faction, set
+  against the side's faction. A garrison's map faction follows whoever holds its walls. The side's
+  faction is kept in a field of its own (`MapEventSide._mapFaction`), which suggests it is fixed
+  when the side forms - consistent with the scorer reading `defender = Northern Empire` on this
+  very battle, though not proven by it.
+- The row's −3.1 is the proportional part alone. A repelled assault would have added the
+  defender's award (972 attackers is over the 100-man floor), −6.1 in all, so the defender did not
+  win it: the castle most likely fell.
+- If vanilla hands a fallen fortress to its captor **before** `MapEventEnded` fires, its garrison
+  reads as Khuzait's when counted, counts on neither side, and Northern Empire "fielded 0". Whether
+  it does is not readable here: the reference assemblies carry no method bodies.
+
+So, two changes:
+
+- **Counted right either way.** A garrison of the assaulted fortress, on the defending side, that
+  already reads as the attacker's is counted for the side that held the walls
+  (`WarExhaustion.HeldItsOwnWalls`). If the owner has not changed when the event fires, the
+  garrison reads as the defender's and is counted as it always was: the rule changes nothing. A
+  garrison reading as a third realm stays uncounted, as before. With it counted, a won assault
+  also clears the 100-man floor for the win award.
+- **The log decides it.** `battle_scored` now also carries `winner`, `settlement`,
+  `settlementNow` (who holds it as the event ends) and a list per side, `attackerParties` and
+  `defenderParties`, one party per `/`-separated entry as `name:kind:faction:counted:men:died`,
+  with `:gone` on a party no longer active when the event fired. Kind is lord, garrison, militia,
+  patrol, villager, caravan, bandit, settlement or other; counted is `yes`, `yes(walls)` (the
+  rule above), `no(army)` (not a lord party or garrison: militia, the settlement's own party) or
+  `no(realm)`.
+
+**How the next run settles it**, on the first `battle_scored type=Siege winner=attacker` line:
+
+| What the line shows | Meaning |
+|---|---|
+| a garrison `yes(walls)`, and `settlementNow` is the attacker | the capture comes first; this was the cause, and it is fixed |
+| the garrison `yes`, with its men | the owner changes after the event: garrisons are counted, and the §9a castle most likely had none to count |
+| no garrison with men, militia only | that castle held militia only; the row was right |
+| a `settlement` entry with men above 0 | vanilla folds the garrison into the settlement's own party in a siege; uncounted, and needs a rule |
+| a `lord` entry `no(realm)`, faction `none`, `:gone` | a defeated lord's party destroyed before the event; a second fault, not fixed here |
+
 **Prisoners dominate from the first week.** On load, eight days into each war:
 
 | War | Battles | Prisoners held (each way) | War score |

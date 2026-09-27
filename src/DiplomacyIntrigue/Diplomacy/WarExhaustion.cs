@@ -1,8 +1,10 @@
 using System;
+using System.Text;
 using DiplomacyIntrigue.Core;
 using DiplomacyIntrigue.Models;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.MapEvents;
+using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.Core;
 
@@ -169,8 +171,10 @@ namespace DiplomacyIntrigue.Diplomacy
         {
             WarScore.EnsureManpower(war);
 
-            CountLosses(mapEvent, mapEvent.AttackerSide, attacker, out var attackerLost, out var attackerFielded);
-            CountLosses(mapEvent, mapEvent.DefenderSide, defender, out var defenderLost, out var defenderFielded);
+            var attackerParties = new StringBuilder();
+            var defenderParties = new StringBuilder();
+            CountLosses(mapEvent, mapEvent.AttackerSide, attacker, out var attackerLost, out var attackerFielded, attackerParties);
+            CountLosses(mapEvent, mapEvent.DefenderSide, defender, out var defenderLost, out var defenderFielded, defenderParties);
 
             // Positive: the battle went the attacker's way.
             var proportional = DiplomacyConstants.WarScoreLossShareWeight
@@ -190,16 +194,25 @@ namespace DiplomacyIntrigue.Diplomacy
             war.AddBattleScore(attacker == war.Aggressor ? points : -points);
 
             // One line per scored battle, so a live check can read each term against design 10
-            // §3 by hand and a balance run can see what the battles were worth.
+            // §3 by hand and a balance run can see what the battles were worth. The party lists
+            // give every party on each side as name:kind:faction:counted:men:died[:gone] (see
+            // CountLosses), and settlementNow is who holds the battle's settlement as the event
+            // ends - together they settle design 10 §9a's siege whose defender "fielded 0".
+            var settlement = mapEvent.MapEventSettlement;
             Telemetry.Event("battle_scored", "type", mapEvent.EventType,
                 "attacker", attacker, "defender", defender,
+                "winner", winning == mapEvent.AttackerSide.MissionSide ? "attacker"
+                          : winning == mapEvent.DefenderSide.MissionSide ? "defender" : "none",
                 "attackerLost", attackerLost, "attackerFielded", attackerFielded,
                 "attackerManpower", war.ManpowerAtStartOf(attacker),
                 "defenderLost", defenderLost, "defenderFielded", defenderFielded,
                 "defenderManpower", war.ManpowerAtStartOf(defender),
                 "proportional", proportional, "award", award,
                 "battleScore", war.BattleScore,
-                "attackerSideMen", SideMen(mapEvent.AttackerSide), "defenderSideMen", SideMen(mapEvent.DefenderSide));
+                "attackerSideMen", SideMen(mapEvent.AttackerSide), "defenderSideMen", SideMen(mapEvent.DefenderSide),
+                "settlement", settlement?.Name?.ToString(),
+                "settlementNow", settlement?.MapFaction?.Name?.ToString(),
+                "attackerParties", attackerParties.ToString(), "defenderParties", defenderParties.ToString());
         }
 
         /// <summary>
@@ -227,9 +240,24 @@ namespace DiplomacyIntrigue.Diplomacy
         ///
         /// <c>HealthyManCountAtStart</c> includes a party's heroes, a handful per party; they
         /// are left in rather than guessed out, since the rosters are already emptied.
+        ///
+        /// Which realm a party fought for is its live map faction, with one exception (design 10
+        /// §9a, 2026-09-27): the garrison of a fortress taken by assault. A garrison's map faction
+        /// follows whoever holds its walls, while the side's own faction - which is what
+        /// <paramref name="kingdom"/> is - was fixed when the battle began. If the fortress has
+        /// already changed hands when <c>MapEventEnded</c> fires, its garrison reads as the
+        /// captor's, is counted on neither side, and the defender "fielded 0" - the one way the
+        /// code lets a real garrison vanish from the count. Whether vanilla does change the owner
+        /// before the event is not known here (no method bodies in the reference assemblies), so
+        /// a garrison of the assaulted fortress that reads as the attacker's is counted for the
+        /// side that held the walls (<see cref="HeldItsOwnWalls"/>). When the owner has not
+        /// changed yet, the garrison reads as the defender's and is counted as it always was: the
+        /// rule changes nothing. <paramref name="detail"/> records every party, so the next
+        /// battle_scored line shows which case it was: <c>yes(walls)</c> on a garrison is the
+        /// capture coming first.
         /// </summary>
         private static void CountLosses(MapEvent mapEvent, MapEventSide side,
-            Kingdom kingdom, out int lost, out int fielded)
+            Kingdom kingdom, out int lost, out int fielded, StringBuilder detail)
         {
             lost = 0;
             fielded = 0;
@@ -241,13 +269,63 @@ namespace DiplomacyIntrigue.Diplomacy
             for (var i = 0; i < parties.Count; i++)
             {
                 var entry = parties[i];
-                var party = entry?.Party?.MobileParty;
-                if (party == null || !(party.IsLordParty || party.IsGarrison)) continue;
-                if (party.MapFaction != kingdom) continue;
+                if (entry?.Party == null) continue;
+                var party = entry.Party.MobileParty;
 
-                fielded += entry.HealthyManCountAtStart;
-                lost += takenWhole ? entry.HealthyManCountAtStart : (entry.DiedInBattle?.TotalRegulars ?? 0);
+                string counted;
+                if (party == null || !(party.IsLordParty || party.IsGarrison)) counted = "no(army)";
+                else if (party.MapFaction == kingdom) counted = "yes";
+                else if (HeldItsOwnWalls(mapEvent, side, party)) counted = "yes(walls)";
+                else counted = "no(realm)";
+
+                var partyLost = takenWhole ? entry.HealthyManCountAtStart : (entry.DiedInBattle?.TotalRegulars ?? 0);
+                if (counted.StartsWith("yes", StringComparison.Ordinal))
+                {
+                    fielded += entry.HealthyManCountAtStart;
+                    lost += partyLost;
+                }
+
+                if (detail == null) continue;
+                if (detail.Length > 0) detail.Append('/');
+                detail.Append(entry.Party.Name?.ToString() ?? "?").Append(':')
+                      .Append(KindOf(entry.Party)).Append(':')
+                      .Append(entry.Party.MapFaction?.Name?.ToString() ?? "none").Append(':')
+                      .Append(counted).Append(':')
+                      .Append(entry.HealthyManCountAtStart).Append(':')
+                      .Append(entry.DiedInBattle?.TotalRegulars ?? 0);
+                if (party != null && !party.IsActive) detail.Append(":gone");
             }
+        }
+
+        /// <summary>
+        /// A garrison on the defending side of an assault on its own fortress that already answers
+        /// to the attacker: the walls changed hands before this event fired, and it fought for
+        /// the realm that held them when the assault began, the side's own. Requiring the
+        /// attacker's faction, not just any other one, keeps the rule to that capture: a garrison
+        /// that reads as some third realm is left uncounted, as before.
+        /// </summary>
+        private static bool HeldItsOwnWalls(MapEvent mapEvent, MapEventSide side, MobileParty party)
+            => party.IsGarrison
+               && mapEvent.IsSiegeAssault
+               && side == mapEvent.DefenderSide
+               && mapEvent.MapEventSettlement != null
+               && party.GarrisonPartyComponent?.Settlement == mapEvent.MapEventSettlement
+               && party.MapFaction != null
+               && party.MapFaction == mapEvent.AttackerSide?.MapFaction;
+
+        /// <summary>What a party on a battle side is, for the battle_scored party lists.</summary>
+        private static string KindOf(PartyBase party)
+        {
+            var mobile = party.MobileParty;
+            if (mobile == null) return party.IsSettlement ? "settlement" : "other";
+            if (mobile.IsLordParty) return "lord";
+            if (mobile.IsGarrison) return "garrison";
+            if (mobile.IsMilitia) return "militia";
+            if (mobile.IsPatrolParty) return "patrol";
+            if (mobile.IsVillager) return "villager";
+            if (mobile.IsCaravan) return "caravan";
+            if (mobile.IsBandit) return "bandit";
+            return "other";
         }
 
         private static float Share(int lost, int manpower)

@@ -329,6 +329,15 @@ namespace DiplomacyIntrigue.Intrigue
             public readonly List<Clan> Rebels = new List<Clan>();
 
             /// <summary>
+            /// The rebels that rise only because they took foreign gold: without the bribe - its
+            /// rule and its -20 loyalty alike - the bloc and relation rules would have left them
+            /// with the crown. The rising's notice calls these "bought with our gold"; a bribed
+            /// house that would have risen anyway is not, since the gold did not put it there
+            /// (design 03 §10, a 3.5 wording fault).
+            /// </summary>
+            public readonly HashSet<Clan> RisingForGold = new HashSet<Clan>();
+
+            /// <summary>
             /// The player's clan, when the rules would put it on the rebel side and it is not
             /// the claimant's own. The resolver makes no exception for the player; the caller
             /// asks instead of deciding (design 02 §9.2, design 07 §3a Q2).
@@ -379,22 +388,27 @@ namespace DiplomacyIntrigue.Intrigue
                     if (clan == ruling || clan.Leader == null) continue;
 
                     bool rebels;
+                    var forGold = false;
                     if (clan == claimant.Clan)
                         rebels = true;
-                    else if (Bribes.IsBought(state, clan))
+                    else
+                    {
                         // Design 03 §2 BribeLord: a house that took foreign gold stands with the
                         // rising whatever its bloc or its relations say - the lead's reading of
                         // "flips to us", 2026-09-25. Only at the start: once the war runs, a
                         // bought house can be bought back like any other (SideChange).
-                        rebels = true;
-                    else if (a.Bloc != null && a.Bloc.Members.Contains(clan))
-                        rebels = LoyaltyModel.Of(state, clan) < IntrigueConstants.LoyaltyReliable;
-                    else
-                        // Design 02 §6: a clan below the defection line that is not in the bloc
-                        // picks a side by relation.
-                        rebels = LoyaltyModel.Of(state, clan) < IntrigueConstants.LoyaltyDisaffected
-                                 && ruler != null
-                                 && clan.Leader.GetRelation(claimant) > clan.Leader.GetRelation(ruler);
+                        //
+                        // The house's own rules are asked of its loyalty without the bribe's -20,
+                        // so the assessment also knows whether the gold is what moved it: a house
+                        // the -20 pushed under a line rose for the gold too. For a house nobody
+                        // bought the two loyalties are the same number, and who rises is exactly
+                        // what it was when the bribe was checked first.
+                        var bought = Bribes.IsBought(state, clan);
+                        var risesUnbought = RisesUnbought(a.Bloc, clan, claimant, ruler,
+                            LoyaltyModel.WithoutForeignGold(state, clan));
+                        rebels = bought || risesUnbought;
+                        forGold = bought && !risesUnbought;
+                    }
 
                     if (!rebels) continue;
                     if (clan == Clan.PlayerClan && clan != claimant.Clan)
@@ -403,6 +417,7 @@ namespace DiplomacyIntrigue.Intrigue
                         continue;
                     }
                     a.Rebels.Add(clan);
+                    if (forGold) a.RisingForGold.Add(clan);
                 }
             }
 
@@ -436,6 +451,23 @@ namespace DiplomacyIntrigue.Intrigue
             a.Ready = true;
             a.Reason = "all three conditions hold";
             return a;
+        }
+
+        /// <summary>
+        /// Whether a sworn house - not the claimant's - rises on its own account, at the given
+        /// loyalty: a pretender-bloc member that is not reliable, or a house below the defection
+        /// line that prefers the claimant to the ruler (design 02 §6).
+        /// </summary>
+        private static bool RisesUnbought(CourtBloc bloc, Clan clan, Hero claimant, Hero ruler, float loyalty)
+        {
+            if (bloc != null && bloc.Members.Contains(clan))
+                return loyalty < IntrigueConstants.LoyaltyReliable;
+
+            // Design 02 §6: a clan below the defection line that is not in the bloc picks a side
+            // by relation.
+            return loyalty < IntrigueConstants.LoyaltyDisaffected
+                   && ruler != null
+                   && clan.Leader.GetRelation(claimant) > clan.Leader.GetRelation(ruler);
         }
 
         /// <summary>
@@ -644,14 +676,21 @@ namespace DiplomacyIntrigue.Intrigue
                 if (names.Length > 0) names.Append(", ");
                 names.Append(rebels[i].Name);
 
-                // A house on this side because it was bought says so in the log, and the buyer
-                // hears that the gold was well spent - if the buyer is the player.
+                // A bribed house says so in the log, and the buyer, if the player, hears what the
+                // gold did. Only a house the gold moved is "bought with our gold": one that would
+                // have risen anyway (in the pretender bloc, say) is named as such, since telling the
+                // player the gold won it was the 3.5 wording fault (design 03 §10).
                 var buyer = Bribes.BuyerOf(state, rebels[i]);
                 if (buyer == null || rebels[i] == banner) continue;
-                names.Append(" (bought by ").Append(buyer.Name).Append(')');
-                if (buyer == Clan.PlayerClan)
+                var moved = a.RisingForGold.Contains(rebels[i]);
+                names.Append(" (bought by ").Append(buyer.Name).Append(moved ? ")" : "; would have risen anyway)");
+                if (buyer != Clan.PlayerClan) continue;
+                if (moved)
                     Log.Notify(rebels[i].Name + ", bought with our gold, stands with " + claimant.Name
                                + " against " + kingdom.Leader?.Name + ".", Colors.Cyan);
+                else
+                    Log.Notify(rebels[i].Name + " stands with " + claimant.Name + " against " + kingdom.Leader?.Name
+                               + " - as it would have without our gold.", Colors.White);
             }
 
             Log.Info("InternalWar", kingdom.Name + ": " + claimant.Name + " takes up arms against "
