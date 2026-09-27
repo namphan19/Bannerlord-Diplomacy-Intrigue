@@ -143,17 +143,16 @@ Happens on the exact expiry day, every cycle.
 
 ### 10a. Design 10, war score: D1, D2, D6
 
-Built (W1+W2) and given a first live check on `testmod_claude_1`, 2026-09-27
-([design/10 §9a](docs/design/10-war-score.md)). Not committed yet.
+Built (W1+W2), given a first live check on `testmod_claude_1` and committed (`44a12a9`),
+2026-09-27 ([design/10 §9a-§10](docs/design/10-war-score.md)).
 
-- [ ] **D1** — battle weight `W`, per-battle cap, the win award and its size floor.
-      Recommendation: 120, cap 30, +3 for a battle whose loser fielded 100+ men.
-- [ ] **D2** — prisoner weights and cap. Decided 2026-09-27 at ruler 20 / clan leader 10 / lord 5,
-      uncapped; **reopened the same day** — the live check found the term alone swinging a war's
-      score by 30-75 points within two weeks, larger than §7 had flagged.
-- [ ] **D6** — should a winner who has taken most of a realm be able to annex the rest at the
-      table, rather than only by continuing the war. Separate, not blocking; discuss once D1/D2
-      are settled.
+- [x] **D1** — 120, cap 30, +3 for a battle whose loser fielded 100+ men: the recommendation,
+      taken by the lead 2026-09-27.
+- [x] **D2** — ruler 20 / clan leader 10 / lord 5, uncapped: **kept** by the lead 2026-09-27,
+      after the live check had reopened it (the term alone swung a war's score by 30-75 points
+      within two weeks).
+- [x] ~~**D6**~~ — annexing the rest of a realm at the table: **dropped** by the lead 2026-09-27.
+- [ ] The 20-year balance run design/10 §9 asks for, now unblocked (pending work, below).
 
 ### 11. Before a release (Phase 4)
 
@@ -186,6 +185,10 @@ own `vietnamese-writing` (CLAUDE.md §4).
 
 ## Pending work
 
+- [ ] **Design 10's 20-year balance run** (design/10 §9, step 4): tributes and subjugations per
+      decade, and which component closed each war. Read the prisoner term's share first: D2 was
+      kept knowing it dominated the first live check. Look at the zero-manpower siege defender
+      (§9a) before trusting the battle breakdown fully.
 - [ ] **A civil-war balance run** from a save with a strained court — item 4.
 - [ ] **A `tribute_refused` telemetry event.** Acceptances of a tribute demand are logged,
       refusals are not, so `AiTributeCourtRefusalShare` cannot be tuned (run 08 §6).

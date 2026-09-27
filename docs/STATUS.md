@@ -11,9 +11,8 @@ Module version 0.1.0. Save schema **v4**, definer base id **2749100**. The save 
 the next free ones are kept in CLAUDE.md §3 and nowhere else; `scripts/check-save-ids.ps1`
 checks the declarations before every build and deploy.
 Last completed measurement: **balance run 08** (statecraft on/off) — [balance/run-08.md](balance/run-08.md).
-Branch `development`. `main` sits 85 commits behind on purpose: cutting a release is Phase 4's job.
-**Working tree is dirty** with design 10 (war score) mid-flight — see below; nothing in this
-section is committed yet.
+Branch `development`. `main` sits well behind on purpose: cutting a release is Phase 4's job.
+opencode was removed from the project on 2026-09-27 (CLAUDE.md §7).
 
 ## Start here — 2026-09-27
 
@@ -21,8 +20,7 @@ section is committed yet.
 ([design/10](design/10-war-score.md)). It replaces the old fief/raid-based war score with one
 earned from battles (each side's manpower lost, as a share of what it fielded, sieges included)
 and the lords each side holds prisoner — the same rework that also touched war exhaustion,
-`WarRecord`, `CoreBehavior`, `PeaceTable` and the diagnostics. Not committed: this is still on
-disk against the working tree, one commit behind (`e20a355` was the design draft only).
+`WarRecord`, `CoreBehavior`, `PeaceTable` and the diagnostics. Committed as `44a12a9`.
 
 - **Live check on `testmod_claude_1`** (player rules Khuzait, four wars already running), Summer
   9 to Summer 17, 1084 at speed-up 30, 0 errors. Manpower snapshots and battle scoring matched a
@@ -32,8 +30,12 @@ disk against the working tree, one commit behind (`e20a355` was the design draft
   every battle and holds many for weeks; at the agreed 20/10/5 uncapped, the prisoner term alone
   swung a war's score by 30-75 points within two weeks and pushed one kingdom past the
   subjugation cliff on prisoners alone. §7 of the design named this risk before the check; the
-  check shows it is larger than written there. **Back with the lead — D1, D2 and D6 are all open**
-  (design/10 §10).
+  check shows it is larger than written there.
+- **The lead closed the decisions the same day** (design/10 §10): **D1 as recommended** (W 120,
+  cap 30, +3 for a win over 100+ men), **D2 kept** at 20/10/5 uncapped despite the check, and
+  **D6 dropped**. The code already held these values, so nothing in the build changed; the
+  constants' doc comments now record the decisions. Still UN-TUNED: no balance run has measured
+  them.
 - **Two unrelated constants were corrected the same day, decided by the lead:**
   `GrievanceDecayPerDay` (0.02 → 0.0635, so an 8-weight grievance now fades in ~126 days, "a year
   and a half" as design/02 §1 always said — at the old value it took 4.8 years) and
@@ -125,17 +127,18 @@ Trust" twice. **2.9 is built: C1, C2, C3.**
 | Phase | State |
 |---|---|
 | **0 — Foundation** | ✅ done, verified in a live campaign |
-| **1 — Diplomacy core (1.1–1.12)** | ✅ **accepted by the lead, 2026-09-23**. Code complete including submission and hegemony (1.9/1.10), the vanilla takeover (1.11) and power (1.12). Measured over runs 01–08; run 08 answered the §13.7 questions the §13 rework had left open. **War score is being reworked under it since 2026-09-27** ([design/10](design/10-war-score.md), built and live-checked, D1/D2/D6 open with the lead) — acceptance stands, but the numbers behind it are mid-change. Carried debt: [ROADMAP.md](ROADMAP.md#phase-1--accepted-by-the-project-lead-2026-09-23) and "Not verified — carried" below |
+| **1 — Diplomacy core (1.1–1.12)** | ✅ **accepted by the lead, 2026-09-23**. Code complete including submission and hegemony (1.9/1.10), the vanilla takeover (1.11) and power (1.12). Measured over runs 01–08; run 08 answered the §13.7 questions the §13 rework had left open. **War score is being reworked under it since 2026-09-27** ([design/10](design/10-war-score.md), built, live-checked, D1/D2 decided and D6 dropped 2026-09-27; its balance run is owed) — acceptance stands, but the numbers behind it are mid-change. Carried debt: [ROADMAP.md](ROADMAP.md#phase-1--accepted-by-the-project-lead-2026-09-23) and "Not verified — carried" below |
 | **2 — Court intrigue** | 🔄 2.1–2.7 built and verified live on their main paths; **2.8 Statecraft** built and run live 2026-09-26 (S0–S2; S3 is run 08; S4 became design/09's C2; S5 traits waits); **2.9 Court verbs**: C1 make amends built and run live 2026-09-26, C1, C2 and C3 built and run live. The acceptance line is met by C1 under the lead's reading (prevention, design/09 D16); formal acceptance is the lead's |
 | **3 — Espionage** | ⏸ **parked by the lead, 2026-09-26.** 3.1–3.7 built and run live ([design/03 §10](design/03-espionage.md)). The AI's handlers are still taken by vanilla, so an AI network never grows (TODO 3) |
 | **4 — Integration, balance, release** | 🔄 runs 01–08 archived; **run 08** is the current reference. The civil-war balance needs its own run (TODO 4) |
 
 ## What to do next
 
-**Design 10, war score — waiting on the lead.** D1 (battle weight/cap/win award), D2 (prisoner
-weights, reopened) and D6 (annex-the-rest-at-the-table) are open. Once decided: apply, commit,
-then the 20-year balance run design/10 §9 asks for. Also worth ten minutes: the unexplained
-zero-manpower siege defender in the §9a check, before trusting the breakdown fully.
+**Design 10, war score — decisions closed, balance run owed.** D1 as recommended, D2 kept, D6
+dropped (2026-09-27). Next is the 20-year balance run design/10 §9 asks for; the prisoner term's
+share of each war's closing score is the first thing to read, since D2 was kept knowing it
+dominated the live check. Worth ten minutes first: the unexplained zero-manpower siege defender in
+the §9a check, before trusting the breakdown fully.
 
 **Phase 2's court verbs (R-2), [design/09](design/09-court-verbs.md).** C1 is built and run live.
 2.9 is built (C1, C2, C3, D16-D17). Next: a balance run with the court verbs in the world - five of
@@ -179,7 +182,7 @@ Short on purpose; each line points to where the detail is.
 - **2.9 C1:** the AI skipping an answer that moves nothing, in a case where that changes its pick; a
   player serving an AI king being told the king answered their house; the Encyclopedia ledger,
   which now leaves answered records out ([design/09 §8](design/09-court-verbs.md)).
-- **Design 10, war score:** the 20-year balance run, blocked on D1/D2/D6; a siege where the
+- **Design 10, war score:** the 20-year balance run (no longer blocked); a siege where the
   defender's manpower read 0 in the §9a check, unexplained; carrying an old-save `WarScore` over
   as `BattleScore` under the new decay, never exercised on a real reload ([design/10 §9a](design/10-war-score.md)).
 

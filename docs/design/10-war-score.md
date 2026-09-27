@@ -1,8 +1,9 @@
 # Design 10 — War score, measured in the fighting
 
-Status: **built 2026-09-27 (W1 and W2 together), not yet verified in game.** The lead said to
-build in this direction; D1 and D3-D5 below went in at their recommended values, D2 at the lead's.
-Compiled, save-id check passed; nothing has run in a campaign. The resolver is
+Status: **built 2026-09-27 (W1 and W2 together), given one live check (§9a), decisions closed.**
+The lead said to build in this direction. D1 and D3-D5 below are at their recommended values, D2
+at the lead's own, kept after the live check; D6 was dropped (§10). What is left is the balance
+run in §9, step 4. The resolver is
 `Diplomacy/WarScore.cs`; the battle scoring is `WarExhaustion.AddBattleWarScore`.
 
 The lead's call of 2026-09-26, after a live session against the Northern Empire: the war score
@@ -61,8 +62,9 @@ The historical survey behind this version (reported to the lead 2026-09-27). Fiv
 What a peace table should read, then, is **how badly the loser's armies are broken and whose
 lords sit in whose dungeons**, not how much land has changed hands. Land already taken is kept.
 
-Patterns 2, 3 and 5 (when a winner prefers annexation) are **not** in this design: they are a
-separate question for the lead (§10, D6).
+Patterns 2, 3 and 5 (when a winner prefers annexation) are **not** in this design. The lead
+dropped the question on 2026-09-27 (§10, D6): a winner that wants the rest of a realm takes it by
+continuing the war.
 
 ## 2. The formula
 
@@ -286,15 +288,19 @@ and Western Empire stood at **−75.2**, the subjugation cliff, two weeks into i
 loser's rule (`exhaustion ≥ 60 − score/2`) a realm at −75 signs at exhaustion 22.5. Vanilla takes
 lords in almost every battle and holds many of them for weeks, so at 20 / 10 / 5 uncapped the
 prisoner term is the war score, and it swings by tens of points a week. §7 named this risk;
-it is larger than written there. **D2 is back with the lead.**
+it is larger than written there. **D2 went back to the lead, who kept it as it was the same day
+(§10).** The next balance run measures what that does to the rate of tributes and subjugations.
 
 ## 10. Decisions for the lead
 
-| | Question | Recommendation |
+All closed on 2026-09-27. The values are the lead's; none is yet measured by a balance run, so
+the constants still say UN-TUNED.
+
+| | Question | Decision |
 |---|---|---|
-| **D1** | Battle weight `W`, per-battle cap, the win award and its size floor | **120, cap 30, +3 for a battle whose loser fielded 100+ men**. The fixed award is the lead's call; its value and floor are proposals |
-| **D2** | Prisoner weights and cap | Decided 2026-09-27: ruler 20, clan leader 10, lord 5, no cap. **Reopened the same day by the live check (§9a)**: the term reaches 40-60 inside two weeks |
+| **D1** | Battle weight `W`, per-battle cap, the win award and its size floor | **120, cap 30, +3 for a battle whose loser fielded 100+ men**, as recommended. Taken by the lead 2026-09-27 |
+| **D2** | Prisoner weights and cap | **Ruler 20, clan leader 10, lord 5, no cap.** Decided 2026-09-27, reopened the same day by the live check (§9a: the term reaches 40-60 inside two weeks), then **kept unchanged** by the lead |
 | **D3** | Wounded: lost or not | **Not lost**: they are back in the ranks in days |
 | **D4** | Battle half-life | **42 days**, two seasons |
 | **D5** | Running wars on an old save: carry the old score over and let it decay, or reset to zero | **Carry over** |
-| **D6** | Separate, not blocking: should a winner who has taken most of a realm be able to annex the rest at the table (history's pattern 2), rather than only by continuing the war | Open. Discuss after this is built |
+| ~~D6~~ | ~~Annex the rest of a realm at the table~~ | **Dropped** by the lead 2026-09-27. Not in this design and not a pending question: a realm is annexed by conquering it |

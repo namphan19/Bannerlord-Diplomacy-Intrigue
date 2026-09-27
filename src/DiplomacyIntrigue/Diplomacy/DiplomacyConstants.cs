@@ -141,7 +141,9 @@ namespace DiplomacyIntrigue.Diplomacy
         /// Points per whole share of an army lost: a battle scores this times the share of its
         /// war-start manpower the enemy lost, minus the same for our own losses. UN-TUNED: at 120,
         /// breaking a fifth of an enemy's army at modest cost is worth ~23, and three such
-        /// victories in a season reach the tribute rung (design 10 §5).
+        /// victories in a season reach the tribute rung (design 10 §5). This value, the cap and
+        /// the win award below are design 10's D1, taken by the lead as recommended on 2026-09-27
+        /// and not yet measured by a balance run.
         /// </summary>
         public const float WarScoreLossShareWeight = 120f;
 
@@ -180,6 +182,8 @@ namespace DiplomacyIntrigue.Diplomacy
         /// values of 2026-09-27, with no cap: a side holding the enemy ruler and five clan
         /// leaders reaches the subjugation cliff (75) on prisoners alone. That departs, on
         /// purpose, from the rule the other valuations follow (no single term clears the bar).
+        /// Kept by the lead the same day after the first live check had shown this term alone
+        /// swinging a war's score by 30-75 points inside two weeks (design 10 §9a, D2).
         /// </summary>
         public const float WarScorePrisonerRuler = 20f;
         public const float WarScorePrisonerClanLeader = 10f;
