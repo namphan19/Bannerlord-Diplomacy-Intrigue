@@ -163,26 +163,12 @@ Built (W1+W2), given a first live check on `testmod_claude_1` and committed (`44
 - [ ] `EnableTelemetry` defaults to true and writes weekly reports into Documents. Right for a
       test build; decide for a release.
 
-### 12. The 2026-09-24 mechanics review is not on `development`
+### 12. The 2026-09-24 mechanics review — merged 2026-09-27
 
-Its decision register (R-1 to R-10, U-1 to U-9, S-1 to S-3) lives only on the branch
-`origin/review/game-mechanics`, which was never merged. Several of its questions have been
-answered since, so the register reads out of date:
-
-- S-1 to S-3 are built as Phase 2.8 ([design/08](docs/design/08-statecraft.md)).
-- Decided on 2026-09-25 in design/03 §9: U-4 and R-10, assassination (decisions 1 and 11); U-5, a
-  handler's fate (3); U-6, networks in a war (4); U-7, the player as a target (2). U-6 went against
-  the review's recommendation: networks survive a war at half growth.
-- U-3 (four missions or eight) was not asked in that form: Phase 3 was specified and built with
-  all eight.
-- U-1 (court verbs before Phase 3) was overtaken: the lead started Phase 3 on 2026-09-25, and 2.8
-  became Statecraft. The court verbs are still open, as item 1 above.
-- R-8 is answered above.
-
-The branch also carries a vendored `vietnamese-tech-writing` skill that overlaps the project's
-own `vietnamese-writing` (CLAUDE.md §4).
-
-- [ ] Merge it (without the vendored skill) and bring the register up to date, or close it.
+- [x] Merged into `development` without the vendored `vietnamese-tech-writing` skill (the project
+      has its own `vietnamese-writing`), and its register brought up to date:
+      [docs/reviews/2026-09-24-mechanics/decisions.md](docs/reviews/2026-09-24-mechanics/decisions.md).
+      Still open there: R-1 (item 2 above), R-3 to R-6, R-9, U-2, U-8, U-9.
 
 ## Pending work
 

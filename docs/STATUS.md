@@ -20,6 +20,11 @@ opencode was removed from the project on 2026-09-27 (CLAUDE.md §7).
 not a claim that everything under it is measured; the carried debt is one table in
 [ROADMAP.md](ROADMAP.md#phase-2--accepted-by-the-project-lead-2026-09-27).
 
+**Housekeeping, the same day.** The 2026-09-24 mechanics review is merged into `development` at
+[reviews/2026-09-24-mechanics/](reviews/2026-09-24-mechanics/README.md), its register brought up
+to date (TODO 12). Every `feature/*` branch and `review/game-mechanics` was deleted from origin once
+checked to hold nothing `development` lacks; origin now carries `development` and `main`.
+
 **Design 10, war score measured in the fighting, is built (W1+W2) and had its first live check**
 ([design/10](design/10-war-score.md)). It replaces the old fief/raid-based war score with one
 earned from battles (each side's manpower lost, as a share of what it fielded, sieges included)
