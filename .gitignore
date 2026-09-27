@@ -32,3 +32,6 @@ opencode.jsonc
 # Local play aids (lead-provided, for base-game GABS play; not part of the mod)
 .claude/skills/bannerlord-gabs/
 docs_playing_game/
+
+# Scratch notes for the lead, not part of the repo
+TODO-lead-review.md
