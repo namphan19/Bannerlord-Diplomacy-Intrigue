@@ -640,6 +640,10 @@ namespace DiplomacyIntrigue.Diplomacy
 
             var loser = war.Other(winner);
             var hasClaim = ClaimRegistry.HasTerritorialClaim(state, winner, loser);
+            // The rung's own signing question, the one IsDemandable asks: a loser already paying
+            // MaxTributeObligations tributes, or answering to a patron, cannot be made to pay here.
+            var tributeOpen = TreatyRegistry.CanSign(state, winner, loser, TreatyType.TributaryPact,
+                out var noTribute, settlesWar: true);
 
             var lines = new List<string>
             {
@@ -653,7 +657,8 @@ namespace DiplomacyIntrigue.Diplomacy
                     + (hasClaim ? "" : "   (blocked: no territorial claim)"),
                 "  castle            " + DiplomacyConstants.PeaceCostCastle.ToString("0")
                     + (hasClaim ? "" : "   (blocked: no territorial claim)"),
-                "  tributary pact    " + DiplomacyConstants.PeaceCostTributaryPact.ToString("0"),
+                "  tributary pact    " + DiplomacyConstants.PeaceCostTributaryPact.ToString("0")
+                    + (tributeOpen ? "" : "   (blocked: " + noTribute + ")"),
                 "  subjugation       " + DiplomacyConstants.PeaceCostSubjugation.ToString("0")
                     + (Hegemony.IsHegemon(state, loser)
                         ? "   (they free every vassal)"

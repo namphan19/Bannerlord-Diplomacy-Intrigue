@@ -368,11 +368,10 @@ namespace DiplomacyIntrigue.Core
                     case TreatyType.NonAggressionPact: nonAggression++; break;
                     case TreatyType.Truce: truces++; break;
                 }
-                if (t.TributeAmount > 0)
-                {
-                    if (t.TributePayer == k) paysTribute++;
-                    else receivesTribute++;
-                }
+                // paysTribute is what the tribute cap counts (MaxTributeObligations), read
+                // through the cap's own test rather than a copy of it.
+                if (TreatyRegistry.PaysTributeUnder(t, k)) paysTribute++;
+                else if (t.TributeAmount > 0) receivesTribute++;
             }
 
             int chosen = 0, obligation = 0;

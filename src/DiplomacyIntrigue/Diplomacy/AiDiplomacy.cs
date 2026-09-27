@@ -1306,12 +1306,19 @@ namespace DiplomacyIntrigue.Diplomacy
             var terms = EvaluateTribute(state, kingdom, target);
             if (!terms.Allowed)
             {
-                // Only the court's refusals are worth a line: every other gate is the ordinary
+                // Only the answering gates are worth a line: every other gate is the ordinary
                 // shape of the map, but a demand that would otherwise have been made and was
-                // stopped by the target's own houses is what a balance run needs to count.
+                // stopped by the target's own houses, or by the cap or the cooldown, is what a
+                // balance run needs to count.
+                var gate = AnsweringGate(terms);
+                if (gate == null) return false;
                 if (terms.CourtBlocked)
                     Log.Info("AI", kingdom.Name + " would demand tribute of " + target.Name
                                    + ", but its court would not bear it: " + terms.CourtDetail + ".");
+                else
+                    Log.Info("AI", kingdom.Name + " would demand tribute of " + target.Name
+                                   + ", but may not: " + terms.Blocked);
+                NoteTributeAnswer(terms, gate);
                 return false;
             }
 
@@ -1335,6 +1342,7 @@ namespace DiplomacyIntrigue.Diplomacy
             }
 
             SkillXp.TributeDemandAccepted(kingdom);
+            NoteTributeAnswer(terms, null);
             Log.Info("AI", kingdom.Name + " imposed a tributary pact on " + target.Name + ".");
             Announce(target.Name + " agrees to pay tribute to " + kingdom.Name + ".");
             return true;
@@ -1408,6 +1416,28 @@ namespace DiplomacyIntrigue.Diplomacy
                 t.Block(target.Name + " does not trust " + kingdom.Name
                         + " enough to accept terms (trust " + t.Trust.ToString("0") + ").");
 
+            // The two rules of 2026-09-27, after every ordinary gate and before the court: a
+            // refusal here is then a demand the map would otherwise have produced, which is what
+            // makes it worth a telemetry line, and the court is not read for a demand these
+            // already stop. Each is a scan of the treaty list, so skipped once a gate has refused.
+            if (t.Allowed || full)
+            {
+                // At most MaxTributeObligations tributes at once. The same answer CanSign gives
+                // below; asked here too so the refusal is named as the cap's, not the pact's.
+                t.TributesPaid = new List<Treaty>();
+                TreatyRegistry.CollectTributesPaid(state, target, t.TributesPaid);
+                var capped = TreatyRegistry.WhyTributeCapped(state, target);
+                if (capped != null && t.Block(capped)) t.CapBlocked = true;
+
+                // No demand of a payer whose tribute to us ended less than a year ago - the day
+                // it ends was the day it was re-imposed. Directional, and demands only: the
+                // peace table can still award tribute in a new war.
+                t.DaysSinceTributeEnded = TreatyRegistry.DaysSinceTributeEnded(state, target, kingdom);
+                if (t.DaysSinceTributeEnded < DiplomacyConstants.TributeDemandCooldownDays
+                    && t.Block(CooldownReason(kingdom, target, t.DaysSinceTributeEnded)))
+                    t.CooldownBlocked = true;
+            }
+
             if (t.Allowed || full)
             {
                 // The court stands in for an AI crown's answer. A player crown answers for
@@ -1445,6 +1475,73 @@ namespace DiplomacyIntrigue.Diplomacy
         }
 
         /// <summary>
+        /// The cooldown's refusal, worded for the player's button: "Sturgia's tribute to
+        /// Vlandia ended 12 days ago; it cannot be demanded again for 72 more days." Whole days,
+        /// the past rounded down and the wait up, so the two always add up to the full cooldown
+        /// and the wait never reads "0 more days" while it still refuses.
+        /// </summary>
+        private static string CooldownReason(Kingdom demander, Kingdom payer, float daysSince)
+        {
+            var ago = (int)System.Math.Floor(daysSince);
+            var left = (int)System.Math.Ceiling(DiplomacyConstants.TributeDemandCooldownDays - daysSince);
+            return payer.Name + "'s tribute to " + demander.Name + " ended "
+                   + (ago <= 0 ? "today" : ago == 1 ? "a day ago" : ago + " days ago")
+                   + "; it cannot be demanded again for " + left + (left == 1 ? " more day." : " more days.");
+        }
+
+        /// <summary>
+        /// Which of the gates that answer a standing demand refused it - "court", "cap" or
+        /// "cooldown" - or null when the demand never stood (no claim, not strong enough, at
+        /// war...): that is the ordinary shape of the map every week, not an answer, and
+        /// recording it would bury the refusals that matter under every pair that never
+        /// qualified. Each of the three is the first gate to refuse, so every gate before it
+        /// passed.
+        /// </summary>
+        internal static string AnsweringGate(TributeDemandTerms t)
+        {
+            if (t == null || t.Allowed) return null;
+            if (t.CourtBlocked) return "court";
+            if (t.CapBlocked) return "cap";
+            if (t.CooldownBlocked) return "cooldown";
+            return null;
+        }
+
+        /// <summary>
+        /// One tribute demand answered, as a telemetry line: <c>tribute_accepted</c> or
+        /// <c>tribute_refused</c>, with the same fields either way so a run can set the two
+        /// side by side. <paramref name="refusedFor"/> is null for an acceptance, else the reason:
+        /// <c>court</c> (an AI crown heeding its court), <c>player</c> (a player crown saying
+        /// no), <c>cap</c> or <c>cooldown</c> (the two rules of 2026-09-27).
+        ///
+        /// Both kinds exist because run 08 could count acceptances only through the generic
+        /// <c>treaty_signed</c>, which cannot tell a demand from a peace-table pact and carries no
+        /// court share - and <see cref="DiplomacyConstants.AiTributeCourtRefusalShare"/> is tuned
+        /// by where the shares of accepted and refused demands fall against the line.
+        /// <c>courtShare</c> is <c>none</c> when the court was not read (a cap or cooldown
+        /// refusal stops the demand before it) or has no voice (intrigue off);
+        /// <c>courtAnswers</c> is false for a player crown, whose court only informs it.
+        ///
+        /// A demand refused is refused again at every weekly evaluation while it stands, so a
+        /// rate is counted by pair, not by line - the same as the court's prose log line.
+        /// </summary>
+        internal static void NoteTributeAnswer(TributeDemandTerms t, string refusedFor)
+        {
+            if (t == null) return;
+            var court = t.Court != null && t.Court.Applies ? t.Court : null;
+            Telemetry.Event(refusedFor == null ? "tribute_accepted" : "tribute_refused",
+                "demander", t.Demander, "target", t.Target,
+                "tribute", DiplomacyConstants.AiDefaultTributePerPeriod,
+                "years", DiplomacyConstants.TributaryPactYears,
+                "reason", refusedFor ?? "none",
+                "courtShare", court == null ? null : (object)court.ShareBreaking,
+                "refusesAt", DiplomacyConstants.AiTributeCourtRefusalShare,
+                "courtAnswers", t.CourtAnswers,
+                "tributesPaid", t.TributesPaid?.Count ?? 0,
+                "daysSinceLastTribute", t.DaysSinceTributeEnded < float.MaxValue ? (object)t.DaysSinceTributeEnded : null,
+                "ratio", t.Ratio, "trust", t.Trust);
+        }
+
+        /// <summary>
         /// A tribute demand for one pair, gate by gate, with the target's court house by house.
         /// Figures throughout: this is a diagnostic, not the rival court the player is shown.
         /// </summary>
@@ -1465,6 +1562,24 @@ namespace DiplomacyIntrigue.Diplomacy
             sb.AppendLine("  their trust:    " + t.Trust.ToString("0.0")
                           + " (must be >= " + DiplomacyConstants.TrustFloorForPacts.ToString("0") + ")"
                           + (t.Trust < DiplomacyConstants.TrustFloorForPacts ? "   BLOCKED" : ""));
+
+            var paid = t.TributesPaid;
+            var receivers = new List<string>();
+            if (paid != null)
+                for (var i = 0; i < paid.Count; i++)
+                    receivers.Add(paid[i].Other(them)?.Name + " (" + paid[i].Type + ", " + paid[i].TributeAmount + ")");
+            sb.AppendLine("  tributes paid:  " + (paid?.Count ?? 0)
+                          + (receivers.Count > 0 ? " - to " + string.Join(", ", receivers) : "")
+                          + " (at most " + DiplomacyConstants.MaxTributeObligations + ")"
+                          + ((paid?.Count ?? 0) >= DiplomacyConstants.MaxTributeObligations ? "   BLOCKED" : ""));
+
+            var since = t.DaysSinceTributeEnded;
+            sb.AppendLine("  last tribute:   "
+                          + (since >= float.MaxValue
+                              ? "none from " + them.Name + " to " + us.Name + " has ended"
+                              : "theirs to us ended " + since.ToString("0.0") + " days ago (demandable again after "
+                                + DiplomacyConstants.TributeDemandCooldownDays.ToString("0") + ")")
+                          + (since < DiplomacyConstants.TributeDemandCooldownDays ? "   BLOCKED" : ""));
 
             var court = t.Court;
             if (court == null)
@@ -1601,6 +1716,11 @@ namespace DiplomacyIntrigue.Diplomacy
                             var fresh = EvaluateTribute(state, demander, player);
                             if (!fresh.Allowed)
                             {
+                                // Recorded only when an answering gate closed it meanwhile - a
+                                // third tribute signed while this one waited, say. Anything else
+                                // is the demand lapsing, not a refusal.
+                                var gate = AnsweringGate(fresh);
+                                if (gate != null) NoteTributeAnswer(fresh, gate);
                                 Log.Notify("The moment has passed - " + fresh.Blocked, Colors.Red);
                                 return;
                             }
@@ -1614,6 +1734,7 @@ namespace DiplomacyIntrigue.Diplomacy
                             }
 
                             SkillXp.TributeDemandAccepted(demander);
+                            NoteTributeAnswer(fresh, null);
                             Log.Info("AI", "The player accepted " + demander.Name + "'s demand for tribute: "
                                            + player.Name + " pays " + amount + " per period.");
                             Log.Notify("We pay tribute to " + demander.Name + ".", Colors.Red);
@@ -1629,6 +1750,10 @@ namespace DiplomacyIntrigue.Diplomacy
                         {
                             _tributeAskPending = false;
                             Log.Info("AI", "The player refused " + demander.Name + "'s demand for tribute.");
+                            // The terms as they were put, court share included: whether a player
+                            // refuses where an AI crown in the same seat would have paid is part
+                            // of what the refusal share is tuned against.
+                            NoteTributeAnswer(terms, "player");
                             TrustRegistry.OnOfferRefused(state, demander, player, "refused our demand for tribute");
                             Log.Notify("We refused " + demander.Name + "'s demand.", Colors.Red);
                         }
@@ -1679,6 +1804,25 @@ namespace DiplomacyIntrigue.Diplomacy
 
             /// <summary>The court's refusal with its figures, for the log - never shown for a rival court.</summary>
             public string CourtDetail;
+
+            /// <summary>
+            /// Every live treaty the target pays tribute under
+            /// (<see cref="TreatyRegistry.CollectTributesPaid"/>). Null when an earlier gate refused
+            /// and the evaluation was not asked for in full.
+            /// </summary>
+            public List<Treaty> TributesPaid;
+
+            /// <summary>The cap was the first gate to refuse (<see cref="DiplomacyConstants.MaxTributeObligations"/>).</summary>
+            public bool CapBlocked;
+
+            /// <summary>
+            /// Days since a tribute from the target to the demander last ended, or
+            /// <see cref="float.MaxValue"/> for never - and when the gate was not reached.
+            /// </summary>
+            public float DaysSinceTributeEnded = float.MaxValue;
+
+            /// <summary>The cooldown was the first gate to refuse (<see cref="DiplomacyConstants.TributeDemandCooldownDays"/>).</summary>
+            public bool CooldownBlocked;
 
             public bool Signable;
 

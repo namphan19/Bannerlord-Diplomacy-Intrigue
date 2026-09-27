@@ -109,6 +109,18 @@ namespace DiplomacyIntrigue.Diplomacy
                 return false;
             }
 
+            // A realm pays at most MaxTributeObligations tributes at once (2026-09-27). Asked
+            // here, where every tributary pact is signed, so the AI's demand, the player's, the
+            // peace table's tributary rung (IsDemandable asks this same function) and the
+            // console all refuse together - and settlesWar does not exempt it: a war won
+            // against a realm already paying two buys money, land or submission, not a third tribute.
+            // b is the payer, as it is for PatronOf above and for Sign's default.
+            if (type == TreatyType.TributaryPact)
+            {
+                var capped = WhyTributeCapped(state, b);
+                if (capped != null) { reason = capped; return false; }
+            }
+
             // Hegemony is flat: one patron per vassal, no chains. The engine has two faction
             // tiers and no parent-of-kingdom slot, so a patron of patrons is not something the
             // game could draw, and the call-to-arms cascade would have no bound.
@@ -456,6 +468,78 @@ namespace DiplomacyIntrigue.Diplomacy
                 if (treaty.SubordinateParty == client) return treaty.DominantParty;
             }
             return null;
+        }
+
+        /// <summary>
+        /// Every live treaty under which <paramref name="payer"/> pays tribute right now:
+        /// tributary pacts and vassalage alike, since both empty the same treasury. A vassal
+        /// withholding its tribute still counts - it owes it - but one whose patron has set
+        /// its tribute to nothing does not, because it pays nothing.
+        /// </summary>
+        public static void CollectTributesPaid(ModState state, Kingdom payer, List<Treaty> into)
+        {
+            into.Clear();
+            if (payer == null) return;
+            for (var i = 0; i < state.Treaties.Count; i++)
+                if (PaysTributeUnder(state.Treaties[i], payer)) into.Add(state.Treaties[i]);
+        }
+
+        /// <summary>
+        /// Whether <paramref name="payer"/> pays tribute under this treaty now - the one test
+        /// behind the cap and the world-state telemetry's <c>paysTribute</c>, so the figure a
+        /// balance run reads is the figure the cap counted.
+        /// </summary>
+        public static bool PaysTributeUnder(Treaty treaty, Kingdom payer)
+            => treaty != null && payer != null && treaty.IsActive
+               && treaty.TributeAmount > 0 && treaty.TributePayer == payer;
+
+        /// <summary>
+        /// Why <paramref name="payer"/> cannot be put under another tributary pact, or null
+        /// when it can: it already pays <see cref="DiplomacyConstants.MaxTributeObligations"/>.
+        /// The one answer to the cap - <see cref="CanSign"/> and the tribute demand's own gate
+        /// both read it, so the demand, the peace table and the console cannot disagree.
+        /// Player-facing: it is the reason a button or a peace-table row carries.
+        /// </summary>
+        public static string WhyTributeCapped(ModState state, Kingdom payer)
+        {
+            var paid = new List<Treaty>();
+            CollectTributesPaid(state, payer, paid);
+            if (paid.Count < DiplomacyConstants.MaxTributeObligations) return null;
+
+            var receivers = new List<string>();
+            for (var i = 0; i < paid.Count; i++)
+                receivers.Add(paid[i].Other(payer)?.Name?.ToString() ?? "?");
+            return payer.Name + " already pays tribute to " + string.Join(" and ", receivers)
+                   + ", and no realm is made to pay more than "
+                   + DiplomacyConstants.MaxTributeObligations + " at once.";
+        }
+
+        /// <summary>
+        /// Days since the last tribute <paramref name="payer"/> owed <paramref name="receiver"/>
+        /// came to an end - expiry, breach, default or dissolution alike, under a tributary
+        /// pact or a vassalage - or <see cref="float.MaxValue"/> when none ever has.
+        ///
+        /// Derived from the closed treaties this registry keeps for good (nothing ever removes
+        /// one but a load that finds a party gone), through <see cref="Treaty.EndedOn"/> and
+        /// <see cref="Treaty.TributePayer"/>. That is why the demand cooldown needs no save
+        /// field: the alternative was a directional timestamp on the pair's
+        /// <see cref="TrustRecord"/>, a second record of a date the treaty already holds.
+        /// TributePayer is read rather than the amount at the end, so a vassal whose patron had
+        /// eased its tribute to nothing before the link ended still counts - it was a tributary
+        /// relationship the patron could have raised again at any time.
+        /// </summary>
+        public static float DaysSinceTributeEnded(ModState state, Kingdom payer, Kingdom receiver)
+        {
+            var best = float.MaxValue;
+            if (payer == null || receiver == null) return best;
+            for (var i = 0; i < state.Treaties.Count; i++)
+            {
+                var treaty = state.Treaties[i];
+                if (treaty.IsActive || treaty.TributePayer != payer || treaty.Other(payer) != receiver) continue;
+                var days = (float)(CampaignTime.Now - treaty.EndedOn).ToDays;
+                if (days < best) best = days;
+            }
+            return best;
         }
 
         /// <summary>Every kingdom that answers to this one.</summary>

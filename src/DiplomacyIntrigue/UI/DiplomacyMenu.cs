@@ -670,9 +670,17 @@ namespace DiplomacyIntrigue.UI
         /// </summary>
         internal static void DemandTribute(ModState state, Kingdom us, Kingdom them)
         {
-            if (!AiDiplomacy.CanDemandTribute(state, us, them, out var reason))
+            // EvaluateTribute rather than CanDemandTribute (its wrapper): the telemetry below
+            // wants the court's share and which gate answered, not only yes or no.
+            var terms = AiDiplomacy.EvaluateTribute(state, us, them);
+            if (!terms.Allowed)
             {
-                Notify("Cannot demand tribute: " + reason);
+                // The button is disabled with this reason, so this is reached only when the
+                // world moved between drawing it and the click. Recorded like the AI's demand:
+                // only when the target's court, the cap or the cooldown answered it.
+                var gate = AiDiplomacy.AnsweringGate(terms);
+                if (gate != null) AiDiplomacy.NoteTributeAnswer(terms, gate);
+                Notify("Cannot demand tribute: " + terms.Blocked);
                 return;
             }
 
@@ -686,6 +694,7 @@ namespace DiplomacyIntrigue.UI
             }
 
             SkillXp.TributeDemandAccepted(us);
+            AiDiplomacy.NoteTributeAnswer(terms, null);
             Notify(them.Name + " agrees to pay us "
                    + DiplomacyConstants.AiDefaultTributePerPeriod + " per period.", Colors.Green);
         }
@@ -959,10 +968,17 @@ namespace DiplomacyIntrigue.UI
                     + Priced(indemnity / 1000f * DiplomacyConstants.PeaceCostPerThousandIndemnity, budget),
                     "Gold now rather than land later."));
 
-            elements.Add(Element("tribute",
+            // Asked of the CanSign that PeaceTable.IsDemandable asks at signing, so a loser that
+            // cannot be made a tributary - already paying the most tributes a realm can
+            // (MaxTributeObligations), or answering to a patron - shows the rung closed with
+            // its reason, rather than offering it and refusing the whole package at the end.
+            var tributeOpen = TreatyRegistry.CanSign(state, us, them, TreatyType.TributaryPact,
+                out var noTribute, settlesWar: true);
+            elements.Add(new InquiryElement("tribute",
                 "Impose tribute of " + DiplomacyConstants.AiDefaultTributePerPeriod
                 + " per period   -   " + Priced(DiplomacyConstants.PeaceCostTributaryPact, budget),
-                "They pay for peace and keep everything else."));
+                null, tributeOpen,
+                tributeOpen ? "They pay for peace and keep everything else." : noTribute));
 
             // One rung with two faces at one price: a hegemon cannot be made a vassal while it
             // still holds vassals (hegemony is flat), so against one the demand is its sphere.
@@ -1044,14 +1060,18 @@ namespace DiplomacyIntrigue.UI
         {
             var wanted = PeaceTable.MinimumAcceptable(state, war, them);
 
+            // The same CanSign question as the demand table's tribute row, from the loser's side.
+            var tributeOpen = TreatyRegistry.CanSign(state, them, us, TreatyType.TributaryPact,
+                out var noTribute, settlesWar: true);
             var elements = new List<InquiryElement>
             {
                 Element("prisoners",
                     "Release their captives   -   worth " + DiplomacyConstants.PeaceCostPrisoners.ToString("0"),
                     "We free every hero of theirs we hold."),
-                Element("tribute",
+                new InquiryElement("tribute",
                     "Agree to pay tribute   -   worth " + DiplomacyConstants.PeaceCostTributaryPact.ToString("0"),
-                    "A tributary pays for peace and keeps everything else.")
+                    null, tributeOpen,
+                    tributeOpen ? "A tributary pays for peace and keeps everything else." : noTribute)
             };
 
             var indemnity = PeaceTable.LargestIndemnity(war, them, us);

@@ -846,6 +846,13 @@ score of 75 or more, so most of those become subjugations. That was the lead's i
 the single biggest thing the next run has to check — both the rate of new links and whether the
 Hold machinery can absorb it.
 
+> **2026-09-27: the band closes for a loser already paying two tributes** (design 01 §3.3,
+> `MaxTributeObligations`). `CanSign` refuses the tributary rung, so `IsDemandable` and
+> §13.3's reachable ceiling both pass over it. A winner in the band then settles for money or
+> land, whichever open rung the ladder reaches. Not yet seen in a run. A vassal's tribute
+> counts toward the two. The year-long cooldown on *demanding* tribute again does not apply
+> here: a pact won at the table was earned by that war.
+
 **This also closes the 12b question**, which §12.4.7 left open and run 07 turned into a live
 example (Vlandia vs Aserai at 98.1, settled for tribute only because Aserai reached the table
 first). A cliff is symmetric: the loser walking the ladder up and the winner walking it down

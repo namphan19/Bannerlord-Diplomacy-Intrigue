@@ -236,6 +236,47 @@ namespace DiplomacyIntrigue.Diplomacy
         public const int TributePeriodDays = 7;
 
         /// <summary>
+        /// The most tributes one realm can be paying at once, counting every live treaty under
+        /// which it pays: tributary pacts and vassalage alike, since a vassal's tribute leaves
+        /// the same treasury (2026-09-27, TODO 8). At the cap no new tributary pact can be put
+        /// on it - not by a demand, the AI's or the player's, and not as the peace table's
+        /// tributary rung, which the ladder then passes over for the rungs still open
+        /// (<see cref="TreatyRegistry.WhyTributeCapped"/>, read by <c>CanSign</c>).
+        ///
+        /// Why: the old evolved save had Southern Empire paying three kingdoms at once while it
+        /// went from ten fortifications to two - each new tribute taken from a realm the last
+        /// ones had already bled. Two still leaves a tribute to win, and makes a third victor
+        /// take money, land or submission instead. A "do not pile onto a realm already at
+        /// war with several" term in the war valuation was the other way to stop the spiral, and
+        /// was decided against: this caps what can be taken without telling anyone not to take.
+        ///
+        /// Vassalage itself is not refused by the cap - a submission changes what the realm is,
+        /// not only what it pays - so a realm paying two tributary pacts that then kneels pays three.
+        /// UN-TUNED: chosen by that reasoning, not measured.
+        /// </summary>
+        public const int MaxTributeObligations = 2;
+
+        /// <summary>
+        /// Days after a tribute from one realm to another ends - expiry, breach, default or
+        /// dissolution alike - before the receiver may <b>demand</b> tribute of that payer again:
+        /// one campaign year of 84 days (2026-09-27, TODO 10). Directional: it binds the receiver
+        /// of the tribute that ended, not the payer. The AI's weekly demand and the player's own
+        /// read the same gate (<c>AiDiplomacy.EvaluateTribute</c>).
+        ///
+        /// Why: a two-year pact runs 168 days, exactly 24 weeks, and an AI kingdom evaluates on
+        /// a fixed weekday slot (<c>AiDiplomacyBehavior</c>) - so a demander's slot came round on
+        /// the day the pact it had imposed expired, and the pair was re-bound that same day,
+        /// cycle after cycle. Paying a tribute to its end bought the payer nothing. Read from the
+        /// closed treaties the registry already keeps (<see cref="Models.Treaty.EndedOn"/>), so
+        /// it costs no save field.
+        ///
+        /// Not a bar on the peace table: a tributary pact won there in a new war was earned by
+        /// that war, and the cooldown is about coercion without one.
+        /// UN-TUNED: a year is the lead's figure, not a measurement.
+        /// </summary>
+        public const float TributeDemandCooldownDays = 84f;
+
+        /// <summary>
         /// Re-declaring war on a partner whose truce we just broke costs this multiple of
         /// the normal influence, on top of the trust damage.
         /// </summary>

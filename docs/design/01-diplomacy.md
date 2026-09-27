@@ -210,6 +210,39 @@ Breaking an active treaty:
   **−15 trust** and the alliance lapses at its next expiry. Refusal has to be a real option,
   or alliances become suicide pacts.
 
+### 3.3 Two limits on tribute (2026-09-27)
+
+Both were decided on 2026-09-27 (TODO items 8 and 10). Both constants are **un-tuned**.
+
+**A realm pays at most two tributes at once** (`MaxTributeObligations = 2`). Every live
+treaty under which it pays counts: tributary pacts, and vassalage, which carries a tribute
+here (500 a period at signing, set per vassal since design 09 C3). A vassal eased to no
+tribute pays nothing and does not count. A vassal withholding its tribute still owes it, so it
+does count. At the cap no tributary pact can be put on the realm, whether by a demand (the
+AI's or the player's) or as the peace table's tributary rung. The ladder then moves on to the
+rungs still open. The rule lives in `TreatyRegistry.CanSign`, where every tributary pact is
+signed, so the demand, the AI's ladder, the player's peace table and `diplomacy.sign_treaty`
+all refuse together, with one reason: *"X already pays tribute to A and B, and no realm is
+made to pay more than 2 at once."* Why: on the old evolved save Southern Empire paid three
+kingdoms at once while it went from ten fortifications to two. Two tributes still leave a
+beaten realm worth beating. A third victor has to take money, land or submission. A war
+valuation term against piling onto a realm already fighting several was the alternative,
+and it was **decided against**. Vassalage is not refused at the cap: submission changes what
+the realm is, not only what it pays, so a realm paying two tributary pacts that then kneels
+pays three.
+
+**A demand cannot re-impose a tribute that has just ended** (`TributeDemandCooldownDays = 84`,
+one campaign year). After a tribute from P to R ends, by expiry, breach, default or
+dissolution, R cannot *demand* tribute of P for 84 days. The rule is directional: it binds R,
+not P. It binds the AI's weekly demand and the player's own alike, and the button, the log and
+`diplomacy.tribute_value` state the wait: *"P's tribute to R ended 12 days ago; it cannot be
+demanded again for 72 more days."* It does **not** bind the peace table. A tributary pact won
+there in a new war was earned by that war. Why: a two-year pact runs exactly 24 weeks, and an
+AI kingdom evaluates on a fixed weekday. The demander's slot therefore came round on the
+expiry day, and the pair was re-bound the day the tribute ended, cycle after cycle. The date is
+read from the closed treaties the registry already keeps (`Treaty.EndedOn`), so the rule adds
+no save data.
+
 ---
 
 ## 4. Diplomatic trust and the peace table
@@ -345,7 +378,8 @@ tick. Each kingdom scores its options and takes **at most one** diplomatic actio
 
 1. Seek peace in the war with the highest own-exhaustion
 2. Offer a pact to the kingdom with the highest shared threat
-3. Demand tribute from a weak neighbour we have a claim on
+3. Demand tribute from a weak neighbour we have a claim on (not one already paying two, nor
+   one whose tribute to us ended within the year - §3.3)
 4. Declare war on the best-value target we hold a claim against
 5. Do nothing — the most common outcome, deliberately
 

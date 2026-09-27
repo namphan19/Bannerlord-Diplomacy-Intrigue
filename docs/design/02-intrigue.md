@@ -177,6 +177,18 @@ succession, Khuzait (75%, the player's) after unjust wars - but the third was As
 crown read Secure: two of its houses sat at loyalty 0-3 on vanilla relation alone. Whether 0.34
 is too eager is for a long run to say.
 
+**Telemetry for that run (2026-09-27).** Run 08 could count acceptances only through the generic
+`treaty_signed`, and refusals not at all, so the share could not be tuned. Every demand that
+reaches an answer now writes one `[EVENT]` line, and both kinds carry the same fields:
+`kind=tribute_accepted` or `kind=tribute_refused`, then `demander target tribute years reason
+courtShare refusesAt courtAnswers tributesPaid daysSinceLastTribute ratio trust`. `reason` is
+`court` (an AI crown heeding its court), `player` (a player crown saying no), `cap` or
+`cooldown` (design 01 §3.3), or `none` on an acceptance. `courtShare` is `none` when the court
+was not read, because a cap or cooldown refusal stops the demand before the court is asked.
+`courtAnswers=false` marks a player crown, whose court only informs it. A pair refused at one
+weekly evaluation is refused again at the next while nothing changes, so count pairs, not
+lines.
+
 ## 8. Implementation order
 
 | Step | Deliverable | Depends on |
