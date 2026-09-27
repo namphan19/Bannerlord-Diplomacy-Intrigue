@@ -362,9 +362,24 @@ Built in a cloud session with no game. It compiles clean against the v1.4.8 refe
 5. Save, then reload in a fresh process: both bribes, the forged grievance and the running war read back.
 
 Also: a mark killed before the operation came due failed it before the roll ("Pryndor is dead"), and the
-network was charged nothing. Two wording faults found and not yet fixed: the rising's "bought with our
+network was charged nothing. Two wording faults found: the rising's "bought with our
 gold" notice also names a bribed house that would have risen anyway (Penraic sat in the pretender bloc),
 and "came to nothing" notices begin with a lower-case operation name.
+
+**Both fixed 2026-09-27** (a cloud session: compiled, not seen in game).
+- The rising now asks each bribed house's own rules - bloc and relation - of its loyalty *without* the
+  bribe's -20 (`LoyaltyModel.WithoutForeignGold`), and records the houses that rise only for the gold
+  (`InternalWars.Assessment.RisingForGold`). Only those get "X, bought with our gold, stands with ...".
+  A bribed house that would have risen anyway gets "X stands with ... - as it would have without our
+  gold", and the log marks it "(bought by B; would have risen anyway)". A house the -20 pushed under a
+  line counts as moved by the gold. Who rises is unchanged: for a house nobody bought the two loyalties
+  are one number, and a bought house still always rises.
+- Every notice that opens with an operation's name capitalises it (`Missions.DescribeAtStart`): both
+  "came to nothing" notices, and "... failed. The network paid for it.", which had the same fault.
+- To see both: step 2 above again. Giall should read "bought with our gold"; Penraic "as it would have
+  without our gold" if its loyalty without the -20 is still under the reliable line, and "bought with
+  our gold" if not. For the capitals: `test_resolve_mission <the player's house> | <realm> | failure`
+  should print "Scouting the armies in ... failed" (or whichever operation) with a capital first letter.
 
 **Open, for 3.6:** under today's rules an AI network could bribe the player's own house, and the
 player would then be asked at the next internal war as for any other rebel side. Nothing launches
@@ -500,6 +515,18 @@ Also found: four of seven ruling houses had nobody free to post at all (every gr
 party, governs or heads the house); StealTreasury scores 5.0 against every rich ruler, above
 Assassinate (3) and SabotageGarrison (4); and the text above says an open bribe offer saved and reloaded
 "is simply asked again", when in fact the due operation is rolled again and may fail.
+
+**The reloaded bribe offer, 2026-09-27** (read from the code, no game). The claim was the comment in
+`Missions.Resolve`; it now says what happens. Nothing saved records that the roll for the player
+succeeded - the operation stays `Pending` until the answer, and the inquiry is not saved - so a save
+made while the offer is open reloads with the operation pending and due, and the next daily tick rolls
+it again: it may succeed and ask again, fail, or be **exposed**. A second offer that finds the first one
+still open is rolled again the next day the same way. Not fixed: keeping the first roll needs one saved
+field on `SpyMission` - property 12, a `CampaignTime` for the day the offer was made, set when it is
+asked and read in `Resolve` to skip the roll and ask again - which is new save data, outside this pass.
+About fifteen lines with it. Whether a save can be made at all while the inquiry is up (it pauses the
+game; an autosave or a quicksave might still run) is not known, so how often this bites is not known
+either.
 
 ### 3.7, the UI - built and verified live, 2026-09-26
 

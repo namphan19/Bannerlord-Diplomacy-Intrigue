@@ -349,7 +349,7 @@ namespace DiplomacyIntrigue.Espionage
             {
                 mission.Resolve(MissionOutcome.Failure);
                 Log.Info("Espionage", "Failed for want of a handler: " + mission + ".");
-                TellOwner(mission, Describe(mission.Type) + " in " + mission.Target.Name + " came to nothing: nobody was left to run it.");
+                TellOwner(mission, DescribeAtStart(mission.Type) + " in " + mission.Target.Name + " came to nothing: nobody was left to run it.");
                 return MissionOutcome.Failure;
             }
 
@@ -362,7 +362,7 @@ namespace DiplomacyIntrigue.Espionage
             {
                 mission.Resolve(MissionOutcome.Failure);
                 Log.Info("Espionage", "Failed for want of a mark: " + mission + " - " + gone);
-                TellOwner(mission, Describe(mission.Type) + " in " + mission.Target.Name + " came to nothing: " + gone);
+                TellOwner(mission, DescribeAtStart(mission.Type) + " in " + mission.Target.Name + " came to nothing: " + gone);
                 return MissionOutcome.Failure;
             }
 
@@ -378,8 +378,14 @@ namespace DiplomacyIntrigue.Espionage
             // A bribe that reaches the player's own house is the player's to take or refuse (the
             // lead's call for 3.6, design 03 §9 decision 12). For an AI lord the successful roll is
             // the lord taking the gold; for the player, the roll only gets the offer to them. It
-            // stays pending until they answer: an inquiry stops the clock, and a save made while it
-            // is open reloads with the operation still due, so it is simply asked again.
+            // stays pending until they answer, and an inquiry stops the clock.
+            //
+            // It is NOT simply asked again after a reload, as this comment used to say. Nothing
+            // saved records that this roll succeeded, so a save made while the offer is open reloads
+            // with the operation pending and due, and the next daily tick rolls it again: it may
+            // succeed and ask again, fail, or be exposed. The same happens to a second offer that
+            // finds this guard up. Keeping the first roll needs one saved field on SpyMission (the
+            // day the offer was made), which is new save data (design 03 §10, 3.6's findings).
             if (outcome == MissionOutcome.Success && mission.Type == SpyMissionType.BribeLord
                 && mission.TargetHero != null && mission.TargetHero == Hero.MainHero)
             {
@@ -405,7 +411,7 @@ namespace DiplomacyIntrigue.Espionage
                     break;
                 case MissionOutcome.Failure:
                     SpyNetworks.Spend(network, EspionageConstants.MissionFailureNetworkCost);
-                    TellOwner(mission, Describe(mission.Type) + " in " + mission.Target.Name + " failed. The network paid for it.");
+                    TellOwner(mission, DescribeAtStart(mission.Type) + " in " + mission.Target.Name + " failed. The network paid for it.");
                     break;
                 case MissionOutcome.Exposed:
                     SpyNetworks.Spend(network, network.Strength);
@@ -682,6 +688,17 @@ namespace DiplomacyIntrigue.Espionage
                 case SpyMissionType.Assassinate: return "an assassination";
                 default: return type.ToString();
             }
+        }
+
+        /// <summary>
+        /// <see cref="Describe"/> for the start of a sentence. The phrases are written to sit
+        /// mid-sentence ("Naselos begins scouting the armies in ..."), and the notices that opened
+        /// with one printed it in lower case (design 03 §10, a 3.5 wording fault).
+        /// </summary>
+        public static string DescribeAtStart(SpyMissionType type)
+        {
+            var text = Describe(type);
+            return string.IsNullOrEmpty(text) ? text : char.ToUpperInvariant(text[0]) + text.Substring(1);
         }
 
         internal static string Pct(float chance) => (chance * 100f).ToString("0") + "%";
