@@ -381,7 +381,7 @@ six are the code finally doing what this spec already said.
 | Defiance marks: a separate saved record of patron, vassal, when | Three fields on the `Treaty` itself (ids 15-17) | The link *is* the treaty. A new savable type needs a class definition **and** a container definition in `ModSaveDefiner`, and a missing container is the most common way to break a Bannerlord mod |
 | (Not in the spec) | A vassal is now barred from signing **any** treaty with an outsider, and defies that below Hold 30 | The prohibition existed for war only. Enforcing it for treaties is what gives the middle tier of defiance something to defy |
 | §4.3: the patron "joins the war within 10 days" | Until the run-04 review, nothing ever asked it to: the call to arms refused every call from vassal to patron. Now the patron is **called** when its vassal is attacked, and at signing into the wars the vassal is already defending, under the ally rules (trust floor, exhaustion, hopeless odds). Refusing costs trust and Hold, not a mark | Hold measured a duty no code could fulfil. A patron that distrusts its vassal staying out is intended: protection answers service |
-| §4.1 `protectionScore`: "did they defend me" | Counts only wars the vassal is **defending**, and only against attackers the patron may be called against | Otherwise a war between two vassals of the same patron - which the vassalage itself forbids the patron to join - scored as neglect |
+| §4.1 `protectionScore`: "did they defend me" | Counts only wars the vassal is **defending**. Against an attacker the patron is treaty-bound not to fight, the war counts at half an ignored one since 2026-09-27 (*legal neglect*, the row after F3), unless the attacker is another client of the same patron; before that it did not count at all | Otherwise a war the vassal joined for somebody else scored as neglect. The bound case was first exempted for two vassals of the same patron at war with each other, where the vassalage forbids the patron joining and the attacked vassal was charged the full -20 |
 | §3.2: a cornered kingdom asks a stronger one | The submission value reads the patron at last: a patron no stronger than the candidate scores 0, and the threat term is scaled by the share of the danger the patron could actually take on | Nothing in the valuation depended on the patron's strength, so a kingdom knelt to its nearest neighbour whatever that neighbour could do for it |
 | §6.1: passive resistance withholds tribute | And earns a defiance mark for it, at most one per 28 days | Withholding was free, so it was simply what every link below 40 did |
 | §6.3: secession is one vassal's war | Siblings under Hold 25 after the contagion **rise with it**, all renouncing before anyone declares | A lone rebel faced the patron plus half the other vassals and lost every time; run 04's rebels knelt again within the run |
@@ -390,6 +390,7 @@ six are the code finally doing what this spec already said.
 | §4.2 / §6.3: secession below a fixed Hold 15 | The line is `15 + 15 * clamp(log2(vassal/patron), -1, +1)`, from 0 to 30 | Resentment is the motive, strength is whether revolt is anything but suicide. A fixed line sent weak vassals to certain defeat and left strong ones under a patron they could throw off |
 | §3.1: submission imposed at war score 90 (75 since §13) | Also requires the winner to be the stronger of the two | Every route into vassalage now asks the same question, `Hegemony.IsStrongEnoughToHold` |
 | (Not in the spec — run 06, F3) | A neglected vassal may **defect to the kingdom attacking it**: Hold under 40, defender in a war it is losing by 20+ score, patron not fighting the aggressor. The submission is the peace; the old bond is broken *by the patron* (its breach in every court), siblings take the contagion hit, and the new patron is called into the vassal's other defensive wars at once. The attacker must not itself be a vassal. A player attacker is asked; a refusal holds for 42 days | Run 06 showed a patron barred by truce or the cascade guard simply watching a vassal die. Rather than override those rules, the vassal gets an exit and the patron's name pays for it |
+| (Not in the spec — 2026-09-27, F3's *legal neglect*, TODO 9 option (a)) | A war the vassal was attacked in, by a kingdom its patron holds **any war-forbidding treaty** with (`HasTreatyForbiddingWar`: pact, truce, alliance or tributary pact). **A sibling attacker - another client of the same patron - does not count**: the patron cannot side with one client against another, `ReconcileWithSiblings` is the sphere's answer, and the run-04 exemption stands, costs Hold as **half** an ignored war (`HoldLegalNeglectShare` 0.5, UN-TUNED). The protection term is now the mean over defended wars of +1 joined, -1 ignored, -0.5 bound, split into `protection` and a named `legal neglect` term in every breakdown (`diplomacy.hegemony` adds a line naming each bound attacker and the treaty), the Realm tab's chips and the weekly `[LINK]` line (`legalNeglect=`) | The 2026-09-19 live session: Western Empire was bound to every one of its vassal's attackers by tribute, alliance and pact, printed `protection +0.0` for two years while the vassal was attacked four times, and Hold never neared F3's line of 40. The patron is still never *called* against such an attacker - it chose the treaty, it did not look away - so the weight is half, not full. A mean per war rather than `ignored += 0.5` in the old ratio, because the ratio would score a vassal whose only war is bound at the full -1 |
 
 Also worth recording: a coerced submission was measured starting at Hold 35 with a target of
 48.9 (base 40, fear +7.8, trust +15.0, tribute -3.8, culture -10.0). It spends about a
@@ -891,6 +892,27 @@ the same number.
 **The price itself is still suspect and is left to the lead.** At 8 points per 1,000 denars a
 60-point indemnity is 7,500 denars: real on the ladder, trivial to a ruler holding several
 hundred thousand. Making money bite is a balance decision, not a fix.
+
+> **2026-09-27 — the price now bites (TODO 6).** Run 08 chose the rung in 35 of 123 settlements
+> while the rulers paying held 144,000–453,000, and the decision of 2026-09-27 is to size money
+> against the loser's means. The war score still decides **how many points** an indemnity may be
+> (the budget less the prisoners, capped at the tributary pact's 60); the loser decides **what a
+> point is worth**: 0.5% of its ruler's treasury (`PeaceIndemnityTreasurySharePerPoint`), never
+> less than the old 125 denars (`PeaceIndemnityFloorDenarsPerPoint`), and no peace may take more
+> than 40% of the treasury (`PeaceIndemnityMaxTreasuryShare`, a rule in `IsDemandable`, not only a
+> sizing limit). So a 60-point indemnity takes 30%: 43,000 denars from a ruler holding 144,000 and
+> 135,000 from one holding 453,000. Under 25,000 the old rate still applies, and under 18,750 the
+> 40% ceiling binds before it does. All three UN-TUNED.
+>
+> One function prices every indemnity everywhere - `PeaceTable.IndemnityDenarsPerPoint`, read by
+> `CostOf`, `LargestIndemnity`, the negotiation screen, the Ctrl+D tables and the console - and it
+> reads the treasury **at signing**: the terms carry the denars agreed, the points they cost are
+> re-read at every check, and `Apply` checks last. A loser whose gold fell between the offer and
+> the signature is priced at what it holds when it pays, so a package that no longer fits is
+> refused with its reason rather than executed at a share nobody agreed to. The AI still weighs the
+> rung in points on both sides of the table; what changed is only what those points take. Each
+> payment now writes an `indemnity_paid` telemetry event (gold, treasury, points) for the run that
+> tunes these.
 
 ### 13.5 Voluntary submission drops to 50
 

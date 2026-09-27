@@ -965,8 +965,8 @@ namespace DiplomacyIntrigue.UI
             if (indemnity >= 1000)
                 elements.Add(Element("indemnity",
                     "Demand an indemnity of " + indemnity + " denars   -   "
-                    + Priced(indemnity / 1000f * DiplomacyConstants.PeaceCostPerThousandIndemnity, budget),
-                    "Gold now rather than land later."));
+                    + Priced(PeaceTable.IndemnityPoints(indemnity, them), budget),
+                    "Gold now rather than land later: " + PeaceTable.DescribeIndemnity(indemnity, them) + "."));
 
             // Asked of the CanSign that PeaceTable.IsDemandable asks at signing, so a loser that
             // cannot be made a tributary - already paying the most tributes a realm can
@@ -1078,8 +1078,8 @@ namespace DiplomacyIntrigue.UI
             if (indemnity >= 1000)
                 elements.Add(Element("indemnity",
                     "Pay an indemnity of " + indemnity + " denars   -   worth "
-                    + (indemnity / 1000f * DiplomacyConstants.PeaceCostPerThousandIndemnity).ToString("0"),
-                    "Sized by what this war earned them."));
+                    + PeaceTable.IndemnityPoints(indemnity, us).ToString("0"),
+                    "Sized by what this war earned them: " + PeaceTable.DescribeIndemnity(indemnity, us) + "."));
 
             // The top rung, in whichever form we still have to give: while we hold vassals we
             // cannot submit at all, so for a hegemon the sphere is the offer.

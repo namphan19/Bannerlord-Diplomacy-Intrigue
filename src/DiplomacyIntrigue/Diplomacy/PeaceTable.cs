@@ -77,9 +77,101 @@ namespace DiplomacyIntrigue.Diplomacy
             if (terms.ImposeVassalage || terms.DissolveHegemony) cost += DiplomacyConstants.PeaceCostSubjugation;
             if (terms.ImposeTributaryPact) cost += DiplomacyConstants.PeaceCostTributaryPact;
             if (terms.ReleasePrisoners) cost += DiplomacyConstants.PeaceCostPrisoners;
-            cost += terms.IndemnityGold / 1000f * DiplomacyConstants.PeaceCostPerThousandIndemnity;
+            cost += IndemnityPoints(terms.IndemnityGold, terms.Loser);
             return cost;
         }
+
+        // ================= What money is worth at the table =====================
+        //
+        // One rate, read by every price of an indemnity: the AI ladder (through CostOf and
+        // LargestIndemnity), the negotiation screen, the Ctrl+D tables and the console. A
+        // denar figure shown anywhere is priced by IndemnityPoints, and a points figure turned
+        // into denars by IndemnityGoldFor, and both read IndemnityDenarsPerPoint.
+        //
+        // **When it is priced: at signing, from the treasury as it stands then.** The terms
+        // carry denars, because denars are what was agreed and what is paid; the points those
+        // denars cost are re-read whenever a check runs, and the check that decides is the one
+        // Apply makes, with every route re-asking the signatures just before it. So a loser whose
+        // treasury moved between the offer and the signature is priced at what it holds when it
+        // pays. Three reasons that moment beat pricing at the offer:
+        //  - the payment is taken at signing, so the share of the treasury it is, is the share
+        //    at signing - a price frozen at the offer could pass 60% of what is left as 30%;
+        //  - every other input to the table already works this way: war score decays daily,
+        //    exhaustion moves, and the routes that hold an offer open (the AI's offer to the
+        //    player, the Ctrl+D tables) re-ask the signatures when the answer arrives and refuse
+        //    if the world moved under them;
+        //  - a frozen price would have to live on PeaceTerms as a second number for the same
+        //    thing, which is the mistake CasusBelli.Resolve exists to prevent.
+        // If the treasury fell, the same denars cost more points and may break the budget or
+        // the ceiling: the signing is refused with the reason, not executed at a price nobody
+        // agreed to. If it rose, they cost fewer, and the winner's own re-check may find the
+        // package no longer worth its while.
+
+        /// <summary>
+        /// The treasury an indemnity is measured against: the loser's ruling clan's purse, which
+        /// is its ruler's gold - the same purse <see cref="PayIndemnity"/> draws on, so the price
+        /// and the payment read one number.
+        /// </summary>
+        public static int IndemnityTreasury(Kingdom loser)
+        {
+            var gold = loser?.Leader?.Gold ?? 0;
+            return gold > 0 ? gold : 0;
+        }
+
+        /// <summary>
+        /// What one war-score point of indemnity takes from this loser, in denars: a share of its
+        /// treasury (<see cref="DiplomacyConstants.PeaceIndemnityTreasurySharePerPoint"/>), never
+        /// less than the old flat rate (<see cref="DiplomacyConstants.PeaceIndemnityFloorDenarsPerPoint"/>).
+        /// The one rate - see the note above.
+        /// </summary>
+        public static float IndemnityDenarsPerPoint(Kingdom loser)
+        {
+            var byMeans = IndemnityTreasury(loser) * DiplomacyConstants.PeaceIndemnityTreasurySharePerPoint;
+            return byMeans > DiplomacyConstants.PeaceIndemnityFloorDenarsPerPoint
+                ? byMeans
+                : DiplomacyConstants.PeaceIndemnityFloorDenarsPerPoint;
+        }
+
+        /// <summary>What an indemnity of <paramref name="gold"/> denars costs against the winner's budget.</summary>
+        public static float IndemnityPoints(int gold, Kingdom loser)
+            => gold <= 0 ? 0f : gold / IndemnityDenarsPerPoint(loser);
+
+        /// <summary>
+        /// The denars <paramref name="points"/> of indemnity take from this loser, before the
+        /// ceiling. Truncated, so the result never costs more than the points it was sized from.
+        /// </summary>
+        public static int IndemnityGoldFor(float points, Kingdom loser)
+            => points <= 0f ? 0 : (int)(points * IndemnityDenarsPerPoint(loser));
+
+        /// <summary>
+        /// The most any one peace may take from this loser
+        /// (<see cref="DiplomacyConstants.PeaceIndemnityMaxTreasuryShare"/> of its treasury).
+        /// </summary>
+        public static int IndemnityCeiling(Kingdom loser)
+            => (int)(IndemnityTreasury(loser) * DiplomacyConstants.PeaceIndemnityMaxTreasuryShare);
+
+        /// <summary>
+        /// An indemnity as a reader needs it: the denars, what they cost, and how much of the
+        /// loser's treasury they are - "43000 denars, 30% of the 144000 Sturgia's ruler holds,
+        /// 60 points". One description for the console and the tables.
+        /// </summary>
+        public static string DescribeIndemnity(int gold, Kingdom loser)
+        {
+            var treasury = IndemnityTreasury(loser);
+            var share = treasury > 0 ? gold / (float)treasury * 100f : 0f;
+            return gold + " denars, " + share.ToString("0") + "% of the " + treasury + " "
+                   + (loser?.Name?.ToString() ?? "the loser") + "'s ruler holds, "
+                   + IndemnityPoints(gold, loser).ToString("0") + " points";
+        }
+
+        /// <summary>The rate as a line of text, for the allowance readout.</summary>
+        public static string DescribeIndemnityRate(Kingdom loser)
+            => IndemnityDenarsPerPoint(loser).ToString("0") + " denars a point against a treasury of "
+               + IndemnityTreasury(loser) + " ("
+               + (DiplomacyConstants.PeaceIndemnityTreasurySharePerPoint * 100f).ToString("0.0")
+               + "% a point, never under "
+               + DiplomacyConstants.PeaceIndemnityFloorDenarsPerPoint.ToString("0")
+               + "); no peace takes more than " + IndemnityCeiling(loser);
 
         /// <summary>
         /// Points the winner has earned in this war. Zero when they are not ahead, which is
@@ -197,26 +289,26 @@ namespace DiplomacyIntrigue.Diplomacy
         /// The largest indemnity this war could actually charge, in denars, rounded down to
         /// whole thousands. Zero when there is nothing worth taking.
         ///
-        /// Sized from the **war score**, not from the treasury. It used to offer half the
-        /// ruler's gold, which run 07 showed was never once demandable: half of Sturgia's
-        /// 740,000 denars priced at <see cref="DiplomacyConstants.PeaceCostPerThousandIndemnity"/>
-        /// came to roughly 2,950 concession points against a budget of 187. **Zero of the 100
-        /// settlements in that run involved an indemnity.** The rung existed and could never be
-        /// reached.
+        /// Two questions, kept apart. **How many points** is the war's: the budget less the
+        /// prisoners every package carries, capped at the tributary pact's cost so money stays
+        /// a mid-ladder option - without that cap an indemnity sized to the whole budget would
+        /// be the dearest thing available in almost every war and crowd out land and tribute.
+        /// **What a point is worth** is the loser's: <see cref="IndemnityDenarsPerPoint"/>, a
+        /// share of its treasury (2026-09-27). The result is capped at
+        /// <see cref="IndemnityCeiling"/>, the same ceiling <see cref="IsDemandable"/> enforces,
+        /// so the ladder never builds a package the table would refuse.
         ///
-        /// Capped at the tributary pact's cost so that money stays a mid-ladder option. Without
-        /// that cap an indemnity sized to the whole budget would be the dearest thing available
-        /// in almost every war and would crowd out both land and tribute.
-        ///
-        /// **The price itself is still suspect.** At 8 points per 1,000 denars a 60-point
-        /// indemnity is 7,500 denars, which is real on the ladder and trivial to a ruler
-        /// holding several hundred thousand. Making it bite is a balance decision, not a fix,
-        /// and it is left for the lead.
+        /// History, because both halves were once wrong. Until 2026-09-20 the offer was half the
+        /// ruler's gold, which run 07 showed was never once demandable: half of Sturgia's 740,000
+        /// denars at the old flat 8 points per 1,000 came to roughly 2,950 concession points
+        /// against a budget of 187, and zero of that run's 100 settlements carried an indemnity.
+        /// Sizing the points from the war score revived the rung - run 08 used it in 35 of 123
+        /// settlements - but the flat price made 60 points 7,500 denars, trivial to rulers
+        /// holding 144,000-453,000. The treasury-share rate is the 2026-09-27 answer to that.
         /// </summary>
         public static int LargestIndemnity(WarRecord war, Kingdom winner, Kingdom loser)
         {
-            var leader = loser?.Leader;
-            if (leader == null || leader.Gold <= 0) return 0;
+            if (IndemnityTreasury(loser) <= 0) return 0;
 
             var budget = BudgetFor(war, winner);
             var points = budget - DiplomacyConstants.PeaceCostPrisoners;
@@ -224,10 +316,15 @@ namespace DiplomacyIntrigue.Diplomacy
                 points = DiplomacyConstants.PeaceCostTributaryPact;
             if (points <= 0f) return 0;
 
-            var byScore = (int)(points / DiplomacyConstants.PeaceCostPerThousandIndemnity * 1000f);
-            var byPurse = leader.Gold / 2;
-            var gold = byScore < byPurse ? byScore : byPurse;
-            return gold / 1000 * 1000;
+            var byScore = IndemnityGoldFor(points, loser);
+            var ceiling = IndemnityCeiling(loser);
+            var gold = (byScore < ceiling ? byScore : ceiling) / 1000 * 1000;
+
+            // Converting back can land a float's last bit above the points this was sized from
+            // when the product falls exactly on a thousand, and IsDemandable would then refuse
+            // the very package the ladder built. One thousand less is the cheap certainty.
+            if (gold >= 1000 && IndemnityPoints(gold, loser) > points) gold -= 1000;
+            return gold;
         }
 
         /// <summary>
@@ -337,6 +434,23 @@ namespace DiplomacyIntrigue.Diplomacy
                     TreatyType.Vassalage, out reason, settlesWar: true))
             {
                 return false;
+            }
+
+            // No peace bankrupts a realm, whoever wrote the package. A rule here rather than only
+            // a limit on LargestIndemnity, because the player's own tables and the console build
+            // packages by hand and reach this point without passing through the ladder's sizing.
+            if (terms.IndemnityGold > 0)
+            {
+                var ceiling = IndemnityCeiling(terms.Loser);
+                if (terms.IndemnityGold > ceiling)
+                {
+                    reason = "No peace may take more than "
+                             + (DiplomacyConstants.PeaceIndemnityMaxTreasuryShare * 100f).ToString("0")
+                             + "% of a realm's treasury. " + terms.Loser.Name + "'s ruler holds "
+                             + IndemnityTreasury(terms.Loser) + " denars, so " + ceiling
+                             + " is the most it can be asked for.";
+                    return false;
+                }
             }
 
             var budget = BudgetFor(war, terms.Winner);
@@ -518,10 +632,27 @@ namespace DiplomacyIntrigue.Diplomacy
             var receiver = terms.Winner.Leader;
             if (payer == null || receiver == null) return;
 
+            // Read before the gold moves: afterwards the treasury is smaller and the same denars
+            // would describe a larger share than the one that was priced.
+            var treasury = IndemnityTreasury(terms.Loser);
+            var points = IndemnityPoints(terms.IndemnityGold, terms.Loser);
+
             // Pay what they have if they cannot cover it. A peace that fails because the
-            // treasury is short would just restart the war.
+            // treasury is short would just restart the war. IsDemandable's ceiling means this
+            // should not happen; it stays as the guard for a purse that moved during the peace.
             var amount = terms.IndemnityGold < payer.Gold ? terms.IndemnityGold : payer.Gold;
-            if (amount > 0) GiveGoldAction.ApplyBetweenCharacters(payer, receiver, amount, true);
+            if (amount <= 0) return;
+            GiveGoldAction.ApplyBetweenCharacters(payer, receiver, amount, true);
+
+            // The next balance run tunes the treasury-share rate from this line: what share of
+            // a treasury a settled war actually took, and at what price in points.
+            Telemetry.Event("indemnity_paid", "payer", terms.Loser, "payee", terms.Winner,
+                "gold", amount, "treasury", treasury, "points", points);
+            Log.Info("Peace", terms.Loser.Name + " paid " + terms.Winner.Name + " an indemnity of "
+                              + amount + " denars, "
+                              + (treasury > 0 ? (amount / (float)treasury * 100f).ToString("0") : "0")
+                              + "% of the " + treasury + " its ruler held (" + points.ToString("0.0")
+                              + " points).");
         }
 
         private static void ReleaseHeroes(PeaceTerms terms)
@@ -644,6 +775,7 @@ namespace DiplomacyIntrigue.Diplomacy
             // MaxTributeObligations tributes, or answering to a patron, cannot be made to pay here.
             var tributeOpen = TreatyRegistry.CanSign(state, winner, loser, TreatyType.TributaryPact,
                 out var noTribute, settlesWar: true);
+            var largestIndemnity = LargestIndemnity(war, winner, loser);
 
             var lines = new List<string>
             {
@@ -666,9 +798,10 @@ namespace DiplomacyIntrigue.Diplomacy
                             ? "   (they become our vassal)"
                             : "   (blocked: we are no stronger than them)"),
                 "  release prisoners " + DiplomacyConstants.PeaceCostPrisoners.ToString("0"),
-                "  indemnity         " + DiplomacyConstants.PeaceCostPerThousandIndemnity.ToString("0")
-                    + " per 1000 denars, at most "
-                    + LargestIndemnity(war, winner, loser).ToString("0") + " here",
+                "  indemnity         " + DescribeIndemnityRate(loser),
+                "                    at most " + (largestIndemnity > 0
+                    ? DescribeIndemnity(largestIndemnity, loser)
+                    : "nothing") + " here",
                 "Their exhaustion is " + war.ExhaustionOf(loser).ToString("0.0")
                     + "; they start listening at " + (DiplomacyConstants.ExhaustionSeekPeace
                         - (-WarScore.For(war, loser)) / 2f).ToString("0.0") + "."

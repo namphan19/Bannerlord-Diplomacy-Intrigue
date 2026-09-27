@@ -685,6 +685,10 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             var chips = new MBBindingList<DiRealmTermVM>();
             var t = Hegemony.HoldTermsOf(state, link);
             AddChip(chips, "protection", t.Protection);
+            // Only when it pulls: the row already holds nine chips, and a tenth that reads 0.0
+            // on nearly every link would crowd the others for nothing. Zero adds nothing to the
+            // sum the chips spell out, so leaving it out keeps them matching the target.
+            if (t.LegalNeglect > 0f) AddChip(chips, "legal neglect", -t.LegalNeglect);
             AddChip(chips, "fear", t.Fear);
             AddChip(chips, "trust", t.Trust);
             AddChip(chips, "tribute", -t.Tribute);

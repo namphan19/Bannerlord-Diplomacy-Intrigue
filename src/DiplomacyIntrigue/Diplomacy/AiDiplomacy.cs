@@ -456,7 +456,10 @@ namespace DiplomacyIntrigue.Diplomacy
             // demandable: run 07 settled 100 wars with **zero** indemnities, because half of a
             // late-game treasury prices out at thousands of concession points against a budget
             // that never passed 226. PeaceTable owns the sizing so the ladder and the
-            // allowance readout quote the same figure.
+            // allowance readout quote the same figure. Since 2026-09-27 the points the war
+            // earned buy a share of the loser's treasury (PeaceTable.IndemnityDenarsPerPoint),
+            // so the denars bite; both signatures still weigh the package in points, through
+            // CostOf, which reads the same rate.
             var indemnity = PeaceTable.LargestIndemnity(war, winner, loser);
             if (indemnity >= 1000)
                 yield return new PeaceTerms(winner, loser)
@@ -811,7 +814,8 @@ namespace DiplomacyIntrigue.Diplomacy
 
             // Only a link already slipping comes apart this way. The neglect that qualifies
             // is the same neglect Hold measures: a patron ignoring the war pulls the
-            // protection term to -1 and Hold drifts down past this line on its own, so the
+            // protection term to -1 - one treaty-bound to the attacker, half as far, as legal
+            // neglect (2026-09-27) - and Hold drifts down past this line on its own, so the
             // gate needs no bookkeeping of its own - and it hands the patron a grace of
             // however much Hold it had banked to join late and keep its vassal.
             if (Hegemony.HoldOf(link) >= DiplomacyConstants.HoldPassiveResistanceThreshold) return false;
