@@ -111,8 +111,19 @@ namespace DiplomacyIntrigue.Intrigue
         /// <summary>Granted for each full year without a war. UN-TUNED.</summary>
         public const float LegitimacyPeaceDividend = 3f;
 
-        /// <summary>How long that year is. UN-TUNED, and a year by definition.</summary>
-        public const float LegitimacyPeaceDividendYears = 1f;
+        /// <summary>
+        /// Days of **continuous** peace - no foreign war and no internal war - that earn one
+        /// dividend: one campaign year, 4 seasons of 21 days. Design 02 §4's "per year of peace".
+        /// UN-TUNED as a rate, but the length is the definition of a year, not a guess.
+        ///
+        /// In days rather than the <c>LegitimacyPeaceDividendYears = 1</c> it replaced
+        /// (2026-09-27, review R-4). That value was read through <c>ElapsedYearsUntilNow</c>,
+        /// which counts the engine's own year, so it was not the 365-day bug (the year's length
+        /// is a static field in the reference assemblies, not a constant, so it was not read
+        /// from them). It moved to days so `diplomacy.legitimacy` can say how many are left,
+        /// and so no reader has to know which year a "1" means.
+        /// </summary>
+        public const float LegitimacyPeaceDividendDays = 84f;
 
         /// <summary>At or above this war justification, a victory counts as a just one. UN-TUNED.</summary>
         public const float LegitimacyJustWar = 0.7f;
@@ -420,6 +431,21 @@ namespace DiplomacyIntrigue.Intrigue
         /// UN-TUNED. A younger son of a great house starts above a freed companion.
         /// </summary>
         public const float ClanSuccessionCadetRenownShare = 0.25f;
+
+        /// <summary>
+        /// The most of the parent house's influence a cadet branch can take at the split
+        /// (design 07 §5, the lead's decision of 2026-09-27). Below the cap the share is the
+        /// adults who leave over the adults of the house, so a founder who walks out alone
+        /// from a house of six takes a sixth. UN-TUNED.
+        ///
+        /// Capped so that the house that kept the name and the headship always keeps at least
+        /// half its standing: a founder and spouse leaving a house of three adults would
+        /// otherwise take two thirds of it. Why the transfer exists at all: a new cadet branch
+        /// started at 0 influence, and succession support is the influence of a claimant's
+        /// backers, so a founder who split from a ruling house counted 0% of the court (live,
+        /// 2026-09-26: "Mengus 0% (1 clan)") and 2.6b could never lead to 2.6.
+        /// </summary>
+        public const float ClanSuccessionCadetInfluenceShareMax = 0.5f;
 
         // ----- Court verbs (design 09) ------------------------------------------------------
         //

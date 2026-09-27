@@ -183,6 +183,28 @@ recorded as the `Pretender`.
 | **Negotiated / stalemate** | Nothing moves, as with a white peace at 2.4. The claimant keeps the claim, and the war simply ends |
 | **Loser's fate** | **No exile, execution or demotion in v1.** Exile expels a clan into a rival's arms, and execution is irreversible and has vanilla consequences of its own. Both are good choices for a *ruler* to make later, as a decision with costs, not an automatic outcome |
 
+**Changed 2026-09-27 (review R-6, the lead's decision): what the rebels took goes back on a crown
+win.** Every fief a rebel house holds when the crown wins, and which changed hands by force during
+the war, returns to the house that held it when the war began, if that house is alive and still in
+the realm; otherwise to the ruling clan. Fiefs the rebels held before the war and never lost stay
+theirs. A house the crown bought back mid-war (§6) is not a rebel at the end and keeps what it
+brought. The transfer is `ChangeOwnerOfSettlementAction.ApplyByDefault`, the peace table's call
+for a ceded fief, so the grievance system records nothing for it (it reads only king's decisions
+and sieges): the rebel who loses a restored fief gets no grievance, with nothing suppressed.
+Each restitution is logged. The other outcomes are unchanged.
+
+*How "who held it when the war began" is found.* The decision named our fief ledger,
+`FiefHistory`. It cannot answer: it is kept per kingdom and records nothing when a fief passes
+between two clans of one kingdom, and a rebel keeps `Clan.Kingdom`, so every capture of an
+internal war is invisible to it. The clan comes from the game's own ownership log
+(`ChangeSettlementOwnerLogEntry`: settlement, previous clan, new clan, by siege, date, saved with
+the campaign); `FiefHistory` answers the half it can, that the fief stayed in the realm when it
+changed hands (`FiefHistory.HeldAcross`), which is what marks a capture across the civil war's
+line. No save data was added. **Unverified:** which vanilla code writes that log entry and how
+long the game keeps it are method bodies the reference assemblies do not carry. If the entries are
+not there, nothing is restored and no occupation is counted - the behaviour before this change -
+and `diplomacy.internal_wars` shows it at once ("0 change(s)"). Code: `Intrigue/InternalWarFiefs.cs`.
+
 What ends it (a question §3 did not ask but a build needs), un-tuned: a side loses when its
 leader is **held captive 30 days** by the other side, or when that side's internal exhaustion
 reaches **100**. The claimant's **death** ends it as a crown win. The ruler's death does not:
@@ -281,6 +303,16 @@ Two consequences of the mechanism, now written down as design:
   Phase 1's formula (losses against the side's strength). They do not feed
   `WarExhaustion.Worst`, so a civil war does not push the court toward the Doves. That is a gap
   to revisit, not a decision.
+- **Fiefs lost count, since 2026-09-27** (review R-6, the lead's decision). Until then only the
+  calendar and casualties moved internal-war exhaustion, so taking a castle helped win a civil
+  war only through the blood it cost. Now, as in a foreign war and with the same constants: a fief
+  taken by siege across the line costs the side that lost it 6 (town) or 3 (castle)
+  (`WarExhaustion.FiefLost`, one formula for both kinds of war), read from the capture event; and
+  each fief one side has lost that the other still holds costs it 0.02 a day
+  (`ExhaustionPerDayPerOccupiedFief`), counted from the game's ownership log - see §3a Q1's note
+  of the same date for what that count rests on. Both go through the side leader's resolve, like
+  every other accrual. Siege pressure (a foreign war's 0.15 a day per fief under siege) was not
+  asked for and is still not counted.
 
 The riskiest unknown was expected to be JIT inlining: `Clan.get_MapFaction` is a 16-byte
 getter, and a Harmony patch cannot reach an inlined copy. The live test settled it, below, and
@@ -441,6 +473,36 @@ claimant path here would be a second resolver for the same question.
 
 **The player's house is under the same rule.** Vanilla lets the player choose their heir.
 Passing over a higher-scoring heir who dislikes the choice can split the player's own house.
+
+**A cadet branch takes part of its house's standing, since 2026-09-27** (the lead's decision, TODO
+4). A new cadet branch started at 0 influence, and a claimant's support at a succession is the
+influence of the houses backing them, so a founder who split from a ruling house counted 0% of the
+court ("Mengus 0% (1 clan)", 2026-09-26) and could never reach the 30% a pretender needs: 2.6b
+could not lead to 2.6. Now, at the split, the cadet takes a share of the parent's influence equal
+to the adults who leave with it over the house's adults before the split (the heir filter vanilla
+uses, a dying head not counted), **capped at 50%** (`ClanSuccessionCadetInfluenceShareMax`,
+UN-TUNED). A founder leaving alone from a house of five adults takes a fifth; a founder and spouse
+from a house of three take half, not two thirds. Only positive influence is shared: a house in
+debt passes on none. It is a real transfer by `ChangeClanInfluenceAction`, both ways, so the
+court's total does not change, and it is logged on the split line. Same rule for the player's
+house. `diplomacy.heirs` prints what a dividing house's cadet would take; `test_divide_clan`
+prints both houses' influence before and after.
+
+*Is it enough?* On the numbers in the code, only sometimes, and that is by design rather than a
+gap in the transfer. The tally gives each claimant the influence of every house that backs them:
+the cadet backs its founder, the ruling house its new head, and every other house backs whoever it
+scores higher, the incumbent getting half the house's loyalty on top of relation. Moving a share
+`s` of the ruling house's influence `P` gives the founder `s·P` of a court total that does not
+change. So the transfer alone reaches 30% only when `s·P` is 30% of the court - with the cap, only
+when the ruling house held at least 60% of the court's influence. Run 08's AI rulers held a median
+2,374 influence (p10 624, p90 5,330; design 09 §0); against eight houses of ~300 (an assumption:
+no run logs a house's influence, but Battania's five-house Pretenders bloc weighed 1,560), a founder and
+spouse leaving two of five adults take ~20% of the court at the median, ~28% at p90, ~8% at p10.
+The rest has to come from houses that like the founder better than the new ruler by more than
+half their loyalty - 20 to 30 relation points in a court at loyalty 40-60, much less in a crisis
+court. What still stands between a pretender and a civil war is unchanged: the Pretenders bloc at
+40% of effective power, legitimacy below 35, and two houses below loyalty 25. A contested
+succession costs only 15 of a starting 60.
 
 ### Tools
 

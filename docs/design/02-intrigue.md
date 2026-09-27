@@ -111,6 +111,16 @@ A per-kingdom pool, 0–100, starting at 60.
 Effects: legitimacy feeds vassal loyalty (§2), gates pretender bids (§5), and scales the
 influence cost of pushing decisions through a hostile court.
 
+**"Per year of peace", made exact on 2026-09-27** (review R-4, the lead's decision). The code paid
+the dividend on any peaceful day once a year had passed since the last one, so a war neither
+stopped nor reset the clock and a realm at war most of the year still collected it. It now pays
+once per campaign year (**84 days**) of **continuous** peace: no foreign war and no internal war.
+A war resets the clock, which counts again from the day the last war ended, or from the last
+dividend if that is later (`LegitimacyRegistry.PeaceOf`, derived from the war records, nothing new
+saved). The review's alternative, mean reversion toward 50, was **rejected**: a weak crown must
+not heal on its own, and civil war is already rare. `diplomacy.legitimacy` shows each realm's days
+of continuous peace and the days to its next dividend.
+
 ## 5. Succession
 
 When a ruler dies, vanilla silently assigns the throne. Instead:
@@ -124,6 +134,10 @@ When a ruler dies, vanilla silently assigns the throne. Instead:
      gains a grievance of weight 6.
 4. A losing claimant with more than 30% support becomes a standing **pretender**, which is
    what gives a rival kingdom the `SupportClaimant` casus belli from Phase 1.
+
+*2026-09-27:* a cadet branch founded when a house divides (design 07 §5) now takes a share of its
+parent's influence, up to half, so a founder who split from the ruling house can be counted in
+step 2 at all. Design 07 §5 has the rule and whether it is enough.
 
 ## 6. Civil war
 
@@ -140,6 +154,10 @@ both sides. Clans with loyalty < 25 that are *not* in the bloc pick a side by re
 Everything here routes through existing Phase 1 machinery: the civil war is a war with a
 war record, exhaustion, and a peace table. That is deliberate — a civil war that ends by
 negotiation rather than annihilation is the interesting case.
+
+*As built* the civil war is design 07's option C (a rising inside the realm, its own record, no
+secession). *2026-09-27* (review R-6): fiefs lost now count toward its exhaustion as in a foreign
+war, and a crown win returns what the rebels took - design 07 §3a Q1 and §3b.
 
 ## 7. Where this couples to the other pillars
 

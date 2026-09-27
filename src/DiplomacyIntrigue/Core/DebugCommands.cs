@@ -593,6 +593,25 @@ namespace DiplomacyIntrigue.Core
                               + (record == null
                                   ? "   (no record yet; reads as the starting value)"
                                   : "   last: " + record.LastReason));
+
+                // The same clock the daily upkeep pays by (LegitimacyRegistry.PeaceOf).
+                var peace = LegitimacyRegistry.PeaceOf(state, kingdom);
+                if (peace.AtWar)
+                {
+                    sb.AppendLine("    at war - no peace is running; the clock starts again when the last war ends");
+                }
+                else
+                {
+                    sb.AppendLine("    "
+                                  + (peace.HasWarOnRecord
+                                      ? "at peace " + peace.DaysOfPeace.ToString("0") + " days (since " + peace.PeaceSince + ")"
+                                      : "at peace, with no war on record")
+                                  + "; next dividend +" + LegitimacyRegistry.PeaceDividendOf(kingdom).ToString("0.0")
+                                  + (peace.DaysToDividend <= 0f
+                                      ? " is due at the next daily tick"
+                                      : " in " + peace.DaysToDividend.ToString("0") + " days")
+                                  + " (counting from " + peace.ClockFrom + ")");
+                }
             }
 
             sb.AppendLine("Starts at " + IntrigueConstants.LegitimacyStart.ToString("0")
@@ -600,8 +619,11 @@ namespace DiplomacyIntrigue.Core
                           + " a crown is weak enough for a pretender's party to gather, if a claim"
                           + " stands (diplomacy.pretenders); below " + IntrigueConstants.LegitimacyNeutral.ToString("0")
                           + " it costs every clan loyalty.");
-            sb.AppendLine("The peace dividend cannot be driven by diplomacy.tick_days - it is"
-                          + " measured in dates, and the clock does not move there.");
+            sb.AppendLine("The peace dividend is paid once per " + IntrigueConstants.LegitimacyPeaceDividendDays.ToString("0")
+                          + " days of continuous peace (no foreign war, no internal war), counted from the later of the"
+                          + " last dividend and the end of the last war.");
+            sb.AppendLine("It cannot be driven by diplomacy.tick_days - it is measured in dates, and the clock"
+                          + " does not move there.");
             return sb.ToString();
         }
 
@@ -2231,6 +2253,46 @@ namespace DiplomacyIntrigue.Core
                     names.Append(war.Rebels[r].Clan?.Name);
                 }
                 sb.AppendLine("    rebels: " + names);
+
+                // Review R-6: what the game's ownership log shows for this war, read by the same
+                // InternalWarFiefs calls the daily tick and the crown's win use. If this reads 0
+                // changes for a war known to have seen captures, the game's log does not carry
+                // them and neither the occupation term nor restitution can work.
+                var fiefs = InternalWarFiefs.Read(state, war);
+                sb.AppendLine("    game's ownership log during the war: " + (fiefs.Readable ? "" : "NOT READABLE, ")
+                              + fiefs.Changes + " change(s) of a fortification's owner, " + fiefs.Captures
+                              + " captured across the line" + (fiefs.SiegeFlagKnown ? "" : " (siege flag unreadable: every change counted)"));
+                foreach (var pair in fiefs.BySettlement)
+                {
+                    if (!InternalWarFiefs.Touches(war, pair.Key, pair.Value)) continue;
+                    var line = new StringBuilder(pair.Value[0].From?.Name?.ToString() ?? "?");
+                    for (var c = 0; c < pair.Value.Count; c++)
+                    {
+                        var change = pair.Value[c];
+                        line.Append(" -> ").Append(change.To?.Name?.ToString() ?? "?")
+                            .Append(change.IsCapture ? " (captured)" : "");
+                    }
+                    sb.AppendLine("        " + pair.Key.Name + ": " + line + "; held now by " + pair.Key.OwnerClan?.Name);
+                }
+                if (war.IsOngoing)
+                {
+                    var perDay = DiplomacyConstants.ExhaustionPerDayPerOccupiedFief * Settings.Current.WarExhaustionRate;
+                    var lostByCrown = InternalWarFiefs.OccupiedFrom(war, fiefs, rebelSide: false);
+                    var lostByRebels = InternalWarFiefs.OccupiedFrom(war, fiefs, rebelSide: true);
+                    sb.AppendLine("    held across the line: the crown has lost " + lostByCrown + " (+"
+                                  + (lostByCrown * perDay).ToString("0.00") + "/day before resolve), the rising "
+                                  + lostByRebels + " (+" + (lostByRebels * perDay).ToString("0.00") + "/day)");
+                    var plan = InternalWarFiefs.Plan(war, fiefs);
+                    sb.AppendLine("    if the crown won today, " + plan.Count + " fief(s) would be restored"
+                                  + (plan.Count == 0 ? "." : ":"));
+                    for (var p = 0; p < plan.Count; p++)
+                        sb.AppendLine("        " + plan[p].Settlement.Name + ": " + plan[p].Holder.Name + " -> "
+                                      + plan[p].ReturnsTo.Name
+                                      + (plan[p].ReturnsTo == plan[p].HeldAtStart
+                                          ? " (held it when the war began)"
+                                          : " (the crown; " + (plan[p].HeldAtStart?.Name?.ToString() ?? "?")
+                                            + " held it and is not of the realm now)"));
+                }
             }
 
             sb.AppendLine();
@@ -2623,6 +2685,16 @@ namespace DiplomacyIntrigue.Core
                                   + (a.RunnerUp == null ? "" : ", runner-up " + a.RunnerUp.Hero.Name + " (" + a.RunnerUp.Points
                                                                + ", relation " + a.Relation + ")")
                                   + " => " + (a.Divides ? "WOULD DIVIDE" : "holds") + " - " + a.Reason);
+                    if (a.RunnerUp != null && (a.Divides || only != null))
+                    {
+                        // The same computation Divide pays (ClanSuccession.CadetInfluence). Today's
+                        // head is still alive and counted here; at a real death they are not, so
+                        // the share at the split is a little larger than this.
+                        var split = ClanSuccession.CadetInfluence(clan, a.RunnerUp.Hero);
+                        sb.AppendLine("    a cadet branch would take " + split.Amount.ToString("0") + " of "
+                                      + split.ParentInfluence.ToString("0") + " influence (" + split.Leaving + " of "
+                                      + split.Adults + " adults, share " + (split.Share * 100f).ToString("0") + "%)");
+                    }
                     if (only != null)
                         for (var i = 0; i < a.Heirs.Count; i++)
                             sb.AppendLine("    " + a.Heirs[i].Hero.Name + "  " + a.Heirs[i].Points
@@ -2690,6 +2762,7 @@ namespace DiplomacyIntrigue.Core
                 if (a.RunnerUp == null) return clan.Name + ": no eligible heir named " + wanted + ".";
             }
 
+            var influenceBefore = clan.Influence;
             var cadet = ClanSuccession.Divide(state, a);
             if (cadet == null) return clan.Name + ": the division did not happen - see the log.";
 
@@ -2697,6 +2770,9 @@ namespace DiplomacyIntrigue.Core
             sb.AppendLine(clan.Name + " divided: " + cadet.Name + " (" + cadet.StringId + "), tier " + cadet.Tier
                           + ", led by " + cadet.Leader?.Name + ", in " + cadet.Kingdom?.Name
                           + ", home " + cadet.HomeSettlement?.Name + ".");
+            sb.AppendLine("Influence: " + clan.Name + " " + influenceBefore.ToString("0") + " -> "
+                          + clan.Influence.ToString("0") + ", " + cadet.Name + " " + cadet.Influence.ToString("0")
+                          + " (the split line in the log has the share).");
             for (var i = 0; i < cadet.Heroes.Count; i++)
                 sb.AppendLine("    " + cadet.Heroes[i].Name + "  party: "
                               + (cadet.Heroes[i].PartyBelongedTo?.Name?.ToString() ?? "none")
