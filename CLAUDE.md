@@ -228,7 +228,11 @@ The GABS MCP server drives the running game. The loop that works:
 
 1. `games_stop` → `deploy.ps1` → `games_start`
 2. `bannerlord.core.load_save` with a save name, then wait for `Session launched` in the log
-3. `bannerlord.core.set_cheat_mode` true — needed before any `campaign.*` command
+3. `bannerlord.core.set_cheat_mode` true — needed before any `campaign.*` command, and since
+   2026-09-27 before every `diplomacy.test_*` lever and `sign_treaty`, `break_treaty`,
+   `offer_peace`, `fabricate_claim`, `tick_days`, `ai_week`, `set_smoothed_strength`,
+   `set_war_score` too (`CampaignCheats.CheckCheatUsage`, the check vanilla's cheats make).
+   Without it they answer `Refused: ... needs cheat mode`; read-only diagnostics stay open
 4. Drive with `bannerlord.core.run_command`, read the mod log, `ui.take_screenshot` for UI
 
 Useful commands beyond `status`/`wars`/`treaties`: `diplomacy.strength` (every kingdom ranked
