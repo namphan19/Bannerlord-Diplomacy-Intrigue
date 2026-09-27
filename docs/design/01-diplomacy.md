@@ -271,7 +271,7 @@ score** and gated by **casus belli**.
 > | Demand | Cost |
 > |---|---|
 > | Release prisoners | 5 |
-> | Indemnity | 8 per 1000 denars |
+> | Indemnity | 0.5% of the loser's treasury a point, never under 125 denars; at most 40% of it (2026-09-27) |
 > | Castle | 25 |
 > | Town | 45 |
 > | Tributary pact | 60 |
@@ -289,6 +289,16 @@ score** and gated by **casus belli**.
 > **The budget is not the raw score.** The winner's budget is war score × the envoys' contest
 > (×0.85 to ×1.15, [design 08 S-2](08-statecraft.md)), and zero at or below a raw score of 20. So
 > the subjugation cliff at 75 is reached anywhere from a raw score of about 65 to 88.
+>
+> **Money is priced against the loser's means (2026-09-27).** Until then an indemnity cost a flat
+> 8 points per 1,000 denars, so 60 points bought 7,500 denars from every realm alike - trivial to
+> the rulers holding 144,000–453,000 who paid it in 35 of run 08's 123 settlements. A point now
+> takes 0.5% of the loser's ruler's treasury, with the old 125 denars as its floor, and no peace
+> may take more than 40% of that treasury. The largest indemnity a war can charge is still 60
+> points (the tributary pact's price), which is now 30% of the treasury. The treasury is read at
+> signing, where the payment is taken. One function, `PeaceTable.IndemnityDenarsPerPoint`, prices
+> it for the AI, both player tables and the console. Reasoning and figures:
+> [design 04 §13.4](04-hegemony.md#134-the-indemnity-rung-was-dead-and-is-now-sized-by-the-war).
 
 
 The original tier table, kept as the calibration reference only - **it is not what the code

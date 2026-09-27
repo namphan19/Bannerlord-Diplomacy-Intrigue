@@ -418,14 +418,20 @@ namespace DiplomacyIntrigue.UI.Negotiation
                     : "We free every hero of theirs we hold.",
                 winner, loser, t => t.ReleasePrisoners = true);
 
-            // Indemnity, sized from the war score by the same resolver the AI ladders use.
-            var gold = PeaceTable.LargestIndemnity(_war, winner, loser);
+            // Indemnity, sized by the same resolver the AI ladders use: the war score says how
+            // many points, the loser's treasury what a point is worth. An offer already on the
+            // table shows its own figure - the denars the AI actually put in it - so the row can
+            // never quote a number the offer does not carry.
+            var gold = _incoming != null && _incoming.IndemnityGold > 0
+                ? _incoming.IndemnityGold
+                : PeaceTable.LargestIndemnity(_war, winner, loser);
             if (gold >= 1000)
                 Add(specs, PeaceTermKind.Indemnity, null,
                     "An indemnity of " + gold + " denars",
-                    _weAreWinner
-                        ? "Sized from the war score, not from what their treasury happens to hold."
-                        : "Sized by what this war earned them.",
+                    (_weAreWinner
+                        ? "Sized by what the war earned you, against their treasury: "
+                        : "Sized by what this war earned them, against our treasury: ")
+                    + PeaceTable.DescribeIndemnity(gold, loser) + ".",
                     winner, loser, t => t.IndemnityGold = gold);
 
             // Tribute.

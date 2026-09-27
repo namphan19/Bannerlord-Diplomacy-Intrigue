@@ -195,7 +195,9 @@ and 4 of §1. Prisoners now weigh as much as the battles, which is the lead's in
 ## 6. What stays the same
 
 - The price ladder: prisoners 5, castle 25, town 45, tribute 60, subjugation 70 (+5 = 75),
-  8 per 1,000 denars. Captured fiefs are kept at the peace, as in vanilla.
+  8 per 1,000 denars. Captured fiefs are kept at the peace, as in vanilla. *(2026-09-27, after
+  this design: money is now priced against the loser's treasury - 0.5% of it a point, never under
+  125 denars, at most 40% in one peace. [Design 01 §4.2](01-diplomacy.md#42-peace-terms).)*
 - The subjugation cliff at 75, its two faces, and every gate on it.
 - The envoy's contest, the white-peace floor at a raw 20.
 - Exhaustion, entirely: towns lost, raids, sieges, casualties all still wear a realm down, and the

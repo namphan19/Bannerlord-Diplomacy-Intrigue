@@ -885,6 +885,27 @@ the same number.
 60-point indemnity is 7,500 denars: real on the ladder, trivial to a ruler holding several
 hundred thousand. Making money bite is a balance decision, not a fix.
 
+> **2026-09-27 — the price now bites (TODO 6).** Run 08 chose the rung in 35 of 123 settlements
+> while the rulers paying held 144,000–453,000, and the decision of 2026-09-27 is to size money
+> against the loser's means. The war score still decides **how many points** an indemnity may be
+> (the budget less the prisoners, capped at the tributary pact's 60); the loser decides **what a
+> point is worth**: 0.5% of its ruler's treasury (`PeaceIndemnityTreasurySharePerPoint`), never
+> less than the old 125 denars (`PeaceIndemnityFloorDenarsPerPoint`), and no peace may take more
+> than 40% of the treasury (`PeaceIndemnityMaxTreasuryShare`, a rule in `IsDemandable`, not only a
+> sizing limit). So a 60-point indemnity takes 30%: 43,000 denars from a ruler holding 144,000 and
+> 135,000 from one holding 453,000. Under 25,000 the old rate still applies, and under 18,750 the
+> 40% ceiling binds before it does. All three UN-TUNED.
+>
+> One function prices every indemnity everywhere - `PeaceTable.IndemnityDenarsPerPoint`, read by
+> `CostOf`, `LargestIndemnity`, the negotiation screen, the Ctrl+D tables and the console - and it
+> reads the treasury **at signing**: the terms carry the denars agreed, the points they cost are
+> re-read at every check, and `Apply` checks last. A loser whose gold fell between the offer and
+> the signature is priced at what it holds when it pays, so a package that no longer fits is
+> refused with its reason rather than executed at a share nobody agreed to. The AI still weighs the
+> rung in points on both sides of the table; what changed is only what those points take. Each
+> payment now writes an `indemnity_paid` telemetry event (gold, treasury, points) for the run that
+> tunes these.
+
 ### 13.5 Voluntary submission drops to 50
 
 `AiSubmissionThreshold` 55 → 50. Run 07's two submissions cleared 55 at **58.4** and **58.9**, so

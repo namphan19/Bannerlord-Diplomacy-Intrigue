@@ -255,7 +255,46 @@ namespace DiplomacyIntrigue.Diplomacy
         public const float PeaceCostCastle = 25f;
         public const float PeaceCostTributaryPact = 60f;
         public const float PeaceCostPrisoners = 5f;
-        public const float PeaceCostPerThousandIndemnity = 8f;
+
+        // ---- What a point of indemnity is worth (2026-09-27, TODO 6) ----------
+        //
+        // Money was priced at a flat 8 points per 1,000 denars until 2026-09-27: 125 denars a
+        // point for every realm alike. A 60-point indemnity came to 7,500 denars, and run 08
+        // chose the rung in 35 of 123 settlements while the rulers paying held 144,000-453,000.
+        // The rung was used and cost nothing. A point now buys a share of the loser's treasury,
+        // so what a victory takes in gold is measured against what the loser has.
+        //
+        // The three are read only through PeaceTable.IndemnityDenarsPerPoint and
+        // PeaceTable.IndemnityCeiling, so the AI ladder, both player tables and the console
+        // price the same denars at the same points.
+
+        /// <summary>
+        /// The share of the loser's treasury one point of indemnity takes: 0.5% a point. An
+        /// indemnity is capped at the tributary pact's price (60 points,
+        /// <see cref="PeaceCostTributaryPact"/>), so the largest one takes **30%** - inside the
+        /// quarter-to-a-third the 2026-09-27 decision asked for. Against run 08's rulers the same
+        /// 60 points take 43,000 denars from the poorest and 135,000 from the richest, where both
+        /// used to pay 7,500. UN-TUNED: chosen by that arithmetic, not measured.
+        /// </summary>
+        public const float PeaceIndemnityTreasurySharePerPoint = 0.005f;
+
+        /// <summary>
+        /// The least one point of indemnity takes, in denars: the old flat rate, 8 points per
+        /// 1,000. Without it a treasury under 25,000 would price money cheaper than it ever was,
+        /// and a poor loser would get off more lightly than under the rule this replaced.
+        /// UN-TUNED.
+        /// </summary>
+        public const float PeaceIndemnityFloorDenarsPerPoint = 125f;
+
+        /// <summary>
+        /// The most one peace may take from the loser, as a share of its treasury at signing.
+        /// A rule in <c>PeaceTable.IsDemandable</c>, not only a limit on how the ladder sizes the
+        /// offer, so a package built by hand - the player's, a console command's - cannot take
+        /// more either: no single peace bankrupts a realm. At the rates above it binds a
+        /// 60-point indemnity only below a treasury of 18,750, where the floor would otherwise
+        /// take more than this share. It replaces an older cap of half the treasury. UN-TUNED.
+        /// </summary>
+        public const float PeaceIndemnityMaxTreasuryShare = 0.4f;
 
         /// <summary>At or below this war score nothing has been earned: white peace only.</summary>
         public const float PeaceWhitePeaceOnlyBelow = 20f;

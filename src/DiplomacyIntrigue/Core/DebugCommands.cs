@@ -1105,6 +1105,7 @@ namespace DiplomacyIntrigue.Core
         ///
         /// Usage: diplomacy.offer_peace &lt;winner&gt; | &lt;loser&gt; | &lt;terms&gt;
         ///   terms: white, prisoners, indemnity=5000, tribute=800, fief=Pravend
+        ///   a bare "indemnity" asks the largest this war can charge (PeaceTable.LargestIndemnity)
         ///   several terms are separated by commas
         /// Example: diplomacy.offer_peace Vlandia | Sturgia | fief=Varcheg, prisoners
         /// </summary>
@@ -1117,8 +1118,8 @@ namespace DiplomacyIntrigue.Core
             var parts = SplitOnPipe(args);
             if (parts.Count < 2)
                 return "Usage: diplomacy.offer_peace <winner> | <loser> | <terms>" + Environment.NewLine
-                       + "  terms: white, prisoners, indemnity=5000, tribute=800, fief=<name>,"
-                       + " vassalage, dissolve";
+                       + "  terms: white, prisoners, indemnity (the largest this war allows) or"
+                       + " indemnity=5000, tribute=800, fief=<name>, vassalage, dissolve";
 
             var winner = FindKingdom(parts[0]);
             var loser = FindKingdom(parts[1]);
@@ -1129,25 +1130,32 @@ namespace DiplomacyIntrigue.Core
             if (war == null) return winner.Name + " and " + loser.Name + " are not at war.";
 
             var terms = new PeaceTerms(winner, loser);
-            if (parts.Count > 2 && !ParseTerms(parts[2], terms, out var parseError))
+            if (parts.Count > 2 && !ParseTerms(parts[2], war, terms, out var parseError))
                 return parseError;
 
+            // The indemnity as the table prices it, read before signing moves the gold - so a
+            // refusal and a signature both show the denars, the share and the points.
+            var indemnity = terms.IndemnityGold > 0
+                ? Environment.NewLine + "  indemnity: " + PeaceTable.DescribeIndemnity(terms.IndemnityGold, loser)
+                  + " (" + PeaceTable.DescribeIndemnityRate(loser) + ")"
+                : "";
+
             if (!PeaceTable.IsDemandable(state, war, terms, out var notAllowed))
-                return "Cannot demand that: " + notAllowed;
+                return "Cannot demand that: " + notAllowed + indemnity;
 
             // Both sides, so the command mirrors what the AI actually requires. Checking only
             // the loser is what let the concession ladder sit unreachable for 13 in-game
             // years, and a diagnostic that asks a weaker question than the system it tests
             // will hide the same class of bug again.
             if (!PeaceTable.BothWouldSign(state, war, terms, out var refused))
-                return "Refused: " + refused;
+                return "Refused: " + refused + indemnity;
 
             return PeaceTable.Apply(state, war, terms, out var applyError)
-                ? "Peace signed: " + terms
+                ? "Peace signed: " + terms + indemnity
                 : "Failed: " + applyError;
         }
 
-        private static bool ParseTerms(string text, PeaceTerms terms, out string error)
+        private static bool ParseTerms(string text, WarRecord war, PeaceTerms terms, out string error)
         {
             error = null;
             foreach (var raw in text.Split(CommaSeparator))
@@ -1156,6 +1164,21 @@ namespace DiplomacyIntrigue.Core
                 if (token.Length == 0) continue;
 
                 if (string.Equals(token, "white", StringComparison.OrdinalIgnoreCase)) continue;
+                if (string.Equals(token, "indemnity", StringComparison.OrdinalIgnoreCase))
+                {
+                    // The figure the AI ladder and the player's tables would offer, from the
+                    // same resolver, so the console can test the rung exactly as it is sized.
+                    terms.IndemnityGold = PeaceTable.LargestIndemnity(war, terms.Winner, terms.Loser);
+                    if (terms.IndemnityGold <= 0)
+                    {
+                        error = "This war cannot charge an indemnity: "
+                                + (PeaceTable.IndemnityTreasury(terms.Loser) <= 0
+                                    ? terms.Loser.Name + "'s ruler holds no gold."
+                                    : "it has not earned enough.");
+                        return false;
+                    }
+                    continue;
+                }
                 if (string.Equals(token, "prisoners", StringComparison.OrdinalIgnoreCase))
                 {
                     terms.ReleasePrisoners = true;
