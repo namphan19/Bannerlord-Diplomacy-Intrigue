@@ -1646,6 +1646,9 @@ namespace DiplomacyIntrigue.Core
                       .Append("  tribute ").Append(link.TributeAmount)
                       .Append("  until ").Append(link.ExpiresOn).AppendLine();
                     sb.Append("      ").AppendLine(explanation);
+                    var legalNeglect = Hegemony.DescribeLegalNeglect(state, link);
+                    if (legalNeglect != null)
+                        sb.Append("      legal neglect: ").AppendLine(legalNeglect);
                     sb.Append("      ").Append(Describe(state, link))
                       .Append("   (revolts below ").Append(Hegemony.SecessionThreshold(state, link).ToString("0.0"))
                       .AppendLine(")");

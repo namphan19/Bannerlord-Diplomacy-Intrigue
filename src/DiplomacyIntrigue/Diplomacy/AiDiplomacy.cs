@@ -814,7 +814,8 @@ namespace DiplomacyIntrigue.Diplomacy
 
             // Only a link already slipping comes apart this way. The neglect that qualifies
             // is the same neglect Hold measures: a patron ignoring the war pulls the
-            // protection term to -1 and Hold drifts down past this line on its own, so the
+            // protection term to -1 - one treaty-bound to the attacker, half as far, as legal
+            // neglect (2026-09-27) - and Hold drifts down past this line on its own, so the
             // gate needs no bookkeeping of its own - and it hands the patron a grace of
             // however much Hold it had banked to join late and keep its vassal.
             if (Hegemony.HoldOf(link) >= DiplomacyConstants.HoldPassiveResistanceThreshold) return false;

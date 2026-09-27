@@ -509,6 +509,7 @@ namespace DiplomacyIntrigue.Core
             Pair(line, "target", terms.Target);
             Pair(line, "fear", terms.Fear);
             Pair(line, "protection", terms.Protection);
+            Pair(line, "legalNeglect", -terms.LegalNeglect);
             Pair(line, "trust", terms.Trust);
             Pair(line, "tribute", -terms.Tribute);
             Pair(line, "wars", -terms.Wars);

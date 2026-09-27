@@ -459,6 +459,22 @@ namespace DiplomacyIntrigue.Diplomacy
         public const float HoldStrengthWeight = 25f;
         /// <summary>Protection: wars of the vassal's the patron has joined, against those it ignored.</summary>
         public const float HoldProtectionWeight = 20f;
+
+        /// <summary>
+        /// How much a war counts against the patron when it stays out because a treaty with the
+        /// attacker forbids it to fight - "legal neglect" - as a share of an ordinary ignored war.
+        /// Half: option (a) of TODO 9, decided 2026-09-27.
+        ///
+        /// Until then such a war counted as nothing at all. The patron is never called against a
+        /// kingdom it holds a war-forbidding treaty with (CallToArms.Applies), so it "ignored"
+        /// nothing - but it chose that treaty, and the vassal is left to fight alone just the
+        /// same. The 2026-09-19 live session watched Western Empire, bound to every attacker of
+        /// its vassal by tribute, alliance and pact, print protection +0.0 for two years while
+        /// the vassal was attacked four times; Hold never neared the defection line. Counting it
+        /// in full would punish a patron as if it had simply looked away; not at all, as if it
+        /// had no part in it. UN-TUNED.
+        /// </summary>
+        public const float HoldLegalNeglectShare = 0.5f;
         public const float HoldTrustWeight = 15f;
         /// <summary>Tribute measured against the vassal's holdings, not in absolute denars.</summary>
         public const float HoldTributeBurdenWeight = 20f;

@@ -94,6 +94,7 @@ namespace DiplomacyIntrigue.Diplomacy
             explanation = "base " + DiplomacyConstants.HoldBase.ToString("0")
                           + "  fear " + Signed(t.Fear)
                           + "  protection " + Signed(t.Protection)
+                          + "  legal neglect " + Signed(-t.LegalNeglect)
                           + "  trust " + Signed(t.Trust)
                           + "  tribute " + Signed(-t.Tribute)
                           + "  wars " + Signed(-t.Wars)
@@ -114,6 +115,14 @@ namespace DiplomacyIntrigue.Diplomacy
         {
             public float Fear, Protection, Trust, Tribute, Wars, Rival, Culture, Dread, Authority, Target;
 
+            /// <summary>
+            /// The protection lost to wars the patron is treaty-bound to stay out of (design/04
+            /// §10a, 2026-09-27). A magnitude, subtracted, and its own term rather than folded into
+            /// <see cref="Protection"/> so every breakdown can name it: "protection +0.0" was what
+            /// hid this case for two years.
+            /// </summary>
+            public float LegalNeglect;
+
             /// <summary>The sum before it is clamped to 0-100, so a change to one term can be previewed exactly.</summary>
             public float Raw;
         }
@@ -127,7 +136,9 @@ namespace DiplomacyIntrigue.Diplomacy
 
             t.Fear = Power.Balance(patron, vassal) * DiplomacyConstants.HoldStrengthWeight;
             t.Dread = Power.Greed(state, patron) * DiplomacyConstants.HoldDreadWeight;
-            t.Protection = Protection(state, treaty, vassal, patron) * DiplomacyConstants.HoldProtectionWeight;
+            Protection(state, vassal, patron, out var protection, out var legalNeglect);
+            t.Protection = protection * DiplomacyConstants.HoldProtectionWeight;
+            t.LegalNeglect = legalNeglect * DiplomacyConstants.HoldProtectionWeight;
             t.Trust = TrustRegistry.Get(state, vassal, patron) / 100f * DiplomacyConstants.HoldTrustWeight;
             t.Tribute = TributeBurden(treaty, vassal) * DiplomacyConstants.HoldTributeBurdenWeight;
             t.Wars = WarBurden(state, vassal) * DiplomacyConstants.HoldWarBurdenWeight;
@@ -137,14 +148,25 @@ namespace DiplomacyIntrigue.Diplomacy
             // Design 08 S-4: a king vassals follow is a patron vassals hold to. Signed, like Fear.
             t.Authority = Statecraft.StatecraftTerms.Authority(patron);
 
-            t.Raw = DiplomacyConstants.HoldBase + t.Fear + t.Protection + t.Trust
+            t.Raw = DiplomacyConstants.HoldBase + t.Fear + t.Protection - t.LegalNeglect + t.Trust
                     - t.Tribute - t.Wars - t.Rival - t.Culture - t.Dread + t.Authority;
             t.Target = Clamp(t.Raw, 0f, 100f);
             return t;
         }
 
         /// <summary>
-        /// Whether the patron is actually protecting this vassal, from -1 to +1.
+        /// Whether the patron is actually protecting this vassal: the mean, over every war the
+        /// vassal was attacked in, of +1 for a war the patron joined, -1 for one it stayed out
+        /// of, and -<see cref="DiplomacyConstants.HoldLegalNeglectShare"/> for one it stayed out
+        /// of because a treaty with the attacker forbids it to fight. Returned as two parts over
+        /// the same count - <paramref name="protection"/> (joined against ignored, -1 to +1) and
+        /// <paramref name="legalNeglect"/> (the bound wars, 0 up to the share) - so their
+        /// difference is that mean and a breakdown can name each.
+        ///
+        /// A mean over wars, not `ignored += 0.5` in the old ratio: with the half added to both
+        /// sides of (joined - ignored) / (joined + ignored), a vassal whose only war is a bound
+        /// one would still score the full -1, and "half" would show only when mixed with other
+        /// wars. Counted per war, a bound war pulls half as hard as an ignored one in every mix.
         ///
         /// Measured continuously from the current wars rather than as a one-off penalty when a
         /// call goes unanswered, which is a deliberate departure from the spec's discrete
@@ -152,34 +174,96 @@ namespace DiplomacyIntrigue.Diplomacy
         /// Hold, and one that belatedly joins starts earning it back the same day. No event
         /// bookkeeping, no saved flags, and it cannot get stuck.
         /// </summary>
-        private static float Protection(ModState state, Treaty treaty, Kingdom vassal, Kingdom patron)
+        private static void Protection(ModState state, Kingdom vassal, Kingdom patron,
+            out float protection, out float legalNeglect)
         {
             var answered = 0;
             var ignored = 0;
+            var bound = 0;
 
             foreach (var war in state.OngoingWarsOf(vassal))
             {
-                // Only wars in which the vassal was attacked, because that is the whole of
-                // what a patron is called into (CallToArms.Applies). This used to count every
-                // war the vassal was in bar the patron's own summons, so a war the vassal
-                // joined for a defensive-pact partner counted as the patron ignoring it -
-                // judging the patron against a duty it did not have.
-                if (war.Defender != vassal) continue;
-
-                var enemy = war.Aggressor;
-                if (enemy == null || enemy == patron) continue;
-
-                if (patron.IsAtWarWith(enemy)) answered++;
-                // A patron bound by a treaty to the attacker is never called against it
-                // (CallToArms.Applies), so it has not ignored anything. The case that found
-                // this: two vassals of the same patron at war with each other, where the
-                // vassalage itself forbids the patron joining - and the attacked vassal was
-                // charged the full -20 for a protection nobody could have given.
-                else if (!state.HasTreatyForbiddingWar(patron, enemy)) ignored++;
+                switch (AnswerTo(state, war, vassal, patron))
+                {
+                    case Answer.Joined: answered++; break;
+                    case Answer.Ignored: ignored++; break;
+                    case Answer.Bound: bound++; break;
+                }
             }
 
-            if (answered + ignored == 0) return 0f;
-            return (answered - ignored) / (float)(answered + ignored);
+            var wars = answered + ignored + bound;
+            if (wars == 0)
+            {
+                protection = 0f;
+                legalNeglect = 0f;
+                return;
+            }
+            protection = (answered - ignored) / (float)wars;
+            legalNeglect = bound * DiplomacyConstants.HoldLegalNeglectShare / wars;
+        }
+
+        /// <summary>How a patron answered one war its vassal is fighting.</summary>
+        private enum Answer { None, Joined, Ignored, Bound }
+
+        /// <summary>
+        /// How <paramref name="patron"/> answered <paramref name="war"/>, or
+        /// <see cref="Answer.None"/> when the war is not one it owes protection in. The one
+        /// classification behind both the Hold terms and the console line that names the bound
+        /// wars, so the diagnostic cannot count a different set.
+        /// </summary>
+        private static Answer AnswerTo(ModState state, WarRecord war, Kingdom vassal, Kingdom patron)
+        {
+            // Only wars in which the vassal was attacked, because that is the whole of
+            // what a patron is called into (CallToArms.Applies). This used to count every
+            // war the vassal was in bar the patron's own summons, so a war the vassal
+            // joined for a defensive-pact partner counted as the patron ignoring it -
+            // judging the patron against a duty it did not have.
+            if (war == null || war.Defender != vassal) return Answer.None;
+
+            var enemy = war.Aggressor;
+            if (enemy == null || enemy == patron) return Answer.None;
+
+            if (patron.IsAtWarWith(enemy)) return Answer.Joined;
+
+            // A patron bound by a treaty to the attacker - any treaty that forbids war between
+            // them, the same test that keeps it from being called (CallToArms.Applies) - did not
+            // simply look away. But it chose that treaty, and the vassal fights alone just the same:
+            // legal neglect, counted at HoldLegalNeglectShare of an ignored war (TODO 9, option
+            // (a), 2026-09-27).
+            //
+            // Until then this counted as nothing, and that hid a patron bound to every one of its
+            // vassal's attackers behind protection +0.0 for two years (live session 2026-09-19).
+            // The exemption was first made for two vassals of the same patron at war with each
+            // other, where the vassalage forbids the patron joining and the attacked vassal was
+            // charged the full -20. That case is legal neglect now too, at half: the patron holds
+            // both oaths, and a sphere whose members fight each other is one it is not keeping.
+            return state.HasTreatyForbiddingWar(patron, enemy) ? Answer.Bound : Answer.Ignored;
+        }
+
+        /// <summary>
+        /// The wars behind a link's legal-neglect term, named: who is attacking the vassal and
+        /// which treaty keeps the patron out of it. Null when there are none. For the console's
+        /// hegemony breakdown - the figure itself is <see cref="HoldTerms.LegalNeglect"/>.
+        /// </summary>
+        public static string DescribeLegalNeglect(ModState state, Treaty treaty)
+        {
+            var vassal = treaty?.SubordinateParty;
+            var patron = treaty?.DominantParty;
+            if (state == null || vassal == null || patron == null) return null;
+
+            var bound = new List<string>();
+            foreach (var war in state.OngoingWarsOf(vassal))
+            {
+                if (AnswerTo(state, war, vassal, patron) != Answer.Bound) continue;
+                var binding = TreatyEnforcement.FirstBlockingTreaty(state, patron, war.Aggressor);
+                bound.Add(war.Aggressor.Name + " (" + (binding != null ? binding.Type.ToString() : "a treaty") + ")");
+            }
+            if (bound.Count == 0) return null;
+
+            return patron.Name + " is bound by treaty to stay out of " + vassal.Name + "'s war with "
+                   + string.Join(", ", bound.ToArray()) + " - each counts as "
+                   + (DiplomacyConstants.HoldLegalNeglectShare * 100f).ToString("0")
+                   + "% of an ignored war";
         }
 
         /// <summary>
