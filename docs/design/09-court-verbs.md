@@ -26,7 +26,7 @@ act that moves it, and the act costs something.** Loyalty today, term by term
 | Term | Size | What moves it today | The ruler's own lever |
 |---|---|---|---|
 | Relation | ±50 (relation × 0.5) | vanilla: quests, marriage, freed prisoners, dialogue | vanilla only |
-| **Grievances** | −1.5 per point of weight | decay, 0.02 a day at the base rate: a weight-8 wrong takes ~400 days | **none** |
+| **Grievances** | −1.5 per point of weight | decay, 0.0635 a day at the base rate (0.02 until 2026-09-27): a weight-8 wrong takes ~126 days | **none** |
 | Fiefs | ±10 | vanilla fief votes | vanilla |
 | War exhaustion | down to −20 | peace | the peace table |
 | Crown legitimacy | ±10 | wars, treaties, the peace dividend | indirect |

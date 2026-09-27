@@ -143,10 +143,11 @@ you, and a betrayal splits the two apart permanently.
 **Trust fades slowly, and only if nobody tends it.** Relation covers feelings that pass in a
 season; trust is reputation. Goodwill left alone drains to nothing in about two years, a
 grudge about four times as slowly — a broken treaty can shut a court's door to you for
-months — and every day at war drives the number down, faster the longer the war runs, though
+over a year — and every day at war drives the number down, faster the longer the war runs, though
 war alone never takes it below −35, the cost of one betrayal: deeper than that is earned only
 by betraying.
-Any good turn between two courts holds the fading off for a month. Below **−20** a court
+Any good turn between two courts holds the fading off for thirty days - but not a war: the
+day two courts go to war, trust starts falling. Below **−20** a court
 will sign nothing with you but a truce or the terms that end a war — those are never
 refused, because stopping a war has to stay possible however badly everyone has behaved.
 
@@ -165,8 +166,9 @@ exactly what the war has earned you:
   cannot kneel, so you may instead make them release every one of them.
 
 Each demand costs points from that budget, and the package has to fit: prisoners 5, a castle
-25, a town 45, tribute 60, submission 70 (and it always brings the prisoners, so 75), money 8
-per 1,000 denars. You can always ask for less. You cannot ask for land without a territorial
+25, a town 45, tribute 60, submission 70 (and it always brings the prisoners, so 75), and money
+by the loser's purse: each point buys half a percent of what its ruler holds (never less than 125
+denars a point), and no peace takes more than 40% of it. You can always ask for less. You cannot ask for land without a territorial
 claim, however well the war has gone.
 
 The budget is the war score **adjusted by your envoy**. An envoy with better Charm than theirs

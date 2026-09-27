@@ -15,8 +15,9 @@ namespace DiplomacyIntrigue.Models
     /// season. The rebels' map faction (<see cref="Faction"/>) is kept out of all of them on
     /// purpose, and this record is where the war lives instead. Design 07 §3a Q4.
     ///
-    /// Kept after it ends, with its outcome, because "this kingdom fought a civil war two years
-    /// ago" is what stops the next one being declared the day after a stalemate.
+    /// Kept after it ends, with its outcome, because "this kingdom fought a civil war within the
+    /// year" is what stops the next one being declared the day after a stalemate
+    /// (InternalWarCooldownDays, one 84-day campaign year).
     ///
     /// Save ids are frozen. This type is definer class id 13 and uses properties 1-14;
     /// <see cref="InternalWarMember"/> is class id 14. The next free ids are kept in CLAUDE.md §3 only.

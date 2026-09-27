@@ -318,7 +318,7 @@ alone. A day-keyed cache lies under `diplomacy.tick_days` (CLAUDE.md §1).
 | **S-3** | Pact value | 60·threat + 40·proximity + 30·trust − 50·aggression + 25·relation + 40·balancing − 20·ambition. NAP 35, defensive 55, alliance 70; the lower side decides | The side **being asked** adds **+10 · L(proposer's envoy, Charm)** | ±10 | S1 |
 | **S-4** | Hold target | 40 + fear 25 + protection 20 + trust 15 − tribute 20 − wars 15 − rival 25 − culture 10 − dread 25 | **+10 · L(patron's ruler, Leadership)**, "authority" | ±10 | S1 |
 | **S-5** | Fabrication | Exposed on a 20% roll | Exposure = 0.20 × **(1 − 0.5 · C(fabricator's spymaster, target's watch))** | 10–30% | S1 |
-| **S-6** | Grievance fade, legitimacy dividend | Grievances −0.02/day flat. +3 legitimacy per full year of peace | Both × **(1 + 0.5 · L(crown's steward, Steward))** | 0.01–0.03/day; 1.5–4.5/yr | S2 |
+| **S-6** | Grievance fade, legitimacy dividend | Grievances −0.0635/day flat (−0.02 before 2026-09-27). +3 legitimacy per full year of peace | Both × **(1 + 0.5 · L(crown's steward, Steward))** | 0.032–0.095/day; 1.5–4.5/yr | S2 |
 | **S-7** | Loyalty | 50 + relation/2 − 1.5·grievances + 10·fiefs − 0.2·worst exhaustion + 0.2·(legitimacy − 50) | **+5 · L(ruler, Leadership)**, "the crown's presence" | ±5 | S2 |
 | **S-8** | Succession backing | Each house backs the claimant with the best score: relation (+100 for its own claimant; the incumbent adds loyalty × 0.5) | Each claimant's score **+15 · L(claimant, Charm)** | ±15 relation-equivalents | S2 |
 | **S-9** | Bloc leader | The most influential member | The largest **influence × (1 + 0.5 · L(head, Charm))**. Bloc power is unchanged | ×0.5 to ×1.5 on the ranking only | S2 |
@@ -373,7 +373,9 @@ is the defence.
 
 **S-6: recovery.** Grievances are held against a house (the crown when they were taken), so
 their fade reads that house's steward. At Steward 100 (L −0.83) the fade is ×0.58: a weight-8
-grievance lasts **685 days** instead of 400. At Steward 300 it is ×1.25, 320 days. The dividend
+grievance lasts **~215 days** instead of ~126. At Steward 300 it is ×1.25, ~101 days. *(Figures
+recomputed 2026-09-27 for the corrected base rate of 0.0635/day; at the old 0.02 they were 685,
+400 and 320 days.)* The dividend
 is 1.75 or 3.75 a year. `TributeCourt.Assess` inherits all of this through `LoyaltyModel`, with
 no change of its own. This is the lever against the downward spiral found after 2.6: **a
 realm with a good steward heals faster.**

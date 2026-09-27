@@ -482,12 +482,34 @@ namespace DiplomacyIntrigue.Diplomacy
                 var yearsAtPeace = (float)(CampaignTime.Now - war.EndedOn).ToYears;
                 if (yearsAtPeace < DiplomacyConstants.PeaceDividendYears) continue;
 
-                // Only if they have actually stayed at peace since.
+                // Only if they have actually stayed at peace since - unbroken, as
+                // PeaceDividendYears says, not merely at peace today. Until 2026-09-27 this
+                // checked only for a war on the day, so a pair that fought again and made peace
+                // again inside the two years was paid for the earlier peace as if it had held.
+                // A later war between them forfeits this dividend (marked settled, not paid); the
+                // later war's own peace earns its own in its turn.
                 if (war.Aggressor.IsAtWarWith(war.Defender)) continue;
+                if (FoughtAgainSince(state, war))
+                {
+                    war.MarkPeaceDividendPaid();
+                    continue;
+                }
 
                 war.MarkPeaceDividendPaid();
                 TrustRegistry.OnPeaceHeld(state, war.Aggressor, war.Defender);
             }
+        }
+
+        /// <summary>Whether the two sides of <paramref name="ended"/> went to war with each other again after it ended.</summary>
+        private static bool FoughtAgainSince(ModState state, WarRecord ended)
+        {
+            for (var i = 0; i < state.Wars.Count; i++)
+            {
+                var other = state.Wars[i];
+                if (other == ended || !other.IsBetween(ended.Aggressor, ended.Defender)) continue;
+                if (other.StartedOn > ended.EndedOn) return true;
+            }
+            return false;
         }
 
         // ----- Queries --------------------------------------------------------

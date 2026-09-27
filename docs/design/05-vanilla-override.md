@@ -126,8 +126,9 @@ war-decision patch, and vanilla only proposed ~1.1 wars a year in run 02.
 Found while thinking through what the override removes rather than what it adds, and fixed
 before run 03 could be wasted on it.
 
-Exhaustion accrues **0.08/day from elapsed time alone**; the rest comes from casualties. So a
-war between two kingdoms whose armies never actually meet needs about **750 days** to reach
+Exhaustion accrued **0.08/day from elapsed time alone** at the time (0.30 since run 03, which
+makes it about 200 days today); the rest comes from casualties. So a
+war between two kingdoms whose armies never actually meet needed about **750 days** to reach
 the threshold at which either side will negotiate. Every real war in run 02 got there in
 roughly 90 days, but only because blood was being spilled. With vanilla's peace gone, nothing
 would have closed the quiet ones, and the map would have filled up with wars nobody was

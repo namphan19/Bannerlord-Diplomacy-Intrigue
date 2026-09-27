@@ -35,6 +35,13 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         // Widget's Color both take a bound TaleWorlds.Library.Color directly.
         internal static readonly Color PositiveColor = Color.ConvertStringToColor("#9AC26AFF");
         internal static readonly Color NegativeColor = Color.ConvertStringToColor("#E08070FF");
+
+        /// <summary>
+        /// An agreement is drawn in the warning colour once it has less than a season left (21
+        /// days). It was 60 until 2026-09-27, a calendar reflex: a one-year truce is 84 days, so
+        /// it read as expiring for 71% of its term, which made the colour mean nothing.
+        /// </summary>
+        private const float ExpiringSoonDays = 21f;
         internal static readonly Color NeutralColor = Color.ConvertStringToColor("#E0CFA8FF");
         internal static readonly Color MutedColor = Color.ConvertStringToColor("#A89878FF");
         internal static readonly Color GoldColor = Color.ConvertStringToColor("#D9A441FF");
@@ -842,7 +849,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                     TreatyLabel(treaty.Type),
                     Color.FromUint(other.Color),
                     TermLeft(treaty),
-                    daysLeft >= 0f && daysLeft < 60f ? NegativeColor : MutedColor,
+                    daysLeft >= 0f && daysLeft < ExpiringSoonDays ? NegativeColor : MutedColor,
                     AgreementDetail(treaty, us, other)));
 
                 if (treaty.TributeAmount > 0 && treaty.TributePayer != null)

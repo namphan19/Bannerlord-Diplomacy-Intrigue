@@ -188,7 +188,7 @@ target =  40
         + 20 * protectionScore                                         // did they defend me
         + 15 * trust(vassal -> patron) / 100                           // and can I trust them
         - 20 * tributeBurden                                           // tribute vs my income
-        - 15 * warBurden                                               // obligation wars in the last year, capped at 3
+        - 15 * warBurden                                               // obligation wars ongoing at once, capped at 3 (the code; the spec said "in the last year")
         - 25 * bestRivalOffer                                          // someone else offers protection
         - 10 * cultureMismatch
 ```

@@ -278,7 +278,7 @@ vassal, before any war), `test_set_legitimacy <kingdom> | <value>`, `test_impris
 (the 30-day captivity rule), and the vanilla `campaign.add_hero_relation <id> | <id> | <value>`,
 which sets a relation between two NPCs (use string ids such as `lord_4_3`; names are ambiguous).
 The daily tick that `tick_days` runs includes the trigger, so a met trigger rises on the next
-`tick_days 1` - only the 365-day cooldown after a war needs the real clock. Note that `sign_treaty` with
+`tick_days 1` - only the 84-day cooldown after a war needs the real clock. Note that `sign_treaty` with
 `Vassalage` calls `TreatyRegistry.Sign` **directly** — it skips `Hegemony.Submit`, so the link
 it makes has no starting Hold, no call to arms and no sibling reconciliation. It is a treaty
 row, not a submission, and it cannot be used to test anything downstream of `Submit`.

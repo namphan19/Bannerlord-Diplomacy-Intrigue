@@ -32,7 +32,7 @@ Applied on the daily tick and on the events listed. All values multiplied by the
 
 | Source | Amount | Applies to |
 |---|---|---|
-| Time at war | **+0.08 / day** | both sides |
+| Time at war | **+0.30 / day** (0.08 until run 03; `ExhaustionPerDayAtWar`) | both sides |
 | Battle casualties | **`losses / max(1, manpower/100)`** | the side that took them |
 | Town lost | **+6.0** | former owner |
 | Castle lost | **+3.0** | former owner |
@@ -50,7 +50,7 @@ replacing.
 
 Exhaustion does not decay while the war runs — that is the point. On peace the record closes
 and its final exhaustion is carried into a per-kingdom **weariness** pool that decays at
-**−0.15/day**. Weariness raises the influence cost of declaring a *new* war, so a kingdom
+**2% of the remaining pool a day** (a flat −0.15/day until run 02 saturated it; STATUS-history, "War initiation taken over from vanilla"). Weariness raises the influence cost of declaring a *new* war, so a kingdom
 that just fought a long war cannot immediately start another.
 
 ### 1.3 Thresholds
@@ -77,7 +77,13 @@ Exhaustion says *how tired*; war score says *who is winning*. Peace terms read w
 *willingness* reads exhaustion. The score belongs to the war, not to a party: a battle fought by
 any lord of the kingdom counts for the kingdom.
 
-| Event | War score delta |
+**Superseded by [design 10](10-war-score.md) (2026-09-27).** War score is now earned from the
+fighting alone: each battle's losses as a share of the manpower each side had at the war's start
+(sieges included, fief captures and raids scoring nothing), plus the enemy lords each side holds
+prisoner, with battle points decaying at a 42-day half-life. The table and the two paragraphs after
+it describe the formula design 10 replaced and are kept for the history of runs 01-08.
+
+| Event | War score delta (before design 10) |
 |---|---|
 | Field battle won | `±clamp(6 * (enemyLosses − ownLosses) / max(100, total), 1, 8)` |
 | Town captured | **±12** |

@@ -156,7 +156,7 @@ Deviation from this spec, deliberately: the design listed demand **tiers**
 costs war-score points and the package must fit what the war earned. Same intent, no
 exclusive-or branches, and a new demand type is one constant instead of a rewritten table.
 Prices today: prisoners 5, castle 25, town 45, tribute 60, subjugation 70 (75 with the prisoners
-it carries), money 8 per 1,000 denars. The budget is the war score × the envoys' contest (design 08
+it carries), money by the loser's purse (0.5% of its ruler's gold a point, at least 125 denars, at most 40% of it - 2026-09-27). The budget is the war score × the envoys' contest (design 08
 S-2), zero at a raw score of 20 or below; from 75 up the winner demands subjugation and nothing
 less (design/04 §13). War score itself is unbounded since 2026-09-20.
 
@@ -407,7 +407,7 @@ unresolved, stated plainly:
 |---|---|---|
 | **§13** — merged subjugation rung, the cliff at 75, reachable ceiling, indemnity resize, threshold 50 | **measured by balance run 08** (2026-09-26, 20 in-game years, 0 errors): all five questions of [design/04 §13.7](design/04-hegemony.md#137-what-the-next-run-must-answer) answered. Tribute has vanished from the peace table, and 2 imposed links formed in ten years, not the multiple expected. Whether that calls for a change is the lead's call | the lead |
 | Strength margin on `IsStrongEnoughToHold` ([design/04 §13.6](design/04-hegemony.md)) | **Run 08 (2026-09-26): no link doomed at signing in 20 in-game years** (lowest starting target 24.1, at ratio 1.10). Left as it is | Phase 4 |
-| Whether the indemnity price should bite ([design/04 §13.4](design/04-hegemony.md)) | **undecided** — 8 points per 1,000 denars is trivial against a late-game treasury | Phase 4 |
+| Whether the indemnity price should bite ([design/04 §13.4](design/04-hegemony.md)) | **decided 2026-09-27** (tech lead, on the lead's delegation): priced against the loser's treasury - 0.5% of its ruler's gold per point, a 125-denar floor, a 40% ceiling. Built, not run | Phase 4 run |
 | Peace-table multi-selection checklist against a real budget | **unverified in a live game** — `save007`'s wars are all war score ~0, so only the white-peace short path has been seen on screen | first run that produces a war with terms |
 | AI → player incoming peace-offer inquiry | **unverified in a live game**, same reason | as above |
 | Battle casualties and siege capture feeding exhaustion | wired, reviewed, exercised in long runs — never asserted against hand-computed values | Phase 4 |

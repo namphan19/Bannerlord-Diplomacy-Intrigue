@@ -368,7 +368,7 @@ namespace DiplomacyIntrigue.Diplomacy
         /// it has been going and however much has added up.
         ///
         /// Judging dormancy on a *total* casualty count has a blind spot: a war that creeps
-        /// past 300 casualties over a year can never be closed by the absolute rule, however
+        /// past 300 casualties over two years can never be closed by the absolute rule, however
         /// little is happening in it. A rate catches that; a total cannot.
         ///
         /// **A correction to my own earlier reasoning.** I first justified this by claiming

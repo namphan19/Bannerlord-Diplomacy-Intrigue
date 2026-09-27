@@ -31,10 +31,12 @@ namespace DiplomacyIntrigue.Diplomacy
         /// blood spilled.
         ///
         /// This exists because taking peace from vanilla exposed a gap vanilla had been
-        /// quietly covering. Exhaustion accrues 0.08/day from elapsed time alone, so a war
-        /// between kingdoms that never meet needs **750 days** to reach the threshold at which
-        /// either side will negotiate - every real war in run 02 got there in about 90 days,
-        /// but only because casualties did the work. With no vanilla peace left, distant wars
+        /// quietly covering. Exhaustion accrued 0.08/day from elapsed time alone at the time, so
+        /// a war between kingdoms that never meet needed **750 days** to reach the threshold at
+        /// which either side will negotiate - every real war in run 02 got there in about 90
+        /// days, but only because casualties did the work. (The rate is 0.30/day since run 03,
+        /// <see cref="DiplomacyConstants.ExhaustionPerDayAtWar"/>, so that is 200 days now:
+        /// still over two campaign years.) With no vanilla peace left, distant wars
         /// would simply stay open, and run 03 would have measured a map filling up with wars
         /// nobody was fighting.
         ///

@@ -112,8 +112,15 @@ namespace DiplomacyIntrigue.Espionage
         /// rising's side if an internal war starts in its realm (design 03 §2, "within 2 years").
         /// One window rather than a second duration for the loyalty term, the lead's call of
         /// 2026-09-25. UN-TUNED.
+        ///
+        /// Two **campaign** years: 2 x 84 = 168 days. It was 730 until 2026-09-27 - two calendar
+        /// years, which is 8.7 campaign years, while every "two years" the player reads about a
+        /// bribe (the offer, the Intelligence tab, the notices) meant two campaign years. The same
+        /// class of error as GrievanceDecayPerDay and InternalWarCooldownDays. Kept in days, not
+        /// years, because KeepDays and the days-left readout are day counts. A bribe older than
+        /// 168 days on an existing save lapses on the next daily prune; no save change is needed.
         /// </summary>
-        public const int BribeWindowDays = 730;
+        public const int BribeWindowDays = 168;
 
         /// <summary>
         /// A resolved mission is kept this long, then dropped: longer than the longest reveal, so

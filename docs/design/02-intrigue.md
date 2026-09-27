@@ -41,8 +41,10 @@ a date. Nothing is recomputed from world state: a grievance is a thing that *hap
 | Peace signed while they were winning | **3** | Hawks specifically |
 | Ruler refused their request | **2** | |
 
-**Decay: −0.02/day** on every grievance, removed at zero. A grievance nobody compounds
-fades in roughly a year and a half; a court that keeps being slighted never clears.
+**Decay: −0.0635/day** on every grievance, removed at zero. A grievance nobody compounds
+fades in roughly a year and a half (a weight-8 wrong in ~126 days; the campaign year is 84); a court
+that keeps being slighted never clears. *(It was −0.02/day until 2026-09-27 - 400 days, 4.8 campaign
+years - a constant copied against a 365-day year; `IntrigueConstants.GrievanceDecayPerDay`.)*
 
 Design note: grievances are the mechanism that makes *the player's* decisions as king have
 consequences beyond a relation number. Handing a town to a favourite is no longer free.
