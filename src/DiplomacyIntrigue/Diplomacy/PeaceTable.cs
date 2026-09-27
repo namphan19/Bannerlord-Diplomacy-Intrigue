@@ -91,7 +91,7 @@ namespace DiplomacyIntrigue.Diplomacy
         /// </summary>
         public static float BudgetFor(WarRecord war, Kingdom winner)
         {
-            var score = war.ScoreFor(winner);
+            var score = WarScore.For(war, winner);
             return score <= DiplomacyConstants.PeaceWhitePeaceOnlyBelow
                 ? 0f
                 : score * Statecraft.StatecraftTerms.NegotiationFactor(winner, war.Other(winner));
@@ -359,7 +359,7 @@ namespace DiplomacyIntrigue.Diplomacy
         public static bool WouldAccept(ModState state, WarRecord war, PeaceTerms terms, out string reason)
         {
             var loser = terms.Loser;
-            var scoreAgainstThem = -war.ScoreFor(loser);
+            var scoreAgainstThem = -WarScore.For(war, loser);
             var exhaustion = war.ExhaustionOf(loser);
 
             // Nobody defends a war they are not fighting. A dormant war (see
@@ -634,18 +634,20 @@ namespace DiplomacyIntrigue.Diplomacy
         {
             var budget = BudgetFor(war, winner);
             if (budget <= 0f)
-                return "War score " + war.ScoreFor(winner).ToString("0.0")
-                       + ": nothing has been earned. White peace only.";
+                return "War score " + WarScore.For(war, winner).ToString("0.0")
+                       + ": nothing has been earned. White peace only.\n  "
+                       + WarScore.Describe(war, winner);
 
             var loser = war.Other(winner);
             var hasClaim = ClaimRegistry.HasTerritorialClaim(state, winner, loser);
 
             var lines = new List<string>
             {
-                "War score " + war.ScoreFor(winner).ToString("0.0") + " gives a budget of " + budget.ToString("0")
+                "War score " + WarScore.For(war, winner).ToString("0.0") + " gives a budget of " + budget.ToString("0")
                     + ", and we will not settle for less than "
                     + MinimumAcceptable(state, war, winner).ToString("0")
                     + " (dearest reachable: " + DearestDemandable(state, war, winner).ToString("0") + ").",
+                "  " + WarScore.Describe(war, winner),
                 "  " + Statecraft.StatecraftTerms.NegotiationLine(winner, loser),
                 "  town              " + DiplomacyConstants.PeaceCostTown.ToString("0")
                     + (hasClaim ? "" : "   (blocked: no territorial claim)"),
@@ -664,7 +666,7 @@ namespace DiplomacyIntrigue.Diplomacy
                     + LargestIndemnity(war, winner, loser).ToString("0") + " here",
                 "Their exhaustion is " + war.ExhaustionOf(loser).ToString("0.0")
                     + "; they start listening at " + (DiplomacyConstants.ExhaustionSeekPeace
-                        - (-war.ScoreFor(loser)) / 2f).ToString("0.0") + "."
+                        - (-WarScore.For(war, loser)) / 2f).ToString("0.0") + "."
             };
             return string.Join("\n", lines);
         }

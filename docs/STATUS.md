@@ -1,4 +1,4 @@
-# Status — 2026-09-26
+# Status — 2026-09-27
 
 Point-in-time state, and only the current part of it. [CLAUDE.md](../CLAUDE.md) holds what is
 always true. [TODO.md](../TODO.md) is the one list of open decisions and pending work.
@@ -12,6 +12,40 @@ the next free ones are kept in CLAUDE.md §3 and nowhere else; `scripts/check-sa
 checks the declarations before every build and deploy.
 Last completed measurement: **balance run 08** (statecraft on/off) — [balance/run-08.md](balance/run-08.md).
 Branch `development`. `main` sits 85 commits behind on purpose: cutting a release is Phase 4's job.
+**Working tree is dirty** with design 10 (war score) mid-flight — see below; nothing in this
+section is committed yet.
+
+## Start here — 2026-09-27
+
+**Design 10, war score measured in the fighting, is built (W1+W2) and had its first live check**
+([design/10](design/10-war-score.md)). It replaces the old fief/raid-based war score with one
+earned from battles (each side's manpower lost, as a share of what it fielded, sieges included)
+and the lords each side holds prisoner — the same rework that also touched war exhaustion,
+`WarRecord`, `CoreBehavior`, `PeaceTable` and the diagnostics. Not committed: this is still on
+disk against the working tree, one commit behind (`e20a355` was the design draft only).
+
+- **Live check on `testmod_claude_1`** (player rules Khuzait, four wars already running), Summer
+  9 to Summer 17, 1084 at speed-up 30, 0 errors. Manpower snapshots and battle scoring matched a
+  by-hand check for 3 of 4 sampled battles; the fourth (a siege where the defender's manpower read
+  0) is unexplained and flagged for the next run rather than papered over (design/10 §9a).
+- **D2 (prisoner weights) is reopened the same day it was decided.** Vanilla takes lords in almost
+  every battle and holds many for weeks; at the agreed 20/10/5 uncapped, the prisoner term alone
+  swung a war's score by 30-75 points within two weeks and pushed one kingdom past the
+  subjugation cliff on prisoners alone. §7 of the design named this risk before the check; the
+  check shows it is larger than written there. **Back with the lead — D1, D2 and D6 are all open**
+  (design/10 §10).
+- **Two unrelated constants were corrected the same day, decided by the lead:**
+  `GrievanceDecayPerDay` (0.02 → 0.0635, so an 8-weight grievance now fades in ~126 days, "a year
+  and a half" as design/02 §1 always said — at the old value it took 4.8 years) and
+  `InternalWarCooldownDays` (365 → 84, one real campaign year — 365 calendar days is 4.3 game
+  years, likely part of why civil war has been rare in every run). Both were miscopied against
+  the 84-day campaign year, the same class of error as the net6.0/net472 mistake. Design 07's
+  cooldown line and design 10's own momentum half-life (was "70 days, about a season" — 70 days is
+  nearly a year; now 42, two seasons) are corrected to match. No other constant has been checked
+  against the 84-day year yet.
+- **Not yet done:** the balance run design/10 §9 asks for (20 years, tributes and subjugations per
+  decade, which component closed each war) — blocked on D1/D2 being settled, since the numbers
+  would be re-measured under whatever weights the lead picks.
 
 ## Start here — 2026-09-26
 
@@ -91,12 +125,17 @@ Trust" twice. **2.9 is built: C1, C2, C3.**
 | Phase | State |
 |---|---|
 | **0 — Foundation** | ✅ done, verified in a live campaign |
-| **1 — Diplomacy core (1.1–1.12)** | ✅ **accepted by the lead, 2026-09-23**. Code complete including submission and hegemony (1.9/1.10), the vanilla takeover (1.11) and power (1.12). Measured over runs 01–08; run 08 answered the §13.7 questions the §13 rework had left open. Carried debt: [ROADMAP.md](ROADMAP.md#phase-1--accepted-by-the-project-lead-2026-09-23) and "Not verified — carried" below |
+| **1 — Diplomacy core (1.1–1.12)** | ✅ **accepted by the lead, 2026-09-23**. Code complete including submission and hegemony (1.9/1.10), the vanilla takeover (1.11) and power (1.12). Measured over runs 01–08; run 08 answered the §13.7 questions the §13 rework had left open. **War score is being reworked under it since 2026-09-27** ([design/10](design/10-war-score.md), built and live-checked, D1/D2/D6 open with the lead) — acceptance stands, but the numbers behind it are mid-change. Carried debt: [ROADMAP.md](ROADMAP.md#phase-1--accepted-by-the-project-lead-2026-09-23) and "Not verified — carried" below |
 | **2 — Court intrigue** | 🔄 2.1–2.7 built and verified live on their main paths; **2.8 Statecraft** built and run live 2026-09-26 (S0–S2; S3 is run 08; S4 became design/09's C2; S5 traits waits); **2.9 Court verbs**: C1 make amends built and run live 2026-09-26, C1, C2 and C3 built and run live. The acceptance line is met by C1 under the lead's reading (prevention, design/09 D16); formal acceptance is the lead's |
 | **3 — Espionage** | ⏸ **parked by the lead, 2026-09-26.** 3.1–3.7 built and run live ([design/03 §10](design/03-espionage.md)). The AI's handlers are still taken by vanilla, so an AI network never grows (TODO 3) |
 | **4 — Integration, balance, release** | 🔄 runs 01–08 archived; **run 08** is the current reference. The civil-war balance needs its own run (TODO 4) |
 
 ## What to do next
+
+**Design 10, war score — waiting on the lead.** D1 (battle weight/cap/win award), D2 (prisoner
+weights, reopened) and D6 (annex-the-rest-at-the-table) are open. Once decided: apply, commit,
+then the 20-year balance run design/10 §9 asks for. Also worth ten minutes: the unexplained
+zero-manpower siege defender in the §9a check, before trusting the breakdown fully.
 
 **Phase 2's court verbs (R-2), [design/09](design/09-court-verbs.md).** C1 is built and run live.
 2.9 is built (C1, C2, C3, D16-D17). Next: a balance run with the court verbs in the world - five of
@@ -107,7 +146,8 @@ stay as they are, the lead's call of 2026-09-26.
 Work that needs no decision:
 
 1. **A civil-war balance run** from a save with a strained court. Run 08 saw no internal war and
-   no contested succession in 20 in-game years.
+   no contested succession in 20 in-game years. `InternalWarCooldownDays`'s 2026-09-27 fix (365 →
+   84) may already change this — worth a fresh look before scheduling a dedicated run.
 2. **A `tribute_refused` telemetry event**, so `AiTributeCourtRefusalShare` can be tuned.
 3. **Espionage, when the lead unparks it:** the 3.6 handler blocker first (TODO.md, pending work).
 4. **The carried unverified items below**, whenever a session is in the game anyway.
@@ -139,12 +179,16 @@ Short on purpose; each line points to where the detail is.
 - **2.9 C1:** the AI skipping an answer that moves nothing, in a case where that changes its pick; a
   player serving an AI king being told the king answered their house; the Encyclopedia ledger,
   which now leaves answered records out ([design/09 §8](design/09-court-verbs.md)).
+- **Design 10, war score:** the 20-year balance run, blocked on D1/D2/D6; a siege where the
+  defender's manpower read 0 in the §9a check, unexplained; carrying an old-save `WarScore` over
+  as `BattleScore` under the new decay, never exercised on a real reload ([design/10 §9a](design/10-war-score.md)).
 
 ## Saves
 
 | Save | State |
 |---|---|
 | `di_fresh_1084` | **Summer 1, 1084, pristine start, hero parked in Myzea.** The run-08 baseline |
+| `testmod_claude_1` | Khuzait, player-ruled, four wars already running. Left at Summer 17, 1084 — the design/10 §9a war-score live check, stopped by an inquiry addressed to the player |
 | `di_tribute_test` | `di_grievance_test` + a Khuzait <- Sturgia vassalage (by `sign_treaty`) set to Heavy on 2026-09-26, 16 days into its lock. The save for checking `Treaty.TributeSetOn` after a reload |
 | `di_offices_test` | `di_grievance_test` after C2's checks (2026-09-26): Khada of Arkit holds Khuzait's Spymaster seat, Koltit took a seat back as a grievance. The save for checking `CourtOffice` after a reload |
 | `di_amends_test` | `di_grievance_test` after one amends (2026-09-26): Urkhunait answered and remembered, then wronged again at 12.0, its next amends at x2. The save for checking C1 after a reload |

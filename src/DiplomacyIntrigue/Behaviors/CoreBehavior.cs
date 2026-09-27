@@ -204,6 +204,18 @@ namespace DiplomacyIntrigue.Behaviors
                 }
             }
             if (opened > 0) Log.Info("Core", "Backfilled " + opened + " pre-existing war(s).");
+
+            // Wars from a save made before design 10 have no manpower recorded; today's is the
+            // best figure left. Also covers the records backfilled just above.
+            var filled = 0;
+            foreach (var war in _state.Wars)
+            {
+                if (!war.IsOngoing) continue;
+                if (war.AggressorManpowerAtStart > 0 && war.DefenderManpowerAtStart > 0) continue;
+                WarScore.EnsureManpower(war);
+                filled++;
+            }
+            if (filled > 0) Log.Info("Core", "Recorded manpower for " + filled + " war(s) opened before it was tracked.");
         }
 
         private void OnWarDeclared(IFaction attacker, IFaction defender, DeclareWarAction.DeclareWarDetail detail)
@@ -222,7 +234,9 @@ namespace DiplomacyIntrigue.Behaviors
                 // One resolver for everyone - see CasusBelli.Resolve for why.
                 var cb = CasusBelli.Resolve(_state, a, d, detail);
 
-                _state.Wars.Add(new WarRecord(a, d, cb));
+                var war = new WarRecord(a, d, cb);
+                WarScore.EnsureManpower(war);
+                _state.Wars.Add(war);
                 Telemetry.Event("war_opened", "aggressor", a, "defender", d, "detail", detail,
                     "casusBelli", cb, "legitimacy", CasusBelli.Legitimacy(cb));
                 Log.Info("Core", "War opened: " + a.Name + " -> " + d.Name + " (" + detail + " => " + cb

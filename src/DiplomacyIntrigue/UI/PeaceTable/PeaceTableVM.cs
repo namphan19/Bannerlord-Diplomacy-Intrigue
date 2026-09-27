@@ -320,7 +320,7 @@ namespace DiplomacyIntrigue.UI.Negotiation
                          // Design 08 S-2: the budget is the score as the envoys argued it.
                          + (budget > 0f && Statecraft.StatecraftModel.Enabled
                              ? " " + Statecraft.StatecraftTerms.NegotiationLine(winner, loser)
-                               + " (war score " + _war.ScoreFor(winner).ToString("0") + ")."
+                               + " (war score " + WarScore.For(_war, winner).ToString("0") + ")."
                              : "");
 
             var cliff = PeaceTable.SubjugationCost;
@@ -358,7 +358,7 @@ namespace DiplomacyIntrigue.UI.Negotiation
             var conceding = _weAreWinner;
             var winner = _incoming.Winner;
             var cost = PeaceTable.CostOf(_incoming);
-            var theirScore = _war.ScoreFor(_them);
+            var theirScore = WarScore.For(_war, _them);
             BudgetLabel = conceding
                 ? "What " + _them.Name + "'s offer costs them"
                 : "What " + _them.Name + " asks of you";

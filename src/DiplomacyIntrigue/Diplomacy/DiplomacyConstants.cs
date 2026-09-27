@@ -127,30 +127,63 @@ namespace DiplomacyIntrigue.Diplomacy
 
         public const float WearinessMax = 100f;
 
-        // ---- War score ------------------------------------------------------
-        // Unbounded, positive means the war's aggressor is ahead. See WarRecord.AddWarScore
+        // ---- War score (design 10) --------------------------------------------
+        // Unbounded, positive means the war's aggressor is ahead. See WarRecord.AddBattleScore
         // and design/04 §12.4.1 for why the ceiling moved to the demand side.
         // Exhaustion says how tired a side is; war score says who is winning.
         // Peace *willingness* reads exhaustion, peace *terms* read war score.
-
-        /// <summary>Scales the casualty differential of a field battle into war score.</summary>
-        public const float WarScoreBattleFactor = 6f;
-
-        /// <summary>Denominator floor, so a skirmish between scouts cannot swing a war.</summary>
-        public const float WarScoreBattleMinTotal = 100f;
-
-        public const float WarScoreBattleMin = 1f;
-        public const float WarScoreBattleMax = 8f;
-
-        public const float WarScorePerTownCaptured = 12f;
-        public const float WarScorePerCastleCaptured = 6f;
-        public const float WarScorePerVillageRaided = 1.5f;
+        //
+        // War score = battles + prisoners, and nothing else (the lead, 2026-09-27). Captured
+        // fiefs and raided villages score nothing: a fief is kept at the peace anyway, and a
+        // raid is not a battle between armies. Both still cost the victim exhaustion.
 
         /// <summary>
-        /// Daily pull toward zero. A stalemate should drift to a white peace rather than
-        /// sit on a score earned by one battle two years ago.
+        /// Points per whole share of an army lost: a battle scores this times the share of its
+        /// war-start manpower the enemy lost, minus the same for our own losses. UN-TUNED: at 120,
+        /// breaking a fifth of an enemy's army at modest cost is worth ~23, and three such
+        /// victories in a season reach the tribute rung (design 10 §5).
         /// </summary>
-        public const float WarScoreDriftPerDay = 0.05f;
+        public const float WarScoreLossShareWeight = 120f;
+
+        /// <summary>
+        /// Most one battle's proportional part can move the score, either way: a quarter of an
+        /// army lost net. UN-TUNED. One freak battle cannot decide a war on its own.
+        /// </summary>
+        public const float WarScoreBattleCap = 30f;
+
+        /// <summary>
+        /// Awarded to the side that wins a battle, on top of the proportional part - the lead's
+        /// call of 2026-09-27: a victory is worth something in itself. UN-TUNED at 3.
+        /// </summary>
+        public const float WarScoreWinPoints = 3f;
+
+        /// <summary>
+        /// The win award needs a loser that fielded at least this many men, militia excluded.
+        /// UN-TUNED. Without it, ten skirmishes against 30-man parties would pay 30 points and
+        /// reopen the fault design 10 closes (F3). The old formula had the same guard at 100.
+        /// </summary>
+        public const int WarScoreWinMinMen = 100;
+
+        /// <summary>
+        /// Fraction of the battle score shed per day: a half-life of 42 days, two seasons of the
+        /// 84-day year. UN-TUNED. Proportional, so a great victory fades at the rate a small one
+        /// does; the flat 0.05/day it replaced took a 70-point lead 1,400 days to clear and a
+        /// 5-point one 100.
+        /// </summary>
+        public const float WarScoreDecayFractionPerDay = 0.0165f;
+
+        /// <summary>Floor on the daily shed, so a small score finishes clearing. UN-TUNED.</summary>
+        public const float WarScoreDecayMinimumPerDay = 0.05f;
+
+        /// <summary>
+        /// Points for each enemy lord a side holds prisoner, while it holds them. The lead's
+        /// values of 2026-09-27, with no cap: a side holding the enemy ruler and five clan
+        /// leaders reaches the subjugation cliff (75) on prisoners alone. That departs, on
+        /// purpose, from the rule the other valuations follow (no single term clears the bar).
+        /// </summary>
+        public const float WarScorePrisonerRuler = 20f;
+        public const float WarScorePrisonerClanLeader = 10f;
+        public const float WarScorePrisonerLord = 5f;
 
         // ---- Casus belli ----------------------------------------------------
 

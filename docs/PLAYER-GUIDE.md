@@ -32,7 +32,7 @@ Two separate numbers decide two different things. Keeping them apart is the whol
 | | What it measures | What it decides |
 |---|---|---|
 | **War exhaustion** | how worn down a kingdom is: days at war, casualties against your size, fiefs lost, villages raided, sieges endured | whether a court will **sign** anything |
-| **War score** | who is winning: battles, captures, raids | what the winner may **demand** |
+| **War score** | who is winning: battles, and the lords each side holds | what the winner may **demand** |
 
 A winner who is exhausted takes a white peace. A loser who is still fresh refuses to be
 carved up and fights on. Being ahead is not enough to dictate terms, and being tired is not
@@ -174,9 +174,22 @@ stretches it by up to 15%, a worse one shrinks it as much, so submission can com
 anywhere from a war score of about 65 to about 88. The floor of 20 is the raw score: no envoy
 talks a stalemate into a victory.
 
-What earns war score: a field battle is worth 1 to 8 by how lopsided the losses were; taking a
-town 12, a castle 6; raiding a village 1.5. A siege assault's own casualties earn nothing - only
-the capture does. An idle war slides back toward zero by 0.05 a day.
+What earns war score is the fighting, and the lords you hold:
+
+- **Battles.** Each battle is scored by the share of each army it destroyed, measured against
+  what that realm had in its lord parties and garrisons when the war began: 120 points for a
+  whole army, yours subtracted from theirs, at most 30 either way in one battle. Men killed or
+  taken prisoner count; the wounded of a side that holds the field do not. Winning a battle adds
+  3 more, if the loser brought at least 100 men. A siege assault is a battle like any other, and
+  a garrison that falls with its town is men taken prisoner.
+- **Prisoners.** Every enemy lord you hold is worth points for as long as you hold him: their
+  ruler 20, a clan leader 10, any other lord 5. Ransom him, release him or let him escape and the
+  points go with him.
+- **Not land, not raids.** Taking a town or a castle scores nothing: you keep it at the peace
+  anyway. Raiding a village scores nothing either. Both still wear the victim down.
+
+Victories fade: the battle part loses about 1.65% of itself each day, half in 42 days. Sign
+while a victory is fresh.
 
 Above 75 the AI stops accepting anything smaller: a victory that can take a kingdom's standing
 asks for it, rather than settling for tribute. Between about 65 and 75 tribute is still what a

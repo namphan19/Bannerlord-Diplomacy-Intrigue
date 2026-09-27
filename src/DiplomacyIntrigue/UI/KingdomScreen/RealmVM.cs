@@ -603,7 +603,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 var enemy = war.Other(us);
                 if (enemy == null) continue;
                 var target = enemy;
-                var score = war.ScoreFor(us);
+                var score = WarScore.For(war, us);
                 var budget = PeaceTable.BudgetFor(war, us);
                 var allowance = PeaceTable.DescribeAllowance(state, war, us);
                 // The mockup's button label and sub differ by what the war has earned, and

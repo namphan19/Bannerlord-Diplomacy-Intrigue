@@ -18,13 +18,12 @@ namespace DiplomacyIntrigue.Intrigue
         // ----- Grievances (design 02 §1) --------------------------------------
 
         /// <summary>
-        /// Weight lost per day. UN-TUNED: design 02 §1's figure, which puts an uncompounded
-        /// grievance of weight 8 at zero in ~400 days. Design 02 describes that as "fades in
-        /// roughly a year and a half", but the campaign year is 84 days, so 400 days is **~4.8
-        /// years**. The words and the number disagree; a year and a half would be ~126 days, a
-        /// rate of ~0.063. Which one was meant is the lead's call, so the number is unchanged.
+        /// Weight lost per day. UN-TUNED: sized so the heaviest uncompounded grievance (weight 8)
+        /// reaches zero in ~126 days, a year and a half at the campaign's 84-day year, matching
+        /// design 02 §1's words. The lead confirmed this reading on 2026-09-27; the previous 0.02
+        /// put the same grievance at ~400 days (~4.8 years), which the words never meant.
         /// </summary>
-        public const float GrievanceDecayPerDay = 0.02f;
+        public const float GrievanceDecayPerDay = 0.0635f;
 
         /// <summary>
         /// A fief they bid for went to a rival. UN-TUNED. The heaviest single slight in the
@@ -320,11 +319,11 @@ namespace DiplomacyIntrigue.Intrigue
         /// Without it a stalemate - which leaves the claim standing and the court as divided as
         /// it was - would re-trigger the war the next morning.
         ///
-        /// 365 campaign days is **~4.3 years** (the year is 84 days). Nothing records whether
-        /// "one year" was meant, which would be 84; the figure looks like a calendar-year
-        /// conversion. Left for the lead to decide, since it changes how often realms split.
+        /// One campaign year, at 84 days. The lead confirmed this reading on 2026-09-27; the
+        /// previous 365 was a calendar-year figure never converted, which made the real wait
+        /// ~4.3 years and was likely the main reason civil wars came back rare in run 08.
         /// </summary>
-        public const float InternalWarCooldownDays = 365f;
+        public const float InternalWarCooldownDays = 84f;
 
         /// <summary>
         /// Days before the player, as a claimant, is asked again after declining to raise the

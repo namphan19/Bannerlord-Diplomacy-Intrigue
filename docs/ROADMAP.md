@@ -47,7 +47,11 @@ The pillar everything else hangs off. Playable target: *wars end for reasons, an
 **1.1 War exhaustion** ✅ **implemented** — accrues from elapsed time, battle casualties
 (divided by kingdom strength, so it is relative to size), lost towns and castles, raided
 villages, sieges endured and enemy-occupied fiefs. War score tracked separately, with a
-daily drift toward zero so stalemates trend to a white peace. On peace, half the exhaustion
+daily decay toward zero so stalemates trend to a white peace; since 2026-09-27 it is earned by
+battles (the share of each army lost, sieges included) and the lords each side holds, not by
+land or raids ([design/10](design/10-war-score.md), **built and given a first live check
+2026-09-27; the prisoner weights it was checked against are already back with the lead, D2**).
+On peace, half the exhaustion
 carries into a per-kingdom weariness pool that decays at 0.15/day.
 Code: `Diplomacy/WarExhaustion.cs`, `Diplomacy/DiplomacyConstants.cs`,
 `Behaviors/WarExhaustionBehavior.cs`, `Models/KingdomWeariness.cs`.

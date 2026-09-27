@@ -1,4 +1,5 @@
 using DiplomacyIntrigue.Core;
+using DiplomacyIntrigue.Diplomacy;
 using DiplomacyIntrigue.Models;
 using TaleWorlds.CampaignSystem;
 
@@ -86,7 +87,7 @@ namespace DiplomacyIntrigue.Intrigue
         {
             if (state == null || war == null) return;
 
-            var score = war.ScoreFor(war.Aggressor);
+            var score = WarScore.For(war, war.Aggressor);
             if (score > -IntrigueConstants.LegitimacyDecisiveScore
                 && score < IntrigueConstants.LegitimacyDecisiveScore)
                 return;   // a white peace: no victor, no verdict

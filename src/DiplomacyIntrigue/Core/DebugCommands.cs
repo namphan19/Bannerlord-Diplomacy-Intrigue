@@ -67,7 +67,9 @@ namespace DiplomacyIntrigue.Core
                 if (!war.IsOngoing) continue;
                 sb.AppendLine(war + " days=" + war.DaysElapsed.ToString("0")
                               + " casualties=" + war.AggressorCasualties + "/" + war.DefenderCasualties
-                              + " fiefs=" + war.FiefsTakenByAggressor + "/" + war.FiefsTakenByDefender);
+                              + " fiefs=" + war.FiefsTakenByAggressor + "/" + war.FiefsTakenByDefender
+                              + " manpowerAtStart=" + war.AggressorManpowerAtStart + "/" + war.DefenderManpowerAtStart);
+                sb.AppendLine("  " + war.Aggressor.Name + ": " + WarScore.Describe(war, war.Aggressor));
                 count++;
             }
             return count == 0 ? "No ongoing wars on record." : sb.ToString();
@@ -1894,11 +1896,13 @@ namespace DiplomacyIntrigue.Core
             var war = state.OngoingWarBetween(a, b);
             if (war == null) return a.Name + " and " + b.Name + " are not at war.";
 
-            var delta = score - war.ScoreFor(a);
-            war.AddWarScore(a == war.Aggressor ? delta : -delta);
-            return a.Name + " war score set to " + war.ScoreFor(a).ToString("0.0")
-                   + " (" + war.Aggressor.Name + " is the aggressor, raw "
-                   + war.WarScore.ToString("0.0") + "). Test only - do not save.";
+            // Moves the battle part, the only stored one, so the whole score lands on the target
+            // with whatever prisoners are held today; release them and it moves again.
+            var delta = score - WarScore.For(war, a);
+            war.AddBattleScore(a == war.Aggressor ? delta : -delta);
+            return a.Name + " war score set to " + WarScore.For(war, a).ToString("0.0")
+                   + " (" + war.Aggressor.Name + " is the aggressor; " + WarScore.Describe(war, a)
+                   + "). Test only - do not save.";
         }
 
         /// <summary>
@@ -1963,7 +1967,7 @@ namespace DiplomacyIntrigue.Core
 
             try
             {
-                var offererAhead = war.ScoreFor(offerer) > 0f;
+                var offererAhead = WarScore.For(war, offerer) > 0f;
                 var winner = offererAhead ? offerer : us;
                 var loser = offererAhead ? us : offerer;
                 var terms = new PeaceTerms(winner, loser) { ReleasePrisoners = true };

@@ -506,7 +506,8 @@ end of this section.
   that merely sides with one of them cannot end the war for it.
 - A concession calls the existing ending with the existing outcome: the crown conceding is a
   rebel win, and the rising conceding is a crown win. Legitimacy, the pretender left behind, the
-  365-day cooldown: all as §3a Q1.
+  cooldown (`InternalWarCooldownDays`, one campaign year - corrected 2026-09-27 from a
+  365-calendar-day figure to 84): all as §3a Q1.
 - **The AI concedes by rule**, so the act is not the player's alone: a leader concedes when its
   own side's exhaustion is at **75** or more while the other side's is **under 40**
   (`InternalWarConcedeExhaustion`, `InternalWarConcedeOtherBelow`, both UN-TUNED). The condition

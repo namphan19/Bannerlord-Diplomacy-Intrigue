@@ -535,7 +535,14 @@ namespace DiplomacyIntrigue.Core
             Pair(line, "casusBelli", war.Justification);
             Pair(line, "aggressorExhaustion", war.AggressorExhaustion);
             Pair(line, "defenderExhaustion", war.DefenderExhaustion);
-            Pair(line, "score", war.WarScore);
+            // score is the whole war score; battles and the two prisoner terms are its parts
+            // (design 10), so a balance run can see which one closed each war.
+            Pair(line, "score", WarScore.Total(war));
+            Pair(line, "battles", war.BattleScore);
+            Pair(line, "aggressorPrisoners", WarScore.Prisoners(war.Aggressor, war.Defender));
+            Pair(line, "defenderPrisoners", WarScore.Prisoners(war.Defender, war.Aggressor));
+            Pair(line, "aggressorManpowerAtStart", war.AggressorManpowerAtStart);
+            Pair(line, "defenderManpowerAtStart", war.DefenderManpowerAtStart);
             Pair(line, "aggressorCasualties", war.AggressorCasualties);
             Pair(line, "defenderCasualties", war.DefenderCasualties);
             Pair(line, "fiefsTakenByAggressor", war.FiefsTakenByAggressor);
@@ -654,7 +661,8 @@ namespace DiplomacyIntrigue.Core
                                       + " defender=" + Sanitise(war.Defender)
                                       + " days=" + war.DaysElapsed.ToString("0")
                                       + " casusBelli=" + war.Justification
-                                      + " finalScore=" + war.WarScore.ToString("0.0")
+                                      + " finalScore=" + WarScore.Total(war).ToString("0.0")
+                                      + " finalBattles=" + war.BattleScore.ToString("0.0")
                                       + " exhaustion=" + war.AggressorExhaustion.ToString("0.0")
                                       + "/" + war.DefenderExhaustion.ToString("0.0")
                                       + " fiefsTaken=" + war.FiefsTakenByAggressor

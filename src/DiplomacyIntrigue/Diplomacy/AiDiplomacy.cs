@@ -127,7 +127,7 @@ namespace DiplomacyIntrigue.Diplomacy
             var enemy = worst.Other(kingdom);
             if (enemy == null || enemy.IsEliminated) return false;
 
-            return worst.ScoreFor(kingdom) > DiplomacyConstants.PeaceWhitePeaceOnlyBelow
+            return WarScore.For(worst, kingdom) > DiplomacyConstants.PeaceWhitePeaceOnlyBelow
                 ? TryCollectPeace(state, worst, kingdom, enemy, worstExhaustion)
                 : TryBuyPeace(state, worst, kingdom, enemy, worstExhaustion);
         }
@@ -253,7 +253,7 @@ namespace DiplomacyIntrigue.Diplomacy
                 {
                     Log.Info("AI", kingdom.Name + " imposed terms on " + enemy.Name
                                    + " at exhaustion " + exhaustion.ToString("0.0")
-                                   + " (war score " + war.ScoreFor(kingdom).ToString("0")
+                                   + " (war score " + WarScore.For(war, kingdom).ToString("0")
                                    + "): " + terms + ".");
                     return true;
                 }
@@ -824,7 +824,7 @@ namespace DiplomacyIntrigue.Diplomacy
                 if (!DefectionOptionQualifies(state, kingdom, patron, war,
                         out var candidate, out _)) continue;
 
-                var score = war.ScoreFor(kingdom);
+                var score = WarScore.For(war, kingdom);
                 if (worst != null && score >= worstScore) continue;
 
                 worst = war;
@@ -890,10 +890,10 @@ namespace DiplomacyIntrigue.Diplomacy
 
             // And only when the war is actually going against it: a vassal holding its
             // own has no need to kneel to the enemy.
-            if (-war.ScoreFor(vassal) < DiplomacyConstants.DefectionLosingScore)
+            if (-WarScore.For(war, vassal) < DiplomacyConstants.DefectionLosingScore)
             {
                 reason = "the war is not going badly enough to justify it (score "
-                         + war.ScoreFor(vassal).ToString("0") + ", needs -"
+                         + WarScore.For(war, vassal).ToString("0") + ", needs -"
                          + DiplomacyConstants.DefectionLosingScore.ToString("0") + ").";
                 return false;
             }

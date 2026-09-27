@@ -19,8 +19,18 @@ namespace DiplomacyIntrigue.Models
         [SaveableProperty(5)] public float AggressorExhaustion { get; private set; }
         [SaveableProperty(6)] public float DefenderExhaustion { get; private set; }
 
-        /// <summary>Range -100..100. Positive means the aggressor is winning. Sets peace terms.</summary>
-        [SaveableProperty(7)] public float WarScore { get; private set; }
+        /// <summary>
+        /// The battle part of the war score (design 10), aggressor-positive and decaying. Not
+        /// the war score itself: that adds the prisoners each side holds, which are read live
+        /// from the world, so the whole score is resolved in <c>Diplomacy.WarScore</c> and
+        /// nowhere else.
+        ///
+        /// Save id 7 is the old <c>WarScore</c>, renamed. The save system keys members by id,
+        /// not name (<c>MemberTypeId</c> is type level and local id only), so old saves load
+        /// into it; their value still holds the old formula's fief and raid points, which the
+        /// decay clears.
+        /// </summary>
+        [SaveableProperty(7)] public float BattleScore { get; private set; }
 
         [SaveableProperty(8)] public int AggressorCasualties { get; private set; }
         [SaveableProperty(9)] public int DefenderCasualties { get; private set; }
@@ -45,6 +55,15 @@ namespace DiplomacyIntrigue.Models
         /// this the ally is left fighting alone for a cause it never chose and cannot end.
         /// </summary>
         [SaveableProperty(14)] public Kingdom CalledBy { get; private set; }
+
+        /// <summary>
+        /// Men in each side's lord parties and garrisons when the war began: what a battle's
+        /// losses are measured against (design 10 §3). Fixed rather than live, so the same
+        /// defeat is worth the same on day 1 and day 200. Zero on a war from a save that
+        /// predates the fields, until <c>Diplomacy.WarScore.EnsureManpower</c> fills it.
+        /// </summary>
+        [SaveableProperty(15)] public int AggressorManpowerAtStart { get; private set; }
+        [SaveableProperty(16)] public int DefenderManpowerAtStart { get; private set; }
 
         /// <summary>True when this participant joined only because an ally called.</summary>
         public bool IsObligationWar => CalledBy != null;
@@ -84,12 +103,28 @@ namespace DiplomacyIntrigue.Models
             return 0f;
         }
 
-        /// <summary>War score from the point of view of the given kingdom.</summary>
-        public float ScoreFor(Kingdom kingdom)
+        /// <summary>
+        /// The battle part only, from the given kingdom's side. Anything that wants the war
+        /// score reads <c>Diplomacy.WarScore.For</c>, which adds the prisoners.
+        /// </summary>
+        public float BattleScoreFor(Kingdom kingdom)
         {
-            if (kingdom == Aggressor) return WarScore;
-            if (kingdom == Defender) return -WarScore;
+            if (kingdom == Aggressor) return BattleScore;
+            if (kingdom == Defender) return -BattleScore;
             return 0f;
+        }
+
+        public int ManpowerAtStartOf(Kingdom kingdom)
+        {
+            if (kingdom == Aggressor) return AggressorManpowerAtStart;
+            if (kingdom == Defender) return DefenderManpowerAtStart;
+            return 0;
+        }
+
+        internal void SetManpowerAtStart(Kingdom kingdom, int men)
+        {
+            if (kingdom == Aggressor) AggressorManpowerAtStart = men;
+            else if (kingdom == Defender) DefenderManpowerAtStart = men;
         }
 
         public float DaysElapsed
@@ -110,7 +145,7 @@ namespace DiplomacyIntrigue.Models
         // not. Clamped to +/-100 until 2026-09-20, which made peace-table vassalage arithmetically
         // unreachable: a winner wants half the score, so it could never want more than 50, and
         // tribute at 65 always settled first.
-        internal void AddWarScore(float delta) => WarScore += delta;
+        internal void AddBattleScore(float delta) => BattleScore += delta;
 
         internal void AddCasualties(Kingdom sufferer, int count)
         {
@@ -136,7 +171,7 @@ namespace DiplomacyIntrigue.Models
         // rounding makes a working system look like a dead one for the first fortnight.
         public override string ToString()
             => NameOf(Aggressor) + " vs " + NameOf(Defender)
-               + " [" + Justification + "] score=" + WarScore.ToString("0.00")
+               + " [" + Justification + "] battles=" + BattleScore.ToString("0.00")
                + " exhaustion=" + AggressorExhaustion.ToString("0.00") + "/" + DefenderExhaustion.ToString("0.00");
 
         private static string NameOf(Kingdom k) => k == null ? "?" : k.Name.ToString();

@@ -118,8 +118,9 @@ namespace DiplomacyIntrigue.UI
 
                 // Their figure is never shown - only what it means for their behaviour.
                 sb.AppendLine("  their condition:  " + ExhaustionBands.Describe(theirExhaustion));
-                sb.AppendLine("  war score:        " + war.ScoreFor(kingdom).ToString("0.0")
-                              + (war.ScoreFor(kingdom) > 0 ? " in our favour" : ""));
+                sb.AppendLine("  war score:        " + WarScore.For(war, kingdom).ToString("0.0")
+                              + (WarScore.For(war, kingdom) > 0 ? " in our favour" : ""));
+                sb.AppendLine("    " + WarScore.Describe(war, kingdom));
                 sb.AppendLine("  losses:           " + war.AggressorCasualties + " / " + war.DefenderCasualties);
                 sb.AppendLine();
             }

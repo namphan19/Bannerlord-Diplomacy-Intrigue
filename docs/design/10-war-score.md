@@ -1,204 +1,300 @@
-# Design 10 — War score, measured as damage
+# Design 10 — War score, measured in the fighting
 
-Status: **draft for the lead's review**, 2026-09-26. Nothing here is built.
+Status: **built 2026-09-27 (W1 and W2 together), not yet verified in game.** The lead said to
+build in this direction; D1 and D3-D5 below went in at their recommended values, D2 at the lead's.
+Compiled, save-id check passed; nothing has run in a campaign. The resolver is
+`Diplomacy/WarScore.cs`; the battle scoring is `WarExhaustion.AddBattleWarScore`.
 
 The lead's call of 2026-09-26, after a live session against the Northern Empire: the war score
-"is too unreasonable" and is to be redesigned from the game-master's seat. This replaces how war
-score is **earned**. It does not touch what war score **buys**: the peace-table prices, the
-subjugation cliff at 75, the envoy's ×0.85-×1.15 and the white-peace floor at 20 stay exactly as
-design 01 §4.2 and design 04 §13 have them. Those were the lead's calls and nothing measured
-since argues against them; the fault is on the earning side.
+"is too unreasonable" and is to be redesigned. v1 of this document (2026-09-26) scored held land
+and put it at the centre of subjugation. The lead rejected that on 2026-09-27, and rightly: a
+power that holds most of a realm has no need of its submission, it takes the rest. v1 also made
+land pay twice, since the winner already keeps every fief it holds at the peace (the table's town
+and castle prices buy fiefs the loser *still* holds). The lead's direction for v2:
 
-Constants will live in `Diplomacy/DiplomacyConstants.cs`. Every number below is **UN-TUNED**,
-a first guess with its reasoning.
+> **War score depends on the battles. A siege assault counts as the soldiers it cost. Lords
+> held prisoner count.**
+
+This replaces how war score is **earned**. What it **buys** is unchanged: the peace-table prices,
+the subjugation cliff at 75, the envoy's ×0.85-×1.15 and the white-peace floor at 20 stay as
+design 01 §4.2 and design 04 §13 have them.
+
+Constants will live in `Diplomacy/DiplomacyConstants.cs`. Every number below is **UN-TUNED**, a
+first guess with its reasoning.
 
 ---
 
 ## 0. What is wrong today
 
-Measured against the code (`WarExhaustion.cs`, `PeaceTable.cs`) and the 2026-09-26 session:
-
 | # | Fault | Evidence |
 |---|---|---|
-| F1 | **Subjugation needs the whole kingdom.** The only realistic road to 75 is 6 towns, or 5 towns and 2 castles. The Northern Empire has 5 towns. By the time a vassalage is possible there is little left to make a vassal of | design 01 table: town +12, castle +6 |
-| F2 | **Battles barely count, and the cap is fake.** A battle scores `|diff| / total × 6`, clamped 1-8. Since the difference can never exceed the total, the ceiling is **6**, not 8. Killing 1,000 for 200 is worth 4 | `AddBattleWarScore` |
-| F3 | **Small battles beat big ones.** The formula reads the *ratio* of losses, not their size. Ten skirmishes of 100 kills for 20 score 40; one battle of 1,000 for 200 scores 4 | same |
-| F4 | **Size is ignored.** Taking three towns off a five-town realm scores the same as taking three off a realm of sixteen fiefs. 1,000 dead is the same whether that is a fifth of the enemy's army or a twentieth | no term reads either kingdom's size |
-| F5 | **Sieges earn nothing for the fighting.** Assault casualties are skipped to avoid counting a capture twice; the defenders destroyed in Amprela were worth exactly the +12 of the capture | `ApplyBattleResult`, FieldBattle only |
-| F6 | **Captured armies count for nothing.** An enemy party that surrenders or is taken whole has few casualties; its men became prisoners, and the formula sees a small battle | casualties only |
-| F7 | **Drift eats occupation.** Land a kingdom still holds drifts away at 0.05/day like a battle two years old. A winner at 76 who does not sign within ~20 days loses the right to demand submission while holding every town it took | `Drift` |
+| F1 | **Subjugation needs the whole kingdom.** The only realistic road to 75 is 6 towns, or 5 towns and 2 castles | town +12, castle +6 |
+| F2 | **The battle cap is fake.** `|diff| / total × 6`, clamped 1-8: the difference never exceeds the total, so the ceiling is 6 | `AddBattleWarScore` |
+| F3 | **Small battles beat big ones.** Ten skirmishes of 100 kills for 20 score 40; one battle of 1,000 for 200 scores 4 | same |
+| F4 | **Size is ignored.** 1,000 dead is the same whether that is a fifth of the enemy's army or a twentieth | no term reads either kingdom's size |
+| F5 | **Sieges earn nothing for the fighting.** Assault casualties are skipped (`ApplyBattleResult`, FieldBattle only) | `WarExhaustion.cs` |
+| F6 | **Captured armies count for nothing.** A party taken whole has few casualties | casualties only |
+| F7 | **Land pays twice.** A captured town scores +12 and is also kept at the peace | `ApplyFiefCapture`, `CedeFiefs` |
 
-The common root: the score counts **events**, each at a flat price, when what a peace should
-read is **how much damage the loser has actually taken, relative to what it had**.
+## 1. What history says
 
-## 1. The principle
+The historical survey behind this version (reported to the lead 2026-09-27). Five patterns recur:
 
-> **War score = how much of the enemy you hold, plus how much of its army you have broken
-> recently, each measured against what it had.**
+1. **The weaker side submits when its army is broken or its ruler is taken, while it still holds
+   most of its land.** Submission is the price of keeping the throne. Zama (202 BC): Carthage kept
+   its African core and lost its freedom of war. Cynoscephalae (197 BC), Magnesia (190 BC): the
+   loser kept its kingdom. William the Lion captured at Alnwick (1174): Scotland became a vassal
+   at Falaise. Injo besieged at Namhansanseong (1637): Joseon submitted to the Qing without losing
+   territory. Kosovo (1389), Mohács (1526): Ottoman vassals.
+2. **A realm that has lost most of its land is annexed, not made a vassal.** Macedon after Pydna,
+   Carthage in 146 BC, Serbia in 1459, Buda in 1541.
+3. **The stronger side takes a vassal when ruling the land itself costs more than the tribute.**
+   The Golden Horde and the Rus principalities, Wallachia and Moldavia under the Ottomans, the
+   British princely states. The Ming annexation of Đại Việt (1407-1427) is the counter-example that
+   proves the cost.
+4. **Tribute is the price of a favourable stalemate, not of a rout.** Chanyuan (1005): the Song
+   paid the Liao after a campaign neither side could finish. Adrianople (1547): the Habsburgs paid
+   the Ottomans for their part of Hungary.
+5. **Escalation is stepwise, and annexation punishes a revolt.** Assyria, Rome and the Ottomans all
+   ran tribute, then vassalage, then a puppet, then a province.
 
-Two components, with different natures:
+What a peace table should read, then, is **how badly the loser's armies are broken and whose
+lords sit in whose dungeons**, not how much land has changed hands. Land already taken is kept.
 
-| | **Land** | **Momentum** |
+Patterns 2, 3 and 5 (when a winner prefers annexation) are **not** in this design: they are a
+separate question for the lead (§10, D6).
+
+## 2. The formula
+
+```
+WarScore = Battles + Prisoners            aggressor-positive, as today
+```
+
+| | **Battles** | **Prisoners** |
 |---|---|---|
-| What | the share of the loser's pre-war fortifications the winner now holds | battles won and villages burned |
-| Nature | a **state**, read live | an **accumulation**, event by event |
-| Drift | **none** - held land is a fact, and it reverses itself when retaken | **decays** - a victory fades over half a year |
-| Relative to | the loser's holdings on the day the war began | the loser's manpower on the day of the battle |
+| What | men each side lost in battle, sieges included, against its army at the war's start | enemy lords held in the other side's parties and dungeons |
+| Nature | an **accumulation**, battle by battle | a **state**, read live |
+| Decay | half-life **42 days** | none: it lasts exactly as long as the captivity |
+| Saved | yes, in the existing `WarScore` field | no, derived |
 
-`WarScore = Land + Momentum`, aggressor-positive as today, and everything that reads the score
-(the peace table, the AI's war and peace logic, the Realm tab) keeps reading one number.
+Everything that reads the score (the peace table, the AI's war and peace logic, the Realm tab)
+keeps reading one number.
 
-## 2. Land
-
-```
-value(fief)    = 2 for a town, 1 for a castle          (villages follow their fief)
-heldShare(A,B) = value of fiefs B held when the war began that A holds now
-                 / value of every fief B held when the war began
-Land           = WL × heldShare(aggressor, defender) − WL × heldShare(defender, aggressor)
-WL             = 150
-```
-
-- **Relative to the loser's own size.** Three towns off the Northern Empire (5 towns, 10 castles,
-  value 20) is 30% of it; three towns off a realm of value 30 is 20%.
-- **Read live, never stored.** The fief ledger (`FiefHistory`, `FiefOwnershipRecord`) already
-  records who held each settlement from when to when, so "held by B when the war began" and
-  "held by A now" are both queries. Retaking a town removes its share at once, with no
-  reverse event to remember.
-- **Only this war's gains.** A fief taken from B in an earlier war was not B's when this one
-  began and does not count. A fief B loses to a third kingdom counts for nobody.
-- **Town 2, castle 1.** Rejected: prosperity-weighted value. It moves daily, nobody can read it
-  off the map, and a sacked town would be worth less for having been sacked.
-- **WL = 150** puts the full conquest of a realm at 150 and half of it at 75, the subjugation
-  cliff. See §5 for why half and not a third.
-
-## 3. Momentum
-
-### 3.1 Battles, sieges included
+## 3. Battles
 
 ```
-lossShare(side)  = men that side lost in the battle / that kingdom's manpower before it
-battlePoints     = WM × lossShare(enemy) − WM × lossShare(own),   capped at ±BattleCap
-WM               = 80
-BattleCap        = 20
+lostShare(side) = men that side lost in the battle / that side's manpower at the war's start
+battlePoints    = W × lostShare(enemy) − W × lostShare(own),   capped at ±BattleCap
+                + WinPoints to the side that won the battle
+W               = 120
+BattleCap       = 30      (the proportional part only)
+WinPoints       = 3       (only when the losing side fielded at least WinMinMen)
+WinMinMen       = 100
 ```
 
-- **Men lost = casualties + men taken prisoner.** A party captured whole is an army destroyed
-  (F6). Measured as each party's roster before the battle minus after, rather than the engine's
-  casualty counter; which of the engine's counters include the wounded is to be confirmed with
-  `tools/ApiDump` at build time.
-- **Manpower** = the men in the kingdom's lord parties and garrisons, read live, plus the
-  battle's own losses so it is the figure *before* the battle. Militia count on neither side:
-  they are townsfolk, and the town they defend already counts through Land.
-- **Sieges count** (F5). The assault's losses score like any battle; the capture scores through
-  Land. They are different things - destroying a garrison and holding the walls - so this is not
-  the double count the current exclusion guards against.
-- **Size matters in both directions** (F3, F4): 1,000 men out of 4,200 is 24% of the Northern
-  Empire's army; thirty men from a caught party are 0.7%.
-- **BattleCap = 20**, a quarter of the army destroyed in a day. One freak battle should not decide
-  a war on its own.
+- **A fixed award for winning** (the lead, 2026-09-27): a victory is worth something in itself,
+  however even the losses. A repelled assault is a victory for the defender.
+- **Only a battle of some size earns it.** Without a floor, ten skirmishes against 30-man parties
+  would pay 30 points and reopen F3. The floor reads the loser's men in the field, militia
+  excluded, so a lord's full party qualifies and a patrol does not. The old formula had the same
+  guard (`WarScoreBattleMinTotal = 100`).
 
-### 3.2 Raids
+- **Men lost = killed + taken prisoner.** A party captured whole is an army destroyed (F6). The
+  wounded are **not** lost: they rejoin their party within days. Checked by IL at build
+  (v1.4.8): `MapEventSide.TroopCasualties` counts killed **and** wounded, so it is not used here
+  (exhaustion keeps it). `MapEvent.CaptureDefeatedPartyMembers` empties a defeated side's rosters
+  *before* `MapEventEnded` fires, so the rosters cannot be read after the fact either. What is
+  used: per party, `DiedInBattle` for a side that held the field or got away, and
+  `HealthyManCountAtStart` - everyone - for a side defeated without retreating. That count
+  includes a party's heroes, a handful per party.
+- **Every battle type scores**: field battles, sally-outs, and **siege assaults** (F5). When a
+  fortification falls, the garrison that surrenders is men taken prisoner and scores like any
+  other loss. The capture itself scores nothing (F7): the town is kept at the peace, and the
+  exhaustion for losing it stays where it is.
+- **Militia and villagers count on neither side**, in the losses or the manpower. They are
+  townsfolk, not the realm's army. So a **village raid scores nothing**: raids still cost the
+  victim exhaustion, as today, but they are not battles between armies.
+- **Manpower** = the men in the kingdom's lord parties and garrisons, **snapshotted when the war
+  begins**. Measured against what the realm had (F4), and fixed so the same defeat is worth the
+  same on day 1 and day 200. The alternative, live manpower, lost because it makes each battle
+  against a beaten realm worth more than the last and turns the end of a war into a lottery.
+- **BattleCap = 30**, a quarter of the army lost net in one day. One freak battle cannot decide a
+  war (every valuation in the mod follows "no single term clears the bar alone").
+- **W = 120** so that breaking about a fifth of the enemy's army at modest cost is worth ~23, and
+  three such victories in a season reach the tribute rung.
 
-`+1.0` per village raided, and raids together contribute **at most 15** to Momentum in one war.
-Ravaging the countryside wears a realm down; it cannot by itself make one kneel.
+### Decay
 
-### 3.3 Decay
+Battle points lose **1.65% of themselves per day**, with a floor of 0.05/day so they finish
+clearing: a **half-life of 42 days**, two seasons, half of the 84-day year. A victory in the
+opening season still counts at the peace, at about a quarter. The old flat drift (0.05/day) goes.
+A stalemate still drifts to zero and to a white peace; each side keeps the fiefs it holds, which
+is *uti possidetis*, how most real stalemates ended.
 
-Momentum loses **1.65% of itself per day**, with a floor of 0.05/day so it finishes clearing: a
-**half-life of 42 days, two seasons, half a year**. The campaign year is 84 days (four seasons of
-21), and a decisive war reaches the table in about a year, so a victory from the opening season
-still counts at the peace but is worth a quarter of what it was. A great battle fought two years
-before the peace is worth almost nothing. Land does not decay (F7): a
-stalemate with land held stays a stalemate *in the holder's favour*, which is what occupation
-means. A stalemate with no land changed hands still drifts to zero and to a white peace, as the
-drift was always meant to do.
+## 4. Prisoners
 
-## 4. What stays the same
+```
+Prisoners = Σ weight of every enemy lord the side holds now, no cap
+  ruler            20
+  clan leader      10
+  other lord        5
+```
+
+- **A state, not an event.** A lord counts while he is held by any party or settlement of the
+  other kingdom, and stops counting the moment he is ransomed, released or escapes. This is the
+  historical lever (William the Lion signed at Falaise in captivity), and it gives the player a
+  real choice: ransom the lords for gold now, or keep them in the dungeon until their king signs.
+- Vanilla frees lords taken in ordinary battles within days. As a state, a brief capture scores
+  briefly and does no harm; an event with decay would have made each capture-and-escape pay again.
+- A lord is a hero of a noble clan in the enemy kingdom. Heroes of mercenary and minor clans and
+  companions do not count.
+- **No cap**, the lead's call of 2026-09-27, with clan leader 10 and lord 5. This knowingly departs
+  from the rule every other valuation in the mod follows (no single term clears the bar alone):
+  a side holding the enemy's ruler and five of its clan leaders reaches 75 without another battle.
+  That is Falaise, and it is meant to be possible.
+
+## 5. The scenarios
+
+Northern Empire as the loser, manpower ~4,200 at the war's start (2,200 in lord parties, 2,000 in
+garrisons, read off `testmod` on 2026-09-26 - an estimate to be measured at build). Khuzait as the
+winner, ~4,500. Envoys even.
+
+**Single events:**
+
+| Event | Points |
+|---|---|
+| A great battle: NE loses 1,000, Khuzait 200 | 120 × (23.8% − 4.4%) + 3 = **26.2** |
+| A crushing battle: NE loses 1,700, Khuzait 300 | 40.6, capped at 30, + 3 = **33** |
+| A skirmish against a 30-man party, 30 for 5 | **0.7**, no win award (ten of them: 7) |
+| The Amprela assault: Khuzait loses 400; NE 390 dead and 150 of the garrison captured | 120 × (12.9% − 8.9%) + 3 = **7.8** |
+| An assault repelled: attacker loses 400, defender 100 | 120 × (2.4% − 8.9%) − 3 ≈ **−10.8** to the attacker |
+| Holding NE's ruler and two clan leaders | 20 + 20 = **40** |
+
+(Nothing here assumes a garrison surrenders to hunger: v2's first draft had such a row, and it is
+not known that vanilla has that mechanic. A starving garrison loses men, which is exhaustion.)
+
+**Reaching the table** (decay: a battle 3 weeks old keeps 70%, 6 weeks 50%, 9 weeks 35%):
+
+| Scenario | Score | Buys |
+|---|---|---|
+| **A.** Two great battles three weeks apart | 18.5 + 26.2 = **44.7** | A castle, and prisoners |
+| **B.** Three great battles in six weeks, one lord held | 57.7 + 5 = **62.7** | **Tributary pact** |
+| **C.** Three great battles in six weeks, one clan leader and three lords held | 57.7 + 25 = **82.7** | **Vassal** |
+| **D.** A great battle, then a crushing one three weeks later; the ruler and two clan leaders held | 18.5 + 33 + 40 = **91.5** | **Vassal** (the Zama-and-Alnwick case) |
+| **E.** Prisoners alone: the ruler and five clan leaders, one lord | **75** | **Vassal**, with no battle needed after the capture |
+| **F.** Sieges only: three towns taken by assault like Amprela | **23.4**, decaying | Prisoners or a little money; the towns are kept anyway |
+| **G.** Ten skirmishes | **~7** | Nothing (F3 closed) |
+| **H.** Scenario C, then 60 days without signing, every lord ransomed | ~21 | The victory is gone. Sign while it is fresh |
+
+So: **tribute takes a realm's army beaten repeatedly in one season; vassalage takes that plus a
+few of its great men in your dungeons, or its ruler and much of its court**, which is patterns 1
+and 4 of §1. Prisoners now weigh as much as the battles, which is the lead's intent.
+
+## 6. What stays the same
 
 - The price ladder: prisoners 5, castle 25, town 45, tribute 60, subjugation 70 (+5 = 75),
-  8 per 1,000 denars.
-- The subjugation cliff at 75, its two faces, and every gate on it (`IsStrongEnoughToHold`,
-  one patron only).
-- The envoy's contest on the budget, the white-peace floor at a raw score of 20.
-- Exhaustion, and the loser's willingness rule `exhaustion ≥ 60 − score/2`.
+  8 per 1,000 denars. Captured fiefs are kept at the peace, as in vanilla.
+- The subjugation cliff at 75, its two faces, and every gate on it.
+- The envoy's contest, the white-peace floor at a raw 20.
+- Exhaustion, entirely: towns lost, raids, sieges, casualties all still wear a realm down, and the
+  loser's willingness rule `exhaustion ≥ 60 − score/2` is untouched.
 - One war record per pair of kingdoms; a battle scores in the war between the two kingdoms that
   fought it.
 
-## 5. The scenarios, recalculated
+## 7. Risks
 
-Northern Empire as the loser: fief value 20, manpower ~4,200 (about 2,200 in lord parties and
-2,000 in garrisons, read off `testmod` on 2026-09-26 - an estimate, to be measured at build).
-Khuzait as the winner, manpower ~4,500. Envoys even unless stated.
+- **Much depends on the manpower estimate.** If real manpower is double the 4,200 read by eye,
+  every battle is worth half and tribute recedes. The build measures it before any number moves.
+- **Prisoner churn.** Vanilla takes lords in ordinary battles and frees many within days, and at
+  10 and 5 a single battle that bags two clan leaders and four lords is worth 40 at once. The AI's
+  peace evaluation, which is weekly, will read whatever the day happens to show. Accepted: that is
+  what the captivity is worth, and it reverses honestly. The live check measures how long lords
+  actually stay held.
+- **Large courts are easier to hold hostage.** Prisoner weights are absolute, so a realm of ten
+  clans exposes more points than one of three. Not corrected on purpose: more great men in the
+  field is more great men to lose.
+- **More vassalages, or fewer?** Unknown until a run. Run 08 had 2 imposed links in ten years with
+  a mean final score of 21-27. A balance run is required before this ships as default.
 
-| Scenario | Today | This design | Result under this design |
-|---|---|---|---|
-| **A.** 3 towns, 6 villages, one battle killing 1,000 for 200 | 49 - 3 drift = **46** | Land 45 + raids 6 + battle 15.5 = **66.5** | Tribute. With a better envoy (×1.15) **76.5: vassal** |
-| **B.** 5 towns and 2 castles, 6 villages, 3 battles | 92 - 4.5 = **87.5** | Land 90 + raids 6 + battles ~25 = **~121** | Vassal - long before this point |
-| **C.** 4 towns and one great battle | 48 + 4 = **52** | Land 60 + 15.5 = **75.5** | **Vassal** |
-| **D.** Battles only: three that each break a fifth of their army | ~12 | ~3 × 13, decaying = **~35** | A castle or money. Land is what makes a vassal |
-| **E.** Ten skirmishes of 30 men each | 10 × 1.7 = **17** | 10 × 0.5 = **5** | Nothing - the F3 exploit is closed |
-| **F.** A small realm (2 towns, 3 castles; value 7): 1 town, 1 castle, one battle | 18 + 4 = **22** | Land 64 + ~12 = **~76** | **Vassal** - minor realms fall fast |
-| **G.** A large realm (value ~24): 3 towns | 36 | Land 37.5 | Land alone buys a town back |
-| **H.** Won to 76, then 60 days (about 3 seasons) without signing | ~73: submission lost | Land unchanged, Momentum down to ~37% | Still vassal if the land carries it |
+## 8. Save data
 
-A siege assault on its own scores little net: at Amprela the attacker took ~400 casualties to
-the defenders' ~390, so the fighting roughly cancels and the capture is what counts. That is the
-honest reading of a costly assault.
+- `WarRecord.WarScore` (id 7) is kept and now holds **Battles** only, with the new decay, renamed
+  `BattleScore` in code. The save system keys a member by type level and local id
+  (`MemberTypeId`), never by name, so the rename is safe. Its meaning narrows; it does not change
+  sign or scale.
+- **Two new properties: id 15 `AggressorManpowerAtStart`, id 16 `DefenderManpowerAtStart`**
+  (int). Ids today run 1-14.
+- Prisoners is derived and needs nothing saved.
+- `FiefsTakenByAggressor` / `FiefsTakenByDefender` (10, 11) are still written for telemetry.
+- **Running wars on an old save:** the missing manpower is read live the first time it is needed,
+  and the old `WarScore` is carried over as Battles and decays. It still contains the fief-capture
+  points of the old formula, which clear at the new half-life. No schema bump: nothing is
+  reinterpreted that the decay does not already wash out. **D5.**
+- `scripts/check-save-ids.ps1` must pass.
 
-**Why half the realm for subjugation rather than a third.** At WL = 200 scenario A reaches 75
-without a battle, and a kingdom that has lost three towns of five while its field army is intact
-would be made a vassal by a siege campaign alone. At 150 it takes land *and* a broken army, or
-most of the land. That matches the lead's own narrative in design 04: a decisive victory takes a
-tributary, an overwhelming one takes a vassal. **D1** asks the lead to choose.
-
-## 6. Risks
-
-- **More vassalages, sooner, for small realms.** Scenario F subjugates a two-town realm after one
-  campaign. Run 08 found 2 imposed links in ten years; this will raise that, and every extra
-  imposed link is a chance at the doomed 1.2%-stronger patron design 04 §13.6 left alone. A
-  balance run is required before this ships as default.
-- **Manpower is read live.** A kingdom that has just lost two armies has little manpower left, so
-  its next battle is worth more. That is intended (the finishing blow), but it makes the last
-  battles of a war swingy.
-- **A defecting clan carries its fief with it**, and that fief then counts as the new kingdom's
-  Land against the old one if they are at war. Counted deliberately - the realm did lose it - but
-  it is a path to score without a battle. **D2.**
-
-## 7. Save data
-
-- `WarRecord` gets **one new property, id 15** (`Momentum`, float). Its ids today run 1-14.
-- Land is derived from the fief ledger and needs nothing saved.
-- `WarRecord.WarScore` (id 7) stops being written; the score becomes `Land + Momentum`. Its
-  meaning changes, so **`CurrentSchemaVersion` goes 4 → 5**, with a one-time migration for wars
-  already running: `Momentum = old WarScore − 9 × (fiefs taken by aggressor − fiefs taken by
-  defender)`, 9 being the average of the old 12 and 6. Approximate, and says so. **D4.**
-- `scripts/check-save-ids.ps1` must pass; id 7 is retired, never reused.
-
-## 8. Surfaces
+## 9. Surfaces, order and proof
 
 - `diplomacy.wars` and `diplomacy.peace_allowance` print the breakdown:
-  `war score 66.5 = land 45.0 (3 of 5 towns, 0 of 10 castles) + battles 15.5 + raids 6.0`.
-- The Realm tab's war row shows the total as today; its hint gives the same breakdown. A number
-  shown is the number the AI used.
-- `[WAR]` telemetry gains `land`, `momentum` and `raidMomentum`, so a balance run can see which
-  component ends wars.
+  `war score 63.0 = battles 51.0 + prisoners 12.0 (1 clan leader, 3 lords)`, and each war's
+  manpower at start.
+- The Realm tab's war row keeps the total; its hint gives the breakdown. A number shown is the
+  number the AI used.
+- `[WAR]` telemetry gains `battles`, `prisoners`, and both manpower snapshots.
 
-## 9. Order and proof
+1. **W1** - manpower snapshot, battle scoring by lost-share for every battle type, garrison
+   captures, decay; remove the fief-capture and raid score. Compile, LoadProbe, check-save-ids.
+2. **W2** - Prisoners, the breakdown in the commands and the Realm hint.
+3. **Live check** on `testmod_claude_1`: measure NE's real manpower, fight one field battle and
+   one assault, capture a lord, and read every line of the breakdown against §3 and §4 by hand.
+4. **Balance run** (20 years): tributes and subjugations per decade, and which component closed
+   each war.
 
-1. **W1** - Land from the ledger, the score as `Land + Momentum`, migration, the breakdown in
-   `diplomacy.wars`. Compile, LoadProbe, check-save-ids.
-2. **W2** - Battle scoring by lost-share, sieges and captures included, the raid cap, decay.
-3. **Live check** on `testmod_claude_1`: take Amprela and one more NE town, win one field battle,
-   and read each line of the breakdown against §2 and §3 by hand.
-4. **Balance run** (20 years): subjugations per decade, which component closed each war, and
-   whether any link formed on the 1.2% margin.
+## 9a. First live check, 2026-09-27
+
+`testmod_claude_1` (the player rules Khuzait), four wars eight days old when loaded, run from
+Summer 9 to Summer 17, 1084 at speed-up 30. Stopped there: a Kingdom Decision addressed to the
+player held the clock, and the data below was enough to go back to the lead.
+
+**Manpower at the wars' start, measured** (filled on load, the save predating the fields): 3,365
+(Northern Empire) to 5,215 (Aserai). The §5 estimate of ~4,200 holds.
+
+**Battles score as specified.** 14 battles scored in 8 days. Checked by hand:
+
+| Battle | Lost / manpower | Points |
+|---|---|---|
+| Sally-out, Battania vs Western Empire | WE 1,141 of 1,141 fielded (taken whole) / 4,077; Battania 377 / 4,123 | 120 × (28.0% − 9.1%) = **22.6**, + 3 |
+| Siege-outside, Khuzait vs Northern Empire | NE 921 of 921 / 3,365; Khuzait 105 / 3,936 | 120 × (27.4% − 2.7%) = **29.6**, + 3 |
+| Field, Khuzait vs NE, a 30-man party | 30 / 3,365 against 1 | **1.0**, no award (under 100 men) |
+| Siege, Khuzait vs NE, Summer 14 | Khuzait 101 of 972; **NE fielded 0** | −3.1 |
+
+The last row is **not explained**. Vanilla's defenders of a siege are the settlement's own party
+and the mobile parties inside it (`Town.GetDefenderParties`, by IL), so a garrison should count.
+Either that castle held militia only, or garrisons are being missed. `battle_scored` now also
+logs every man on each side (`attackerSideMen`, `defenderSideMen`) so the next run can tell.
+
+**Prisoners dominate from the first week.** On load, eight days into each war:
+
+| War | Battles | Prisoners held (each way) | War score |
+|---|---|---|---|
+| Northern Empire vs Khuzait | 9.1 | 5 vs **50** (NE's ruler, 2 clan leaders, 2 lords) | −35.9 |
+| Western Empire vs Battania | −29.0 | 35 vs 55 | −49.0 |
+| Southern Empire vs Aserai | −3.5 | 0 vs 20 | −23.5 |
+| Sturgia vs Vlandia | 0.0 | **40** vs 0 | **+40.0** |
+
+Six days later Southern Empire's score went from −23.5 to **+32.1** on prisoners alone (0 → 50),
+and Western Empire stood at **−75.2**, the subjugation cliff, two weeks into its war. Under the
+loser's rule (`exhaustion ≥ 60 − score/2`) a realm at −75 signs at exhaustion 22.5. Vanilla takes
+lords in almost every battle and holds many of them for weeks, so at 20 / 10 / 5 uncapped the
+prisoner term is the war score, and it swings by tens of points a week. §7 named this risk;
+it is larger than written there. **D2 is back with the lead.**
 
 ## 10. Decisions for the lead
 
 | | Question | Recommendation |
 |---|---|---|
-| **D1** | Where subjugation sits: WL = 150 (half the realm, or land and a broken army) or 200 (a third of the realm) | **150** |
-| **D2** | Does a fief carried off by a defecting clan count as Land | **Yes**, the realm lost it |
-| **D3** | Momentum half-life (the year is 84 days) | **42 days**: two seasons, half a year |
-| **D4** | Running wars on an old save: approximate migration, or reset their battle history to zero | **Migrate**; a reset erases real victories |
-| **D5** | Raid cap at 15 | **15**: raids alone reach a castle's worth, never a vassal |
+| **D1** | Battle weight `W`, per-battle cap, the win award and its size floor | **120, cap 30, +3 for a battle whose loser fielded 100+ men**. The fixed award is the lead's call; its value and floor are proposals |
+| **D2** | Prisoner weights and cap | Decided 2026-09-27: ruler 20, clan leader 10, lord 5, no cap. **Reopened the same day by the live check (§9a)**: the term reaches 40-60 inside two weeks |
+| **D3** | Wounded: lost or not | **Not lost**: they are back in the ranks in days |
+| **D4** | Battle half-life | **42 days**, two seasons |
+| **D5** | Running wars on an old save: carry the old score over and let it decay, or reset to zero | **Carry over** |
+| **D6** | Separate, not blocking: should a winner who has taken most of a realm be able to annex the rest at the table (history's pattern 2), rather than only by continuing the war | Open. Discuss after this is built |

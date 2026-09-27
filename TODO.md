@@ -141,6 +141,20 @@ Happens on the exact expiry day, every cycle.
 
 - [ ] Add a cooldown, or let the payer refuse?
 
+### 10a. Design 10, war score: D1, D2, D6
+
+Built (W1+W2) and given a first live check on `testmod_claude_1`, 2026-09-27
+([design/10 §9a](docs/design/10-war-score.md)). Not committed yet.
+
+- [ ] **D1** — battle weight `W`, per-battle cap, the win award and its size floor.
+      Recommendation: 120, cap 30, +3 for a battle whose loser fielded 100+ men.
+- [ ] **D2** — prisoner weights and cap. Decided 2026-09-27 at ruler 20 / clan leader 10 / lord 5,
+      uncapped; **reopened the same day** — the live check found the term alone swinging a war's
+      score by 30-75 points within two weeks, larger than §7 had flagged.
+- [ ] **D6** — should a winner who has taken most of a realm be able to annex the rest at the
+      table, rather than only by continuing the war. Separate, not blocking; discuss once D1/D2
+      are settled.
+
 ### 11. Before a release (Phase 4)
 
 - [ ] The 75 `diplomacy.*` console commands, the `test_*` levers among them, need no cheat mode.

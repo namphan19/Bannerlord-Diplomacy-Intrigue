@@ -72,8 +72,8 @@ namespace DiplomacyIntrigue.Diplomacy
                 ApplySiegePressure(war, war.Aggressor, war.Defender, rate);
                 ApplySiegePressure(war, war.Defender, war.Aggressor, rate);
 
-                // Pull an idle war score back toward a white peace.
-                Drift(war);
+                // Victories fade: a stalemate drifts back toward a white peace.
+                WarScore.Decay(war);
             }
 
             DecayWeariness(state);
@@ -99,19 +99,9 @@ namespace DiplomacyIntrigue.Diplomacy
             }
         }
 
-        private static void Drift(WarRecord war)
-        {
-            var score = war.WarScore;
-            if (score > 0f)
-                war.AddWarScore(-Math.Min(DiplomacyConstants.WarScoreDriftPerDay, score));
-            else if (score < 0f)
-                war.AddWarScore(Math.Min(DiplomacyConstants.WarScoreDriftPerDay, -score));
-        }
-
         /// <summary>
-        /// Battle result: casualties become exhaustion, the casualty differential becomes
-        /// war score. Raids and sieges are handled by the fief-specific entry points, so
-        /// this only looks at the fighting itself.
+        /// Battle result: casualties become exhaustion, and the share of each side's army lost
+        /// becomes war score (design 10 §3).
         /// </summary>
         public static void ApplyBattleResult(ModState state, MapEvent mapEvent)
         {
@@ -122,16 +112,38 @@ namespace DiplomacyIntrigue.Diplomacy
             var war = state.OngoingWarBetween(attacker, defender);
             if (war == null) return;
 
+            // Exhaustion keeps the engine's counter, which includes the wounded: a wounded
+            // army is a tired army even when it is back in the ranks within days.
             var attackerLosses = mapEvent.AttackerSide.TroopCasualties;
             var defenderLosses = mapEvent.DefenderSide.TroopCasualties;
 
             AddCasualtyExhaustion(war, attacker, attackerLosses);
             AddCasualtyExhaustion(war, defender, defenderLosses);
 
-            // Sieges and raids move the score through fief capture / raid handlers, and
-            // counting the assault losses again here would double-dip.
-            if (mapEvent.EventType == MapEvent.BattleTypes.FieldBattle)
-                AddBattleWarScore(war, attacker, defender, attackerLosses, defenderLosses);
+            if (ScoresAsBattle(mapEvent.EventType))
+                AddBattleWarScore(war, mapEvent, attacker, defender);
+        }
+
+        /// <summary>
+        /// Every fight between armies scores, sieges and sally-outs included (design 10, F5).
+        /// A raid, a forced levy or a hideout is not one: the men on the other side are villagers,
+        /// militia or bandits, not the realm's army.
+        /// </summary>
+        private static bool ScoresAsBattle(MapEvent.BattleTypes type)
+        {
+            switch (type)
+            {
+                case MapEvent.BattleTypes.FieldBattle:
+                case MapEvent.BattleTypes.Siege:
+                case MapEvent.BattleTypes.SallyOut:
+                case MapEvent.BattleTypes.SiegeOutside:
+                case MapEvent.BattleTypes.SiegeAmbush:
+                case MapEvent.BattleTypes.BlockadeBattle:
+                case MapEvent.BattleTypes.BlockadeSallyOutBattle:
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         private static void AddCasualtyExhaustion(WarRecord war, Kingdom kingdom, int losses)
@@ -147,24 +159,104 @@ namespace DiplomacyIntrigue.Diplomacy
             Accrue(war, kingdom, losses / divisor * Settings.Current.WarExhaustionRate);
         }
 
-        private static void AddBattleWarScore(WarRecord war, Kingdom attacker, Kingdom defender,
-            int attackerLosses, int defenderLosses)
+        /// <summary>
+        /// <c>W × lostShare(defender) − W × lostShare(attacker)</c>, capped, plus the win award,
+        /// written aggressor-positive. Only each kingdom's own lord parties and garrisons count:
+        /// an ally's men who joined the battle are not this realm's army and are not measured
+        /// against its manpower.
+        /// </summary>
+        private static void AddBattleWarScore(WarRecord war, MapEvent mapEvent, Kingdom attacker, Kingdom defender)
         {
-            var total = Math.Max(DiplomacyConstants.WarScoreBattleMinTotal, (float)(attackerLosses + defenderLosses));
-            var differential = defenderLosses - attackerLosses;
-            if (differential == 0) return;
+            WarScore.EnsureManpower(war);
 
-            var magnitude = Math.Abs(differential) / total * DiplomacyConstants.WarScoreBattleFactor;
-            magnitude = Clamp(magnitude, DiplomacyConstants.WarScoreBattleMin, DiplomacyConstants.WarScoreBattleMax);
+            CountLosses(mapEvent, mapEvent.AttackerSide, attacker, out var attackerLost, out var attackerFielded);
+            CountLosses(mapEvent, mapEvent.DefenderSide, defender, out var defenderLost, out var defenderFielded);
 
-            // Whoever inflicted more losses gained ground; express it aggressor-positive.
-            var beneficiary = differential > 0 ? attacker : defender;
-            war.AddWarScore(beneficiary == war.Aggressor ? magnitude : -magnitude);
+            // Positive: the battle went the attacker's way.
+            var proportional = DiplomacyConstants.WarScoreLossShareWeight
+                               * (Share(defenderLost, war.ManpowerAtStartOf(defender))
+                                  - Share(attackerLost, war.ManpowerAtStartOf(attacker)));
+            proportional = Clamp(proportional, -DiplomacyConstants.WarScoreBattleCap, DiplomacyConstants.WarScoreBattleCap);
+
+            var award = 0f;
+            var winning = mapEvent.WinningSide;
+            if (winning == mapEvent.AttackerSide.MissionSide && defenderFielded >= DiplomacyConstants.WarScoreWinMinMen)
+                award = DiplomacyConstants.WarScoreWinPoints;
+            else if (winning == mapEvent.DefenderSide.MissionSide && attackerFielded >= DiplomacyConstants.WarScoreWinMinMen)
+                award = -DiplomacyConstants.WarScoreWinPoints;
+
+            var points = proportional + award;
+            if (points == 0f) return;
+            war.AddBattleScore(attacker == war.Aggressor ? points : -points);
+
+            // One line per scored battle, so a live check can read each term against design 10
+            // §3 by hand and a balance run can see what the battles were worth.
+            Telemetry.Event("battle_scored", "type", mapEvent.EventType,
+                "attacker", attacker, "defender", defender,
+                "attackerLost", attackerLost, "attackerFielded", attackerFielded,
+                "attackerManpower", war.ManpowerAtStartOf(attacker),
+                "defenderLost", defenderLost, "defenderFielded", defenderFielded,
+                "defenderManpower", war.ManpowerAtStartOf(defender),
+                "proportional", proportional, "award", award,
+                "battleScore", war.BattleScore,
+                "attackerSideMen", SideMen(mapEvent.AttackerSide), "defenderSideMen", SideMen(mapEvent.DefenderSide));
         }
 
         /// <summary>
-        /// A fortification changed hands. The former owner takes exhaustion, the captor
-        /// takes war score.
+        /// Every man on a side at the start, counted or not: militia, allies and the settlement's
+        /// own party included. Telemetry only, so a battle that scored a side as fielding nobody
+        /// shows whether it truly had no army there or its men were excluded.
+        /// </summary>
+        private static int SideMen(MapEventSide side)
+        {
+            var men = 0;
+            if (side == null) return men;
+            var parties = side.Parties;
+            for (var i = 0; i < parties.Count; i++)
+                men += parties[i]?.HealthyManCountAtStart ?? 0;
+            return men;
+        }
+
+        /// <summary>
+        /// Men a kingdom lost in a battle, and how many it fielded. Lost means killed or taken:
+        /// a side that was defeated and did not get away has every man it brought captured by
+        /// the time this runs (vanilla's <c>CaptureDefeatedPartyMembers</c> empties the rosters
+        /// before <c>MapEventEnded</c> fires, verified by IL on v1.4.8), so its loss is everyone
+        /// healthy at the start; otherwise only its dead. The wounded of a side that holds the
+        /// field are back in the ranks in days and are not lost (design 10 D3).
+        ///
+        /// <c>HealthyManCountAtStart</c> includes a party's heroes, a handful per party; they
+        /// are left in rather than guessed out, since the rosters are already emptied.
+        /// </summary>
+        private static void CountLosses(MapEvent mapEvent, MapEventSide side,
+            Kingdom kingdom, out int lost, out int fielded)
+        {
+            lost = 0;
+            fielded = 0;
+            if (side == null) return;
+
+            var takenWhole = mapEvent.DefeatedSide == side.MissionSide && mapEvent.RetreatingSide != side.MissionSide;
+
+            var parties = side.Parties;
+            for (var i = 0; i < parties.Count; i++)
+            {
+                var entry = parties[i];
+                var party = entry?.Party?.MobileParty;
+                if (party == null || !(party.IsLordParty || party.IsGarrison)) continue;
+                if (party.MapFaction != kingdom) continue;
+
+                fielded += entry.HealthyManCountAtStart;
+                lost += takenWhole ? entry.HealthyManCountAtStart : (entry.DiedInBattle?.TotalRegulars ?? 0);
+            }
+        }
+
+        private static float Share(int lost, int manpower)
+            => manpower > 0 ? (float)lost / manpower : 0f;
+
+        /// <summary>
+        /// A fortification changed hands. The former owner takes exhaustion. No war score: the
+        /// captor keeps the fief at the peace, and scoring it too would pay for it twice (design
+        /// 10, F7). The fighting that took it scored through the siege battle.
         /// </summary>
         public static void ApplyFiefCapture(ModState state, Settlement settlement,
             Kingdom captor, Kingdom formerOwner)
@@ -175,20 +267,18 @@ namespace DiplomacyIntrigue.Diplomacy
             var war = state.OngoingWarBetween(captor, formerOwner);
             if (war == null) return;
 
-            var isTown = settlement.IsTown;
-            var exhaustion = isTown
+            var exhaustion = settlement.IsTown
                 ? DiplomacyConstants.ExhaustionPerTownLost
                 : DiplomacyConstants.ExhaustionPerCastleLost;
-            var score = isTown
-                ? DiplomacyConstants.WarScorePerTownCaptured
-                : DiplomacyConstants.WarScorePerCastleCaptured;
 
             Accrue(war, formerOwner, exhaustion * Settings.Current.WarExhaustionRate);
             war.AddFiefCapture(captor);
-            war.AddWarScore(captor == war.Aggressor ? score : -score);
         }
 
-        /// <summary>A village was looted. Small on its own; attrition when repeated.</summary>
+        /// <summary>
+        /// A village was looted. Small on its own; attrition when repeated. No war score: a raid
+        /// is not a battle between armies (design 10 §3).
+        /// </summary>
         public static void ApplyVillageRaided(ModState state, Village village, Kingdom raider)
         {
             var owner = village?.Settlement?.MapFaction as Kingdom;
@@ -198,9 +288,6 @@ namespace DiplomacyIntrigue.Diplomacy
             if (war == null) return;
 
             Accrue(war, owner, DiplomacyConstants.ExhaustionPerVillageRaided * Settings.Current.WarExhaustionRate);
-            war.AddWarScore(raider == war.Aggressor
-                ? DiplomacyConstants.WarScorePerVillageRaided
-                : -DiplomacyConstants.WarScorePerVillageRaided);
         }
 
         /// <summary>

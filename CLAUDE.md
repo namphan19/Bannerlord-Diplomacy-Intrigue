@@ -335,7 +335,9 @@ suspect and say so.
 reuse a save-definer local id for a different type, never change the definer base id
 (`2749100`, block `2749100`–`2749199`). `Treaty` currently uses ids **1-18** (14 `Hold`, 15
 defiance marks, 16 last defiance, 17 the revolt clock, 18 `TributeSetOn`, design 09 C3), so the next free id there is **19**. `TrustRecord` uses **1-6** (5 `LastPositiveChange`, 6
-`LastOfferRefused`), next free **7**. `ModState` uses
+`LastOfferRefused`), next free **7**. `WarRecord` uses **1-16** (7 is the old `WarScore`, renamed
+`BattleScore` by design 10 - the save system keys by id, not name; 15-16 manpower at the war's
+start), next free **17**. `ModState` uses
 properties **1-18** (11 `Grievances`, 12 `Legitimacy`, 13 `Pretenders`, 14 `InternalWars`,
 15 `SpyNetworks`, 16 `SpyMissions`, 17 `CounterIntelligenceBudgets`, 18 `Offices`), next free **19**. The definer's class ids run to **18**
 (10 `Grievance`, 11 `KingdomLegitimacy`, 12 `Pretender`, 13 `InternalWar`, 14 `InternalWarMember`,

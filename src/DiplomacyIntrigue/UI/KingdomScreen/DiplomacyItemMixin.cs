@@ -482,7 +482,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             {
                 DiRowStatus = "At war for " + war.DaysElapsed.ToString("0") + " days";
                 var band = ExhaustionBands.Of(war.ExhaustionOf(them));
-                var score = war.ScoreFor(us);
+                var score = WarScore.For(war, us);
                 DiRowValue = ExhaustionBands.Name(band) + "  " + (score >= 0f ? "+" : "-")
                              + Math.Abs(score).ToString("0");
                 DiRowValueColor = score >= 0f ? PositiveColor : NegativeColor;
