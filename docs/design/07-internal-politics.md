@@ -196,14 +196,17 @@ Each restitution is logged. The other outcomes are unchanged.
 *How "who held it when the war began" is found.* The decision named our fief ledger,
 `FiefHistory`. It cannot answer: it is kept per kingdom and records nothing when a fief passes
 between two clans of one kingdom, and a rebel keeps `Clan.Kingdom`, so every capture of an
-internal war is invisible to it. The clan comes from the game's own ownership log
-(`ChangeSettlementOwnerLogEntry`: settlement, previous clan, new clan, by siege, date, saved with
-the campaign); `FiefHistory` answers the half it can, that the fief stayed in the realm when it
-changed hands (`FiefHistory.HeldAcross`), which is what marks a capture across the civil war's
-line. No save data was added. **Unverified:** which vanilla code writes that log entry and how
-long the game keeps it are method bodies the reference assemblies do not carry. If the entries are
-not there, nothing is restored and no occupation is counted - the behaviour before this change -
-and `diplomacy.internal_wars` shows it at once ("0 change(s)"). Code: `Intrigue/InternalWarFiefs.cs`.
+internal war is invisible to it. So the war records it itself: when a fief passes **by siege**
+from a house of one side to a house of the other, the capture event
+(`InternalWars.OnSettlementOwnerChanged`) writes the fief and the house it was taken from into
+`InternalWar.Captures`, the first time only. Save data: `InternalWar` property 15 and
+`InternalWarMember` property 2 (the same wrapper as the rebels, with the fief set), no new class.
+The first build read vanilla's ownership log (`ChangeSettlementOwnerLogEntry`) instead, with the
+siege flag taken from a private field by reflection; it lost on review, because how long vanilla
+keeps those entries cannot be read here, and a restitution that silently does nothing when the
+log has aged out is worse than two saved fields. A war begun on an older build holds only the
+captures made since. `diplomacy.internal_wars` lists every recorded capture. Code:
+`Intrigue/InternalWarFiefs.cs`.
 
 What ends it (a question §3 did not ask but a build needs), un-tuned: a side loses when its
 leader is **held captive 30 days** by the other side, or when that side's internal exhaustion
@@ -309,8 +312,8 @@ Two consequences of the mechanism, now written down as design:
   taken by siege across the line costs the side that lost it 6 (town) or 3 (castle)
   (`WarExhaustion.FiefLost`, one formula for both kinds of war), read from the capture event; and
   each fief one side has lost that the other still holds costs it 0.02 a day
-  (`ExhaustionPerDayPerOccupiedFief`), counted from the game's ownership log - see §3a Q1's note
-  of the same date for what that count rests on. Both go through the side leader's resolve, like
+  (`ExhaustionPerDayPerOccupiedFief`), counted from the war's own record of its captures
+  (`InternalWar.Captures`, §3a Q1's note of the same date). Both go through the side leader's resolve, like
   every other accrual. Siege pressure (a foreign war's 0.15 a day per fief under siege) was not
   asked for and is still not counted.
 

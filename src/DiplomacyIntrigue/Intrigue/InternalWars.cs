@@ -940,16 +940,14 @@ namespace DiplomacyIntrigue.Intrigue
             Accrue(war, false, DiplomacyConstants.ExhaustionPerDayAtWar * rate);
 
             // Losing ground keeps hurting while the other side holds it, as in a foreign war
-            // (review R-6): the same constant per fief, per day. Counted from the game's log,
-            // so it reads 0 if that log does not carry the war's captures (InternalWarFiefs).
-            // Its own try: a failure reading the log must not stop the war's day - the end
-            // conditions below still have to be checked.
+            // (review R-6): the same constant per fief, per day, counted from the war's own record
+            // of its captures (InternalWar.Captures). Its own try: a failure here must not stop
+            // the war's day - the end conditions below still have to be checked.
             try
             {
-                var fiefs = InternalWarFiefs.Read(state, war);
-                Accrue(war, true, InternalWarFiefs.OccupiedFrom(war, fiefs, rebelSide: true)
+                Accrue(war, true, InternalWarFiefs.OccupiedFrom(war, rebelSide: true)
                                   * DiplomacyConstants.ExhaustionPerDayPerOccupiedFief * rate);
-                Accrue(war, false, InternalWarFiefs.OccupiedFrom(war, fiefs, rebelSide: false)
+                Accrue(war, false, InternalWarFiefs.OccupiedFrom(war, rebelSide: false)
                                    * DiplomacyConstants.ExhaustionPerDayPerOccupiedFief * rate);
             }
             catch (Exception ex)
@@ -1068,8 +1066,9 @@ namespace DiplomacyIntrigue.Intrigue
         /// the same amount a foreign war charges (<see cref="WarExhaustion.FiefLost"/>: 6 a town,
         /// 3 a castle) - review R-6, decided 2026-09-27. Before, only the calendar and the
         /// casualties of the siege counted, so taking a castle did nothing to win a civil war.
-        /// Read from the event, not the game's log, so this half does not rest on anything
-        /// unverified (<see cref="InternalWarFiefs"/>).
+        /// The same event records the capture (<see cref="InternalWar.RecordCapture"/>), which is
+        /// what the daily occupation term and a crown win's restitution read
+        /// (<see cref="InternalWarFiefs"/>).
         /// </summary>
         public static void OnSettlementOwnerChanged(ModState state, Settlement settlement, Hero newOwner, Hero oldOwner,
             ChangeOwnerOfSettlementAction.ChangeOwnerOfSettlementDetail detail)
@@ -1096,6 +1095,9 @@ namespace DiplomacyIntrigue.Intrigue
                 if (gainer?.Kingdom != war.Kingdom || loser?.Kingdom != war.Kingdom) continue;
                 var loserIsRebel = war.IsRebel(loser);
                 if (loserIsRebel == war.IsRebel(gainer)) continue;
+
+                // The first capture of a fief is what a crown win restores (InternalWarFiefs).
+                war.RecordCapture(settlement, loser);
 
                 var amount = WarExhaustion.FiefLost(settlement) * Settings.Current.WarExhaustionRate;
                 Accrue(war, loserIsRebel, amount);

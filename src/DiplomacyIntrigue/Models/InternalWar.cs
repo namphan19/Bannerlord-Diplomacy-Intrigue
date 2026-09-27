@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Settlements;
 using TaleWorlds.SaveSystem;
 
 namespace DiplomacyIntrigue.Models
@@ -96,6 +97,22 @@ namespace DiplomacyIntrigue.Models
         /// </summary>
         [SaveableProperty(14)] public List<InternalWarMember> SideChanges { get; private set; }
 
+        /// <summary>
+        /// Every fief taken by siege across this war's line, once each, with the house that held
+        /// it before its first capture in the war (review R-6, 2026-09-27): what a crown victory
+        /// gives back, and what wears a side down while the other holds it
+        /// (<c>InternalWarFiefs</c>). Recorded from the capture event as it happens.
+        ///
+        /// Saved, because nothing else knows it: <c>FiefHistory</c> is kept per kingdom and a
+        /// capture inside the realm never leaves the realm, and vanilla's own ownership log was
+        /// the other candidate - read through a private field by reflection, kept for a span the
+        /// reference assemblies cannot show. The same wrapper as <see cref="Rebels"/>, with its
+        /// <see cref="InternalWarMember.Fief"/> set, so no new class or container definition.
+        /// Null on a save written before this, and created in <see cref="AfterLoad"/>; captures
+        /// made before that build are simply not in it.
+        /// </summary>
+        [SaveableProperty(15)] public List<InternalWarMember> Captures { get; private set; }
+
         internal InternalWar() { }
 
         internal InternalWar(Kingdom kingdom, Hero claimant, Clan banner, Kingdom faction,
@@ -107,6 +124,7 @@ namespace DiplomacyIntrigue.Models
             Faction = faction;
             Rebels = new List<InternalWarMember>();
             foreach (var clan in rebels) Rebels.Add(new InternalWarMember(clan));
+            Captures = new List<InternalWarMember>();
             StartedOn = CampaignTime.Now;
             EndedOn = CampaignTime.Never;
             CrownShareAtStart = crownShareAtStart;
@@ -138,6 +156,23 @@ namespace DiplomacyIntrigue.Models
             Rebels.RemoveAll(r => r == null || r.Clan == null);
             if (SideChanges == null) SideChanges = new List<InternalWarMember>();
             SideChanges.RemoveAll(r => r == null || r.Clan == null);
+            // A capture keeps its record when the house that held the fief is gone: the fief
+            // then goes to the crown. Only a record with no fief is meaningless.
+            if (Captures == null) Captures = new List<InternalWarMember>();
+            Captures.RemoveAll(r => r == null || r.Fief == null);
+        }
+
+        /// <summary>
+        /// Records a fief taken across the line, the first time only: "who held it when the war
+        /// began" is the house it was taken from the first time, whoever has taken it since.
+        /// </summary>
+        internal void RecordCapture(Settlement fief, Clan heldBefore)
+        {
+            if (fief == null) return;
+            if (Captures == null) Captures = new List<InternalWarMember>();
+            for (var i = 0; i < Captures.Count; i++)
+                if (Captures[i].Fief == fief) return;
+            Captures.Add(new InternalWarMember(heldBefore, fief));
         }
 
         /// <summary>
@@ -197,11 +232,25 @@ namespace DiplomacyIntrigue.Models
     {
         [SaveableProperty(1)] public Clan Clan { get; private set; }
 
+        /// <summary>
+        /// Set only on an entry of <see cref="InternalWar.Captures"/>: the fief taken, with
+        /// <see cref="Clan"/> the house that held it before. Null on every rebel and side-change
+        /// entry. One wrapper for both rather than a new savable type, because only one class id
+        /// is left below the enum block (CLAUDE.md §3).
+        /// </summary>
+        [SaveableProperty(2)] public Settlement Fief { get; private set; }
+
         internal InternalWarMember() { }
 
         internal InternalWarMember(Clan clan)
         {
             Clan = clan;
+        }
+
+        internal InternalWarMember(Clan heldBefore, Settlement fief)
+        {
+            Clan = heldBefore;
+            Fief = fief;
         }
     }
 }

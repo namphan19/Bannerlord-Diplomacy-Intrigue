@@ -74,29 +74,6 @@ namespace DiplomacyIntrigue.Diplomacy
         }
 
         /// <summary>
-        /// True when the kingdom held this fief both before and after <paramref name="at"/>: the
-        /// fief did not leave the realm then, so any change of owner at that moment was between
-        /// two of its own clans. That is the half of "who took it from whom" this ledger can
-        /// answer, since it keeps kingdoms, not clans. An internal war's captures are read this
-        /// way (review R-6, <c>Intrigue.InternalWarFiefs</c>): the rising's houses keep
-        /// `Clan.Kingdom`, so their sieges never close the realm's record.
-        /// </summary>
-        public static bool HeldAcross(ModState state, Settlement settlement, Kingdom kingdom, CampaignTime at)
-        {
-            if (state == null || settlement == null || kingdom == null) return false;
-
-            for (var i = 0; i < state.FiefHistory.Count; i++)
-            {
-                var record = state.FiefHistory[i];
-                if (record.Settlement != settlement || record.Kingdom != kingdom) continue;
-                // Strict on both ends: a record opened or closed at that very moment is the fief
-                // entering or leaving the realm, which is a war with another kingdom.
-                if (record.From < at && (record.IsCurrent || record.To > at)) return true;
-            }
-            return false;
-        }
-
-        /// <summary>
         /// True when the kingdom held this fief recently enough to claim it back. Current
         /// ownership does not count - you cannot claim what you already hold.
         /// </summary>
