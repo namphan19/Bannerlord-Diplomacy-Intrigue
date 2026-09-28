@@ -30,8 +30,15 @@ namespace DiplomacyIntrigue.UI.ClanScreen
     /// <c>PropertyChanged</c>, heard nothing, and left Members drawn over this tab. The Kingdom
     /// screen's mixin is right to use <c>PropertyChanged</c>: <c>KingdomCategoryVM.Show</c> raises the
     /// plain event.
+    ///
+    /// **handleDerived is required.** With the War Sails DLC loaded the screen is
+    /// <c>NavalGauntletClanScreen</c> and its view model <c>NavalClanManagementVM</c>, a subclass.
+    /// Without the flag UIExtenderEx attaches the mixin to the exact type only: the prefab patch
+    /// still lands, <c>DiIntelligence</c> resolves to nothing, every <c>IsVisible</c> binding keeps
+    /// its default of true, and the overlays draw open with no command behind their buttons.
+    /// Reported by players on 2026-09-28; our test runs had never loaded NavalDLC.
     /// </summary>
-    [ViewModelMixin("RefreshValues")]
+    [ViewModelMixin("RefreshValues", true)]
     internal sealed class ClanManagementVMMixin : BaseViewModelMixin<ClanManagementVM>
     {
         private readonly DiIntelligenceVM _intelligence;

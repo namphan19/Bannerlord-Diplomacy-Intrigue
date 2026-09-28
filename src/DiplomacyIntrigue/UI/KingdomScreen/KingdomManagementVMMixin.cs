@@ -24,8 +24,11 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
     /// The belt behind the braces is <c>OnFrameTick</c>: hooked as the refresh method,
     /// it re-checks the same overlap every frame, so a missed PropertyChanged leaves a
     /// one-frame seam rather than two panels on top of each other.
+    ///
+    /// handleDerived: War Sails swaps in <c>NavalKingdomManagementVM</c>, a subclass; see
+    /// <see cref="DiplomacyIntrigue.UI.ClanScreen.ClanManagementVMMixin"/> for what breaks without it.
     /// </summary>
-    [ViewModelMixin("OnFrameTick")]
+    [ViewModelMixin("OnFrameTick", true)]
     internal sealed class KingdomManagementVMMixin : BaseViewModelMixin<KingdomManagementVM>
     {
         private readonly DiRealmVM _realm;
