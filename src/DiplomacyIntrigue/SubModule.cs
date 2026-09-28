@@ -24,7 +24,7 @@ namespace DiplomacyIntrigue
     public sealed class SubModule : MBSubModuleBase
     {
         public const string ModuleId = "DiplomacyIntrigue";
-        public const string ModuleVersion = "0.1.0";
+        public const string ModuleVersion = "0.2.0";
         public const string HarmonyId = "com.namphan19.diplomacyintrigue";
 
         public static SubModule Instance { get; private set; }

@@ -94,6 +94,21 @@ Two things to know about the dialog itself:
 `InstallCrashLogging` still catches exceptions on other threads, and faults that happen before
 the module loads.
 
+**Players own War Sails, and it swaps the Clan and Kingdom screens' view models.** With NavalDLC
+loaded the screens are `NavalGauntletClanScreen` / `NavalGauntletKingdomScreen` over
+`NavalClanManagementVM` / `NavalKingdomManagementVM`, subclasses of the vanilla ones. A
+`[ViewModelMixin]` without `handleDerived: true` then never attaches while its prefab patch still
+lands, so every `IsVisible="@..."` keeps its default of true: all our panels and overlays draw at
+once, empty, with dead buttons. Players reported exactly that on 2026-09-28; no test had loaded
+NavalDLC. The GABS launch list includes it since then. Saves made without NavalDLC crash on load
+with it (an NRE in `NavalDLCManager.OnGameStart`, not ours); `di_naval_test` is a save made with it.
+
+**This machine is not on v1.4.8.** Since 2026-09-26 18:54 the Steam install is on the `beta`
+branch, v1.5.3. Every live check and every "verified by IL on v1.4.8" written after that moment
+was made against v1.5.3. Players are on v1.4.8, so a release ships the DLL
+`scripts/compile-check.sh` builds against the v1.4.8 reference assemblies (`scripts/release.ps1`
+does this), never the local build.
+
 **A map faction must be a `Kingdom` whenever the clan is in one.** Vanilla casts
 `MapFaction` to `Kingdom` without checking at about 25 places: `GainKingdomInfluenceAction`,
 hourly party AI, fief elections, lord conversations and more. It assumes a clan inside a kingdom
@@ -202,6 +217,7 @@ dotnet run --project tools/LoadProbe   # would the game load this assembly?
 dotnet run --project tools/ApiDump -- "TypeNameOrFilter"   # real v1.4.8 API surface
 pwsh ./scripts/check-save-ids.ps1   # the save-data rules of §3, read from source; build and deploy run it first
 scripts/compile-check.sh     # no game on this box (Linux, cloud): compile against NuGet reference assemblies
+pwsh ./scripts/release.ps1   # Nexus zip from the committed tree, DLL built against v1.4.8 refs
 ```
 
 `compile-check.sh` builds against BUTR's `Bannerlord.ReferenceAssemblies.Core` 1.4.8.119303 and

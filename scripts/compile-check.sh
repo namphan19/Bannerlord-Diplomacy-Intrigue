@@ -53,11 +53,12 @@ cp "$CACHE"/pkgs/bannerlord.butterlib/lib/net472/*.dll "$MODS/Bannerlord.ButterL
 cp "$CACHE"/pkgs/bannerlord.uiextenderex/lib/netstandard2.0/*.dll "$MODS/Bannerlord.UIExtenderEx/bin/Win64_Shipping_Client/"
 cp "$CACHE"/pkgs/bannerlord.mcm/lib/netstandard2.0/*.dll "$MODS/Bannerlord.MBOptionScreen/bin/Win64_Shipping_Client/"
 
-# The reference assemblies lag the lead's game by at least one member: 1.4.8.119303 has no
-# MapEvent.BattleTypes.SiegeAmbush, which the real v1.4.8 install has and WarExhaustion uses (found
-# 2026-09-27). So the build runs on a copy of src/ with that one line dropped; the source itself is
-# right for the game and is left alone. If a later reference package gains the member, the sed
-# simply matches nothing.
+# v1.4.8 has no MapEvent.BattleTypes.SiegeAmbush; WarExhaustion uses it because the lead's install
+# has been on Steam's beta branch (v1.5.3) since 2026-09-26, where it was added as value 11, after
+# every existing member. An earlier version of this comment called that install "the real v1.4.8"
+# and blamed the reference package; it was wrong (found 2026-09-28). The build runs on a copy of
+# src/ with that one line dropped, which is also the right build for a v1.4.8 player: that battle
+# type never occurs there. This script's output is what a release ships (scripts/release.ps1).
 SRC="$CACHE/src"
 rm -rf "$SRC" && cp -r "$REPO/src" "$SRC"
 cp "$REPO/Directory.Build.props" "$CACHE/" 2>/dev/null || true
