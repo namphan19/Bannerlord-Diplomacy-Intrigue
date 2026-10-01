@@ -155,39 +155,36 @@ namespace DiplomacyIntrigue.Diplomacy
             q.InfluenceHeld = patron.RulingClan != null ? patron.RulingClan.Influence : 0;
             q.GoldHeld = q.Summoner.Gold;
 
-            // R3: the summons names its war. A vassal serves one obligation war at a time
-            // (CallToArms.AlreadyServing), so this is that war or nothing.
+            // R3: the summons names its war - the one war the two are fighting together, whether the
+            // vassal answered the call to attack or the patron came to its defence.
             var war = ServiceWar(state, patron, vassal);
             if (war == null)
             {
                 q.Reason = vassal.Name + " is serving " + patron.Name + " in no war right now"
-                           + (ObligationFighter(state, vassal) != null
-                               ? " - it is fighting one for " + ObligationFighter(state, vassal).Name.ToString()
-                               : "");
+                           + NoServiceWhy(state, patron, vassal);
                 return q;
             }
             q.War = war;
             q.Enemy = war.Other(vassal);
 
-            // The army they would march in. Required rather than created: a summons that raised an
-            // army for a ruler who had not chosen to would be the mod deciding where a king stands,
-            // and the Realm tab says so on the button instead.
-            var party = q.Summoner.PartyBelongedTo;
-            q.Army = party != null ? party.Army : null;
-            if (q.Army == null)
+            // The army they would march in. Not created - a summons that raised an army for a ruler
+            // who had not chosen to would be the mod deciding where a king stands - but not the
+            // ruler's own either. A patron whose ruler is not leading the field army this week can
+            // still put a vassal's lords under the one its realm has raised, which is what a
+            // hegemon actually wants: men in the same column.
+            var summonerParty = q.Summoner.PartyBelongedTo;
+            var army = FindArmy(patron, q.Summoner, vassal, q.Enemy, out var skippedForAPeace);
+            if (army == null)
             {
-                q.Reason = q.Summoner.Name + " commands no army to march them under";
+                q.Reason = skippedForAPeace
+                    ? patron.Name + "'s armies are marching at a realm " + vassal.Name + " is at peace with"
+                    : patron.Name + " has no army to march them under";
                 return q;
             }
-            if (q.Army.Kingdom != patron)
-            {
-                q.Reason = q.Summoner.Name + " is in an army of "
-                           + (q.Army.Kingdom == null ? "no realm" : q.Army.Kingdom.Name.ToString());
-                return q;
-            }
+            q.Army = army;
 
             // R2: at most half the eligible war parties, nearest the summoner first.
-            q.Available = EligibleParties(state, vassal, party, null).Count;
+            q.Available = EligibleParties(state, vassal, summonerParty ?? army.LeaderParty, null).Count;
             q.PartyCount = Hegemony.MaxVassalsToCall(q.Available);
             if (q.PartyCount <= 0)
             {
@@ -212,7 +209,7 @@ namespace DiplomacyIntrigue.Diplomacy
 
             // R4: asked here so the button can say what the answer will be, and re-asked at issue
             // (R4) - Hold may have moved between the quote and the click.
-            Hegemony.WouldServe(state, q.Link, out var refusal);
+            WouldServe(state, q.Link, out var refusal);
             q.Asked = true;
             q.WillServe = refusal == null;
             q.Refusal = refusal;
@@ -271,25 +268,131 @@ namespace DiplomacyIntrigue.Diplomacy
         }
 
         /// <summary>
-        /// The one obligation war <paramref name="vassal"/> is serving <paramref name="patron"/> in,
-        /// or null. <see cref="WarRecord.IsObligationWar"/> is <c>CalledBy != null</c> and
-        /// <c>CallToArms.Answer</c> stamps the caller on the *vassal's own* war record, so this is
-        /// exactly "it answered our call", not a copy of the rule.
+        /// The war this summons is for, or null. **Two shapes, and the second is the one that
+        /// mattered** (run 10, 2026-10-01).
+        ///
+        /// The first is the vassal's own obligation war: it answered its patron's call to attack,
+        /// and <see cref="WarRecord.IsObligationWar"/> is <c>CalledBy != null</c> with
+        /// <c>CallToArms.Answer</c> stamping the caller on the *vassal's* record. Exactly "it
+        /// answered our call", not a copy of the rule.
+        ///
+        /// The second is the war the vassal is **defending** and its patron has **joined**. There
+        /// the obligation mark lands on the *patron's* record instead, so the vassal has no
+        /// obligation war of its own and the first test alone found it **twice in ten years** - and
+        /// a summons therefore issued zero times, against an acceptance criterion that asked for
+        /// more than zero (run-10.md §3). It is also the most natural case there is: the patron is
+        /// already in the field defending this vassal, and wants its lords under one command.
+        ///
+        /// Read through <see cref="Hegemony.AnswerTo"/>, so "did my patron show up" means the same
+        /// thing here as in the Hold protection term and in story 1.10d.
         /// </summary>
         public static WarRecord ServiceWar(ModState state, Kingdom patron, Kingdom vassal)
         {
             if (state == null || patron == null || vassal == null) return null;
+
             foreach (var war in state.OngoingWarsOf(vassal))
                 if (war.IsObligationWar && war.CalledBy == patron) return war;
+
+            foreach (var war in state.OngoingWarsOf(vassal))
+                if (war.Defender == vassal
+                    && Hegemony.AnswerTo(state, war, vassal, patron) == Hegemony.Answer.Joined)
+                    return war;
+
             return null;
         }
 
-        /// <summary>Whoever this vassal is fighting somebody else's war for, for the diagnostic's wording.</summary>
-        private static Kingdom ObligationFighter(ModState state, Kingdom vassal)
+        /// <summary>
+        /// Whether the vassal is in no war its patron is serving with it at all, with the reason
+        /// spelled for the button. Reads the same two shapes <see cref="ServiceWar"/> does, so the
+        /// disabled-reason and the act cannot disagree about which war was meant.
+        /// </summary>
+        private static string NoServiceWhy(ModState state, Kingdom patron, Kingdom vassal)
         {
             foreach (var war in state.OngoingWarsOf(vassal))
-                if (war.IsObligationWar) return war.CalledBy;
-            return null;
+                if (war.IsObligationWar)
+                    return " - it is fighting one for " + (war.CalledBy == null ? "somebody else" : war.CalledBy.Name.ToString());
+
+            foreach (var war in state.OngoingWarsOf(vassal))
+                if (war.Defender == vassal && war.Aggressor != null)
+                    return " - " + war.Aggressor.Name + " is attacking it and " + patron.Name
+                           + " has not answered that war";
+
+            return "";
+        }
+
+        /// <summary>
+        /// The army of <paramref name="patron"/> that a summons would use, or null when the realm has
+        /// none. In order: the summoner's own army, then any army of the realm's already marching
+        /// against <paramref name="enemy"/>, then any army of the realm's at all.
+        ///
+        /// The last two are the point. The first build demanded the *ruler's* party be leading an
+        /// army, and an AI ruler's party frequently is not - a marshal's is - so that gate was one
+        /// more reason the AI never reached the feature (run 10). The summoned parties then follow
+        /// whichever army the realm has actually raised, which is what "under the patron's command"
+        /// means on the map.
+        ///
+        /// Searched through <c>MobileParty.All</c> rather than <c>Kingdom.Armies</c>: the latter is
+        /// rebuilt cached data, and a stale entry would put a party into an army that no longer
+        /// exists.
+        /// </summary>
+        private static Army FindArmy(Kingdom patron, Hero summoner, Kingdom vassal, Kingdom enemy,
+            out bool skippedForAPeace)
+        {
+            skippedForAPeace = false;
+            if (patron == null) return null;
+
+            // An army the daily release would empty is not a choice (see ArmyMarchesOnAPeace).
+            var skipped = false;
+
+            var own = summoner != null && summoner.PartyBelongedTo != null
+                ? summoner.PartyBelongedTo.Army : null;
+            if (own != null && own.Kingdom == patron)
+            {
+                if (!ArmyMarchesOnAPeace(own, patron, vassal)) return own;
+                skipped = true;
+            }
+
+            Army anyRealmArmy = null;
+            foreach (var party in MobileParty.All)
+            {
+                if (party == null) continue;
+                var army = party.Army;
+                if (army == null || army.Kingdom != patron) continue;
+                if (ArmyMarchesOnAPeace(army, patron, vassal)) { skipped = true; continue; }
+                if (anyRealmArmy == null) anyRealmArmy = army;
+                if (enemy != null && party.MapFaction != null && party.MapFaction.IsAtWarWith(enemy)) return army;
+            }
+
+            // Only a reason when it is the reason: a usable army found means nothing was in the way.
+            skippedForAPeace = anyRealmArmy == null && skipped;
+            return anyRealmArmy;
+        }
+
+        /// <summary>
+        /// Whether the vassal answers a summons (R4), at
+        /// <see cref="DiplomacyConstants.SummonsServeThreshold"/> - and **not** at the call to arms'
+        /// own 40.
+        ///
+        /// It used to ask <see cref="Hegemony.WouldServe"/>, so that one resolver covered both, and
+        /// the measurement killed it: only 9.7% of link-weeks reached Hold 40 in ten years of runs,
+        /// so a summons was reachable about once a decade and never at all by the AI (run-10.md
+        /// §3). A summons is the rarer act - it costs the vassal half its war parties and the
+        /// patron real influence and denars - so the bar is its own and lower, and the defiance
+        /// tiers survive: below 25 the vassal is in the diplomatic-defiance band of design 04 §6.2,
+        /// where refusing is what that band means.
+        /// </summary>
+        public static bool WouldServe(ModState state, Treaty link, out string why)
+        {
+            why = null;
+            if (link == null) { why = "no vassalage"; return false; }
+
+            var hold = Hegemony.HoldOf(link);
+            if (hold >= DiplomacyConstants.SummonsServeThreshold) return true;
+
+            why = "resents " + (link.DominantParty == null ? "its patron" : link.DominantParty.Name.ToString())
+                  + " too much to march under its command (hold " + hold.ToString("0")
+                  + ", needs " + DiplomacyConstants.SummonsServeThreshold.ToString("0") + ")";
+            return false;
         }
 
         /// <summary>
@@ -498,11 +601,13 @@ namespace DiplomacyIntrigue.Diplomacy
         /// </summary>
         private static int Attach(ModState state, Quote q)
         {
-            var summoner = q.Summoner.PartyBelongedTo;
-            if (summoner == null || summoner.Army == null) return 0;
+            // The army the quote chose, which is the realm's rather than the ruler's wherever the
+            // ruler is not leading one itself (see FindArmy). Nearest-first is measured from the
+            // army's leader, which is the column they will actually be marching in.
+            var army = q.Army;
+            if (army == null) return 0;
 
-            var parties = EligibleParties(state, q.Vassal, summoner, null);
-            var army = summoner.Army;
+            var parties = EligibleParties(state, q.Vassal, army.LeaderParty, null);
             var attempted = 0;
             for (var i = 0; i < parties.Count && attempted < q.PartyCount; i++)
             {
@@ -702,27 +807,67 @@ namespace DiplomacyIntrigue.Diplomacy
         /// pulls it out of a war it was sent to fight.
         /// </summary>
         private static bool UnsafeFor(SummonsRecord record)
+            => ArmyMarchesOnAPeace(SummonerArmy(record), record.Patron, record.Vassal);
+
+        /// <summary>
+        /// Whether <paramref name="army"/> is marching at something the vassal has no war over - the
+        /// one test behind both the daily release (R3) and the choice of army at the order.
+        ///
+        /// It lives in one place because the order and the release disagreed (live, 2026-10-01): the
+        /// chooser took any army "at war with the enemy", a patron at war with two realms had one
+        /// army besieging the other, the vassal's parties went in, and the release - which does look
+        /// at the target - sent all 14 home on the first tick. The price had been paid in full for
+        /// no day of service. An army the release would empty is no army to march under.
+        ///
+        /// Read from what the army is doing - the settlement it has targeted, or the one it is
+        /// besieging - and tested against the vassal's own wars. An army with no target is not
+        /// marching at anything yet and is safe.
+        /// </summary>
+        private static bool ArmyMarchesOnAPeace(Army army, Kingdom patron, Kingdom vassal)
         {
-            var army = SummonerArmy(record);
-            if (army == null) return false;
+            if (army == null || patron == null || vassal == null) return false;
 
             var target = army.LeaderParty != null ? army.LeaderParty.TargetSettlement : null;
             if (target == null) target = army.AiBehaviorObject as Settlement;
             if (target == null) return false;
 
             var owner = target.MapFaction;
-            if (owner == null || owner == record.Patron || owner == record.Vassal) return false;
+            if (owner == null || owner == patron || owner == vassal) return false;
 
             // Only a settlement the army is actually fighting is our business, and only when the
             // vassal has no quarrel of its own with whoever holds it.
-            if (!record.Patron.IsAtWarWith(owner)) return false;
-            return !record.Vassal.IsAtWarWith(owner);
+            if (!patron.IsAtWarWith(owner)) return false;
+            return !vassal.IsAtWarWith(owner);
         }
 
+        /// <summary>
+        /// The army holding this summons' parties right now, or null if there is none.
+        ///
+        /// **Found from the parties, not from the summoner.** The first build read
+        /// <c>record.Summoner.PartyBelongedTo.Army</c>, which was only ever right while the ruler's
+        /// own army was the one used - and since the army a summons picks is any army of the
+        /// patron's realm, it is no longer necessarily the ruler's. Asking the parties is also the
+        /// only version that survives the ruler being deposed or the army disbanding: an army with
+        /// none of the vassal's men in it is not holding anything.
+        /// </summary>
         private static Army SummonerArmy(SummonsRecord record)
         {
-            var party = record.Summoner != null ? record.Summoner.PartyBelongedTo : null;
-            return party != null ? party.Army : null;
+            if (record == null) return null;
+
+            Army first = null;
+            foreach (var party in MobileParty.All)
+            {
+                if (party == null) continue;
+                var army = party.Army;
+                if (army == null || party.MapFaction != record.Vassal) continue;
+                if (army.Kingdom != record.Patron) continue;
+                if (first == null) first = army;
+                // Marching against the war we summoned them for is the army we want.
+                if (army.LeaderParty != null && army.LeaderParty.MapFaction != null
+                    && record.Enemy != null && army.LeaderParty.MapFaction.IsAtWarWith(record.Enemy))
+                    return army;
+            }
+            return first;
         }
 
         /// <summary>

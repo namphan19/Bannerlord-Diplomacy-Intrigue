@@ -1781,7 +1781,10 @@ namespace DiplomacyIntrigue.Core
             var hold = Hegemony.HoldOf(link);
             if (hold >= DiplomacyConstants.HoldRenewThreshold) return "loyal - will renew willingly";
             if (hold >= DiplomacyConstants.HoldPassiveResistanceThreshold) return "serving, but will let the term lapse";
-            if (hold >= DiplomacyConstants.HoldDefianceThreshold) return "resisting - refuses summons, withholds tribute";
+            // Named for the *call to arms* it is the threshold of. A summons has its own and a lower
+            // one (SummonsServeThreshold, story 1.10c R4), so "refuses summons" here would be a
+            // statement about the wrong act.
+            if (hold >= DiplomacyConstants.HoldDefianceThreshold) return "resisting - refuses the call to arms, withholds tribute";
             if (!Hegemony.IsAtBreakingPoint(state, link)) return "defiant - will treat with outsiders";
             return "at breaking point - counting down to revolt";
         }

@@ -842,6 +842,27 @@ namespace DiplomacyIntrigue.Diplomacy
         /// </summary>
         public const float SummonsAiBudgetShare = 0.15f;
 
+        /// <summary>
+        /// Hold at which a vassal answers its patron's summons, as against the call to arms' own
+        /// <see cref="HoldPassiveResistanceThreshold"/> of 40.
+        ///
+        /// **Deliberately lower than the call to arms', and the reason is measured, not chosen.**
+        /// Run 10 (2026-10-01, 10.3 years): only 15 of 154 link-weeks reached Hold 40 - 9.7% - and
+        /// the AI issued **zero** summons in the whole run, against an acceptance criterion that
+        /// asked for more than zero. A summons is a rarer and dearer act than marching beside a
+        /// patron, and it costs the vassal half its war parties, so the bar is lower, not higher.
+        ///
+        /// 25 rather than 15-20 because 15-29 is the **diplomatic defiance** band (design 04 §6.2,
+        /// treating with outsiders behind its patron's back); a summons served there would quietly
+        /// retire that tier too. 25 leaves §6.2 intact and still triples the reachable population.
+        ///
+        /// The price of this: Hold 30-39 no longer means "refuses your summons" for a *summons* -
+        /// it means it resists the call to arms and withholds tribute. The player guide and the
+        /// Nexus page are written to be corrected (story 1.10c ST-9). UN-TUNED: 25 is a first
+        /// figure from one run's distribution, not a measured optimum.
+        /// </summary>
+        public const float SummonsServeThreshold = 25f;
+
         // ---- A patron bound to its vassal's attacker chooses a side (design 04 §4.3, story 1.10d)
         //
         // When a patron cannot answer a vassal's call to arms because a live treaty forbids war

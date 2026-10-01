@@ -166,6 +166,26 @@ at), and vassals answered a patron's call twice. The mechanism is unreachable fo
 broken; whether that is what is wanted is a question for the lead (run-10.md §4, recommendation: leave
 it). `DefendAlly` was 31.6% of wars, under the 35% bar, up from run 09's 26-27%.
 
+**1.10c, the lead's reachability update (2026-10-01, after run 10) - built and run live on v1.5.3.**
+Three changes to `Summons.cs`: a vassal serves a summons from **Hold 25** (`SummonsServeThreshold`,
+not the call to arms' 40); the summons' war may also be the one the vassal is *defending* and its
+patron has joined; and the army may be any army of the patron's realm, not only the ruler's own.
+Live on `di_hegemony_1166` (Aserai attacks Southern Empire, Vlandia comes to its defence): the war
+was found, a realm army was found for a ruler who leads no party, and the vassal at **Hold 38.2**
+(refused before) was ready to serve - 14 of 28 parties, `served n=14`, **0 errors**.
+- **A defect in the new army choice, found and fixed live:** `FindArmy` took any realm army "at war
+  with the enemy"; Vlandia, at war with two realms, had one army besieging the other, so the 14
+  parties went in and the daily release (R3) sent all 14 home on the **first tick** - the price
+  (498 influence, 58,400 gold) paid for no day of service. The chooser and the release now share
+  one test, `ArmyMarchesOnAPeace`; an army the release would empty is skipped, and if every army is
+  such a one the order is refused with that reason before anything is charged. Re-run: with the
+  realm's armies all marching at the other war, "not possible: Vlandia's armies are marching at a
+  realm Southern Empire is at peace with" (no charge); with an army aimed at Aserai, `served n=14`
+  and all 14 still in the army two ticks later.
+- **Not run:** whether the lower bar makes the AI summon in a long run (a second ST-8); the Hold-25
+  refusal edge; the player-facing text and Nexus page still say a vassal below 40 "refuses summons"
+  (the constant's own comment records that these are to be corrected, ST-9).
+
 **Trust on a refused call, corrected in four documents.** Story 1.10c, design 04 §6.1 and a code
 comment said a refusal costs −10 trust; `TrustCallToArmsRefused` has been −15 throughout. They
 also said two marks make the vassalage "lapse at its next expiry", and the player guide that "the
