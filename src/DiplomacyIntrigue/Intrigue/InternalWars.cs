@@ -255,16 +255,121 @@ namespace DiplomacyIntrigue.Intrigue
             if (home == null && banner.Fiefs.Count > 0) home = banner.Fiefs[0].Settlement;
             if (home == null) home = kingdom.InitialHomeSettlement ?? kingdom.FactionMidSettlement;
 
+            // Resolved before the kingdom is created: a failure after CreateKingdom left a
+            // half-built kingdom registered on every daily tick (seen 2026-10-01).
+            var initialize = InitializeKingdomMethod;
+            if (initialize == null)
+                throw new InvalidOperationException(
+                    "this game's Kingdom.InitializeKingdom matches no signature this mod knows");
+
             var name = new TextObject(claimant.Name + "'s Rising");
             var faction = Kingdom.CreateKingdom("di_rising");
-            faction.InitializeKingdom(
-                name, name, banner.Culture, banner.Banner, banner.Color, banner.Color2, home,
-                new TextObject("The houses of " + kingdom.Name + " who took up arms to put "
-                               + claimant.Name + " on its throne."),
-                new TextObject("Rising"),
-                new TextObject("Claimant"));
+
+            var parameters = initialize.GetParameters();
+            var args = new object[parameters.Length];
+            args[0] = name;
+            args[1] = name;
+            args[2] = banner.Culture;
+            args[3] = banner.Banner;
+            args[4] = banner.Color;
+            args[5] = banner.Color2;
+            args[6] = home;
+            args[7] = new TextObject("The houses of " + kingdom.Name + " who took up arms to put "
+                                     + claimant.Name + " on its throne.");
+            args[8] = new TextObject("Rising");
+            args[9] = new TextObject("Claimant");
+            for (var i = InitializeKingdomKnownParameters; i < parameters.Length; i++)
+                args[i] = DefaultFor(parameters[i]);
+
+            try
+            {
+                initialize.Invoke(faction, args);
+            }
+            catch (TargetInvocationException ex) when (ex.InnerException != null)
+            {
+                // The game's own exception, not reflection's wrapper, is what the log should name.
+                throw new InvalidOperationException("Kingdom.InitializeKingdom threw", ex.InnerException);
+            }
+
             faction.RulingClan = banner;
             return faction;
+        }
+
+        /// <summary>
+        /// The ten parameters every known version of <c>Kingdom.InitializeKingdom</c> starts with,
+        /// in order. v1.4.8 has exactly these; v1.5.3 appends two optional
+        /// <c>Nullable&lt;uint&gt;</c> banner colours (read from both assemblies' metadata,
+        /// 2026-10-01).
+        /// </summary>
+        private static readonly Type[] InitializeKingdomPrefix =
+        {
+            typeof(TextObject), typeof(TextObject), typeof(CultureObject), typeof(Banner),
+            typeof(uint), typeof(uint), typeof(Settlement),
+            typeof(TextObject), typeof(TextObject), typeof(TextObject)
+        };
+
+        private const int InitializeKingdomKnownParameters = 10;
+
+        /// <summary>
+        /// <c>Kingdom.InitializeKingdom</c>, found by reflection rather than called directly.
+        ///
+        /// WHY: a direct call compiles in the exact signature of the reference assemblies it was
+        /// built against. The release DLL is built against v1.4.8's ten-parameter method, which
+        /// v1.5.3 no longer has (it has only the twelve-parameter one, with no overload kept), so
+        /// on v1.5.3 every rising failed with <c>MissingMethodException</c>. The source compiled
+        /// against both, because the two new parameters have defaults - but defaults are filled in
+        /// by the compiler, and the runtime binds the exact signature. The alternative, one build
+        /// per game version, lost: two DLLs to ship and match for a single call. This is the only
+        /// reference in the mod that did not resolve on v1.5.3 (a scan of all 681 references into
+        /// TaleWorlds.*, 2026-10-01).
+        ///
+        /// Accepted: the overload whose first ten parameters are the known ones and whose every
+        /// further parameter is optional, the shortest such one first. Anything else returns null
+        /// and the rising does not start, with the reason in the log - never a guess at what a new
+        /// parameter means.
+        /// </summary>
+        private static readonly MethodInfo InitializeKingdomMethod = FindInitializeKingdom();
+
+        private static MethodInfo FindInitializeKingdom()
+        {
+            try
+            {
+                MethodInfo best = null;
+                foreach (var method in typeof(Kingdom).GetMethods(BindingFlags.Public | BindingFlags.Instance))
+                {
+                    if (method.Name != "InitializeKingdom") continue;
+                    var parameters = method.GetParameters();
+                    if (parameters.Length < InitializeKingdomKnownParameters) continue;
+
+                    var fits = true;
+                    for (var i = 0; i < parameters.Length && fits; i++)
+                        fits = i < InitializeKingdomKnownParameters
+                            ? parameters[i].ParameterType == InitializeKingdomPrefix[i]
+                            : parameters[i].IsOptional;
+                    if (!fits) continue;
+
+                    if (best == null || parameters.Length < best.GetParameters().Length) best = method;
+                }
+                return best;
+            }
+            catch (Exception ex)
+            {
+                Log.Error("InternalWar", "Looking up Kingdom.InitializeKingdom failed.", ex);
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// What the game itself would pass for an optional parameter the mod does not set: its
+        /// declared default, or the type's zero value when the metadata carries none.
+        /// </summary>
+        private static object DefaultFor(ParameterInfo parameter)
+        {
+            if (parameter.HasDefaultValue) return parameter.DefaultValue;
+            var type = parameter.ParameterType;
+            return type.IsValueType && Nullable.GetUnderlyingType(type) == null
+                ? Activator.CreateInstance(type)
+                : null;
         }
 
         // ----- Reading --------------------------------------------------------
