@@ -69,6 +69,10 @@ re-rolled after a reload (now saved, `SpyMission` 12); stale figures in six desi
       3. The AI never assassinates anyone of the player's house (`:510`, the lead's decision 11).
       4. The AI never forges letters to the player's house (`:250`).
       Run 09 §4 gathers the evidence; then the lead decides 1's lever, 2, and whether 3-4 stay.
+      **Decided 2026-10-01 (lead), to be built:** 1 - the lever, the station enforced, no Harmony
+      (story 3.8); 2 - bands (3.9); 3 - the exemption removed, the player hero included (3.10);
+      4 - an offer to believe or dismiss the letters (3.10). Odds that move after launch are told
+      to the player (3.11, run 09 D-8). Phase 3 acceptance: story 3.12.
 - [ ] **A rival's court can be read off the peace hint.** "They start listening at N" shows a
       rival's exact exhaustion (older than today) and now its court-moved bar, from which its
       Doves/Hawks balance can be inferred - against the band rule (design 02 §9 decision 1).
