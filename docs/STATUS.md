@@ -158,6 +158,14 @@ reasoning.
 inquiry is queued (`dismissed_JoinKingdomSceneNotificationItem`); a notification left up blocks
 `save_game` silently.
 
+**Balance run 10, 2026-10-01 - [balance/run-10.md](balance/run-10.md).** 10.3 years, 79 wars, 0 errors,
+mean war 56 days. **1.10d (AC7): met** - 13 bound choices, 6 defended the vassal, 7 honoured the
+treaty, 7 treaties torn up, no patron lost them all. **1.10c (AC10): not met - the AI issued no
+summons in 10 years.** Only 9.7% of link-weeks had Hold at or above 40 (the line a vassal serves
+at), and vassals answered a patron's call twice. The mechanism is unreachable for the AI, not
+broken; whether that is what is wanted is a question for the lead (run-10.md §4, recommendation: leave
+it). `DefendAlly` was 31.6% of wars, under the 35% bar, up from run 09's 26-27%.
+
 **Trust on a refused call, corrected in four documents.** Story 1.10c, design 04 §6.1 and a code
 comment said a refusal costs −10 trust; `TrustCallToArmsRefused` has been −15 throughout. They
 also said two marks make the vassalage "lapse at its next expiry", and the player guide that "the

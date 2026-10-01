@@ -1,0 +1,540 @@
+==================================================================
+RUN SIZE
+==================================================================
+  weekly snapshots : 124   (~10.3 in-game years)
+  wars ended       : 79
+  first snapshot   : Summer 3, 1084
+  last snapshot    : Autumn 1, 1094
+
+==================================================================
+WAR DURATION  (acceptance: mean under 252 days = 3 years)
+==================================================================
+  CHOSEN wars       n=  54  mean=  62.9d  median= 53.0d  max= 196d  (0.75 years)
+  OBLIGATION wars   n=  25  mean=  42.1d  median= 43.0d  max= 106d  (0.50 years)
+
+  who ended them:
+    PeaceTable             48    60.8%
+    FollowerRelease        14    17.7%
+    Dormant                12    15.2%
+    Defection               3     3.8%
+    Submission              2     2.5%
+
+  terms conceded:
+    white_peace                    26
+    submit_as_a_vassal_paying_500_per_period,_release_prisoners    8
+    released_by_Battania            6
+    vassalage                       5
+    released_by_Sturgia             3
+    release_every_vassal,_release_prisoners    3
+    released_by_Southern_Empire     2
+    released_by_Western_Empire      2
+
+  count   : 79
+  mean    : 56.3 days  (0.67 years)
+  median  : 49.0 days
+  min/max : 2 / 196 days
+  VERDICT : PASS
+
+  distribution:
+        1-7d     2  #
+       8-30d    10  ######
+       1-3mo    58  ####################################
+       3-6mo     6  ###
+      6mo-3y     3  #
+
+==================================================================
+CASUS BELLI of ended wars
+==================================================================
+  DefendAlly                 25    31.6%
+  Conquest                   24    30.4%
+  ReclaimAncestralLand       20    25.3%
+  None                        4     5.1%
+  BrokenTreaty                3     3.8%
+  EspionageExposed            2     2.5%
+  AvengeRaid                  1     1.3%
+
+  called in by an ally (vs chose the war):
+    none                       54
+    Battania                    8
+    Southern_Empire             5
+    Sturgia                     5
+    Northern_Empire             3
+    Western_Empire              3
+
+==================================================================
+OUTCOMES
+==================================================================
+  wars with any fief change : 46 / 79  (58.2%)
+  total fiefs changing hands: 113
+  final war score |mean|    : 39.5
+  white-ish (|score| < 5)   : 27 / 79
+
+==================================================================
+WORLD STATE  (sampled every ~26 weeks)
+==================================================================
+  date                   kingdoms      atWar       wars  avgExhaus     claims  nonAggres      truce  defensive   alliance  tributary  vassalage
+  Summer 3, 1084                8          8          4        1.1          0          1          0          0          0          0          0
+  Summer 15, 1086               8          7          5       35.1         34          4          7          4          2          0          1
+  Autumn 8, 1088                8          7          8       28.2         47          0          3          5          4          0          1
+  Winter 1, 1090                8          6          6       19.9         83          1          9          6          3          0          1
+  Winter 15, 1092               8          7          5       22.9         95          1         10          5          3          2          1
+  FINAL                         8          8          7       36.5        100          2          5          5          3          0          3
+
+==================================================================
+DID ALLIANCES EVER FORM?
+==================================================================
+  alliance             max=  6  weeks with any= 112 / 124
+  defensivePact        max=  6  weeks with any= 119 / 124
+  nonAggressionPact    max=  4  weeks with any= 116 / 124
+  tributaryPact        max=  2  weeks with any=  34 / 124
+  vassalage            max=  3  weeks with any= 100 / 124
+
+==================================================================
+PERMANENT TOTAL WAR CHECK
+==================================================================
+  kingdoms alive: first 8, last 8, min 8
+  share of kingdoms at war: mean 89.5%  min 62.5%  max 100.0%
+  weeks with EVERY kingdom at war : 54 / 124  (43.5%)
+  weeks with NOBODY at war        : 0 / 124  (0.0%)
+  average exhaustion across run   : 22.4  (max 47.8)
+
+==================================================================
+RUN
+==================================================================
+  session at Summer_3;_1084   mod 0.2.0 built 2026-10-01_18:00:01  aggressiveness 1  player Gavalon
+
+==================================================================
+POWER  (yearly: live dominance / smoothed / greed / fortifications / vassals)
+==================================================================
+  year 1084:
+      Aserai         1.00/1.16 g0.0 f18 v0
+      Battania       1.26/1.10 g0.0 f16 v1
+      Khuzait        0.96/0.87 g0.0 f16 v0
+      Northern_Empir 0.85/0.90 g0.0 f14 v0
+      Southern_Empir 0.69/0.96 g0.0 f14 v0
+      Sturgia        1.15/1.03 g0.0 f14 v0
+      Vlandia        1.15/1.04 g0.0 f17 v0
+      Western_Empire 0.94/0.94 g0.0 f11 v0
+  year 1085:
+      Aserai         1.22/1.21 g0.0 f18 v0
+      Battania       0.78/1.02 g0.0 f15 v0
+      Khuzait        0.92/0.80 g0.0 f17 v0
+      Northern_Empir 1.13/0.92 g0.0 f16 v0
+      Southern_Empir 0.89/0.83 g0.0 f10 v0
+      Sturgia        0.75/0.97 g0.0 f15 v0
+      Vlandia        1.45/1.25 g0.0 f17 v0
+      Western_Empire 0.88/1.00 g0.0 f12 v1
+  year 1086:
+      Aserai         0.88/1.01 g0.0 f14 v0
+      Battania       0.85/0.90 g0.0 f18 v0
+      Khuzait        0.91/0.89 g0.0 f19 v0
+      Northern_Empir 1.48/1.19 g0.0 f16 v0
+      Southern_Empir 0.69/0.92 g0.0 f13 v1
+      Sturgia        1.13/0.99 g0.0 f14 v0
+      Vlandia        1.48/1.36 g0.1 f17 v0
+      Western_Empire 0.60/0.74 g0.0 f 9 v0
+  year 1087:
+      Aserai         0.97/0.93 g0.0 f16 v0
+      Battania       0.75/0.84 g0.0 f14 v1
+      Khuzait        0.98/0.86 g0.0 f17 v0
+      Northern_Empir 1.37/1.35 g0.1 f16 v0
+      Southern_Empir 1.06/0.92 g0.0 f15 v2
+      Sturgia        0.71/0.93 g0.0 f16 v0
+      Vlandia        1.36/1.44 g0.2 f17 v0
+      Western_Empire 0.79/0.74 g0.0 f 9 v0
+  year 1088:
+      Aserai         1.01/0.92 g0.0 f15 v0
+      Battania       0.80/0.86 g0.0 f14 v0
+      Khuzait        1.12/1.05 g0.0 f19 v0
+      Northern_Empir 0.92/1.07 g0.0 f14 v0
+      Southern_Empir 0.81/0.93 g0.0 f15 v1
+      Sturgia        1.05/0.94 g0.0 f16 v0
+      Vlandia        1.33/1.37 g0.1 f17 v0
+      Western_Empire 0.96/0.86 g0.0 f10 v0
+  year 1089:
+      Aserai         1.19/1.05 g0.0 f17 v0
+      Battania       0.71/0.75 g0.0 f 7 v0
+      Khuzait        1.33/1.14 g0.0 f21 v0
+      Northern_Empir 0.75/0.88 g0.0 f10 v0
+      Southern_Empir 0.98/0.92 g0.0 f16 v0
+      Sturgia        0.92/1.08 g0.0 f19 v0
+      Vlandia        1.55/1.41 g0.2 f20 v0
+      Western_Empire 0.56/0.77 g0.0 f10 v0
+  year 1090:
+      Aserai         1.02/1.04 g0.0 f15 v1
+      Battania       0.52/0.73 g0.0 f 9 v0
+      Khuzait        1.34/1.29 g0.0 f25 v0
+      Northern_Empir 1.11/0.94 g0.0 f10 v0
+      Southern_Empir 0.84/0.77 g0.0 f12 v0
+      Sturgia        1.06/0.97 g0.0 f17 v0
+      Vlandia        1.21/1.47 g0.2 f21 v0
+      Western_Empire 0.91/0.78 g0.0 f11 v0
+  year 1091:
+      Aserai         1.25/1.05 g0.0 f13 v0
+      Battania       0.62/0.62 g0.0 f 6 v0
+      Khuzait        1.62/1.48 g0.2 f28 v0
+      Northern_Empir 0.63/0.78 g0.0 f 9 v0
+      Southern_Empir 0.67/0.84 g0.0 f13 v0
+      Sturgia        0.84/1.05 g0.0 f18 v0
+      Vlandia        1.62/1.44 g0.2 f22 v0
+      Western_Empire 0.75/0.73 g0.0 f11 v0
+  year 1092:
+      Aserai         1.24/1.19 g0.0 f13 v0
+      Battania       0.63/0.68 g0.0 f 6 v0
+      Khuzait        1.34/1.52 g0.3 f30 v1
+      Northern_Empir 0.76/0.65 g0.0 f 6 v0
+      Southern_Empir 0.67/0.74 g0.0 f13 v0
+      Sturgia        1.02/0.94 g0.0 f18 v0
+      Vlandia        1.70/1.61 g0.4 f22 v0
+      Western_Empire 0.64/0.68 g0.0 f12 v0
+  year 1093:
+      Aserai         0.68/1.11 g0.0 f12 v0
+      Battania       0.49/0.48 g0.0 f 3 v0
+      Khuzait        1.48/1.47 g0.2 f31 v1
+      Northern_Empir 0.91/0.81 g0.0 f 6 v0
+      Southern_Empir 0.73/0.70 g0.0 f12 v0
+      Sturgia        1.18/1.06 g0.0 f19 v0
+      Vlandia        1.57/1.58 g0.3 f24 v1
+      Western_Empire 0.96/0.78 g0.0 f13 v1
+  year 1094:
+      Aserai         0.79/0.92 g0.0 f12 v0
+      Battania       0.54/0.50 g0.0 f 3 v0
+      Khuzait        1.55/1.49 g0.2 f31 v1
+      Northern_Empir 0.75/0.84 g0.0 f 6 v0
+      Southern_Empir 0.97/0.78 g0.0 f12 v0
+      Sturgia        1.08/1.09 g0.0 f20 v0
+      Vlandia        1.72/1.62 g0.4 f24 v1
+      Western_Empire 0.60/0.77 g0.0 f12 v1
+
+==================================================================
+TOP KINGDOM OVER TIME
+==================================================================
+  year 1084: Battania           dominance 1.26  smoothed 1.10  greed 0.00
+  year 1085: Vlandia            dominance 1.45  smoothed 1.25  greed 0.00
+  year 1086: Northern_Empire    dominance 1.48  smoothed 1.19  greed 0.00
+  year 1087: Northern_Empire    dominance 1.37  smoothed 1.35  greed 0.10
+  year 1088: Vlandia            dominance 1.33  smoothed 1.37  greed 0.12
+  year 1089: Vlandia            dominance 1.55  smoothed 1.41  greed 0.16
+  year 1090: Khuzait            dominance 1.34  smoothed 1.29  greed 0.04
+  year 1091: Khuzait            dominance 1.62  smoothed 1.48  greed 0.23
+  year 1092: Vlandia            dominance 1.70  smoothed 1.61  greed 0.36
+  year 1093: Vlandia            dominance 1.57  smoothed 1.58  greed 0.33
+  year 1094: Vlandia            dominance 1.72  smoothed 1.62  greed 0.37
+
+==================================================================
+AI MOVES  (weekly evaluations, per kingdom)
+==================================================================
+  Aserai             None=108, SoughtPeace=8, DeclaredWar=5, OfferedPact=2, unevaluated=1
+  Battania           None=98, SoughtPeace=14, DeclaredWar=8, OfferedPact=3, unevaluated=1
+  Khuzait            None=96, DeclaredWar=11, OfferedPact=11, SoughtPeace=4, unevaluated=2
+  Northern_Empire    None=103, OfferedPact=8, DeclaredWar=6, SoughtPeace=5, unevaluated=1, Submitted=1
+  Southern_Empire    None=106, SoughtPeace=10, DeclaredWar=4, unevaluated=1, Defected=1, OfferedPact=1, Submitted=1
+  Sturgia            None=102, DeclaredWar=9, OfferedPact=8, SoughtPeace=4, unevaluated=1
+  Vlandia            None=107, OfferedPact=7, DeclaredWar=5, SoughtPeace=3, unevaluated=1, DemandedTribute=1
+  Western_Empire     None=100, SoughtPeace=12, DeclaredWar=6, unevaluated=2, Defected=2, OfferedPact=2
+
+==================================================================
+EVENTS  (counts)
+==================================================================
+  battle_scored               3017
+  skill_xp                     901
+  amends                       253
+  fief_changed                 242
+  clan_changed_kingdom         187
+  treaty_signed                136
+  treaty_expired                98
+  war_opened                    82
+  ai_war_declared               54
+  call_to_arms                  47
+  ai_pact_signed                42
+  defiance_mark                 42
+  bound_choice                  26
+  office_appointed              22
+  tribute_level                 19
+  indemnity_paid                17
+  treaty_broken                 14
+  vassalage_formed              13
+  yearly_report                 10
+  treaty_repudiated              4
+  defection                      3
+  revolt                         3
+  treaty_dissolved               3
+  hegemony_dissolved_at_table     3
+  tribute_refused                2
+  office_vacated                 2
+  tribute_accepted               1
+
+==================================================================
+HEGEMONY TIMELINE
+==================================================================
+  Autumn_10;_1084    VASSAL   Western_Empire -> Battania (imposed, value -1, hold 35)
+  Winter_19;_1084    VASSAL   Southern_Empire -> Aserai (imposed, value -1, hold 35)
+  Winter_19;_1084    BOUND    Aserai vs Battania over Southern_Empire [DefensivePact, hold 35, 1 treaty(ies)] -> asked
+  Winter_19;_1084    BOUND    Aserai vs Battania over Southern_Empire [treaties not repeated here, hold 35] -> honour-vassal
+  Summer_19;_1085    VASSAL   Southern_Empire -> Western_Empire (defection, value -1, hold 45)
+  Summer_19;_1085    BOUND    Western_Empire vs Northern_Empire over Southern_Empire [NonAggressionPact, hold 45, 1 treaty(ies)] -> asked
+  Summer_19;_1085    BOUND    Western_Empire vs Northern_Empire over Southern_Empire [treaties not repeated here, hold 45] -> honour-vassal
+  Summer_19;_1085    BOUND    Western_Empire vs Khuzait over Southern_Empire [DefensivePact+Alliance, hold 45, 2 treaty(ies)] -> asked
+  Summer_19;_1085    BOUND    Western_Empire vs Khuzait over Southern_Empire [treaties not repeated here] -> honour-treaty: the_link_is_worth_80_against_118_for_the_breach
+  Summer_19;_1085    DEFECT   Southern_Empire left Aserai for its attacker Western_Empire (hold 25.97, signed true)
+  Summer_20;_1086    REVOLT   against Western_Empire: Southern_Empire (at war: Southern_Empire)
+  Autumn_3;_1086     VASSAL   Western_Empire -> Battania (imposed, value -1, hold 20)
+  Autumn_17;_1086    VASSAL   Western_Empire -> Southern_Empire (defection, value -1, hold 45)
+  Autumn_17;_1086    DEFECT   Western_Empire left Battania for its attacker Southern_Empire (hold 17.54, signed true)
+  Summer_9;_1087     VASSAL   Khuzait -> Southern_Empire (imposed, value -1, hold 35)
+  Autumn_11;_1087    VASSAL   Aserai -> Battania (imposed, value -1, hold 35)
+  Spring_11;_1088    REVOLT   against Battania: Aserai (at war: Aserai)
+  Summer_17;_1088    REVOLT   against Southern_Empire: Khuzait (at war: Khuzait)
+  Winter_1;_1088     BOUND    Southern_Empire vs Northern_Empire over Western_Empire [Truce, hold 26.84, 1 treaty(ies)] -> asked
+  Winter_1;_1088     BOUND    Southern_Empire vs Northern_Empire over Western_Empire [treaties not repeated here] -> honour-treaty: the_link_is_worth_22_against_33_for_the_breach
+  Spring_3;_1089     VASSAL   Western_Empire -> Battania (defection, value -1, hold 45)
+  Spring_3;_1089     BOUND    Battania vs Northern_Empire over Western_Empire [Alliance+DefensivePact, hold 45, 2 treaty(ies)] -> asked
+  Spring_3;_1089     BOUND    Battania vs Northern_Empire over Western_Empire [treaties not repeated here] -> honour-treaty: the_link_is_worth_71_against_124_for_the_breach
+  Spring_3;_1089     DEFECT   Western_Empire left Southern_Empire for its attacker Battania (hold 22.91, signed true)
+  Summer_20;_1089    BOUND    Battania vs Aserai over Western_Empire [Truce, hold 7, 1 treaty(ies)] -> asked
+  Summer_20;_1089    BOUND    Battania vs Aserai over Western_Empire [treaties not repeated here] -> honour-treaty: the_link_is_worth_3_against_33_for_the_breach
+  Winter_17;_1089    VASSAL   Western_Empire -> Aserai (imposed, value -1, hold 35)
+  Winter_17;_1089    BOUND    Aserai vs Sturgia over Western_Empire [Truce, hold 35, 1 treaty(ies)] -> asked
+  Winter_17;_1089    BOUND    Aserai vs Sturgia over Western_Empire [treaties not repeated here, hold 35] -> honour-vassal
+  Winter_17;_1089    BOUND    Aserai vs Southern_Empire over Western_Empire [Truce, hold 35, 1 treaty(ies)] -> asked
+  Winter_17;_1089    BOUND    Aserai vs Southern_Empire over Western_Empire [treaties not repeated here, hold 35] -> honour-vassal
+  Spring_8;_1090     VASSAL   Northern_Empire -> Southern_Empire (submitted_to_attacker, value 50.65, hold 45)
+  Winter_11;_1090    BOUND    Aserai vs Battania over Western_Empire [Truce, hold 28.39, 1 treaty(ies)] -> asked
+  Winter_11;_1090    BOUND    Aserai vs Battania over Western_Empire [treaties not repeated here, hold 28.39] -> honour-vassal
+  Autumn_8;_1092     VASSAL   Northern_Empire -> Khuzait (imposed, value -1, hold 35)
+  Summer_11;_1093    VASSAL   Battania -> Vlandia (imposed, value -1, hold 35)
+  Summer_11;_1093    BOUND    Vlandia vs Western_Empire over Battania [NonAggressionPact+DefensivePact, hold 35, 2 treaty(ies)] -> asked
+  Summer_11;_1093    BOUND    Vlandia vs Western_Empire over Battania [treaties not repeated here, hold 35] -> honour-vassal
+  Summer_11;_1093    BOUND    Vlandia vs Sturgia over Battania [TributaryPact, hold 35, 1 treaty(ies)] -> asked
+  Summer_11;_1093    BOUND    Vlandia vs Sturgia over Battania [treaties not repeated here] -> honour-treaty: the_link_is_worth_88_against_110_for_the_breach
+  Summer_15;_1093    BOUND    Khuzait vs Vlandia over Northern_Empire [DefensivePact, hold 14.9, 1 treaty(ies)] -> asked
+  Summer_15;_1093    BOUND    Khuzait vs Vlandia over Northern_Empire [treaties not repeated here] -> honour-treaty: the_link_is_worth_39_against_56_for_the_breach
+  Autumn_12;_1093    VASSAL   Southern_Empire -> Western_Empire (submitted_to_attacker, value 54, hold 45)
+  Summer_16;_1094    BOUND    Western_Empire vs Khuzait over Southern_Empire [Alliance+DefensivePact, hold 0.1, 2 treaty(ies)] -> asked
+  Summer_16;_1094    BOUND    Western_Empire vs Khuzait over Southern_Empire [treaties not repeated here] -> honour-treaty: the_link_is_worth_5_against_118_for_the_breach
+
+==================================================================
+FIEFS  (fortifications gained minus lost, by kingdom)
+==================================================================
+  fortifications changing hands: 242
+    Khuzait              +16
+    Vlandia              +8
+    Sturgia              +5
+    Western_Empire       -2
+    Southern_Empire      -3
+    Aserai               -5
+    Northern_Empire      -9
+    Battania             -10
+
+==================================================================
+COALITIONS  (call to arms by role and outcome)
+==================================================================
+  ally     answered     17
+  ally     refused      16
+  patron   refused       5
+  vassal   answered      2
+  vassal   defied        2
+  vassal   excused       5
+  AI pacts signed: 42, carrying a balancing pull: 7
+    Summer_9;_1085     Khuzait + Western_Empire DefensivePact mutual 79.99 pull 4.5 against Aserai
+    Summer_15;_1085    Northern_Empire + Western_Empire NonAggressionPact mutual 46.4 pull 3.34 against Aserai
+    Summer_16;_1085    Khuzait + Western_Empire Alliance mutual 79.73 pull 4.45 against Aserai
+    Spring_8;_1091     Northern_Empire + Battania Alliance mutual 78.16 pull 4.07 against Aserai
+    Autumn_1;_1092     Northern_Empire + Battania DefensivePact mutual 64.3 pull 6.17 against Khuzait
+    Spring_11;_1093    Battania + Southern_Empire NonAggressionPact mutual 35.67 pull 22.05 against Khuzait
+    Autumn_7;_1093     Sturgia + Southern_Empire Alliance mutual 80.28 pull 12.05 against Khuzait
+  AI wars declared: 54; targets with expected support: 8; aggressors with expected support: 34
+
+==================================================================
+ENGINE  (rulers, clans, the player)
+==================================================================
+  ruler_died       0
+  ruler_changed    0
+  player_died      0
+  clans changing kingdom: 187  (JoinAsMercenary=162, LeaveAsMercenary=25)
+  real moves only (excl. mercenary, clan/kingdom destruction): 0
+
+==================================================================
+VASSAL LINKS  (weeks observed, hold min/mean/last, weeks at breaking point)
+==================================================================
+  Western_Empire     -> Battania           weeks  15  hold   4.0/ 28.0/  4.0  breaking   2  last terms fear -14.3 prot 0 dread 0
+  Southern_Empire    -> Aserai             weeks   6  hold  24.1/ 30.4/ 24.1  breaking   0  last terms fear 17.52 prot -6.67 dread 0
+  Southern_Empire    -> Western_Empire     weeks  23  hold   0.1/ 24.8/  0.1  breaking   9  last terms fear -17.43 prot 0 dread 0
+  Western_Empire     -> Southern_Empire    weeks  28  hold  21.9/ 34.2/ 21.9  breaking   0  last terms fear 3.94 prot 0 dread 0
+  Khuzait            -> Southern_Empire    weeks  13  hold   5.1/ 18.7/  7.3  breaking   5  last terms fear -8.19 prot 0 dread 0
+  Aserai             -> Battania           weeks   6  hold   9.0/ 17.1/ 14.2  breaking   4  last terms fear -6.07 prot 0 dread 0
+  Western_Empire     -> Aserai             weeks  18  hold  24.1/ 37.6/ 28.6  breaking   0  last terms fear 10.74 prot 0 dread 0
+  Northern_Empire    -> Southern_Empire    weeks   7  hold   6.0/ 23.6/  6.0  breaking   3  last terms fear -15.09 prot 0 dread 0
+  Northern_Empire    -> Khuzait            weeks  24  hold   8.9/ 26.3/ 32.1  breaking   1  last terms fear 25 prot 0 dread -5.94
+  Battania           -> Vlandia            weeks  14  hold  30.7/ 32.9/ 33.3  breaking   0  last terms fear 25 prot 0 dread -9.25
+
+==================================================================
+WAR SCORE  (design 10: battles and prisoners)
+==================================================================
+  battles scored: 3017   by type: FieldBattle=2741, Siege=135, SiegeOutside=115, SallyOut=26
+  won by: attacker=2623, defender=356, none=38
+  |points| per battle: mean 2.1  median 0.7  max 33.0   at the cap (30.0): 1
+  battles per ended war (n=79): mean 36.2  median 35.0  max 109.0   wars with none scored: 2
+  battles not in an ended war (still running at the end, or before the war's first logged day): 159
+  (a war begun before the log opened is missing the battles fought before it)
+
+  at each war's end: prisoners = finalScore - finalBattles (both aggressor-positive, 0.1 rounding)
+  prisoner share = |prisoners| / (|battles| + |prisoners|)
+    all wars     n=  79  |battles| mean  23.5  |prisoners| mean  21.1  |final| mean  39.5
+                 prisoner share mean  43.5%  median  50.2%   |prisoners| > |battles|: 31 / 79   pulling opposite ways: 13
+    peace table  n=  48  |battles| mean  35.6  |prisoners| mean  29.6  |final| mean  57.8
+                 prisoner share mean  46.1%  median  49.6%   |prisoners| > |battles|: 22 / 48   pulling opposite ways: 12
+  |final score| at the end (wars on the new build):
+       < 5    27  #################
+      5-20    11  ######
+     20-40    11  ######
+     40-60    10  ######
+     60-75     4  ##
+     >= 75    16  ##########
+    aggressor ahead 31, defender ahead 31, level 17
+  weekly [WAR] rows of running wars: 736; prisoner share mean 40.4%; weeks with |prisoners| > |battles|: 243
+
+  battles where a side's counted men or manpower read 0 (design 10 section 9a): 1118 / 3017
+    FieldBattle            defenderFielded    1090
+    FieldBattle            attackerFielded      19
+    Siege                  attackerFielded       9
+    of which a side counted 0 men while its side had men there (sideMen > 0): 1092
+    the first few in full:
+      day=91081 date=Summer_5;_1084 kind=battle_scored type=FieldBattle attacker=Western_Empire defender=Battania winner=attacker attackerLost=2 attackerFielded=148 attackerManpower=4956 defenderLost=0 defenderFielded=0 defenderManpower=4722 proportional=-0.05 award=0 battleScore=-14.05 attackerSideMen=148 defenderSideMen=38 settlement=none settlementNow=none attackerParties=Saratis'_Party:lord:Western_Empire:yes:148:2 defenderParties=Villagers_of_Uthelaim:villager:Battania:no(army):38:35
+      day=91081 date=Summer_5;_1084 kind=battle_scored type=FieldBattle attacker=Southern_Empire defender=Aserai winner=attacker attackerLost=6 attackerFielded=162 attackerManpower=5215 defenderLost=0 defenderFielded=0 defenderManpower=5046 proportional=-0.14 award=0 battleScore=-7.56 attackerSideMen=162 defenderSideMen=29 settlement=none settlementNow=none attackerParties=Ulbos'_Party:lord:Southern_Empire:yes:162:6 defenderParties=Caravan_of_Lath_the_Wool_Weaver:caravan:Aserai:no(army):29:16
+      day=91082 date=Summer_6;_1084 kind=battle_scored type=FieldBattle attacker=Southern_Empire defender=Aserai winner=attacker attackerLost=2 attackerFielded=25 attackerManpower=5215 defenderLost=0 defenderFielded=0 defenderManpower=5046 proportional=-0.05 award=0 battleScore=-9.32 attackerSideMen=25 defenderSideMen=29 settlement=none settlementNow=none attackerParties=Sanion's_Party:lord:Southern_Empire:yes:25:2 defenderParties=Villagers_of_Hoqqa:villager:Aserai:no(army):29:27
+      day=91089 date=Summer_13;_1084 kind=battle_scored type=FieldBattle attacker=Southern_Empire defender=Aserai winner=attacker attackerLost=4 attackerFielded=71 attackerManpower=5215 defenderLost=0 defenderFielded=0 defenderManpower=5046 proportional=-0.09 award=0 battleScore=-45.71 attackerSideMen=272 defenderSideMen=35 settlement=none settlementNow=none attackerParties=Honoratus'_Party:lord:Southern_Empire:yes:71:4/Shalar_of_the_Jawwal's_Party:lord:Jawwal:no(realm):100:6/Rutwar_of_the_Jawwal's_Party:lord:Jawwal:no(realm):101:1 defenderParties=Caravan_of_Thaqir_the_Silversmith:caravan:Aserai:no(army):35:23
+  sieges the attacker won: 114; defender lists by design 10 section 9a's cases (a line can show several):
+    a garrison counted yes, with men: the owner changes after   114
+
+==================================================================
+PEACE OUTCOMES PER DECADE  (10 years = 840 days from the log's first day; [WAR-ENDED] terms=)
+==================================================================
+  decade                       wars    white  dormant  tribute   subjug    kneel   indemn    fiefs dissolve captives    other
+  1 from Summer 3, 1084          78       13       12        1        8        5       17      5/5        3        0       14
+  2 from Summer 3, 1094 (0.2y)    1        1        0        0        0        0        0      0/0        0        0        0
+  TOTAL                          79       14       12        1        8        5       17      5/5        3        0       14
+  wars per column; a package counts in each column it contains. white = white peace at a table,
+  dormant = a lapsed war, subjug = 'submit as a vassal' at the table, kneel = endedBy Submission or
+  Defection, fiefs = wars/fiefs ceded, dissolve = a sphere released, captives = prisoners released
+  and nothing else, other = released_by / eliminated / ordered_by / unknown (no table).
+  tribute demands accepted: decade 1 1, decade 2 0
+  vassalage formed (all routes): decade 1 13, decade 2 0
+
+==================================================================
+INDEMNITY  (indemnity_paid)
+==================================================================
+  indemnities paid: 17, 2,191,000 denars in all
+  gold                  : mean 128,882  median 131,000  max 239,000
+  share of the treasury : mean 21.6%  median 24.9%  max 30.0%   at the cap (40%): 0
+  points                : mean 43.3  median 49.7  max 60.0
+  payers: Battania 6, Western_Empire 4, Sturgia 3, Northern_Empire 1, Khuzait 1, Aserai 1, Southern_Empire 1
+
+==================================================================
+TRIBUTE DEMANDS  (tribute_accepted / tribute_refused)
+==================================================================
+  answer          lines  pairs   (a standing refusal repeats weekly, so count pairs)
+  accepted            1      1
+  court               2      1
+  player              0      0
+  cap                 0      0
+  cooldown            0      0
+  distinct (demander, target) pairs answered: 2
+  court answers (an AI crown whose court was read): 3 lines, refused 2 (66.7%); by pair: 2 pairs, 1 ever refused (50.0%), 1 accepted
+  courtShare (share of the court left ready to break) against refusesAt=0.34:
+    accepted : mean 0.00  median 0.00  max 0.00
+    refused  : mean 0.85  median 0.85  max 0.94
+    band        accepted  refused
+    0.0-0.1          1        0
+    0.3-0.4          0        0   <- refusesAt
+    0.7-0.8          0        1
+    0.9-1.0          0        1
+
+==================================================================
+COURT AND FOREIGN POLICY  (R-1: ai_war_declared, AI peace bars)
+==================================================================
+  declarations carrying the R-1 terms: 54  (opened 54)
+  fromOwnCourt       : mean +3.49  non-zero 43  hawkish (>0) 43  dovish (<0) 0  range +0.0 .. +5.9
+  fromTargetWeakness : mean +2.15  non-zero 40  max 3.0
+  at or above the bar (18): 54; would have fallen under it without both terms: 0, without the own-court term: 0, without the target-weakness term: 0
+  (value = terms x aggressiveness; only this target's value is recomputed - without the terms
+   another target, or none, might have been chosen, and a war a court talked down leaves no line)
+  AI peaces in the prose log: 48; with '(its court's bar N)': 48 - sooner (bar < 60) 43, later 5; bar mean 51.0  median 52.4  max 62.9, min 42.4
+
+==================================================================
+HEGEMONY LEGAL NEGLECT  ([LINK] legalNeglect, logged as a cost, so <= 0)
+==================================================================
+  link-weeks: 154; with legal neglect: 35 (22.7%); when non-zero mean -6.86, worst -10.00
+    Western_Empire     -> Battania             6 of  15 weeks
+    Southern_Empire    -> Western_Empire       3 of  23 weeks
+    Western_Empire     -> Southern_Empire      4 of  28 weeks
+    Western_Empire     -> Aserai               7 of  18 weeks
+    Northern_Empire    -> Khuzait             14 of  24 weeks
+    Battania           -> Vlandia              1 of  14 weeks
+
+==================================================================
+BOUND PATRON'S CHOICE  (story 1.10d: prose [PROTECT] lines; days ~ the record before)
+==================================================================
+  choices seen: 13   asked 0, honoured the vassal 6, honoured the treaty 7, war refused after the breach 0
+  a row is one choice, from its bound-choice line to its answer; a row reading 'asked' had no answer in this log
+  ~day              patron            vassal            attacker          answer         treaties
+  Winter 19, 1084   Aserai            Southern Empire   Battania          honour-vassal  DefensivePact  broke DefensivePact
+  Summer 19, 1085   Western Empire    Southern Empire   Northern Empire   honour-vassal  NonAggressionPact  broke NonAggressionPact
+  Summer 19, 1085   Western Empire    Southern Empire   Khuzait           honour-treaty  DefensivePact, Alliance  (the link is worth 80 against 118 for the breach)
+  Winter 1, 1088    Southern Empire   Western Empire    Northern Empire   honour-treaty  Truce  (the link is worth 22 against 33 for the breach)
+  Spring 3, 1089    Battania          Western Empire    Northern Empire   honour-treaty  Alliance, DefensivePact  (the link is worth 71 against 124 for the breach)
+  Summer 20, 1089   Battania          Western Empire    Aserai            honour-treaty  Truce  (the link is worth 3 against 33 for the breach)
+  Winter 17, 1089   Aserai            Western Empire    Sturgia           honour-vassal  Truce  broke Truce
+  Winter 17, 1089   Aserai            Western Empire    Southern Empire   honour-vassal  Truce  broke Truce
+  Winter 11, 1090   Aserai            Western Empire    Battania          honour-vassal  Truce  broke Truce
+  Summer 11, 1093   Vlandia           Battania          Western Empire    honour-vassal  NonAggressionPact, DefensivePact  broke NonAggressionPact, DefensivePact
+  Summer 11, 1093   Vlandia           Battania          Sturgia           honour-treaty  TributaryPact  (the link is worth 88 against 110 for the breach)
+  Summer 15, 1093   Khuzait           Northern Empire   Vlandia           honour-treaty  DefensivePact  (the link is worth 39 against 56 for the breach)
+  Summer 16, 1094   Western Empire    Southern Empire   Khuzait           honour-treaty  Alliance, DefensivePact  (the link is worth 5 against 118 for the breach)
+  Aserai             put to it   4 time(s), treaties torn up by it   4   (AC7)
+  Western Empire     put to it   3 time(s), treaties torn up by it   1   (AC7)
+  Battania           put to it   2 time(s), treaties torn up by it   0
+  Vlandia            put to it   2 time(s), treaties torn up by it   2   (AC7)
+  Southern Empire    put to it   1 time(s), treaties torn up by it   0
+  Khuzait            put to it   1 time(s), treaties torn up by it   0
+  treaties torn up by this rule: Truce 3, DefensivePact 2, NonAggressionPact 2   (a war refused after the breach still cost these)
+  (other (CallToArms) lines, not [PROTECT] ones, are not read here:   73)
+
+==================================================================
+SUMMONS  (prose [SUMMONS] lines; days ~ the record before, and no day of their own)
+==================================================================
+  no (Summons) lines in this log (no summons was ever issued on this build)
+
+==================================================================
+INTERNAL WARS AND HOUSES  (prose lines: no telemetry exists; days ~ the record before)
+==================================================================
+  no (InternalWar) or (ClanSuccession) lines in this log
+
+==================================================================
+COURT VERBS  (2.9: amends, offices, vassal tribute levels)
+==================================================================
+  amends made: 253   by grievance: FiefToRival=93, UnjustWar=81, HumiliatingTribute=42, FiefLostToEnemy=37
+    influence mean 167  median 125  max 752   gold mean 20,612  median 15,300  max 86,800
+    loyalty gained mean 5.1  median 4.8  max 14.3   by realm: Western_Empire 62, Aserai 57, Southern_Empire 38, Sturgia 24, Vlandia 21, Khuzait 20, Northern_Empire 18, Battania 13
+  offices: appointed 22 (Watch=6, Envoy=6, Spymaster=4, Steward=4, Treasurer=2), dismissed 0, vacated 2
+    cost: influence mean 207  median 200  max 239   gold mean 27,095  median 24,850  max 42,800
+    seat skill gained mean 12  median 10  max 122
+    why seats emptied: the holder's house left the realm 2
+  vassal tribute set: 19 (raised 3, lowered 16, to none 0)   500->250 16, 250->500 3
+    Hold when raised mean 45.9  median 40.8  max 56.8   when lowered mean 35.4  median 36.0  max 39.9
+
+==================================================================
+NOT IN TELEMETRY  (what this build cannot be measured on from a log)
+==================================================================
+  Read from prose above, not telemetry - dated only to the record before, and the wording can drift:
+    internal wars (start, end, outcome, concessions, side changes, captures, restitution),
+    clan successions and cadet splits, and the court's peace bar (only when it moved the bar;
+    a peace offered to the player or a dormant lapse carries none).
+    summons issued, served, refused, excused and released (telemetry exists for all five; the
+    prose is what is parsed above, and a live summons still standing at the end of a run is not
+    in the log at all - only diplomacy.summons, in the live game, can say so).
+  Not in the log in any parseable form:
+    legitimacy and its changes, grievances raised (amends are recorded, grievances are not),
+    loyalty, bloc shares, pretenders, royal successions (Succession prose only), espionage;
+    a war a court of Doves talked a crown out of (nothing is written when no war is declared);
+    an internal war's exhaustion over time (prose on each battle, no weekly record).
