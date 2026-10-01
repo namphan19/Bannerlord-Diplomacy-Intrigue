@@ -1058,7 +1058,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             _grievance = g;
             _onChanged = onChanged;
 
-            Title = TitleOf(g.Type);
+            Title = TitleOf(g.Type, g.Holder);
             WeightText = g.Weight.ToString("0.0");
             var days = g.Created.ElapsedDaysUntilNow;
             AgeText = (days < 1f ? "today" : days.ToString("0") + " days ago")
@@ -1088,7 +1088,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
         private DiCourtGrievanceVM(Grievance g)
         {
-            Title = TitleOf(g.Type) + " - answered";
+            Title = TitleOf(g.Type, g.Holder) + " - answered";
             WeightText = "0.0";
             AgeText = "Answered " + g.AnsweredOn.ElapsedDaysUntilNow.ToString("0") + " days ago. Remembered for "
                       + IntrigueConstants.AmendsMemoryYears.ToString("0") + " years: the same wrong again weighs x"
@@ -1164,6 +1164,6 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         }
 
         /// <summary>The slight's name, from <see cref="GrievanceRegistry.TitleOf"/>, its one home.</summary>
-        internal static string TitleOf(GrievanceType type) => GrievanceRegistry.TitleOf(type);
+        internal static string TitleOf(GrievanceType type, Clan holder) => GrievanceRegistry.TitleOf(type, holder);
     }
 }

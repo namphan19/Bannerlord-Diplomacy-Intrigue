@@ -100,8 +100,16 @@ namespace DiplomacyIntrigue.Espionage
     /// The AI's espionage (design 03 §8 step 3.6), under the lead's calls of 2026-09-25 (design 03
     /// §9, decisions 11-13): only a ruling house runs a network, one at most, aimed at a clear rival;
     /// it spends only what its purse can spare; it acts only when being caught is unlikely; and it
-    /// assassinates only in war, only a commander in the field, never a ruler and never the player's
-    /// own people.
+    /// assassinates only in war, only a commander in the field, never a ruler.
+    ///
+    /// **The player's house is a mark like any other** (story 3.10, the lead's decision of
+    /// 2026-10-01, replacing decisions 11 and 12's exemptions). Its lords can be bribed, have
+    /// letters forged against them and be assassinated under the same rules as every other house,
+    /// chosen by the same bands and tie-breaks. Two things stay the player's by design and are
+    /// visible: the AI never *plans* against a realm the player rules (<see cref="Plan"/>, line
+    /// below), and where an operation would reach the player directly it asks rather than acting
+    /// silently - a bribe or a forged letter becomes an offer, in <see cref="Missions"/>. Neither
+    /// is a rule about who may be targeted; both are about who gets told.
     ///
     /// **The same rules as the player.** Everything the AI does goes through the calls the player's
     /// levers use - <see cref="SpyNetworks.Assign"/>, <see cref="SpyNetworks.SetBudget"/>,
@@ -129,13 +137,19 @@ namespace DiplomacyIntrigue.Espionage
 
         public static EspionagePlan Plan(ModState state, Kingdom realm)
         {
+            // One of the two places this class still knows the player by name, and the other is
+            // <see cref="WindDownOrphans"/>. Both are about the player's *own* espionage, not about
+            // who the AI may target - story 3.10 §3 puts both out of its scope, and they follow from
+            // decision 5 (the player runs their own networks) rather than from any exemption.
             var p = new EspionagePlan { Realm = realm };
             if (state == null || realm == null || !realm.IsRealm()) { p.Skip = "not a realm"; return p; }
 
             p.Ruler = realm.Leader;
             p.Owner = realm.RulingClan;
             if (p.Ruler == null || p.Owner == null) { p.Skip = "nobody on the throne"; return p; }
-            if (p.Ruler == Hero.MainHero) { p.Skip = "the player rules it"; return p; }
+            // The player's own realm is never planned for: its espionage is the player's, and every
+            // budget, network and mission in it is one the player ordered.
+            if (p.Ruler != null && p.Ruler == Hero.MainHero) { p.Skip = "the player rules it"; return p; }
 
             p.Purse = p.Ruler.Gold;
             p.Spendable = Math.Max(0, p.Purse - EspionageConstants.AiGoldReserve);
@@ -492,8 +506,13 @@ namespace DiplomacyIntrigue.Espionage
         /// <summary>
         /// An AI house runs a network only while it rules (decision 5). One that has lost the throne,
         /// or its realm, stops paying and recalls its handler - otherwise a fallen dynasty would fund
-        /// its old network for the rest of the campaign with nobody deciding anything about it. The
-        /// player's house is never touched: its networks are the player's.
+        /// its old network for the rest of the campaign with nobody deciding anything about it.
+        ///
+        /// The player's house is skipped here for the same reason <see cref="Plan"/> does not plan
+        /// against a realm the player rules: these networks are the player's, bought and spent by
+        /// them, and a rule that recalled their own handler because they had lost a throne they never
+        /// held would be taking their espionage away from them. The second of the two places this
+        /// class knows the player by name; story 3.10 §3 puts both out of its scope.
         /// </summary>
         private static void WindDownOrphans(ModState state)
         {
@@ -628,7 +647,18 @@ namespace DiplomacyIntrigue.Espionage
 
         /// <summary>
         /// The leader of their largest army in the field - the only mark the AI will assassinate
-        /// (decision 11). Never their ruler, and never anyone of the player's own house.
+        /// (decision 11). Never their ruler.
+        ///
+        /// **The player's house is no longer exempt** (story 3.10 R1, the lead's decision of
+        /// 2026-10-01). It used to be, and the reason it was - that the player could not be made
+        /// to lose a character to a roll they never saw - is answered a different way: the AI's
+        /// odds are the player's own (<see cref="Missions.OddsOf"/>), the mark is the leader of an
+        /// army the player can see on the map, and a success is announced to the victim's side
+        /// (<see cref="Missions.TellVictim"/>). The exemption was the only house in Calradia the
+        /// AI could not touch, which is the asymmetry this pillar exists to remove.
+        ///
+        /// The player hero is therefore a mark like any other lord, when they command that army and
+        /// do not rule the realm: a ruler is never a mark, whoever they are.
         /// </summary>
         private static Hero FieldCommander(Kingdom them)
         {
@@ -638,7 +668,6 @@ namespace DiplomacyIntrigue.Espionage
             {
                 var leader = army?.LeaderParty?.LeaderHero;
                 if (leader == null || !leader.IsAlive || leader == them.Leader) continue;
-                if (leader.Clan == Clan.PlayerClan) continue;
                 if (army.TotalManCount <= most) continue;
                 most = army.TotalManCount;
                 best = leader;

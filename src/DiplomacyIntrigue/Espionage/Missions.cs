@@ -366,12 +366,12 @@ namespace DiplomacyIntrigue.Espionage
                 return MissionOutcome.Failure;
             }
 
-            // A bribe whose roll already succeeded and is waiting on the player's answer is asked
-            // again, not rolled again - after a reload, or after another offer held the one-at-a-time
-            // guard. The checks above still apply: an offer whose handler or mark is gone lapses.
+            // An offer already made and not yet answered is made again, not rolled again - after a reload,
+            // or after another offer held the one-at-a-time guard. The checks above still apply: an
+            // offer whose handler or mark is gone lapses.
             if (mission.OfferOwed && !forced.HasValue)
             {
-                if (!_askingPlayer) OfferBribeToPlayer(state, mission, " (the roll made before this offer was first shown)");
+                if (!_askingPlayer) OfferToPlayer(state, mission, " (the roll made before this offer was first shown)");
                 return MissionOutcome.Pending;
             }
 
@@ -384,21 +384,21 @@ namespace DiplomacyIntrigue.Espionage
             var note = " (success was " + Pct(odds.Success) + ", exposure on failure " + Pct(odds.ExposureOnFailure)
                        + (forced.HasValue ? ", outcome forced by a test lever" : "") + ")";
 
-            // A bribe that reaches the player's own house is the player's to take or refuse (the
-            // lead's call for 3.6, design 03 §9 decision 12). For an AI lord the successful roll is
-            // the lord taking the gold; for the player, the roll only gets the offer to them. It
-            // stays pending until they answer, and an inquiry stops the clock.
+            // A success on a mission that reaches the player's own house is the player's to answer,
+            // not the court's (design 03 §9 decision 12 for the bribe, story 3.10 R4 for the forged
+            // letters). For an AI mark the successful roll *is* the effect; for the player it only
+            // gets the offer to them. It stays pending until they answer, and an inquiry stops the
+            // clock.
             //
             // The success is recorded on the mission (OfferOwed, SpyMission property 12, since
             // 2026-09-27), so a save made while the offer is open reloads it still owed and the
             // next daily tick asks again rather than rolling again; a second offer that finds the
             // guard up is asked the day after, the same way. Before that field, a reload re-rolled
             // the operation and could turn an offer into an exposure (design 03 §10).
-            if (outcome == MissionOutcome.Success && mission.Type == SpyMissionType.BribeLord
-                && mission.TargetHero != null && mission.TargetHero == Hero.MainHero)
+            if (outcome == MissionOutcome.Success && ReachesThePlayer(mission))
             {
                 mission.MarkOfferOwed();
-                if (!_askingPlayer) OfferBribeToPlayer(state, mission, note);
+                if (!_askingPlayer) OfferToPlayer(state, mission, note);
                 return MissionOutcome.Pending;
             }
 
@@ -429,7 +429,7 @@ namespace DiplomacyIntrigue.Espionage
             }
         }
 
-        // ----- A bribe offered to the player ---------------------------------------
+        // ----- An offer the player is asked about ----------------------------------
 
         private static bool _askingPlayer;
 
@@ -437,44 +437,110 @@ namespace DiplomacyIntrigue.Espionage
         public static void Reset() => _askingPlayer = false;
 
         /// <summary>
+        /// Whether a success on this mission is the player's to answer rather than the court's
+        /// (story 3.10 R8). Two types ask, and they ask through this one predicate so the roll, the
+        /// reload path and the guard cannot disagree about which of them offer: a bribe that reaches
+        /// the player (design 03 §9 decision 12) and forged letters aimed at the player's house
+        /// (story 3.10 D2).
+        ///
+        /// <c>Hero.MainHero</c> rather than "anybody of the player's clan", which is the shape the
+        /// bribe has used since 3.6 and works today; story 3.10 copies it rather than widening it,
+        /// because a mark is always a head of a house (<see cref="IsHouseHead"/>) and a player's own
+        /// house is headed by the player in every state vanilla puts it in. A player whose house had
+        /// some other head is an edge case, and it is left where 3.6 put it rather than changed here.
+        /// </summary>
+        private static bool ReachesThePlayer(SpyMission mission)
+            => mission != null
+               && (mission.Type == SpyMissionType.BribeLord || mission.Type == SpyMissionType.ForgeLetters)
+               && mission.TargetHero != null && mission.TargetHero == Hero.MainHero;
+
+        /// <summary>
+        /// Asks the player about an operation that reached their house. Which question it is, and
+        /// what each answer does, is the mission type's; the guard, the one-inquiry-at-a-time rule
+        /// and the "ask again after a reload" path are shared, because two copies of them would be
+        /// two answers to "is something already on screen" (story 3.10 R8).
+        ///
+        /// **No timeout, and none may be added.** <c>InquiryData.ExpireTime</c> is counted in real
+        /// seconds of UI time and the game is paused while the inquiry is up, so it is the same trap
+        /// that made 1.10d's call-to-arms prompt expire in 24 seconds and mark the player defiant
+        /// (design 04, STATUS 2026-10-01). If one is ever wanted it must fire
+        /// <see cref="AnswerToPlayer"/> with the negative answer (R9): silence cannot make the
+        /// player believe a letter or take a bribe.
+        /// </summary>
+        private static void OfferToPlayer(ModState state, SpyMission mission, string note)
+        {
+            _askingPlayer = true;
+            var forLetters = mission.Type == SpyMissionType.ForgeLetters;
+            var title = forLetters ? "Letters in the crown's hand" : "Foreign gold";
+            var body = forLetters ? ForgedLettersBody(mission) : BribeBody(mission);
+            var yes = forLetters ? "Believe them" : "Take " + mission.GoldPaid.ToString("N0");
+            var no = forLetters ? "Dismiss them" : "Turn them away";
+            var asked = forLetters ? "the letters" : "the bribe";
+
+            try
+            {
+                InformationManager.ShowInquiry(new InquiryData(
+                    title,
+                    body,
+                    true, true,
+                    yes, no,
+                    () => AnswerToPlayer(state, mission, true, note),
+                    () => AnswerToPlayer(state, mission, false, note)), true);
+            }
+            catch (Exception ex)
+            {
+                _askingPlayer = false;
+                Log.Error("Espionage", "Could not show " + asked + " to the player.", ex);
+            }
+        }
+
+        /// <summary>
         /// A foreign network's agents reach the player's house with gold. Taking it is the same
         /// bargain an AI lord makes: the gold, and while it holds, loyalty -20 and the rising's side
         /// if the realm goes to war with itself. Refusing turns the agents away, and the operation
         /// is a failure like any other.
         /// </summary>
-        private static void OfferBribeToPlayer(ModState state, SpyMission mission, string note)
+        private static string BribeBody(SpyMission mission)
         {
-            _askingPlayer = true;
-            var realm = mission.Target;
             var buyer = mission.Owner;
             var buyerRealm = buyer.Kingdom;
-            var body = "Agents of " + buyer.Name + (buyerRealm != null ? " of " + buyerRealm.Name : "")
-                       + " offer you " + mission.GoldPaid.ToString("N0") + " denars."
-                       + Environment.NewLine + Environment.NewLine
-                       + "In return, if " + realm.Name + " goes to war with itself in the next two years, your house stands with "
-                       + "the rising against " + realm.Leader?.Name + ". While the bargain holds, your house's loyalty to the crown "
-                       + "is " + EspionageConstants.BribeLoyaltyLoss.ToString("0") + " lower, where your court can see it - though "
-                       + "not whose gold it was.";
+            var realm = mission.Target;
+            return "Agents of " + buyer.Name + (buyerRealm != null ? " of " + buyerRealm.Name : "")
+                   + " offer you " + mission.GoldPaid.ToString("N0") + " denars."
+                   + Environment.NewLine + Environment.NewLine
+                   + "In return, if " + realm.Name + " goes to war with itself in the next two years, your house stands with "
+                   + "the rising against " + realm.Leader?.Name + ". While the bargain holds, your house's loyalty to the crown "
+                   + "is " + EspionageConstants.BribeLoyaltyLoss.ToString("0") + " lower, where your court can see it - though "
+                   + "not whose gold it was.";
+        }
 
-            try
-            {
-                InformationManager.ShowInquiry(new InquiryData(
-                    "Foreign gold",
-                    body,
-                    true, true,
-                    "Take " + mission.GoldPaid.ToString("N0"), "Turn them away",
-                    () => AnswerBribe(state, mission, true, note),
-                    () => AnswerBribe(state, mission, false, note)), true);
-            }
-            catch (Exception ex)
-            {
-                _askingPlayer = false;
-                Log.Error("Espionage", "Could not show the bribe offer to the player.", ex);
-            }
+        /// <summary>
+        /// What forged letters say when they reach a court, and nothing more (story 3.10 R5): the
+        /// claim they make, what believing it costs the crown, and the two answers. **Who wrote them
+        /// is not in here, and neither is the word "forged"** - a court is shown the paper, not the
+        /// forger's motive, and the player who believes these must not be told, one row later on
+        /// their own Court tab, that the court was right to doubt them. An exposure is the only
+        /// thing that names the forger (design 03 §5).
+        /// </summary>
+        private static string ForgedLettersBody(SpyMission mission)
+        {
+            var realm = mission.Target;
+            var crown = realm.Leader != null ? realm.Leader.Name.ToString() : "the crown";
+            var weight = IntrigueConstants.WeightOf(GrievanceType.ForgedLetters);
+            var clan = Hero.MainHero?.Clan;
+            return "A letter has reached your house in " + crown + "'s own hand, and it speaks of what he intends to do "
+                   + "with what is yours."
+                   + Environment.NewLine + Environment.NewLine
+                   + "It says nothing you can check, and it says it as the crown's own word. Believe it and "
+                   + (clan != null ? clan.Name + " holds" : "your house holds")
+                   + " a grievance of " + weight.ToString("0") + " against " + crown
+                   + ", which lowers our loyalty to the crown. Dismiss it and nothing comes of the letter at all."
+                   + Environment.NewLine + Environment.NewLine
+                   + "Nobody is told who wrote it.";
         }
 
         /// <summary>Runs from the UI, outside any campaign handler's try, so it catches its own.</summary>
-        private static void AnswerBribe(ModState state, SpyMission mission, bool accepted, string note)
+        private static void AnswerToPlayer(ModState state, SpyMission mission, bool accepted, string note)
         {
             try
             {
@@ -487,18 +553,28 @@ namespace DiplomacyIntrigue.Espionage
                     || !IsHouseHead(mission.TargetHero, mission.Target, out _))
                 {
                     mission.Resolve(MissionOutcome.Failure);
-                    Log.Info("Espionage", "The bribe offered to the player lapsed before the answer: " + mission + ".");
+                    Log.Info("Espionage", "The offer made to the player lapsed before the answer: " + mission + ".");
                     if (accepted) Log.Notify("The agents are gone - the offer no longer stands.", Colors.Red);
                     return;
                 }
 
-                if (!accepted) Log.Info("Espionage", "The player turned away " + mission.Owner.Name + "'s agents.");
+                var forLetters = mission.Type == SpyMissionType.ForgeLetters;
+                if (!accepted)
+                {
+                    // A dismissed letter is a failure and not an exposure: the letters reached a
+                    // reader who did not believe them, so nobody was caught (story 3.10 R7). The
+                    // network pays a failure's cost, through the same call as any other.
+                    Log.Info("Espionage", forLetters
+                        ? "The player dismissed the letters " + mission.Owner.Name + "'s agents sent."
+                        : "The player turned away " + mission.Owner.Name + "'s agents.");
+                    if (forLetters) Log.Notify("You dismiss the letters. Nothing comes of them.", Colors.Yellow);
+                }
                 Conclude(state, mission, network, accepted ? MissionOutcome.Success : MissionOutcome.Failure,
                          note + (accepted ? ", taken by the player" : ", refused by the player"));
             }
             catch (Exception ex)
             {
-                Log.Error("Espionage", "Answering the bribe offer failed.", ex);
+                Log.Error("Espionage", "Answering the offer made to the player failed.", ex);
             }
         }
 
@@ -593,9 +669,12 @@ namespace DiplomacyIntrigue.Espionage
                         "letters forged by agents of " + mission.Owner.Name);
                     TellOwner(mission, lord.Name + " has read our letters in " + target.Leader?.Name
                                        + "'s hand. " + clan.Name + " now holds them against the crown.");
-                    TellVictim(mission, "Letters under " + target.Leader?.Name + "'s seal, never written by "
-                                        + target.Leader?.Name + ", have reached " + clan.Name
-                                        + ". The house holds them against the crown.");
+                    // What the court was told, and nothing more (story 3.10 R5). This line used to
+                    // read "never written by <ruler>", which is the truth and which was only ever
+                    // shown to the player - the one reader the story now asks to choose whether to
+                    // believe them. An exposure names the forger; nothing else does.
+                    TellVictim(mission, "Letters under " + target.Leader?.Name + "'s seal have reached "
+                                        + clan.Name + ". The house holds them against the crown.");
                     break;
                 }
                 case SpyMissionType.Assassinate:
@@ -606,10 +685,22 @@ namespace DiplomacyIntrigue.Espionage
                         Log.Info("Espionage", "The assassination found its mark already dead.");
                         break;
                     }
-                    // No killer named: an assassination that is not exposed is not traced to anyone.
+                    // Vanilla's own death path, and the mod adds nothing to it (story 3.10 R2). Read
+                    // by IL on v1.5.3: ApplyByMurder passes isForced: false, so ApplyInternal takes
+                    // the IsHumanPlayerCharacter branch, fires OnBeforeMainCharacterDied and returns -
+                    // it never reaches MakeDead itself. On that event HeirSelectionCampaignBehavior
+                    // either raises the heir prompt (an heir exists) or ends the campaign on the Game
+                    // Over screen (none does), and DefaultCutscenesCampaignBehavior shows a scene
+                    // notification only for a sea death, old age, battle or execution - never for a
+                    // murder. isForced: true would skip the event and the hero would simply not die,
+                    // so the false is load-bearing and must not become a named argument that drifts.
                     KillCharacterAction.ApplyByMurder(victim, null, true);
                     Log.Info("Espionage", victim.Name + " was assassinated by agents of " + mission.Owner.Name + ".");
                     TellOwner(mission, victim.Name + " is dead. Nobody knows who ordered it.");
+                    // The player's side (story 3.10 R3). Vanilla announces nothing for a murder, so
+                    // without this the player's own house could lose a lord to an operation it never
+                    // learned of - the harm is visible, the payer stays unknown until an exposure.
+                    TellVictim(mission, victim.Name + " is dead. Nobody has been punished for it.");
                     break;
                 }
             }
