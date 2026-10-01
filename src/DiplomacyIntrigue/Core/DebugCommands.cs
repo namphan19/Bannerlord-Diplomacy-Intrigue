@@ -1347,6 +1347,7 @@ namespace DiplomacyIntrigue.Core
             Power.DailySample(state);
             WarExhaustion.DailyTick(state);
             Hegemony.DailyTick(state);
+            Summons.DailyTick(state);   // story 1.10c, where the campaign's daily handler runs it
             VassalTribute.AiDaily(state);   // design 09 C3, where the campaign's daily handler runs it
             TreatyRegistry.ExpireAndReward(state);
             TreatyRegistry.PayDueTribute(state);
@@ -3200,6 +3201,560 @@ namespace DiplomacyIntrigue.Core
             return hero.Name + " joins " + Clan.PlayerClan.Name + " (roguery " + hero.GetSkillValue(DefaultSkills.Roguery)
                    + ", charm " + hero.GetSkillValue(DefaultSkills.Charm) + "), in "
                    + (hero.PartyBelongedTo?.Name?.ToString() ?? "no party") + ".";
+        }
+
+        // ----- Summons (story 1.10c) ------------------------------------------
+
+        /// <summary>
+        /// Every live summons, then every hegemon's per-link eligibility - printed from
+        /// <see cref="Summons.DescribeAll"/>, which asks <see cref="Summons.QuoteFor"/> for each
+        /// link. The Realm tab's button and this line therefore cannot disagree about what a
+        /// vassal would do (CLAUDE.md §3); a copy of the gates here would drift on the first
+        /// balance pass. With a kingdom, that one only.
+        /// Usage: diplomacy.summons   or   diplomacy.summons &lt;kingdom&gt;
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("summons", "diplomacy")]
+        public static string SummonsReport(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var filter = args == null || args.Count == 0 ? null : string.Join(" ", args).Trim();
+            Kingdom only = null;
+            if (!string.IsNullOrEmpty(filter))
+            {
+                only = FindKingdom(filter);
+                if (only == null) return "No kingdom matching \"" + filter + "\".";
+            }
+
+            try
+            {
+                return Summons.DescribeAll(state, only);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Summons", "Reading the live summons failed.", ex);
+                return "Could not read the summons: " + ex.Message;
+            }
+        }
+
+        /// <summary>
+        /// The price of one summons, term by term - printed from <see cref="Summons.ExplainValue"/>,
+        /// so what it prints is what the button would charge (AC2). One kingdom alone is read as the
+        /// patron and priced against each of its vassals; naming a second realm narrows it to that
+        /// pair. A realm with no vassals is answered, not left blank.
+        /// Usage: diplomacy.summons_value &lt;patron&gt; | &lt;vassal&gt;   or   diplomacy.summons_value &lt;patron&gt;
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("summons_value", "diplomacy")]
+        public static string SummonsValue(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var parts = SplitOnPipe(args);
+            if (parts.Count < 1) return "Usage: diplomacy.summons_value <patron> | <vassal>";
+
+            var patron = FindKingdom(parts[0]);
+            if (patron == null) return "No kingdom matching \"" + parts[0] + "\".";
+
+            if (parts.Count >= 2)
+            {
+                var vassal = FindKingdom(parts[1]);
+                if (vassal == null) return "No kingdom matching \"" + parts[1] + "\".";
+                return PriceOf(state, patron, vassal);
+            }
+
+            var links = new List<Models.Treaty>();
+            Hegemony.CollectVassalages(state, patron, links);
+            if (links.Count == 0) return patron.Name + " holds no vassals, so there is nothing to summon.";
+
+            var sb = new StringBuilder();
+            for (var i = 0; i < links.Count; i++)
+                sb.AppendLine(PriceOf(state, patron, links[i].SubordinateParty));
+            return sb.ToString();
+        }
+
+        private static string PriceOf(ModState state, Kingdom patron, Kingdom vassal)
+        {
+            try
+            {
+                return Summons.ExplainValue(state, patron, vassal);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Summons", "Pricing a summons of " + vassal.Name + " by " + patron.Name + " failed.", ex);
+                return "Could not price " + patron.Name + " -> " + vassal.Name + ": " + ex.Message;
+            }
+        }
+
+        /// <summary>
+        /// What each AI hegemon would do about its serving vassals this week, and why - printed
+        /// from <see cref="Summons.PlanFor"/>, the object the weekly run executes, so a dry run
+        /// cannot describe a different decision from the one the AI takes. A dry run: nothing is
+        /// ordered, nothing is charged. With a kingdom, that realm only.
+        /// Usage: diplomacy.ai_summons   or   diplomacy.ai_summons &lt;kingdom&gt;
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("ai_summons", "diplomacy")]
+        public static string AiSummonsReport(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var filter = args == null || args.Count == 0 ? null : string.Join(" ", args).Trim();
+            Kingdom only = null;
+            if (!string.IsNullOrEmpty(filter))
+            {
+                only = FindKingdom(filter);
+                if (only == null) return "No kingdom matching \"" + filter + "\".";
+            }
+
+            var sb = new StringBuilder();
+            foreach (var kingdom in Kingdom.All)
+            {
+                if (!kingdom.IsRealm() || (only != null && kingdom != only)) continue;
+                try
+                {
+                    var choice = Summons.PlanFor(state, kingdom);
+                    sb.AppendLine(choice.Realm.Name + ": "
+                                  + (choice.Skip != null
+                                      ? "nothing - " + choice.Skip
+                                      : choice.Vassal.Name + ": " + choice.Why));
+                }
+                catch (Exception ex)
+                {
+                    Log.Error("Summons", "Planning " + kingdom.Name + "'s summons failed.", ex);
+                    sb.AppendLine(kingdom.Name + ": could not be planned - " + ex.Message);
+                }
+            }
+            return sb.Length == 0 ? "No realm." : sb.ToString();
+        }
+
+        /// <summary>
+        /// Test lever: the patron's ruler gives the order through <see cref="Summons.Issue"/> - the
+        /// call the Realm tab's button and the AI make, so a refusal earns the mark and the trust
+        /// the player would earn. The quote is printed before the act, because that is the number
+        /// the order is refused against; nothing is printed in place of it.
+        /// Test saves only: it charges the real price and moves real parties.
+        /// Usage: diplomacy.test_summon &lt;patron&gt; | &lt;vassal&gt;
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_summon", "diplomacy")]
+        public static string TestSummon(List<string> args)
+        {
+            if (!CheatsAllowed("test_summon", out var cheatRefusal)) return cheatRefusal;
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var parts = SplitOnPipe(args);
+            if (parts.Count < 2) return "Usage: diplomacy.test_summon <patron> | <vassal>";
+            var patron = FindKingdom(parts[0]);
+            var vassal = FindKingdom(parts[1]);
+            if (patron == null || vassal == null) return "No such kingdom.";
+
+            string quoted;
+            SummonsRecord live;
+            try
+            {
+                // Issue re-asks QuoteFor rather than trusting this one, so what the order is
+                // judged on is the world at the moment it was given, not this printout.
+                var q = Summons.QuoteFor(state, patron, vassal);
+                quoted = Describe(q);
+
+                if (!Summons.Issue(state, patron, vassal, out var failed))
+                    return quoted + Environment.NewLine + "Refused: " + failed;
+
+                live = Summons.Find(state, patron, vassal);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Summons", "The test lever could not order a summons.", ex);
+                return "Could not order the summons: " + ex.Message;
+            }
+
+            return quoted + Environment.NewLine
+                   + (live != null
+                       ? "Ordered: " + live + " (given by " + live.Summoner?.Name + ")."
+                       : Hero.MainHero != null && vassal.Leader == Hero.MainHero
+                           // The order is answered later, by the player's ruler (R9), so there is
+                           // no outcome to report yet and calling it a refusal would be a lie.
+                           ? "Ordered; " + vassal.Name + "'s ruler is asked - answer the inquiry."
+                           : "Ordered and answered: refused or excused, no party marched - see the log for the mark it earned.");
+        }
+
+        /// <summary>
+        /// Test lever: sets one vassalage's Hold. A summons is only served at Hold 40 or more, and
+        /// Hold drifts toward its target at one point a day - so a link made by <c>sign_treaty</c>
+        /// (which skips <c>Hegemony.Submit</c> and its starting Hold) leaves a window of a day or
+        /// less to stage anything. From 90 the link stays above the line for about fifty days,
+        /// long enough for an AI ruler to raise an army. Test saves only.
+        /// Usage: diplomacy.test_set_hold &lt;patron&gt; | &lt;vassal&gt; | &lt;0.1-100&gt;
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_set_hold", "diplomacy")]
+        public static string TestSetHold(List<string> args)
+        {
+            if (!CheatsAllowed("test_set_hold", out var cheatRefusal)) return cheatRefusal;
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var parts = SplitOnPipe(args);
+            if (parts.Count < 3 || !float.TryParse(parts[2], System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out var value))
+                return "Usage: diplomacy.test_set_hold <patron> | <vassal> | <0.1-100>";
+
+            var patron = FindKingdom(parts[0]);
+            var vassal = FindKingdom(parts[1]);
+            if (patron == null || vassal == null) return "No such kingdom.";
+
+            var link = Hegemony.VassalageOf(state, vassal);
+            if (link == null || link.DominantParty != patron)
+                return vassal.Name + " is not a vassal of " + patron.Name + ".";
+
+            var before = Hegemony.HoldOf(link);
+            link.SetHold(value);
+            return "Hold of " + vassal.Name + " under " + patron.Name + ": " + before.ToString("0.0")
+                   + " -> " + Hegemony.HoldOf(link).ToString("0.0")
+                   + ". It drifts toward its target at one point a day.";
+        }
+
+        /// <summary>
+        /// Test lever: a kingdom's ruler raises an army of their own party alone, aimed at a
+        /// settlement - a hostile one makes it a besieging army, anything else a patrol. A summons
+        /// needs the summoner to command an army, and nothing else in the toolbox makes one: the
+        /// first live pass of story 1.10c reached its one served summons by waiting for the AI to
+        /// raise an army, which left the refusal, the excuse, R3's release and a broken link
+        /// unreachable. Aiming the army at a settlement the vassal is at peace with is how R3 is
+        /// staged. Test saves only: it is the engine's own <c>Kingdom.CreateArmy</c>, and the army
+        /// then lives or disbands by the engine's rules.
+        /// Usage: diplomacy.test_raise_army &lt;kingdom&gt; [| &lt;target settlement&gt;]
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_raise_army", "diplomacy")]
+        public static string TestRaiseArmy(List<string> args)
+        {
+            if (!CheatsAllowed("test_raise_army", out var cheatRefusal)) return cheatRefusal;
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var parts = SplitOnPipe(args);
+            if (parts.Count < 1) return "Usage: diplomacy.test_raise_army <kingdom> [| <target settlement>]";
+            var kingdom = FindKingdom(parts[0]);
+            if (kingdom == null) return "No kingdom matching \"" + parts[0] + "\".";
+
+            var ruler = kingdom.Leader;
+            var party = ruler?.PartyBelongedTo;
+            if (party == null) return kingdom.Name + "'s ruler leads no party.";
+            if (party.Army != null) return ruler.Name + " is already in an army (" + party.Army.Name + ").";
+
+            Settlement target = null;
+            if (parts.Count >= 2)
+            {
+                target = FindSettlement(parts[1]);
+                if (target == null) return "No settlement matching \"" + parts[1] + "\".";
+            }
+            if (target == null) target = ruler.HomeSettlement ?? kingdom.FactionMidSettlement;
+            if (target == null) return "No settlement to aim the army at.";
+
+            var hostile = target.MapFaction != null && kingdom.IsAtWarWith(target.MapFaction);
+            try
+            {
+                kingdom.CreateArmy(ruler, target,
+                    hostile ? Army.ArmyTypes.Besieger : Army.ArmyTypes.Patrolling,
+                    new MBList<TaleWorlds.CampaignSystem.Party.MobileParty>());
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Summons", "The test lever could not raise an army.", ex);
+                return "Could not raise the army: " + ex.Message;
+            }
+
+            return party.Army == null
+                ? "The engine raised no army for " + ruler.Name + "."
+                : ruler.Name + " raises " + party.Army.Name + ", aimed at " + target.Name
+                  + (hostile ? " (hostile: a besieging army)" : " (a patrol)") + ".";
+        }
+
+        /// <summary>The quote the button would show, so a refusal here is refused on the same numbers.</summary>
+        private static string Describe(Summons.Quote q)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine(q.Patron.Name + " -> " + q.Vassal.Name + ":");
+            if (!q.Priced)
+            {
+                // Refused before it was priced: no figure here was ever quoted (Summons.Quote.Priced).
+                sb.Append("  hold ").Append(q.Hold.ToString("0")).AppendLine();
+                sb.Append("  not possible: ").AppendLine(q.Reason);
+                return sb.ToString();
+            }
+            sb.Append("  ").Append(q.PartyCount).Append(" of ").Append(q.Available)
+              .Append(" party(ies) would march, nearest the summoner first").AppendLine();
+            sb.Append("  influence ").Append(q.Influence).Append(" of ").Append(q.InfluenceHeld.ToString("0"))
+              .Append("   gold ").Append(q.Gold.ToString("N0")).Append(" of ").Append(q.GoldHeld.ToString("N0"))
+              .AppendLine();
+            sb.Append("  hold ").Append(q.Hold.ToString("0"))
+              .AppendLine(q.WillServe ? " - it would serve" : " - it would refuse: " + q.Refusal);
+
+            if (!q.Eligible) sb.Append("  not possible: ").AppendLine(q.Reason);
+            else if (!q.Affordable) sb.Append("  cannot pay: ").AppendLine(q.Short);
+            return sb.ToString();
+        }
+
+        // ----- The bound patron's choice (story 1.10d) -------------------------
+
+        /// <summary>
+        /// The patron's choice between its vassal and its treaty, term by term - printed from
+        /// <see cref="Hegemony.ExplainBoundChoice"/> and settled by
+        /// <see cref="Hegemony.WouldHonourVassal"/>, the two functions the AI's decision and the
+        /// player's inquiry both read (AC5). Nothing is recomputed here: a diagnostic that worked
+        /// out its own terms would agree with itself and could disagree with the AI.
+        ///
+        /// A dry run. Nothing is broken, no war is declared, no Hold moves. Beside the terms it
+        /// lists the live treaties that forbid war between patron and attacker, each with what it
+        /// is worth - the raw material of the choice, taken from the treaty registry through the
+        /// same filter <see cref="Hegemony.BoundChoiceTermsOf"/> prices them by, so this list and
+        /// the arithmetic above cannot name different treaties.
+        ///
+        /// With a patron alone, the same block for each of its vassals against each realm its
+        /// treaties bind it to: every choice open to it today, which is what AC7 is counted from.
+        /// Usage: diplomacy.bound_choice &lt;patron&gt; | &lt;vassal&gt; | &lt;attacker&gt;
+        ///        diplomacy.bound_choice &lt;patron&gt;
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("bound_choice", "diplomacy")]
+        public static string BoundChoice(List<string> args)
+        {
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var parts = SplitOnPipe(args);
+            if (parts.Count < 1 || parts.Count > 3)
+                return "Usage: diplomacy.bound_choice <patron> | <vassal> | <attacker>" + Environment.NewLine
+                       + "  or diplomacy.bound_choice <patron>, which reports every vassal of that"
+                       + Environment.NewLine + "  patron against every realm its treaties bind it to.";
+
+            var patron = FindKingdom(parts[0]);
+            if (patron == null) return "No kingdom matching \"" + parts[0] + "\".";
+
+            Kingdom vassal = null;
+            Kingdom attacker = null;
+            if (parts.Count >= 2)
+            {
+                vassal = FindKingdom(parts[1]);
+                if (vassal == null) return "No kingdom matching \"" + parts[1] + "\".";
+            }
+            if (parts.Count >= 3)
+            {
+                attacker = FindKingdom(parts[2]);
+                if (attacker == null) return "No kingdom matching \"" + parts[2] + "\".";
+            }
+
+            try
+            {
+                var text = parts.Count == 1
+                    ? EveryBoundChoice(state, patron)
+                    : OneBoundChoice(state, patron, vassal, attacker);
+                return text + Environment.NewLine + BoundChoiceFooter();
+            }
+            catch (Exception ex)
+            {
+                Log.Error("BoundChoice", "Reading the bound patron's choice failed.", ex);
+                return "Could not read the choice: " + ex.Message;
+            }
+        }
+
+        /// <summary>
+        /// One patron, one vassal, one attacker: the treaties honouring the vassal would break,
+        /// the terms, and the answer as the AI takes it in this state.
+        /// </summary>
+        private static string OneBoundChoice(ModState state, Kingdom patron, Kingdom vassal, Kingdom attacker)
+        {
+            if (attacker == patron)
+                return patron.Name + " cannot be the attacker against its own vassal - name the realm"
+                       + " that is attacking " + vassal.Name + " (diplomacy.wars lists the live wars).";
+
+            var link = Hegemony.VassalageOf(state, vassal);
+            if (link == null || link.DominantParty != patron)
+                return vassal.Name + " is not a vassal of " + patron.Name
+                       + " - diplomacy.hegemony lists every link. diplomacy.sign_treaty "
+                       + patron.Name + " | " + vassal.Name + " | Vassalage makes one, but as a treaty row"
+                       + " only: it skips the submission, so it carries no starting Hold.";
+
+            var bindings = BoundPatronBindings(state, patron, attacker);
+            var sb = new StringBuilder();
+            if (bindings.Count == 0)
+            {
+                // Nothing binds it, so there is no choice and no valuation to print: the terms below
+                // used to follow anyway, opening "bound by treaty to" and ending "would break 0
+                // treaty(ies)" right after saying there was nothing to break (live, 2026-10-01).
+                // A truce cannot be signed outside a war, so the staging hint names a pact.
+                sb.AppendLine(patron.Name + " holds no active treaty that forbids war with " + attacker.Name
+                              + ", so there is no choice to put to it: no pact of its own stands between"
+                              + " it and " + attacker.Name + "'s war against " + vassal.Name
+                              + ". diplomacy.sign_treaty " + patron.Name + " | " + attacker.Name
+                              + " | NonAggressionPact stages the case (AC1).");
+                return sb.ToString();
+            }
+            else
+            {
+                sb.AppendLine("-- the treaties honouring the vassal would break ("
+                              + bindings.Count + "; the multiple is of the "
+                              + (-DiplomacyConstants.TrustTreatyBrokenVictim).ToString("0")
+                              + " trust each one costs the other side) --");
+                for (var i = 0; i < bindings.Count; i++)
+                    sb.AppendLine("  " + bindings[i].Type + ": worth x"
+                                  + Hegemony.TreatyWorth(bindings[i].Type).ToString("0.00"));
+            }
+
+            sb.AppendLine(Hegemony.ExplainBoundChoice(state, link, attacker));
+            var honour = Hegemony.WouldHonourVassal(state, link, attacker, out var why);
+            sb.AppendLine();
+            sb.AppendLine("answer: " + (honour ? "honour-vassal" : "honour-treaty") + " - "
+                          + (honour
+                              ? "the link outweighs the breach and the war can be won, so it would break "
+                                + bindings.Count + " treaty(ies) with " + attacker.Name + " and join"
+                              : why) + ".");
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// Every choice open to one patron: each of its vassals against each realm its own treaties
+        /// bind it to. The realms come off the patron's bindings rather than off the whole map,
+        /// because a realm it holds nothing with is not a choice - the pact is not what stops it.
+        ///
+        /// Two kinds of binding are left out, and the count of them is printed rather than hidden:
+        /// the realms the patron itself holds as vassals, and the realm it serves. Breaking its own
+        /// vassalage oath is secession and two clients of one patron are never put to the choice
+        /// (story 1.10d Out, D3), so a price printed against them would be a quieter second answer
+        /// to a question CallToArms.Applies has already decided.
+        /// </summary>
+        private static string EveryBoundChoice(ModState state, Kingdom patron)
+        {
+            var links = new List<Models.Treaty>();
+            Hegemony.CollectVassalages(state, patron, links);
+            if (links.Count == 0)
+                return patron.Name + " holds no vassals, so no choice is open to it."
+                       + " diplomacy.hegemony lists every sphere on the map.";
+
+            var kin = new List<Kingdom>();
+            for (var i = 0; i < state.Treaties.Count; i++)
+            {
+                var pact = state.Treaties[i];
+                if (!pact.IsActive || pact.Type != Models.TreatyType.Vassalage || !pact.Involves(patron)) continue;
+                var own = pact.Other(patron);
+                if (own != null && own != patron && !kin.Contains(own)) kin.Add(own);
+            }
+
+            var realms = new List<Kingdom>();
+            for (var i = 0; i < state.Treaties.Count; i++)
+            {
+                var treaty = state.Treaties[i];
+                if (!treaty.IsActive || !treaty.ForbidsWar || !treaty.Involves(patron)) continue;
+                var other = treaty.Other(patron);
+                if (other == null || other == patron || other.IsEliminated || realms.Contains(other)) continue;
+                if (kin.Contains(other)) continue;
+                realms.Add(other);
+            }
+            if (realms.Count == 0)
+                return patron.Name + " holds no active treaty that forbids war with any realm outside its"
+                       + " own sphere (" + kin.Count + " vassalage tie(s) read), so no choice is open to it:"
+                       + " it could join any vassal's war today.";
+
+            var sb = new StringBuilder();
+            var printed = 0;
+            for (var l = 0; l < links.Count; l++)
+            {
+                var vassal = links[l].SubordinateParty;
+                for (var r = 0; r < realms.Count; r++)
+                {
+                    // The vassal is not its own attacker; the pair says nothing.
+                    if (realms[r] == vassal) continue;
+                    if (printed > 0) sb.AppendLine();
+                    sb.AppendLine(OneBoundChoice(state, patron, vassal, realms[r]));
+                    printed++;
+                }
+            }
+
+            sb.Insert(0, patron.Name + " holds " + links.Count + " vassal(s) and stands bound to "
+                      + realms.Count + " realm(s): " + printed + " pair(s) where a choice is open."
+                      + (kin.Count > 0
+                          ? " " + kin.Count + " more of its bindings are its own sphere (its vassals, or"
+                            + " the realm it serves) and are not this case."
+                          : "")
+                      + Environment.NewLine + Environment.NewLine);
+            return sb.ToString();
+        }
+
+        /// <summary>
+        /// The live treaties that forbid war between two realms. Written out rather than borrowed:
+        /// the act's own loop is private to CallToArms and this file may not touch it, so the two
+        /// copies have to be checked by eye. The test is the one expression -
+        /// <c>IsActive &amp;&amp; ForbidsWar &amp;&amp; IsBetween</c> - used both by
+        /// <see cref="Hegemony.BoundChoiceTermsOf"/>, which prices the breach, and by the
+        /// <c>CallToArms</c> choice that breaks them; reading <see cref="Models.Treaty.ForbidsWar"/>
+        /// rather than naming the types is what keeps a new war-forbidding type out of this list by
+        /// accident.
+        /// </summary>
+        private static List<Models.Treaty> BoundPatronBindings(ModState state, Kingdom a, Kingdom b)
+        {
+            var found = new List<Models.Treaty>();
+            for (var i = 0; i < state.Treaties.Count; i++)
+            {
+                var treaty = state.Treaties[i];
+                if (treaty.IsActive && treaty.ForbidsWar && treaty.IsBetween(a, b)) found.Add(treaty);
+            }
+            return found;
+        }
+
+        /// <summary>
+        /// Where to go from here, so a gate above never ends in a dead end. The last line is a
+        /// limit rather than a pointer: whether the choice is *offered* is decided inside
+        /// CallToArms.Applies, and re-reading that decision here would give this command a second
+        /// answer to the same question (CLAUDE.md §3). The log's <c>[PROTECT] bound-choice</c> line
+        /// is the only witness that the choice was put.
+        /// </summary>
+        private static string BoundChoiceFooter()
+        {
+            return "The link's Hold, its marks and its legal neglect: diplomacy.hegemony. What its"
+                   + Environment.NewLine + "  tribute is worth: diplomacy.vassal_tribute. To make the binding that"
+                   + Environment.NewLine + "  forces the choice: diplomacy.sign_treaty <patron> | <attacker> | NonAggressionPact (a truce needs a war to end)."
+                   + Environment.NewLine + "  To hold a link above the line long enough to stage a war:"
+                   + Environment.NewLine + "  diplomacy.test_set_hold. To fail the war step on purpose (AC4):"
+                   + Environment.NewLine + "  diplomacy.test_fail_bound_war on." + Environment.NewLine
+                   + "The terms above are the ones the decision is made on. Whether the choice is offered at"
+                   + Environment.NewLine + "  all is answered inside CallToArms.Applies - the [PROTECT] bound-choice"
+                   + Environment.NewLine + "  line in the log is the witness.";
+        }
+
+        /// <summary>
+        /// Test lever for AC4: the next bound patron's choice breaks its treaties and then has its
+        /// war refused, so the atomic order of story 1.10d (R4) can be watched: the log must name
+        /// exactly which treaties went, and the war must be counted as honour-the-treaty.
+        ///
+        /// A lever rather than a staged world, because there is no other way to reach the failure:
+        /// the war step is the last of several, and every earlier one succeeding is what the rule
+        /// is about. It is session state, not saved - a restart clears it - and nothing reads it
+        /// except the one step it breaks. Test saves only.
+        /// Usage: diplomacy.test_fail_bound_war on   (or off; with no argument it only reports)
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_fail_bound_war", "diplomacy")]
+        public static string TestFailBoundWar(List<string> args)
+        {
+            if (!CheatsAllowed("test_fail_bound_war", out var cheatRefusal)) return cheatRefusal;
+            if (CoreBehavior.State == null) return NoCampaign;
+
+            if (args == null || args.Count == 0)
+                return "The war step will " + (CallToArms.FailNextBoundWar ? "FAIL" : "run as normal")
+                       + " on the next bound patron's choice."
+                       + Environment.NewLine + "Usage: diplomacy.test_fail_bound_war on | off";
+
+            var wanted = string.Join(" ", args).Trim().ToLowerInvariant();
+            if (wanted == "on") CallToArms.FailNextBoundWar = true;
+            else if (wanted == "off") CallToArms.FailNextBoundWar = false;
+            else return "\"" + wanted + "\" is not on or off, so nothing changed: the war step will "
+                        + (CallToArms.FailNextBoundWar ? "still fail" : "still run as normal")
+                        + " on the next bound patron's choice.";
+
+            return "The war step will " + (CallToArms.FailNextBoundWar ? "FAIL" : "run as normal")
+                   + " on the next bound patron's choice. Session state, not saved; test saves only."
+                   + Environment.NewLine + "Read what happened in diplomacy.bound_choice, and in the log's"
+                   + Environment.NewLine + "[PROTECT] answer=honour-vassal FAILED line, which names the treaties"
+                   + Environment.NewLine + "that were broken before the failure (AC4).";
         }
 
         /// <summary>

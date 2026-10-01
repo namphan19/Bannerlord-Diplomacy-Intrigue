@@ -14,6 +14,164 @@ Last completed measurement: **balance run 08** (statecraft on/off) — [balance/
 Branch `development`. `main` sits well behind on purpose: cutting a release is Phase 4's job.
 opencode was removed from the project on 2026-09-27 (CLAUDE.md §7).
 
+## Start here — 2026-10-01: the vassal summons (story 1.10c)
+
+**ST-2 to ST-6 are built. Nothing has run in a game.** The mod compiles clean against the **v1.4.8
+reference assemblies** (BUTR `1.4.8.119303`, laid out as a stand-in game folder — the only failure
+is the documented `MapEvent.BattleTypes.SiegeAmbush` one, which `compile-check.sh` also drops), and
+against the local v1.5.3 install. `scripts/check-save-ids.ps1` passes: 19 classes, 146 members,
+18 containers. **No Harmony patch, no new enum, no new save type beyond the two the story named.**
+
+- **What a hegemon's ruler can now do:** order up to ⌈N/2⌉ of a serving vassal's war parties under
+  their own command — but **only inside the obligation war that vassal is already fighting for
+  them** (D5), at most half its eligible parties nearest the summoner first, for 20 days or until
+  that war ends, refused below Hold 40 through the **existing** defiance path, and excused at no
+  charge when the vassal is spent, at war with itself, besieged, or left alone by its patron (D7).
+  A summoned party that would be marched at a kingdom its own realm is not fighting comes home
+  before the army gets there (R3).
+- **Save data:** `Treaty` 19 `LastSummonedOn`, class 19 `SummonsRecord` + container, `ModState` 19.
+  **The block of class ids below the enum ids is now empty** — the next class takes 29 or above.
+- **Commands:** `diplomacy.summons [kingdom]`, `summons_value A | B`, `ai_summons [kingdom]`,
+  cheat-gated `test_summon A | B`. `tools/analyse-log.py` reads the `[SUMMONS]` lines and the five
+  `summons_*` telemetry kinds.
+- **ST-1's IL answer, written up** in [design/04 §5.2a](design/04-hegemony.md#52a-the-summons-may-be-a-real-army-after-all-st-1-2026-09-30):
+  a real `Army` is safe, and — a finding that matters for D2 and D8 — **the leader's clan pays
+  vanilla's own per-party cost and cohesion upkeep on top of our price.**
+- **Two things were decided without the lead and should be confirmed:** a summons needs an army
+  the summoner already commands (the button says so when they have none, rather than raising one
+  for a king who has not chosen to), and the player-vassal inquiry has **no timeout** — silence
+  cannot earn a mark of defiance, at the cost of the clock stopping, which R9 already accepts.
+- **Next:** ST-7 live verification on `di_phase1_full` and `di_naval_test`, then ST-8's balance run.
+
+**Tech-lead review, the same day - four faults fixed before anything ran:**
+- **No summons could ever be served.** `Issue` stamps the cooldown, then `Serve` re-asked
+  `QuoteFor`, which found "summoned 0 days ago" and marched nobody - after charging the full price.
+  The answer now re-asks only the world's gates, not R7's (`QuoteFor(..., answering: true)`).
+- **D7's excuse could never fire.** It asked `Hegemony.AnswerTo` about the *service* war, which the
+  vassal declared and the patron is in; it now asks about each of the vassal's other wars.
+- **R9: a player who is a lord of an AI-ruled vassal could have their party taken** without being
+  asked. The player's house is now excluded unless the player rules the vassal.
+- An order to an excused vassal now logs `[SUMMONS] excused` with its reason (AC5); the cooldown
+  constant's comment says what the code does (from the order, not the return); the `Move` enum's
+  indentation.
+- **Still open for ST-7:** R3 is checked once a day against the settlement the army targets. A
+  field battle with a third realm's party is not covered, and whether vanilla pulls an attached
+  foreign party into such a battle is unverified.
+
+**ST-7, first live pass, 2026-10-01 (`di_hegemony_1166`, v1.5.3, local build, 0 `ERROR` / 0 `WARN`).**
+Staged with a new cheat-gated lever, `diplomacy.test_set_hold <patron> | <vassal> | <value>`: a link
+made by `sign_treaty` has no starting Hold and drifts below the 40 line within a day, so nothing
+downstream of "serves" could otherwise be reached.
+- **Served (AC3):** Vlandia (AI) called up Southern Empire in the obligation war against Aserai:
+  `[SUMMONS] issued … n=19 price=623inf/114500gold`, then `served n=19`. Influence factor 0.68,
+  gold factor 1.00, Hold 84. The patron's ruler held 65k influence and 4.6M gold, so the AI's
+  budget share never bound; the vanilla per-party charge showed as the rest of that week's
+  influence drop (about 1,300 against our 623).
+- **Save round trip (AC8):** saved with the summons live, restarted the game, reloaded: the record
+  was still there (`1 live summons`) and **all 19 parties were still in the army** - membership
+  needs no re-attach code. A save made before the field loads with the list empty.
+- **Ended:** the army lasted 19 of the 20 days, then the engine disbanded it and the parties went
+  home; `released reason=army-gone` fired the same day (`expired n=0` before that fix, one day
+  later). **Why that army ended on day 19 is not known** - whether its cohesion ran out under 19
+  extra parties is a question for the next run, not an answer.
+- **Gates read live:** the war named, "commands no army", "serving in no war right now - it is
+  fighting one for <its old patron>", "already marching". `summons_value` no longer prints a price
+  of 0 or an empty "would refuse" for a quote refused early; the Realm tab's button no longer says
+  "Summon 0 parties - 0 influence, 0 denars".
+- **NOT verified, and the first things to run next:** the refusal and its defiance mark (AC4), D7's
+  excuse (AC5), the player-vassal inquiry (AC9), R3's release before a third realm's settlement
+  (AC6), ending on a broken link (AC7), the Realm tab's two-click order under War Sails (AC12),
+  and the 20-year balance run (ST-8). No army or Hold can be set from a tool; an army of the
+  patron's ruler was only ever reached by waiting for the AI to raise one.
+
+**Story 1.10d (the bound patron chooses), tech-lead review 2026-10-01 - built, compiled against
+v1.5.3 and the v1.4.8 references, not run in a game.** Fixed in review:
+- **The player was quoted a price the breach did not charge.** The inquiry printed the AI's
+  valuation terms (trust × the treaty's worth, legitimacy at a quarter) as if they were the charge:
+  "-18 trust" for a truce that costs 35, "5 legitimacy" for a breach that costs 20, and nothing at
+  all for the −12 every other court takes. It now prints what `TreatyRegistry.Break` charges.
+- **An exhausted patron was still asked.** The bound path skipped `WillingToAnswer`, so a patron
+  past `CallToArmsRefuseAboveExhaustion` was offered the choice that R1 says it never gets.
+- **Tribute lost counted tribute the attacker paid anyone**, not only the patron.
+- The legitimacy term is weighed only while intrigue is on (the only time it is charged); three
+  `§` signs had been re-encoded as `Ã‚Â§`; a doc comment the new section was spliced into; a typo.
+
+**1.10d, first live pass, 2026-10-01 (`di_hegemony_1166`, v1.5.3, 0 `ERROR` / 0 `WARN`).**
+- **The AI always honoured the vassal, because the breach cost came out negative.** Run live:
+  `the breach: treaties -21 ... => costs -6`. `TrustTreatyBrokenVictim` is -35 and was added as it
+  stood, and `Observers` (already a positive cost) was *subtracted*. Both signs fixed in
+  `Hegemony.BoundChoiceTermsOf`; the same truce now reads `treaties 21 ... costs 36`. **Nothing
+  but a live run showed it** - the code read correctly line by line.
+- **AI, honour the vassal (AC1, AC2):** NAP with Aserai, Aserai attacks Southern Empire:
+  `[PROTECT] bound-choice ... treaties=NonAggressionPact`, `Vlandia broke NonAggressionPact with
+  Aserai - Aserai now has a casus belli`, `answer=honour-vassal ... joined its vassal's war`. The
+  link's protection term went to +20.0 and legal neglect to 0.
+- **AI, honour the treaty (AC3):** NAP + DefensivePact (cost 86) against a link at Hold 10 (worth 75):
+  `answer=honour-treaty ... the link is worth 75 against 86 for the breach`, matching
+  `diplomacy.bound_choice` run beforehand, and `legal neglect -10.0` on the link.
+- **Player, break and defend (AC6, partly):** the inquiry opened (`inquiry_active`) and the answer
+  `Vlandia broke DefensivePact with Khuzait ... joined`, `source=player`. **The inquiry's text was
+  never read** - see the next point. Not run: its timeout, AC4 (the forced failure), the exhausted
+  patron, a patron that is itself a vassal of the attacker.
+- **Driving it: a scene notification can sit over the mod's inquiry, and `answer_inquiry` answers
+  the inquiry beneath it.** `test_player_rule` raises "fen Calrain joined the Kingdom of Vlandia"
+  and the bound choice queued behind it; `ui/answer_inquiry affirmative` was meant to dismiss
+  the notification and instead chose "Break it and defend". Read the screen first; on a test save
+  nothing is lost, and it is how this check passed by accident.
+- Cosmetic: `diplomacy.bound_choice` with no treaty standing still opens "bound by treaty to ..."
+  and "would break 0 treaty(ies)" after saying there is no choice to put.
+- `diplomacy.sign_treaty ... Truce` is refused unless the pair is at war ("A truce needs a war to
+  end"); use `NonAggressionPact` to stage a binding.
+- Finding again (run 09 D-12): Western Empire, a vassal of Vlandia, answered its ally Aserai and
+  declared war on Southern Empire, Vlandia's other vassal.
+
+**Second live pass, 2026-10-01 evening - the outstanding 1.10c and 1.10d branches.** Staged with a
+new cheat-gated lever, `diplomacy.test_raise_army <kingdom> [| <target>]` (the engine's own
+`Kingdom.CreateArmy`, the ruler's party alone): an AI ruler without a party, like Vlandia's Perin
+(a governor), otherwise left every branch past "commands no army" unreachable. Saves
+`run10_stage` (Southern Empire serving Vlandia, Hold 95) and `run10_player_patron` (the same, the
+player ruling Vlandia). 0 `ERROR` / 0 `WARN` in every session.
+
+| Check | Result |
+|---|---|
+| 1.10c R3 (AC6): marching at a realm the vassal is at peace with | PASS after a fix - `released reason=would-fight-a-peace`. **The first run released 8 of 16**: `Release` walked `army.Parties` while `party.Army = null` removed from it. Now a copy; re-run released 16 of 16. For a player-led army the test reads where the player marches, not the army's AI target - correct, and why the first attempt from inside a town released nothing |
+| 1.10c, a shared enemy | PASS - a summons aimed at Aserai stayed through the tick |
+| 1.10c AC7: the link broken mid-summons | PASS - `released reason=link-ended n=16` the tick after `break_treaty` |
+| 1.10c AC4: refusal | PASS - price charged (174,100 gold), `[SUMMONS] refused hold=35`, mark 6 → 7, **vassalage renounced on the spot**. Trust fell **50.1**, not 15: the renunciation is a broken treaty on top. The docs and both player prompts now say so (`CallToArms.RenounceClause`) |
+| 1.10c AC5 / D7: excused | PASS - `excused ... fighting Khuzait alone: Vlandia is bound by treaty to stand out of it`; no charge, no mark. Also seen: `its own territory is besieged` |
+| 1.10c AC9: the player as vassal | PASS - Khuzait (AI) summoned Sturgia (player-ruled); the prompt named 9 parties, the refusal's cost and the price already paid, with **no timer**; "Send" served 9, and the player's own party stayed out of the army |
+| 1.10d AC6: the player's prompt | PASS - the text shows what the breach charges (−35 with the attacker, −12 with every court, a claim, −20 legitimacy). Treaty names now read "defensive pact", not `DefensivePact` |
+| 1.10d AC4: treaties broken, war refused | PASS - `honour-vassal FAILED ... broke DefensivePact and the war was refused`; Vlandia was not at war with Khuzait |
+| 1.10d: the prompt's timeout | **24.0 real seconds** (opened 17:45:04.869, closed 17:45:28.860, unanswered) - see the open question below. The log called it "declined by the ruler"; it now says "no answer before the prompt expired" |
+| Call-to-arms refusal on a link with marks ≥ 1 | seen by accident: Southern Empire at Hold 38 refused Vlandia's call and was renounced at once |
+| Not run | the exhausted-patron gate (no exhaustion lever); a patron that is itself the attacker's vassal; AC12 under War Sails (NavalDLC is off in the launch script at the lead's request); ST-8 |
+
+**Decided by the lead, 2026-10-01: 60 real seconds** (`CallToArmsPlayerResponseSeconds`, renamed
+from `...Hours`). D-12 (a vassal called against a fellow client of its own patron) **stays allowed**.
+What was found: `CallToArmsPlayerResponseHours = 24` was passed as `InquiryData.ExpireTime`, which
+`SingleQueryPopUpVM.OnTick` counts in real seconds of UI time (read by IL, v1.5.3), and the game is
+paused while the prompt is up, so no in-game hour ever passes. A player vassal who looks away for
+24 seconds is marked as defiant - since Phase 1. The summons prompt has no timer, by the same
+reasoning.
+
+`answer_inquiry` answers a mod inquiry first and dismisses a scene notification only when no
+inquiry is queued (`dismissed_JoinKingdomSceneNotificationItem`); a notification left up blocks
+`save_game` silently.
+
+**Trust on a refused call, corrected in four documents.** Story 1.10c, design 04 §6.1 and a code
+comment said a refusal costs −10 trust; `TrustCallToArmsRefused` has been −15 throughout. They
+also said two marks make the vassalage "lapse at its next expiry", and the player guide that "the
+next refused summons breaks it": in the code, **the refusal that brings the marks to two renounces
+the vassalage at once**, and two marks earned otherwise only stop renewal. The player-facing
+inquiries were already right - they read the constants.
+
+**Also 2026-10-01: civil wars on v1.5.3.** The release DLL (built against v1.4.8) could not start a
+rising on this machine's v1.5.3 - `Kingdom.InitializeKingdom` changed signature. Fixed by calling it
+through reflection (`InternalWars.FindInitializeKingdom`), resolved before the kingdom is created, so
+a failure no longer leaves a half-built kingdom behind. Compiles against both v1.5.3 and the v1.4.8
+references; a reference scan finds 0 unresolved against either. **Not run in a game yet.**
+Details: [balance/run-09.md §7](balance/run-09.md).
+
 ## Start here — 2026-09-27, evening: the delegated pass
 
 **The lead handed every open decision to the tech lead** ("toàn quyền quyết định", 2026-09-27),

@@ -39,6 +39,11 @@ namespace DiplomacyIntrigue.Behaviors
                 // the treaty for having run out.
                 Hegemony.DailyTick(state);
 
+                // Story 1.10c: right after the link's own upkeep, so a bond that collapsed or
+                // seceded a moment ago sends the parties home the same day rather than tomorrow
+                // (AC7). Everything it ends, it ends through one function with a named reason.
+                Summons.DailyTick(state);
+
                 // Design 09 C3: AI patrons set each vassal's tribute to the band its Hold is in,
                 // before tribute falls due below. It catches its own failures link by link.
                 VassalTribute.AiDaily(state);

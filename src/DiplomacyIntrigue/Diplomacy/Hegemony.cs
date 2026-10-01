@@ -203,15 +203,19 @@ namespace DiplomacyIntrigue.Diplomacy
         }
 
         /// <summary>How a patron answered one war its vassal is fighting.</summary>
-        private enum Answer { None, Joined, Ignored, Bound }
+        internal enum Answer { None, Joined, Ignored, Bound }
 
         /// <summary>
         /// How <paramref name="patron"/> answered <paramref name="war"/>, or
         /// <see cref="Answer.None"/> when the war is not one it owes protection in. The one
         /// classification behind both the Hold terms and the console line that names the bound
         /// wars, so the diagnostic cannot count a different set.
+        ///
+        /// Internal rather than private because a summons asks the same question to decide whether a
+        /// vassal its patron left alone may be excused from answering (story 1.10c, R5/D7) - a
+        /// second copy of this classification would be exactly the bug CLAUDE.md §3 warns about.
         /// </summary>
-        private static Answer AnswerTo(ModState state, WarRecord war, Kingdom vassal, Kingdom patron)
+        internal static Answer AnswerTo(ModState state, WarRecord war, Kingdom vassal, Kingdom patron)
         {
             // Only wars in which the vassal was attacked, because that is the whole of
             // what a patron is called into (CallToArms.Applies). This used to count every
@@ -929,6 +933,219 @@ namespace DiplomacyIntrigue.Diplomacy
         /// </summary>
         public static int MaxVassalsToCall(int vassalCount)
             => vassalCount <= 1 ? vassalCount : (vassalCount + 1) / 2;
+
+        // ================= The bound patron's choice ==========================
+
+        /// <summary>
+        /// What the choice costs, as magnitudes, so a breakdown can name each one. The sum before
+        /// the comparison, like <see cref="HoldTerms.Raw"/>, so a change to one term can be
+        /// previewed exactly.
+        ///
+        /// **In trust points**, the unit the breach is already charged in, so nothing here
+        /// invents a currency of its own.
+        /// </summary>
+        public struct BoundChoiceTerms
+        {
+            // What the link is worth.
+            public float Tribute, Strength, HoldMargin, Worth;
+
+            // What the breach costs.
+            public float Trust, TreatyValue, TributeLost, Claim, Legitimacy, Observers, Cost;
+
+            /// <summary>
+            /// Our side against theirs on the whole war, as a ratio. Above 1 the patron's side is
+            /// outmatched, and R8 refuses whatever the link is worth.
+            /// </summary>
+            public float Odds;
+
+            /// <summary>
+            /// True when the war cannot be won: the same whole-side comparison the call to arms
+            /// already makes, at <see cref="DiplomacyConstants.CallToArmsHopelessRatio"/>. Read
+            /// through <c>CallToArms.ExpectedSupport</c>, which counts the bound patron itself as
+            /// *not* standing - an estimate of support must never assume a treaty gets torn up,
+            /// and asking would recurse back through here.
+            /// </summary>
+            public bool Hopeless;
+
+            public bool HonourVassal;
+        }
+
+        /// <summary>
+        /// Whether <paramref name="patron"/> would break its treaties with <paramref name="attacker"/>
+        /// to defend <paramref name="link"/>'s vassal (story 1.10d, R8). One function: the AI's
+        /// weekly act, the player's inquiry text and the console dry run all read it, so the choice
+        /// a player is shown is the choice the AI makes (CLAUDE.md §3).
+        /// </summary>
+        public static bool WouldHonourVassal(ModState state, Treaty link, Kingdom attacker, out string why)
+        {
+            var terms = BoundChoiceTermsOf(state, link, attacker);
+            if (terms.Hopeless)
+            {
+                why = "the war cannot be won (our side " + terms.Odds.ToString("0.00")
+                      + " against theirs), and a treaty is not worth a lost war";
+                return false;
+            }
+            if (!terms.HonourVassal)
+            {
+                why = "the link is worth " + terms.Worth.ToString("0")
+                      + " against " + terms.Cost.ToString("0") + " for the breach";
+                return false;
+            }
+            why = null;
+            return true;
+        }
+
+        /// <summary>
+        /// Every term of the choice, computed once (R8). Three groups: what the vassalage is worth
+        /// to the patron, what tearing up its treaties with the attacker costs, and whether the war
+        /// is winnable at all.
+        ///
+        /// The tribute terms are annual - twelve periods of
+        /// <see cref="DiplomacyConstants.TributePeriodDays"/> - because a per-period figure would
+        /// make every link look worth a few points whatever the year is worth.
+        /// </summary>
+        public static BoundChoiceTerms BoundChoiceTermsOf(ModState state, Treaty link, Kingdom attacker)
+        {
+            var t = new BoundChoiceTerms();
+            var patron = link?.DominantParty;
+            var vassal = link?.SubordinateParty;
+            if (state == null || patron == null || vassal == null || attacker == null) return t;
+
+            // ---- What the link is worth.
+            var periods = (float)(CampaignTime.DaysInYear / DiplomacyConstants.TributePeriodDays);
+            if (link.TributeAmount > 0 && link.TributePayer == vassal)
+                t.Tribute = link.TributeAmount * periods * DiplomacyConstants.BoundChoiceGoldPerPoint;
+
+            // The same log-ratio the Hold fear term reads, at the same weight, so "how much
+            // stronger is my patron than my vassal" means one thing in both places.
+            var ourStrength = patron.CurrentTotalStrength;
+            var theirStrength = vassal.CurrentTotalStrength;
+            if (ourStrength > 0f && theirStrength > 0f)
+            {
+                var edge = Clamp((float)(System.Math.Log(ourStrength / theirStrength, 2)), -1f, 1f);
+                t.Strength = edge * DiplomacyConstants.HoldStrengthWeight * DiplomacyConstants.BoundChoiceStrengthShare;
+            }
+
+            t.HoldMargin = (HoldOf(link) - DiplomacyConstants.HoldDefianceThreshold) * DiplomacyConstants.BoundChoiceHoldPerPoint;
+            t.Worth = t.Tribute + t.Strength + t.HoldMargin;
+
+            // ---- What the breach costs.
+            var treaties = new List<Treaty>();
+            for (var i = 0; i < state.Treaties.Count; i++)
+            {
+                var treaty = state.Treaties[i];
+                if (treaty.IsActive && treaty.ForbidsWar && treaty.IsBetween(patron, attacker)) treaties.Add(treaty);
+            }
+
+            for (var i = 0; i < treaties.Count; i++)
+            {
+                var value = TreatyWorth(treaties[i].Type);
+                t.Trust += -DiplomacyConstants.TrustTreatyBrokenVictim * value;
+                // A cost, so positive: TrustTreatyBrokenVictim is -35, and adding it as it stands made the
+                // breach a negative price - the first build's AI broke every treaty because breaking
+                // them paid (seen live 2026-10-01: "treaties -21 ... costs -6").
+                t.TreatyValue += -DiplomacyConstants.TrustTreatyBrokenVictim * value;
+                t.Claim += DiplomacyConstants.BoundChoiceClaimPoints;
+                // Only a cost while the pillar is on: TreatyRegistry.Break charges legitimacy only
+                // then, and a valuation must not weigh a price that is never paid.
+                if (Core.Settings.Current.EnableIntrigue)
+                    t.Legitimacy += Intrigue.IntrigueConstants.LegitimacyBrokeTreaty * DiplomacyConstants.BoundChoiceLegitimacyShare;
+            }
+
+            // Tribute flowing the other way is lost outright when the pact is torn up, and counts
+            // in full rather than as a treaty multiple: it is income, not a reputation.
+            for (var i = 0; i < state.Treaties.Count; i++)
+            {
+                var pact = state.Treaties[i];
+                if (!pact.IsActive || pact.Type != TreatyType.TributaryPact) continue;
+                // Between these two, paid by the attacker. Without the first test, tribute the
+                // attacker paid to any realm at all was counted as the patron's loss.
+                if (!pact.IsBetween(patron, attacker) || pact.TributePayer != attacker) continue;
+                t.TributeLost += pact.TributeAmount * periods * DiplomacyConstants.BoundChoiceGoldPerPoint;
+            }
+
+            // Every realm that currently trusts the patron sees the breach, at a share of what it
+            // costs each of them.
+            var observers = 0;
+            foreach (var other in Kingdom.All)
+            {
+                if (other == patron || other == attacker || other == vassal) continue;
+                if (other.IsEliminated || !other.IsRealm()) continue;
+                if (TrustRegistry.Get(state, other, patron) > 0f) observers++;
+            }
+            t.Observers = observers * -DiplomacyConstants.TrustTreatyBrokenObserver
+                          * DiplomacyConstants.BoundChoiceObserverShare;
+
+            // Observers is already a positive cost (the other courts' trust lost, as a share); it was
+            // subtracted here, which made a breach every court watched cheaper.
+            t.Cost = t.TreatyValue + t.TributeLost + t.Claim + t.Legitimacy + t.Observers;
+
+            // ---- Can the war be won at all (R8)?
+            var ourSide = Power.Strength(patron) + Power.Strength(vassal)
+                          + CallToArms.ExpectedSupport(state, patron, attacker, false);
+            var theirSide = Power.Strength(attacker)
+                            + CallToArms.ExpectedSupport(state, attacker, patron, true);
+            t.Odds = ourSide <= 0f ? 0f : theirSide / ourSide;
+            t.Hopeless = theirSide > ourSide * DiplomacyConstants.CallToArmsHopelessRatio;
+
+            t.HonourVassal = !t.Hopeless
+                             && t.Worth >= t.Cost * DiplomacyConstants.BoundChoiceCaution;
+            return t;
+        }
+
+        /// <summary>What a treaty is worth to its parties, so tearing it up costs what it was worth.</summary>
+        public static float TreatyWorth(TreatyType type)
+        {
+            switch (type)
+            {
+                case TreatyType.Alliance: return DiplomacyConstants.BoundChoiceTreatyValueAlliance;
+                case TreatyType.DefensivePact: return DiplomacyConstants.BoundChoiceTreatyValueDefensivePact;
+                case TreatyType.TributaryPact: return DiplomacyConstants.BoundChoiceTreatyValueTributaryPact;
+                case TreatyType.NonAggressionPact: return DiplomacyConstants.BoundChoiceTreatyValuePact;
+                case TreatyType.Truce: return DiplomacyConstants.BoundChoiceTreatyValueTruce;
+                default: return DiplomacyConstants.BoundChoiceTreatyValuePact;
+            }
+        }
+
+        /// <summary>
+        /// The choice as text, term by term, for <c>diplomacy.bound_choice</c> (AC5). Prints the
+        /// numbers the decision is made on, so a diagnostic that says "it would not break its
+        /// treaty" can be checked against the arithmetic rather than taken on trust.
+        /// </summary>
+        public static string ExplainBoundChoice(ModState state, Treaty link, Kingdom attacker)
+        {
+            if (link == null || link.SubordinateParty == null || link.DominantParty == null)
+                return "no vassalage.";
+
+            var patron = link.DominantParty;
+            var vassal = link.SubordinateParty;
+            var t = BoundChoiceTermsOf(state, link, attacker);
+
+            var sb = new System.Text.StringBuilder();
+            sb.Append(patron.Name).Append(" is bound by treaty to ").Append(attacker == null ? "?" : attacker.Name.ToString())
+              .Append(", which is attacking ").Append(vassal.Name).AppendLine(":");
+
+            sb.Append("  the link: tribute ").Append(t.Tribute.ToString("0"))
+              .Append("  strength ").Append(Signed(t.Strength))
+              .Append("  hold ").Append(HoldOf(link).ToString("0"))
+              .Append(" (").Append(Signed(t.HoldMargin)).Append(" over the defiance line)")
+              .Append("  => worth ").AppendLine(t.Worth.ToString("0"));
+
+            sb.Append("  the breach: treaties ").Append(t.TreatyValue.ToString("0"))
+              .Append("  tribute lost ").Append(t.TributeLost.ToString("0"))
+              .Append("  a claim worth ").Append(t.Claim.ToString("0"))
+              .Append("  legitimacy ").Append(t.Legitimacy.ToString("0"))
+              .Append("  observers ").Append(t.Observers.ToString("0"))
+              .Append("  => costs ").Append(t.Cost.ToString("0")).AppendLine();
+
+            sb.Append("  the war: our side against theirs ").Append(t.Odds.ToString("0.00"))
+              .Append(t.Hopeless ? "  - hopeless, refused whatever the link is worth" : "").AppendLine();
+
+            sb.Append("  => ").Append(t.HonourVassal
+                ? "honour the vassal: break the treaty and join the war"
+                : "honour the treaty: stay out, and the war counts as legal neglect");
+            return sb.ToString();
+        }
 
         // ================= Becoming a vassal ===================================
 

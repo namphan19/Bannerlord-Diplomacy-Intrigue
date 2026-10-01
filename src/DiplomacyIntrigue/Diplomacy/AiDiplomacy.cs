@@ -39,6 +39,8 @@ namespace DiplomacyIntrigue.Diplomacy
             PoachedVassal = 6,
             /// <summary>A neglected vassal knelt to the kingdom attacking it.</summary>
             Defected = 7,
+            /// <summary>Called up a serving vassal's parties under its own command (story 1.10c).</summary>
+            Summoned = 8,
         }
 
         /// <summary>
@@ -69,6 +71,13 @@ namespace DiplomacyIntrigue.Diplomacy
             // Getting out of a losing war still comes first - nothing else matters while a
             // realm is being ground down.
             if (TrySeekPeace(state, kingdom)) return Move.SoughtPeace;
+
+            // A vassal already serving this realm in a war is the one piece of military
+            // service left to ask for: the summons puts its lords under our command rather
+            // than beside us (story 1.10c, D5). It belongs this early because it is a duty
+            // inside a war we are already fighting, not a diplomatic move - and it can only
+            // be answered while that war runs.
+            if (Summons.TryAi(state, kingdom)) return Move.Summoned;
 
             // A vassal abandoned to its attacker defects to it - ahead of voluntary
             // submission, which it cannot take while it still has a patron.

@@ -246,6 +246,44 @@ Several hegemons coexist by construction, satisfying directive 3 at zero cost.
   summon, at most half the vassal's parties, fixed duration then a cooldown. Refusable at a
   Hold cost.
 
+#### 5.2a The summons may be a real Army after all (ST-1, 2026-09-30)
+
+The bullet above was written on the assumption that an `Army` assumes every member shares its
+kingdom — the same assumption behind the ~25 unchecked `MapFaction` → `Kingdom` casts CLAUDE.md
+§1 warns about. **It does not, on any of the paths a summons uses.** Read by IL
+(`tools/CallSites`, `dotnet run --project tools/CallSites -- --il|--members|--callers`):
+
+| Question | Answer, and where it is written |
+|---|---|
+| Does the add path check the member's kingdom? | No. `Army.Gather` is `party.Army = army` for each entry, with no faction test at all; `Army.OnAddPartyInternal` then adds to `_parties`, raises `OnPartyJoinedArmy`, and stops there |
+| Does cohesion care? | No. `DefaultArmyManagementCalculationModel.CalculateCohesionChangeInternal` reads party **count**, starving count, morale < 25 count, healthy members < 10 count. No kingdom, no faction, no `MapFaction` |
+| Does the army dissolve over it? | No. `Army.CheckArmyDispersion` reads the **leader party's** `MapFaction` for the "no active war" test, and `DisbandArmyAction` has **no `ApplyByKingdomChanged`** — the `ArmyDispersionReason.KingdomChanged` value is never produced by vanilla |
+| The one unchecked cast | `CalculateTotalInfluenceCostInternal` does `castclass Kingdom` on `LeaderParty.MapFaction`, guarded by `IsKingdomFaction`. It is the leader, never a member |
+| Who pays the influence? | The **leader's** clan. `OnAddPartyInternal` charges `CalculatePartyInfluenceCost(LeaderParty, member)` to `LeaderParty.LeaderHero.Clan` on every add, and `BoostCohesionWithInfluence` charges cohesion upkeep to the same clan. **So a summons costs the patron's ruler influence twice over: our price, then vanilla's per-party cost and cohesion upkeep** |
+| Sieges | `BesiegerCamp` is built with `besiegerParty.MapFaction` (`SiegeEvent`'s only construction site), and `IsBesiegerSideParty` is a membership test. A summoned party besieges as the army's side while its own `MapFaction` stays its own kingdom |
+| Hostility | Per party, by its own `MapFaction` — `MobileParty.AfterLoad`'s own v1.1.4 migration decides to `SetMoveModeHold` on `MapFaction.IsAtWarWith(target)`. Being in another kingdom's army changes nothing about who a party may attack, which is what R3 of the story leans on |
+| Save and load | `army` is a saveable field of `MobileParty`; `MobileParty.AfterLoad` clears it only for a caravan during a version upgrade. Membership survives a reload with no re-attach code |
+| The fallback, and whether it is saved | `SetPartyAiAction.GetActionForEscortingParty(...)` is public and is the **only** caller of `SetMoveEscortParty`. `MobileParty` saves `defaultBehavior`, `moveTargetParty`, `targetPosition`, `desiredAiNavigationType`, `besiegerCamp`, and `MobilePartyAi` saves `DoNotMakeNewDecisions`. **The story's §8 risk "escort state is not saved by vanilla" is wrong** — the escort path survives a reload as well |
+
+**Chosen mechanism: a real `Army`,** through `Gather`'s own list — parties merged on the map,
+the army screen, sieges and battles together. Escort is kept as the documented fallback, not
+because an army is unsafe but because it is the mechanism that shows the vassal serving on the
+map, which is the point of the feature.
+
+One engine behaviour found that the design has to respect: **`Clan.LeaveKingdomInternal` ejects
+every one of a clan's parties from whatever army they are in**, with no test of which army. A
+clan that leaves its kingdom mid-summons therefore leaves the army too — which is what R8 wants,
+and is now read as a helper rather than a hazard.
+
+**Version, honestly.** The IL bodies are **v1.5.3** — this machine's branch (CLAUDE.md §1). The
+reference assemblies carry no bodies, so the *signatures* were checked separately against
+v1.4.8 (`Bannerlord.ReferenceAssemblies.Core` 1.4.8.119303, laid out as a stand-in game folder
+for `CallSites`): `DisbandArmyAction`, `Army` and `SetPartyAiAction` have identical surfaces on
+1.4.8, and `MobileParty`'s saveable-field list is identical, `army` included. **Nothing here has
+run in a game.** What is left to ST-7: whether a foreign member behaves under live AI hourly
+ticks, what the army overlay and Kingdom screen show, whether battle balance reads the member's
+own kingdom, and what the ⌈N/2⌉ cap does to the vassal's own defence.
+
 ### 5.3 Rival hegemons compete for vassals
 
 The source's §7.4, and the cheapest interesting thing in this whole design. A hegemon
@@ -280,9 +318,14 @@ dynastic rebellion, proxy rebellion — need Phase 2 court politics and wait for
 
 ### 6.1 Passive resistance (Hold 30–39)
 
-Refuses a call to arms; pays tribute late. Refusal costs the vassal **−10 trust** with the
-patron and earns a **defiance mark**. Two marks inside a year and the vassalage lapses at its
-next expiry. Consistent with the Phase 1 alliance rule: refusal has to be a real option, or
+Refuses a call to arms; pays tribute late. Refusal costs the vassal **−15 trust** with the
+patron (`TrustCallToArmsRefused`) and earns a **defiance mark**. A refusal that brings the marks
+to two **renounces the vassalage at once**, and the renunciation is charged as a broken treaty
+(`TreatyRegistry.Break`: −35 trust with the patron, −12 with every other court) on top of the −15 -
+measured live on 2026-10-01 as −50.1. Two marks earned any other way stop it renewing at its
+term, and the next refusal then renounces it. Marks are forgotten a year (84 days) after the last.
+*Corrected 2026-10-01: this said −10 trust and "lapses at its next expiry"; the code has charged
+−15 and renounced on the refusal since defiance marks were built.* Consistent with the Phase 1 alliance rule: refusal has to be a real option, or
 submission is a suicide pact no AI would ever accept.
 
 ### 6.2 Diplomatic defiance (Hold 15–29)
@@ -391,6 +434,9 @@ six are the code finally doing what this spec already said.
 | §3.1: submission imposed at war score 90 (75 since §13) | Also requires the winner to be the stronger of the two | Every route into vassalage now asks the same question, `Hegemony.IsStrongEnoughToHold` |
 | (Not in the spec — run 06, F3) | A neglected vassal may **defect to the kingdom attacking it**: Hold under 40, defender in a war it is losing by 20+ score, patron not fighting the aggressor. The submission is the peace; the old bond is broken *by the patron* (its breach in every court), siblings take the contagion hit, and the new patron is called into the vassal's other defensive wars at once. The attacker must not itself be a vassal. A player attacker is asked; a refusal holds for 42 days | Run 06 showed a patron barred by truce or the cascade guard simply watching a vassal die. Rather than override those rules, the vassal gets an exit and the patron's name pays for it |
 | (Not in the spec — 2026-09-27, F3's *legal neglect*, TODO 9 option (a)) | A war the vassal was attacked in, by a kingdom its patron holds **any war-forbidding treaty** with (`HasTreatyForbiddingWar`: pact, truce, alliance or tributary pact). **A sibling attacker - another client of the same patron - does not count**: the patron cannot side with one client against another, `ReconcileWithSiblings` is the sphere's answer, and the run-04 exemption stands, costs Hold as **half** an ignored war (`HoldLegalNeglectShare` 0.5, UN-TUNED). The protection term is now the mean over defended wars of +1 joined, -1 ignored, -0.5 bound, split into `protection` and a named `legal neglect` term in every breakdown (`diplomacy.hegemony` adds a line naming each bound attacker and the treaty), the Realm tab's chips and the weekly `[LINK]` line (`legalNeglect=`) | The 2026-09-19 live session: Western Empire was bound to every one of its vassal's attackers by tribute, alliance and pact, printed `protection +0.0` for two years while the vassal was attacked four times, and Hold never neared F3's line of 40. The patron is still never *called* against such an attacker - it chose the treaty, it did not look away - so the weight is half, not full. A mean per war rather than `ignored += 0.5` in the old ratio, because the ratio would score a vassal whose only war is bound at the full -1 |
+| §5.2: the summons "may order a vassal's parties to escort it", influence cost per summon | **A real `Army`** (§5.2a), and a summons names one war: the obligation war the vassal is already serving its patron in. At most half its eligible war parties, nearest the summoner first, for `SummonsDurationDays` or until that war ends, refused below the same Hold the call to arms reads, and the patron pays influence **and** gold before the vassal answers | D5 (2026-10-01): the summons is the call to arms carried further, not a second act standing beside it. A summons in peacetime, or in a war the vassal is not already serving, would be a patron conducting a foreign policy through its client's army - which is what the call to arms already is. ST-1 read by IL that a real `Army` tolerates a member whose `MapFaction` is another kingdom, so nothing is lost by taking it |
+| §5.2: "at most half the vassal's parties" | ⌈N/2⌉ of the **eligible** ones, and **no ceiling per patron army** (D8) | The cap that matters is on what one order can take from one realm. What bounds a hegemon from stripping a sphere is the whole set - the cap, the cooldown, the AI's budget share, and the refusal below Hold 40 - and ST-8 measures it rather than a bolt-on limit. Vanilla's own per-party influence charge and cohesion upkeep sit on top of our price (§5.2a) and are the patron ruler's own cost to keep |
+| (Not in the spec — story 1.10c) | **No Hold term for a live summons in the first version** (D8), and a vassal its patron left alone is **excused** from answering one, at no charge and with no mark (D7) | A Hold term for a summons that already has a cap, a cooldown and a refusal would be a second way to punish the same act. And a patron that stayed out of the war its vassal is defending has no standing to ask that vassal for more - which is why the excuse reads the same `Hegemony.AnswerTo` classification the protection term does, rather than a second copy of "did the patron show up". D7's other half - the patron choosing a side, breaking its treaty or honouring it - is its own story, [1.10d](../stories/1.10d-bound-patron-chooses.md) |
 
 Also worth recording: a coerced submission was measured starting at Hold 35 with a target of
 48.9 (base 40, fear +7.8, trust +15.0, tribute -3.8, culture -10.0). It spends about a

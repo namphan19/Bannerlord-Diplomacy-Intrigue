@@ -37,6 +37,7 @@ namespace DiplomacyIntrigue.Core
             AddClassDefinition(typeof(SpyMission), 16);
             AddClassDefinition(typeof(CounterIntelligenceBudget), 17);
             AddClassDefinition(typeof(CourtOffice), 18);
+            AddClassDefinition(typeof(SummonsRecord), 19);
         }
 
         protected override void DefineEnumTypes()
@@ -71,6 +72,7 @@ namespace DiplomacyIntrigue.Core
             ConstructContainerDefinition(typeof(List<SpyMission>));
             ConstructContainerDefinition(typeof(List<CounterIntelligenceBudget>));
             ConstructContainerDefinition(typeof(List<CourtOffice>));
+            ConstructContainerDefinition(typeof(List<SummonsRecord>));
         }
     }
 }

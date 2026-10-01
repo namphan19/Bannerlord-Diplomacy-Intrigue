@@ -20,13 +20,19 @@ Records it reads (all `[KIND] key=value`, one per line):
   amends, office_appointed / _dismissed / _vacated, tribute_level (court verbs, 2.9)
 and the new fields [WAR] battles= aggressorPrisoners= defenderPrisoners=, [WAR-ENDED] finalBattles=,
 [LINK] legalNeglect=.
+From story 1.10d (2026-10-01): bound_choice - the bound patron's choice, printed in HEGEMONY TIMELINE
+from its telemetry record and read again from the "[PROTECT]" prose in its own section below.
 
 Some things reach the log only as prose, with no telemetry record. Where the prose is fixed enough
-to parse, it is read, and dated to the last telemetry record before it (plain lines carry only the
-wall clock):
+to parse, it is read, and dated to the last telemetry record before it: a PLAIN line takes the day
+of the telemetry record before it and never sets that day itself, so a prose line cannot move where
+a resumed log is cut, and only the wall clock is known:
   (InternalWar)    internal wars begun and ended, side changes, captures, restitution
   (ClanSuccession) clan successions and cadet splits
   (AI)             AI peaces, for "(its court's bar N)" (R-1)
+  (Summons)        summons issued, served, refused, excused and released (story 1.10c)
+  (CallToArms)     the bound patron's choice, the "[PROTECT]" lines (story 1.10d); the source also
+                   carries every other call-to-arms message, which none of the sections below reads
 The last section of the report lists what no log line records at all.
 
 Every section needing a record an older log lacks says so and moves on, so an old log still runs
@@ -58,7 +64,7 @@ runs = []        # [RUN] dicts
 # Prose lines worth keeping (see the docstring). An (AI) line is kept only when it is a peace,
 # the one kind of AI prose read here. A PLAIN record takes the day of the telemetry record before
 # it, and never sets that day itself, so it cannot move where a resumed log is cut.
-PLAIN = re.compile(r"\[(?:INFO|WARN)\] \((InternalWar|ClanSuccession|AI)\) (.*)$")
+PLAIN = re.compile(r"\[(?:INFO|WARN)\] \((InternalWar|ClanSuccession|AI|Summons|CallToArms)\) (.*)$")
 
 for name in sys.argv[1:]:
     lines = pathlib.Path(name).read_text(encoding="utf-8", errors="replace").splitlines()
@@ -321,7 +327,9 @@ if events:
 
     section("HEGEMONY TIMELINE")
     wanted = {"vassalage_formed", "poach", "revolt", "annexation_breach", "vassalage_collapsed",
-              "vassalage_renewed", "kingdom_eliminated", "ai_war_declared", "defection"}
+              "vassalage_renewed", "kingdom_eliminated", "ai_war_declared", "defection",
+              "summons_issued", "summons_served", "summons_refused", "summons_excused",
+              "summons_released", "bound_choice"}
     for day, d in events:
         k = d.get("kind")
         if k not in wanted:
@@ -347,6 +355,31 @@ if events:
             print(f"  {date:<18} DEFECT   {d.get('vassal')} left {d.get('oldPatron')} for its attacker {d.get('newPatron')} (hold {d.get('hold')}, signed {d.get('signed')})")
         elif k == "kingdom_eliminated":
             print(f"  {date:<18} GONE     {d.get('kingdom')} ({d.get('warsClosed')} wars closed)")
+        elif k == "summons_issued":
+            print(f"  {date:<18} SUMMON   {d.get('patron')} calls up {d.get('vassal')}: {d.get('n')} party(ies)"
+                  f" against {d.get('enemy')} for {d.get('influence')} influence and {d.get('gold')} gold"
+                  f" (hold {d.get('hold')}, factors {d.get('influenceFactor')}/{d.get('goldFactor')})")
+        elif k == "summons_served":
+            print(f"  {date:<18} SERVED   {d.get('vassal')} -> {d.get('patron')}: {d.get('n')} party(ies)"
+                  f" under command until {d.get('endsOn')} (hold {d.get('hold')})")
+        elif k == "summons_refused":
+            print(f"  {date:<18} SNUB     {d.get('vassal')} refused {d.get('patron')}"
+                  f" (hold {d.get('hold')}): {d.get('reason')}")
+        elif k == "summons_excused":
+            print(f"  {date:<18} EXCUSED  {d.get('vassal')} was excused by {d.get('patron')}: {d.get('reason')}")
+        elif k == "summons_released":
+            print(f"  {date:<18} BACK     {d.get('vassal')}'s {d.get('n')} party(ies) went home to {d.get('patron')}"
+                  f" ({d.get('reason')})")
+        elif k == "bound_choice":
+            # Two records per choice (story 1.10d): one opens it and names the treaties, the next
+            # carries the answer. Both print, because the pairing is the record of the choice.
+            hold = d.get("hold")
+            print(f"  {date:<18} BOUND    {d.get('patron')} vs {d.get('attacker')} over {d.get('vassal')}"
+                  f" [{d.get('treaties') or 'treaties not repeated here'}"
+                  + (f", hold {hold}" if hold is not None else "")
+                  + (f", {d['bindingCount']} treaty(ies)" if d.get("bindingCount") else "")
+                  + f"] -> {d.get('outcome', 'asked')}"
+                  + (f": {d['reason']}" if d.get("reason") else ""))
 
     section("FIEFS  (fortifications gained minus lost, by kingdom)")
     net = collections.Counter()
@@ -848,6 +881,220 @@ else:
         if hit:
             print(f"    {vassal:<18} -> {patron:<18} {hit:3d} of {weeks:3d} weeks")
 
+# ---------------- the bound patron's choice, story 1.10d -----------------------
+# The [PROTECT] lines are prose (CallToArms.cs, Log source "CallToArms") with a bound_choice
+# telemetry record beside each, printed in HEGEMONY TIMELINE above. So this is the cross-read of
+# the wording an AC4/AC7 report depends on, not the only account of the choices. An answer line
+# names no vassal - only the patron and the attacker - so an answer belongs to the last choice
+# still open for that patron, the same way a summons answer belongs to the order awaiting it.
+section("BOUND PATRON'S CHOICE  (story 1.10d: prose [PROTECT] lines; days ~ the record before)")
+BC_ASKED = re.compile(r"^\[PROTECT\] bound-choice patron=(?P<patron>.+?) vassal=(?P<vassal>.+?)"
+                      r" attacker=(?P<attacker>.+?) treaties=(?P<treaties>.+)$")
+BC_VASSAL = re.compile(r"^\[PROTECT\] answer=honour-vassal patron=(?P<patron>.+?)"
+                       r" attacker=(?P<attacker>.+?) broke (?P<broke>.+?)"
+                       r" and joined its vassal's war\.$")
+BC_FAILED = re.compile(r"^\[PROTECT\] answer=honour-vassal FAILED patron=(?P<patron>.+?)"
+                       r" attacker=(?P<attacker>.+?) broke (?P<broke>.+?)"
+                       r" and the war was refused; (?P<why>.*)$")
+BC_TREATY = re.compile(r"^\[PROTECT\] answer=honour-treaty patron=(?P<patron>.+?)"
+                       r" attacker=(?P<attacker>.+?) - (?P<why>.*)$")
+
+bc, bc_loose, bc_other = [], collections.Counter(), 0
+
+
+def bc_row(patron, day):
+    """The choice an answer line belongs to: the last one for that patron still unanswered.
+
+    A line seen with no choice opened above it - the log began mid-choice - gets a row of its own,
+    so a count of answers is never lower than a count of choices.
+    """
+    for row in reversed(bc):
+        if row["patron"] == patron and row["outcome"] == "asked":
+            if row["day"] is None:
+                row["day"] = day
+            return row
+    row = {"patron": patron, "vassal": "?", "attacker": "?", "treaties": None, "day": day,
+           "outcome": "answered", "broke": None, "parts": [], "why": None}
+    bc.append(row)
+    return row
+
+
+def broke_parts(text):
+    """The treaty types one breach line names: "Truce, Alliance", or "nothing" for a row with none."""
+    return [] if text in (None, "", "nothing") else text.split(", ")
+
+
+for day, source, text in plain:
+    if source != "CallToArms":
+        continue
+    if not text.startswith("[PROTECT]"):
+        bc_other += 1            # every other call-to-arms message; none of the sections reads those
+        continue
+    m = BC_ASKED.match(text)
+    if m:
+        bc.append({"patron": m.group("patron"), "vassal": m.group("vassal"),
+                   "attacker": m.group("attacker"), "treaties": m.group("treaties"), "day": day,
+                   "outcome": "asked", "broke": None, "parts": [], "why": None})
+        continue
+    m = BC_VASSAL.match(text)
+    if m:
+        row = bc_row(m.group("patron"), day)
+        row.update(attacker=m.group("attacker"), outcome="honour-vassal", broke=m.group("broke"),
+                   parts=broke_parts(m.group("broke")))
+        continue
+    m = BC_FAILED.match(text)
+    if m:
+        row = bc_row(m.group("patron"), day)
+        row.update(attacker=m.group("attacker"), outcome="war-refused", broke=m.group("broke"),
+                   parts=broke_parts(m.group("broke")), why=m.group("why"))
+        continue
+    m = BC_TREATY.match(text)
+    if m:
+        row = bc_row(m.group("patron"), day)
+        row.update(attacker=m.group("attacker"), outcome="honour-treaty", why=m.group("why"))
+        continue
+    bc_loose["[PROTECT] lines not recognised (wording changed?)"] += 1
+
+if not bc and not bc_loose:
+    none_here("no [PROTECT] lines in this log (no patron has been put the choice on this build)")
+else:
+    outcomes = collections.Counter(r["outcome"] for r in bc)
+    bc_broken = collections.Counter(p for r in bc for p in r["parts"])
+    print(f"  choices seen: {len(bc)}   asked {outcomes['asked']}, honoured the vassal "
+          f"{outcomes['honour-vassal']}, honoured the treaty {outcomes['honour-treaty']},"
+          f" war refused after the breach {outcomes['war-refused']}")
+    print(f"  a row is one choice, from its bound-choice line to its answer; a row reading 'asked'"
+          f" had no answer in this log")
+    print(f"  {'~day':<18}{'patron':<18}{'vassal':<18}{'attacker':<18}{'answer':<15}treaties")
+    for r in bc:
+        print(f"  {day_to_date(r['day']):<18}{r['patron'][:17]:<18}{r['vassal'][:17]:<18}"
+              f"{r['attacker'][:17]:<18}{r['outcome']:<15}{r['treaties'] or '-'}"
+              + (f"  broke {r['broke']}" if r["broke"] else "")
+              + (f"  ({r['why']})" if r["why"] else ""))
+    for patron, n in collections.Counter(r["patron"] for r in bc).most_common():
+        broke = [p for r in bc if r["patron"] == patron for p in r["parts"]]
+        print(f"  {patron:<18} put to it {n:3d} time(s), treaties torn up by it {len(broke):3d}"
+              + ("   (AC7)" if broke else ""))
+    if bc_broken:
+        print("  treaties torn up by this rule: " + ", ".join(f"{k} {n}" for k, n in bc_broken.most_common())
+              + "   (a war refused after the breach still cost these)")
+    for k, n in bc_loose.most_common():
+        print(f"  {k:<50} {n:4d}")
+    if bc_other:
+        print(f"  (other (CallToArms) lines, not [PROTECT] ones, are not read here: {bc_other:4d})")
+
+# ---------------- summons, story 1.10c -----------------------------------------
+# The [SUMMONS] lines are prose (Summons.cs, Log source "Summons") and there is a telemetry
+# record beside each - so this section is a cross-read of the wording a run's report depends on,
+# not the only account of them. A PLAIN line carries no day of its own: it takes the day of the
+# last telemetry record before it and never sets one, so every date here is "~" and a summons is
+# dated to the week its line fell in.
+section("SUMMONS  (prose [SUMMONS] lines; days ~ the record before, and no day of their own)")
+SU_ISSUED = re.compile(r"^\[SUMMONS\] issued patron=(?P<patron>.+?) vassal=(?P<vassal>.+?)"
+                       r" war=(?P<war>.+?) n=(?P<n>\d+) price=(?P<price>\S+)$")
+SU_SERVED = re.compile(r"^\[SUMMONS\] served n=(?P<n>\d+) patron=(?P<patron>.+?) vassal=(?P<vassal>.+?)"
+                       r"(?: until (?P<until>.*)| - (?P<none>.*))?$")
+SU_REFUSED = re.compile(r"^\[SUMMONS\] refused hold=(?P<hold>-?[\d.]+) patron=(?P<patron>.+?)"
+                        r" vassal=(?P<vassal>.+)$")
+SU_EXCUSED = re.compile(r"^\[SUMMONS\] excused patron=(?P<patron>.+?) vassal=(?P<vassal>.+?)"
+                        r" reason=(?P<reason>.+)$")
+SU_RELEASED = re.compile(r"^\[SUMMONS\] released reason=(?P<reason>\S+) n=(?P<n>\d+)"
+                         r" patron=(?P<patron>.+?) vassal=(?P<vassal>.+)$")
+# Two Summons lines carry no [SUMMONS] tag; read so they are counted, not mistaken for drift.
+SU_OTHER = re.compile(r"^(?:The order could not be carried out: |.+ meant to summon .+ and could not: )")
+
+summons, su_loose = [], collections.Counter()
+SU_NEW = {"patron": None}
+
+
+def su_row(patron, vassal, day, waiting=SU_NEW):
+    """The summons a line belongs to: the last one of that pair whose outcome is in `waiting`.
+
+    `issued` opens a new row and never reuses one, so an order the log cut off before its answer
+    is still counted; an answer attaches to the order that was waiting for it, and a release to
+    the summons that was standing. A line seen without its `issued` (the log began mid-summons)
+    gets a row of its own rather than being dropped, so the count of orders is never lower than
+    the count of refusals.
+    """
+    if waiting is not SU_NEW:
+        for row in reversed(summons):
+            if row["patron"] == patron and row["vassal"] == vassal and row["outcome"] in waiting:
+                if row["day"] is None:
+                    row["day"] = day
+                return row
+    row = {"patron": patron, "vassal": vassal, "day": day, "n": None, "war": None,
+           "hold": None, "price": None, "outcome": "issued", "detail": "", "until": None,
+           "freed": None, "reason": None, "marching": False}
+    summons.append(row)
+    return row
+
+
+for day, source, text in plain:
+    if source != "Summons":
+        continue
+    m = SU_ISSUED.match(text)
+    if m:
+        row = su_row(m.group("patron"), m.group("vassal"), day)
+        row.update(n=int(m.group("n")), war=m.group("war"), price=m.group("price"), hold=None)
+        continue
+    m = SU_SERVED.match(text)
+    if m:
+        row = su_row(m.group("patron"), m.group("vassal"), day, ("issued",))
+        taken = int(m.group("n"))
+        row.update(n=taken, until=m.group("until"), marching=taken > 0,
+                   outcome="served" if taken else "served nothing",
+                   detail=m.group("none") or ("until " + (m.group("until") or "?")))
+        continue
+    m = SU_REFUSED.match(text)
+    if m:
+        row = su_row(m.group("patron"), m.group("vassal"), day, ("issued",))
+        row.update(outcome="refused", hold=float(m.group("hold")), detail="held " + m.group("hold"))
+        continue
+    m = SU_EXCUSED.match(text)
+    if m:
+        row = su_row(m.group("patron"), m.group("vassal"), day, ("issued",))
+        row.update(outcome="excused", detail=m.group("reason"))
+        continue
+    m = SU_RELEASED.match(text)
+    if m:
+        # Only a summons that marched is released (Summons.Release walks the army), so a release
+        # with no served row behind it is one whose order this log never saw.
+        row = su_row(m.group("patron"), m.group("vassal"), day, ("served",))
+        row.update(outcome="released", freed=int(m.group("n")), reason=m.group("reason"),
+                   detail="reason " + m.group("reason") + ", " + m.group("n") + " went home")
+        continue
+    if SU_OTHER.match(text):
+        su_loose["orders that could not be carried out"] += 1
+        continue
+    su_loose["(Summons) lines not recognised (wording changed?)"] += 1
+
+if not summons and not su_loose:
+    none_here("no (Summons) lines in this log (no summons was ever issued on this build)")
+else:
+    if summons:
+        outcomes = collections.Counter(r["outcome"] for r in summons)
+        print(f"  summons seen: {len(summons)}   "
+              f"marched {sum(1 for r in summons if r['marching'])},"
+              f" refused {outcomes['refused']}, excused {outcomes['excused']},"
+              f" took nothing {outcomes['served nothing']},"
+              f" still standing or cut off {outcomes['issued']},"
+              f" released {outcomes['released']} of them")
+        print("  (a row is one order, from its `issued` line to its answer and its release; a row")
+        print("   whose outcome reads 'issued' had no answer in this log)")
+        holds = [r["hold"] for r in summons if r["hold"] is not None]
+        taken = [r["n"] for r in summons if r["n"] is not None]
+        print(f"  parties per summons : {stats(taken)}")
+        print(f"  Hold when refused   : {stats(holds)}  (40 is the line below which a vassal refuses)")
+        for (patron, vassal), n in collections.Counter((r["patron"], r["vassal"]) for r in summons).most_common(12):
+            print(f"    {vassal:<18} -> {patron:<18} {n:4d}")
+        print(f"  {'~day':<18}{'patron':<18}{'vassal':<18}{'n':>3}  {'outcome':<15}detail")
+        for r in summons:
+            print(f"  {day_to_date(r['day']):<18}{r['patron'][:17]:<18}{r['vassal'][:17]:<18}"
+                  f"{r['n'] if r['n'] is not None else '-':>3}  {r['outcome']:<15}{r['detail']}"
+                  + (f"  vs {r['war']}" if r["war"] else ""))
+    for k, n in su_loose.most_common():
+        print(f"  {k:<50} {n:4d}")
+
 # ---------------- internal wars and houses (prose) ------------------------------
 section("INTERNAL WARS AND HOUSES  (prose lines: no telemetry exists; days ~ the record before)")
 IW_START = re.compile(r"^(?P<k>.+?): (?P<claimant>.+?) takes up arms against (?P<ruler>.*?) \((?P<why>.*?)\)\. "
@@ -1047,6 +1294,9 @@ for line in [
     "  internal wars (start, end, outcome, concessions, side changes, captures, restitution),",
     "  clan successions and cadet splits, and the court's peace bar (only when it moved the bar;",
     "  a peace offered to the player or a dormant lapse carries none).",
+    "  summons issued, served, refused, excused and released (telemetry exists for all five; the",
+    "  prose is what is parsed above, and a live summons still standing at the end of a run is not",
+    "  in the log at all - only diplomacy.summons, in the live game, can say so).",
     "Not in the log in any parseable form:",
     "  legitimacy and its changes, grievances raised (amends are recorded, grievances are not),",
     "  loyalty, bloc shares, pretenders, royal successions (Succession prose only), espionage;",

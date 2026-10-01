@@ -785,6 +785,136 @@ namespace DiplomacyIntrigue.Diplomacy
         /// </summary>
         public const float VassalExcusedAboveExhaustion = 50f;
 
+        // ---- The hegemon calls its vassals' parties up (design 04 §5.2a, story 1.10c) ----------
+        //
+        // The summons is the call to arms carried one step further (D5, 2026-10-01): the vassal is
+        // already serving its patron in one war, and its ruler may now order some of its parties
+        // under the patron's own command. One war only, enemies in common only, at most half the
+        // vassal's war parties, refused below the same Hold the call to arms reads (R3, R4).
+        //
+        // Every value below is UN-TUNED. The starting numbers are the story's, the lead signs off
+        // in D2, and the first measurement is story ST-8's balance run.
+
+        /// <summary>
+        /// Influence the order costs before the parties are counted, however many there are.
+        /// UN-TUNED: the story's figure, against a median AI ruler's 2,374 influence (run 08).
+        /// </summary>
+        public const int SummonsInfluenceBase = 150;
+
+        /// <summary>
+        /// Influence per party called up. Of the order of vanilla's own per-party cost of joining
+        /// an army, which is charged on top of this (design 04 §5.2a) - so this one prices the
+        /// *order*, and the vanilla charge prices the army. UN-TUNED.
+        /// </summary>
+        public const int SummonsInfluencePerParty = 40;
+
+        /// <summary>
+        /// Denars the order costs before the parties are counted. UN-TUNED: against a median AI
+        /// ruler's 551k, gold alone never bites, which is why it is paired with the influence.
+        /// </summary>
+        public const int SummonsGoldBase = 20000;
+
+        /// <summary>
+        /// Denars per party called up: the upkeep of a foreign lord's men for the summons.
+        /// UN-TUNED.
+        /// </summary>
+        public const int SummonsGoldPerParty = 5000;
+
+        /// <summary>
+        /// Days the parties march under the patron before they go home, or until the war ends,
+        /// whichever comes first (R7). About one campaign. UN-TUNED.
+        /// </summary>
+        public const float SummonsDurationDays = 20f;
+
+        /// <summary>
+        /// Days after a summons is *ordered* before the same vassal may be called up again (R7) -
+        /// measured from the order, not from the parties coming home, so a refused order spaces
+        /// the next one exactly as a served one does (<c>Summons.Issue</c>). With the 20-day
+        /// duration, a full-length summons leaves 22 days between going home and the next order.
+        /// Six weeks, the scale of the other diplomatic cooldowns. UN-TUNED.
+        /// </summary>
+        public const float SummonsCooldownDays = 42f;
+
+        /// <summary>
+        /// The share of its own treasury or influence an AI hegemon will spend on one summons
+        /// (R10). Above it the order is not worth making and the AI takes another move.
+        /// UN-TUNED.
+        /// </summary>
+        public const float SummonsAiBudgetShare = 0.15f;
+
+        // ---- A patron bound to its vassal's attacker chooses a side (design 04 §4.3, story 1.10d)
+        //
+        // When a patron cannot answer a vassal's call to arms because a live treaty forbids war
+        // with the attacker, it used to be skipped silently and then charged half a protection
+        // term for looking away. It is now asked. These weights decide the answer for an AI
+        // patron, and they are the reason the AI is not simply always tearing treaties up.
+        //
+        // **Every term is scored in trust points**, because that is the unit the breach is already
+        // charged in (-35 with the victim, -12 with each observer), so no conversion factor is
+        // invented here. Every value below is UN-TUNED: the lead's direction is decided, the
+        // numbers are not, and story 1.10d's ST-6 is the first run that can measure them.
+
+        /// <summary>
+        /// What a year of tribute from the vassal is worth in trust points. Light tribute
+        /// (250 a period, 12 periods a year) comes to 30 points, a Heavy one 100 - about the
+        /// price of tearing up a non-aggression pact. UN-TUNED.
+        /// </summary>
+        public const float BoundChoiceGoldPerPoint = 0.01f;
+
+        /// <summary>
+        /// How much of the Hold strength term counts here. Reuses the Hold fear weight's own
+        /// scale (25 points at a 32x strength ratio) rather than inventing a second one, so
+        /// "how much stronger is my patron than my vassal" reads the same in both places.
+        /// UN-TUNED.
+        /// </summary>
+        public const float BoundChoiceStrengthShare = 1f;
+
+        /// <summary>
+        /// Points per point of Hold above the defiance line. At the line the link is worth nothing
+        /// to keep, which is the point: a bond already counting down to lapse is not worth a
+        /// treaty. UN-TUNED.
+        /// </summary>
+        public const float BoundChoiceHoldPerPoint = 0.5f;
+
+        /// <summary>
+        /// What a treaty is worth, and so what tearing it up costs, relative to the -35 trust it
+        /// costs the other side. An alliance is three times a truce; a tributary pact also costs
+        /// the tribute flowing in, which is priced separately at its own yearly value.
+        /// UN-TUNED.
+        /// </summary>
+        public const float BoundChoiceTreatyValueTruce = 0.5f;
+        public const float BoundChoiceTreatyValuePact = 0.6f;
+        public const float BoundChoiceTreatyValueDefensivePact = 1f;
+        public const float BoundChoiceTreatyValueTributaryPact = 1f;
+        public const float BoundChoiceTreatyValueAlliance = 1.5f;
+
+        /// <summary>
+        /// The casus belli the attacker gains, in points. It is a war waiting to happen against
+        /// the patron, which is worth more than the -35 trust it also costs. UN-TUNED.
+        /// </summary>
+        public const float BoundChoiceClaimPoints = 10f;
+
+        /// <summary>
+        /// The legitimacy the breach costs, as a share of
+        /// <c>LegitimacyRegistry.LegitimacyBrokeTreaty</c> (20). A quarter of that is already
+        /// four points, against a legitimacy pool the court reads every day. UN-TUNED.
+        /// </summary>
+        public const float BoundChoiceLegitimacyShare = 0.25f;
+
+        /// <summary>
+        /// The share of the -12 an observer loses, applied per realm that currently trusts the
+        /// patron. Full weight would price every breach at more than any link is worth - a court
+        /// of eight realms would make the choice permanent. UN-TUNED.
+        /// </summary>
+        public const float BoundChoiceObserverShare = 0.5f;
+
+        /// <summary>
+        /// How far the link's worth must clear the breach's cost before the AI breaks a treaty.
+        /// Above 1 it needs more than it pays, which is why a patron with two good options does
+        /// not gamble its alliances. UN-TUNED.
+        /// </summary>
+        public const float BoundChoiceCaution = 1f;
+
         // ---- Power: ambition, greed, and what they provoke (docs/design/06-power.md) --------
         //
         // The lead's design, 2026-09-16: strength makes a ruler hungry for war, the rest of the
@@ -893,9 +1023,17 @@ namespace DiplomacyIntrigue.Diplomacy
         public const float CallToArmsTrustFloor = 0f;
 
         /// <summary>
-        /// Hours the player has to answer a call to arms before it lapses as a refusal.
+        /// **Real seconds** the player has to answer a call to arms, or a bound patron's choice,
+        /// before silence is taken as the answer (a refusal; staying out). The lead's figure,
+        /// 2026-10-01.
+        ///
+        /// It is passed as <c>InquiryData.ExpireTime</c>, which <c>SingleQueryPopUpVM.OnTick</c>
+        /// counts down in real seconds of UI time (read by IL). The game is paused while the prompt
+        /// is up, so no in-game time ever passes under it. Until 2026-10-01 this was named
+        /// "Hours" and set to 24 - which gave the player 24 real seconds, measured live, and marked a
+        /// vassal who looked away for that long as defiant.
         /// </summary>
-        public const float CallToArmsPlayerResponseHours = 24f;
+        public const float CallToArmsPlayerResponseSeconds = 60f;
 
         /// <summary>
         /// An ally refuses when the enemy outweighs the two of them by more than this.

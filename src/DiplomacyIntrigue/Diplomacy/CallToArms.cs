@@ -52,8 +52,8 @@ namespace DiplomacyIntrigue.Diplomacy
                 {
                     var treaty = obligations[i];
                     var ally = treaty.Other(caller);
-                    if (!Applies(state, treaty, caller, ally, enemy, callerWasAttacked)) continue;
-                    if (Put(state, treaty, caller, ally, enemy, callerWasAttacked)) answered++;
+                    if (!Applies(state, treaty, caller, ally, enemy, callerWasAttacked, out var boundChoice)) continue;
+                    if (Put(state, treaty, caller, ally, enemy, callerWasAttacked, boundChoice)) answered++;
                 }
                 return answered;
             }
@@ -94,8 +94,8 @@ namespace DiplomacyIntrigue.Diplomacy
                 var answered = 0;
                 for (var i = 0; i < attackers.Count; i++)
                 {
-                    if (!Applies(state, vassalage, vassal, patron, attackers[i], callerWasAttacked: true)) continue;
-                    if (Put(state, vassalage, vassal, patron, attackers[i], callerWasAttacked: true)) answered++;
+                    if (!Applies(state, vassalage, vassal, patron, attackers[i], callerWasAttacked: true, out var boundChoice)) continue;
+                    if (Put(state, vassalage, vassal, patron, attackers[i], callerWasAttacked: true, boundChoice)) answered++;
                 }
                 return answered;
             }
@@ -110,8 +110,17 @@ namespace DiplomacyIntrigue.Diplomacy
         /// Returns true only when an AI answered on the spot.
         /// </summary>
         private static bool Put(ModState state, Treaty treaty, Kingdom caller, Kingdom ally, Kingdom enemy,
-            bool callerWasAttacked)
+            bool callerWasAttacked, bool boundChoice)
         {
+            // A patron that cannot join because of a treaty is not an ally that declines: it is a
+            // patron with two obligations and one decision. It goes down a different road entirely,
+            // and the trust floor below is not consulted on the way (story 1.10d, R2).
+            if (boundChoice)
+            {
+                BoundChoice(state, treaty, caller, ally, enemy);
+                return false;
+            }
+
             if (IsPlayerDecision(ally))
             {
                 AskPlayer(state, treaty, caller, ally, enemy);
@@ -183,20 +192,33 @@ namespace DiplomacyIntrigue.Diplomacy
             }
         }
 
+        /// <summary>
+        /// Whether this obligation puts <paramref name="ally"/> into <paramref name="caller"/>'s
+        /// war against <paramref name="enemy"/>, and whether the only thing in the way is a treaty
+        /// it is now offered a choice about.
+        ///
+        /// **A patron bound to its vassal's attacker is a choice, not a skip** (story 1.10d, R1).
+        /// This used to return false for it on one principle - an obligation cannot override a
+        /// standing agreement, so the pact it already holds with the enemy wins. That is right for
+        /// an ally, and it was wrong for a patron, because the principle then charged it half a
+        /// protection term for a decision nobody ever offered it. It is put the choice instead, and
+        /// the full price of breaking every treaty with the attacker comes with it (R2, R3).
+        ///
+        /// For every ally that is not a protecting patron the old rule stands untouched.
+        /// </summary>
         private static bool Applies(ModState state, Treaty treaty, Kingdom caller, Kingdom ally,
-            Kingdom enemy, bool callerWasAttacked)
+            Kingdom enemy, bool callerWasAttacked, out bool boundChoice)
         {
+            boundChoice = false;
             if (ally == null || ally == enemy || ally.IsEliminated) return false;
             if (ally.IsAtWarWith(enemy)) return false;
 
             // A defensive pact never drags anyone into a war of conquest.
             if (treaty.CallToArmsIsDefensiveOnly && !callerWasAttacked) return false;
 
-            // An obligation cannot override a standing agreement with the target: that
-            // would force a kingdom to break one treaty to honour another. The pact it
-            // already holds with the enemy wins, and the ally is simply not called.
-            if (state.HasTreatyForbiddingWar(ally, enemy)) return false;
-
+            // Before the treaty test, not after: a patron is only protecting anybody when its
+            // vassal was attacked, and one that is not must never be asked the question.
+            //
             // The two directions of a vassalage owe different things. The vassal marches in
             // its patron's wars, offensive or defensive. The patron owes protection: it is
             // called when its vassal is attacked and never into a war the vassal started.
@@ -207,6 +229,34 @@ namespace DiplomacyIntrigue.Diplomacy
             // ever asked a patron to provide it - Hold measured a duty no code could fulfil,
             // which is a large part of why run 04's links sat at 15-36.
             if (IsProtectingPatron(treaty, ally) && !callerWasAttacked) return false;
+
+            if (!state.HasTreatyForbiddingWar(ally, enemy)) return true;
+
+            if (IsProtectingPatron(treaty, ally) && CanChooseSide(state, ally, enemy))
+            {
+                boundChoice = true;
+                return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Whether this is the one case story 1.10d is about: a patron called to defend its vassal
+        /// and stopped by a live treaty with the attacker (R1, and §3 "Out" for the two exclusions).
+        /// </summary>
+        private static bool CanChooseSide(ModState state, Kingdom patron, Kingdom attacker)
+        {
+            if (attacker == null || patron == null) return false;
+
+            // Two clients of the same patron at war with each other (D3): the sphere's answer to
+            // that is ReconcileWithSiblings, and a patron cannot side with one client against
+            // another - Hegemony.AnswerTo reads it the same way.
+            if (TreatyRegistry.PatronOf(state, attacker) == patron) return false;
+
+            // Our own patron is the attacker. Refusing that oath is secession (design 04 §6.3),
+            // not a choice between two agreements, so this stays legal neglect.
+            if (TreatyRegistry.PatronOf(state, patron) == attacker) return false;
 
             return true;
         }
@@ -337,9 +387,17 @@ namespace DiplomacyIntrigue.Diplomacy
                 if (counted.Contains(ally)) continue;
 
                 // Already fighting the opponent: on our side of this whatever the paperwork says.
+                var applies = Applies(state, treaty, principal, ally, opponent, principalWasAttacked,
+                    out var boundChoice);
                 var stands = ally.IsAtWarWith(opponent)
-                             || (Applies(state, treaty, principal, ally, opponent, principalWasAttacked)
-                                 && WillingToAnswer(state, treaty, principal, ally, out _));
+                             || (applies && !boundChoice && WillingToAnswer(state, treaty, principal, ally, out _));
+
+                // A patron that is only *offered* the choice is not counted as standing. An
+                // estimate of support must never assume a treaty gets torn up to win an argument -
+                // and asking it would recurse straight back through Hegemony.WouldHonourVassal,
+                // which weighs this very war. It joins when it has actually chosen.
+                if (boundChoice && !stands) continue;
+
                 if (!stands) continue;
 
                 counted.Add(ally);
@@ -426,6 +484,307 @@ namespace DiplomacyIntrigue.Diplomacy
                 Colors.Yellow);
         }
 
+        // ================= The bound patron's choice (story 1.10d) ==============
+
+        /// <summary>
+        /// A patron is called to defend its vassal and a live treaty with the attacker forbids it.
+        /// Two answers, and the one taken is decided in one place for everybody (R2/R8).
+        ///
+        /// Runs inside <c>_issuing</c> like every other answer, so the patron's own allies and
+        /// vassals are not called into this war by its joining (R5) - the same one-step rule the
+        /// cascade cap exists to enforce.
+        /// </summary>
+        private static void BoundChoice(ModState state, Treaty treaty, Kingdom vassal, Kingdom patron, Kingdom attacker)
+        {
+            try
+            {
+                // Collected first: the same list prices the question, breaks the treaties and goes
+                // into the log, so the patron cannot be quoted one price and charged another.
+                var bindings = new List<Treaty>();
+                for (var i = 0; i < state.Treaties.Count; i++)
+                {
+                    var live = state.Treaties[i];
+                    if (live.IsActive && live.ForbidsWar && live.IsBetween(patron, attacker)) bindings.Add(live);
+                }
+
+                if (bindings.Count == 0)
+                {
+                    Log.Debug("CallToArms", patron.Name + " was offered the choice against " + attacker.Name
+                                            + " and no treaty stands after all.");
+                    return;
+                }
+
+                // R1: the choice replaces only the treaty test. A patron too spent to answer any
+                // call is not asked this one either - the unbound path refuses it in
+                // WillingToAnswer, and the bound path skipped that until the review of 2026-10-01,
+                // so an exhausted player was asked to tear up a treaty for a war it would not fight.
+                var exhaustion = WarExhaustion.Worst(state, patron);
+                if (exhaustion > DiplomacyConstants.CallToArmsRefuseAboveExhaustion)
+                {
+                    Log.Info("CallToArms", "[PROTECT] not offered patron=" + patron.Name + " attacker=" + attacker.Name
+                                            + " - already fighting for its life (exhaustion " + exhaustion.ToString("0.0") + ")");
+                    return;
+                }
+
+                Log.Info("CallToArms", "[PROTECT] bound-choice patron=" + patron.Name + " vassal=" + vassal.Name
+                                        + " attacker=" + attacker.Name + " treaties=" + Describe(bindings));
+                Telemetry.Event("bound_choice", "patron", patron, "vassal", vassal, "attacker", attacker,
+                    "treaties", Describe(bindings).Replace(", ", "+"), "bindingCount", bindings.Count,
+                    "hold", Hegemony.HoldOf(treaty));
+
+                if (IsPlayerDecision(patron))
+                {
+                    AskBoundChoice(state, treaty, patron, vassal, attacker, bindings);
+                    return;
+                }
+
+                var honour = Hegemony.WouldHonourVassal(state, treaty, attacker, out var why);
+                if (!honour)
+                {
+                    Log.Info("CallToArms", "[PROTECT] answer=honour-treaty patron=" + patron.Name
+                                            + " attacker=" + attacker.Name + " - " + why);
+                    Telemetry.Event("bound_choice", "patron", patron, "vassal", vassal, "attacker", attacker,
+                        "outcome", "honour-treaty", "reason", why);
+                    TellVassal(patron, vassal, false);
+                    return;
+                }
+
+                HonourVassal(state, treaty, patron, vassal, attacker, bindings, "ai");
+            }
+            catch (System.Exception ex)
+            {
+                // AC8: a failure here must not leave the patron half-committed. Nothing has been
+                // broken at this point, and the war it did not join reads as legal neglect on its
+                // own tomorrow - which is what staying out means.
+                Log.Error("CallToArms", "The bound patron's choice failed.", ex);
+            }
+        }
+
+        /// <summary>
+        /// Honour the vassal: break **every** treaty standing between the patron and the attacker,
+        /// then join the war (R2).
+        ///
+        /// **Order is the whole of atomicity here** (R4). Every treaty goes first, in one pass:
+        /// breaking them after the war was declared would mean the backstops
+        /// (<see cref="TreatyEnforcement.WhyWarActionRefused"/>) could refuse the war after the
+        /// trust was already paid, and the patron would have torn up its alliances for nothing.
+        ///
+        /// The cost is not discounted (D2). A cheaper breach would make vassalage a way to tear up
+        /// any treaty cheaply, and the full price is what makes the choice weigh at all.
+        /// </summary>
+        private static bool HonourVassal(ModState state, Treaty treaty, Kingdom patron, Kingdom vassal,
+            Kingdom attacker, List<Treaty> bindings, string source)
+        {
+            var broken = new List<string>();
+            for (var i = 0; i < bindings.Count; i++)
+            {
+                var live = bindings[i];
+                var type = live.Type;
+                TreatyRegistry.Break(state, live, patron);
+                if (!live.IsActive) broken.Add(type.ToString());
+            }
+
+            // Declared as an answer to a call, which is the most legitimate reason the engine knows:
+            // honouring a bond is never an act of aggression.
+            if (!FailNextBoundWar)
+                DeclareWarAction.ApplyByCallToWarAgreement(patron, attacker);
+
+            if (FailNextBoundWar || !patron.IsAtWarWith(attacker))
+            {
+                // The treaties are gone and the war is not. The log has to name exactly what was
+                // torn up, because the world now shows a patron that broke its word and got
+                // nothing for it (AC4).
+                Log.Info("CallToArms", "[PROTECT] answer=honour-vassal FAILED patron=" + patron.Name
+                                        + " attacker=" + attacker.Name + " broke " + Describe(broken)
+                                        + " and the war was refused; counted as honour-the-treaty"
+                                        + (FailNextBoundWar ? " (forced by the test lever)" : "") + ".");
+                Telemetry.Event("bound_choice", "patron", patron, "vassal", vassal, "attacker", attacker,
+                    "outcome", "war-refused", "broken", Describe(broken).Replace(", ", "+"));
+                TellVassal(patron, vassal, false);
+                return false;
+            }
+
+            // Tag the war the ledger just opened, so the patron is released when its vassal makes
+            // peace - the same tag Answer puts on an ally's war.
+            var joined = state.OngoingWarBetween(patron, attacker);
+            if (joined != null) joined.MarkCalledBy(vassal);
+
+            Log.Info("CallToArms", "[PROTECT] answer=honour-vassal patron=" + patron.Name
+                                    + " attacker=" + attacker.Name + " broke " + Describe(broken)
+                                    + " and joined its vassal's war.");
+            Telemetry.Event("bound_choice", "patron", patron, "vassal", vassal, "attacker", attacker,
+                "outcome", "honour-vassal", "source", source, "broken", Describe(broken).Replace(", ", "+"),
+                "hold", Hegemony.HoldOf(treaty));
+            TellVassal(patron, vassal, true);
+            Announce(patron.Name + " tears up its " + DescribeForPlayer(bindings) + " with " + attacker.Name
+                     + " to defend " + vassal.Name + ".", Colors.Red);
+            return true;
+        }
+
+        /// <summary>
+        /// The patron is the player's, so it is asked (R9) with the full price of each answer:
+        /// every treaty that would go, what it costs in trust, the claim the attacker gains and the
+        /// legitimacy the crown spends, and what staying out costs the link in Hold.
+        ///
+        /// Timeout answers with the treaty, not with the vassal: silence must not break a treaty the
+        /// player never agreed to break, and staying out is exactly what happens today (R7).
+        /// </summary>
+        private static void AskBoundChoice(ModState state, Treaty treaty, Kingdom patron, Kingdom vassal,
+            Kingdom attacker, List<Treaty> bindings)
+        {
+            // What breaking actually charges, read from the constants TreatyRegistry.Break charges by -
+            // not the AI's valuation terms. Those weigh a treaty by its worth and a legitimacy loss at
+            // a share, which is fine for deciding, and was wrong for telling: the first build told a
+            // player "-18 trust" for a truce and "5 legitimacy" for a breach that took 35 and 20
+            // (CLAUDE.md §3: a number shown is the number used).
+            var terms = Hegemony.BoundChoiceTermsOf(state, treaty, attacker);
+            var intrigue = Core.Settings.Current.EnableIntrigue;
+            var cost = new System.Text.StringBuilder();
+            for (var i = 0; i < bindings.Count; i++)
+            {
+                cost.Append("  ").Append(TreatyName(bindings[i].Type)).Append(": ")
+                    .Append(DiplomacyConstants.TrustTreatyBrokenVictim.ToString("0"))
+                    .Append(" trust with ").Append(attacker.Name)
+                    .Append(", ").Append(DiplomacyConstants.TrustTreatyBrokenObserver.ToString("0"))
+                    .Append(" with every other court, a claim against you");
+                if (intrigue)
+                    cost.Append(", and -").Append(Intrigue.IntrigueConstants.LegitimacyBrokeTreaty.ToString("0"))
+                        .Append(" legitimacy");
+                cost.AppendLine();
+            }
+            if (terms.TributeLost > 0f)
+                cost.Append("  and the tribute ").Append(attacker.Name).AppendLine(" pays you ends with it");
+
+            var neglect = (DiplomacyConstants.HoldLegalNeglectShare * DiplomacyConstants.HoldProtectionWeight).ToString("0.0");
+            var body = attacker.Name + " is attacking " + vassal.Name + ", and the " + TreatyName(bindings[0].Type)
+                       + " you hold with " + attacker.Name + " forbids you to join."
+                       + System.Environment.NewLine + System.Environment.NewLine
+                       + "Defend the vassal - break:" + System.Environment.NewLine + cost
+                       + System.Environment.NewLine + "Honour the treaty - stay out. " + vassal.Name + " fights alone, "
+                       + "and the war counts as legal neglect: "
+                       + neglect + " of an ignored war off its hold, every day it runs."
+                       + System.Environment.NewLine + System.Environment.NewLine
+                       + "The choice is yours once. You can still change course later by breaking the "
+                       + "treaty and declaring the war yourself; hold follows the world either way.";
+
+            void Honour()
+            {
+                try { HonourVassal(state, treaty, patron, vassal, attacker, bindings, "player"); }
+                catch (System.Exception ex) { Log.Error("CallToArms", "Honouring the vassal failed.", ex); }
+            }
+
+            // Two callers, two different facts: a ruler who clicked "Honour the treaty", and a prompt
+            // nobody answered. The first build logged both as "declined by the ruler" - live on
+            // 2026-10-01 the prompt closed itself 24.0 real seconds after it opened, unanswered,
+            // and the log said the player had chosen.
+            void Stay(string how, string source)
+            {
+                try
+                {
+                    Log.Info("CallToArms", "[PROTECT] answer=honour-treaty patron=" + patron.Name
+                                            + " attacker=" + attacker.Name
+                                            + " - " + how + ".");
+                    Telemetry.Event("bound_choice", "patron", patron, "vassal", vassal, "attacker", attacker,
+                        "outcome", "honour-treaty", "source", source);
+                    TellVassal(patron, vassal, false);
+                }
+                catch (System.Exception ex)
+                {
+                    Log.Error("CallToArms", "Recording the refusal to defend failed.", ex);
+                }
+            }
+
+            try
+            {
+                InformationManager.ShowInquiry(new InquiryData(
+                    "Break your " + TreatyName(bindings[0].Type) + " with " + attacker.Name + "?",
+                    body,
+                    true, true,
+                    "Break it and defend " + vassal.Name, "Honour the treaty",
+                    Honour, () => Stay("declined by the ruler", "player"), "",
+                    DiplomacyConstants.CallToArmsPlayerResponseSeconds,
+                    () => Stay("no answer before the prompt expired", "timeout"), null), true);
+            }
+            catch (System.Exception ex)
+            {
+                Log.Error("CallToArms", "Could not show the bound-patron prompt.", ex);
+                Stay("the prompt could not be shown", "error");
+            }
+        }
+
+        /// <summary>
+        /// The vassal is told which side its patron chose (R10). It matters to it: one answer
+        /// spends the patron's alliances and the other leaves it to be beaten. Spoken to the player
+        /// only when the player rules that vassal - everyone else reads it in the log.
+        /// </summary>
+        private static void TellVassal(Kingdom patron, Kingdom vassal, bool joined)
+        {
+            var text = patron.Name + (joined
+                ? " breaks its treaties and joins " + vassal.Name + "'s war."
+                : " stays out of " + vassal.Name + "'s war, whatever binds it.");
+            Log.Info("CallToArms", text);
+            if (vassal.Leader == Hero.MainHero) Log.Notify(text, joined ? Colors.Green : Colors.Yellow);
+        }
+
+        private static string Describe(List<Treaty> treaties)
+        {
+            var names = new List<string>();
+            for (var i = 0; i < treaties.Count; i++) names.Add(treaties[i].Type.ToString());
+            return names.Count == 0 ? "none" : string.Join(", ", names.ToArray());
+        }
+
+        /// <summary>
+        /// What a refused call does to the bond, said for this refusal rather than in general: the
+        /// refusal that brings the marks to two renounces it on the spot and is charged as a broken
+        /// treaty, which a player asked with one mark already standing was never told - the text
+        /// said "a second mark inside a year renounces" whether or not this was the second (live,
+        /// 2026-10-01: trust with the patron fell 50.1 on such a refusal, not 15).
+        /// </summary>
+        internal static string RenounceClause(Treaty vassalage)
+        {
+            var marks = vassalage == null ? 0 : vassalage.DefianceMarks;
+            if (marks + 1 >= DiplomacyConstants.DefianceMarksToLapse)
+                return "with " + marks + " mark(s) already standing, this refusal renounces the vassalage now: "
+                       + "a broken treaty, at " + (-DiplomacyConstants.TrustTreatyBrokenVictim).ToString("0")
+                       + " more trust with your patron and " + (-DiplomacyConstants.TrustTreatyBrokenObserver).ToString("0")
+                       + " with every other court, and a reason for war.";
+            return "a second mark inside a year renounces the vassalage, as a broken treaty.";
+        }
+
+        /// <summary>
+        /// A treaty as a player reads it. The log and the telemetry keep the enum names, which the
+        /// analysis script parses; text on screen does not show "DefensivePact" (live, 2026-10-01).
+        /// </summary>
+        private static string TreatyName(TreatyType type)
+        {
+            switch (type)
+            {
+                case TreatyType.NonAggressionPact: return "non-aggression pact";
+                case TreatyType.DefensivePact: return "defensive pact";
+                case TreatyType.Alliance: return "alliance";
+                case TreatyType.TributaryPact: return "tributary pact";
+                case TreatyType.Vassalage: return "vassalage";
+                default: return "truce";
+            }
+        }
+
+        private static string DescribeForPlayer(List<Treaty> treaties)
+        {
+            var names = new List<string>();
+            for (var i = 0; i < treaties.Count; i++) names.Add(TreatyName(treaties[i].Type));
+            return names.Count == 0 ? "treaties" : string.Join(" and ", names.ToArray());
+        }
+
+        private static string Describe(List<string> names)
+            => names.Count == 0 ? "nothing" : string.Join(", ", names.ToArray());
+
+        /// <summary>
+        /// Set by <c>diplomacy.test_fail_bound_war</c> so AC4 can be checked: the treaties go, the
+        /// war does not, and the log has to say so. Session state, not saved, like every other test
+        /// lever's memory.
+        /// </summary>
+        internal static bool FailNextBoundWar;
+
         /// <summary>
         /// Puts the choice to the player when they rule the called kingdom. Letting it
         /// expire counts as a refusal, because silence is an answer.
@@ -450,8 +809,8 @@ namespace DiplomacyIntrigue.Diplomacy
                 // vassalage. The old text said the first refusal renounced it, which stopped
                 // being true when marks were introduced.
                 cost = IsServingVassal(treaty, ally)
-                    ? "Refusing is defiance: it earns a mark, and a second mark inside a year renounces"
-                      + " your vassalage and gives " + caller.Name + " a reason for war."
+                    ? "Refusing is defiance: it costs " + refusedTrust + " trust with " + caller.Name
+                      + ", earns a mark, and " + RenounceClause(treaty)
                     : "Refusing costs " + refusedTrust + " trust with " + caller.Name
                       + ", and the " + treaty.Type + " will lapse.";
                 body = caller.Name + " invokes its " + treaty.Type + " and calls you to war against "
@@ -467,7 +826,7 @@ namespace DiplomacyIntrigue.Diplomacy
                     "Honour it", "Refuse",
                     () => Answer(state, treaty, caller, ally, enemy),
                     () => Refuse(state, treaty, caller, ally, "declined by the ruler"),
-                    "", DiplomacyConstants.CallToArmsPlayerResponseHours,
+                    "", DiplomacyConstants.CallToArmsPlayerResponseSeconds,
                     () => Refuse(state, treaty, caller, ally, "no answer given"),
                     null, null), true, false);
             }

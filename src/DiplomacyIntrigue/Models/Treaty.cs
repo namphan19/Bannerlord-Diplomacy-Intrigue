@@ -72,6 +72,15 @@ namespace DiplomacyIntrigue.Models
         /// </summary>
         [SaveableProperty(18)] public CampaignTime TributeSetOn { get; private set; }
 
+        /// <summary>
+        /// When this vassal was last called up under its patron's command (design 04 §5.2a, story
+        /// 1.10c). One date per link rather than a counter: a summons is an order to a specific
+        /// realm, and the cooldown that spaces them is measured from the order, not from any
+        /// tally of refusals. A link from before this field reads the default, long past the
+        /// cooldown, so it is free to summon - the correct reading, so no schema bump.
+        /// </summary>
+        [SaveableProperty(19)] public CampaignTime LastSummonedOn { get; private set; }
+
         // The save system rehydrates instances without running a constructor.
         internal Treaty() { }
 
@@ -164,6 +173,9 @@ namespace DiplomacyIntrigue.Models
         }
 
         internal void SetSubordinate(Kingdom subordinate) => SubordinateParty = subordinate;
+
+        /// <summary>Stamps the link with the day a summons was issued against it (story 1.10c, R7).</summary>
+        internal void MarkSummoned() => LastSummonedOn = CampaignTime.Now;
 
         /// <summary>
         /// Floor of a Hold that has been set. Zero is how a link from a save that predates

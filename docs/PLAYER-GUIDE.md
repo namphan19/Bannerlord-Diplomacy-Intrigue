@@ -276,8 +276,11 @@ shows where every kingdom stands. Fear works the same way in both directions: be
 vassal's strength holds it by +25, being half of it costs you −25.
 
 Refusing a summons, treating with outsiders, or withholding tribute earns a **defiance mark**
-(withholding at most once every four weeks). Two marks and the vassalage will not renew when
-its term runs out, and the next refused summons breaks it.
+(withholding at most once every four weeks), and a refused summons also costs the vassal 15
+trust with you. **A refused summons that brings it to two marks breaks the vassalage at once** - and the vassal
+pays for that break as for any broken treaty: 35 more trust with you, and 12 with every other court.
+Two marks earned any other way stop it renewing when its term runs out, and the next refused
+summons breaks it. Marks are forgotten a year after the last one.
 
 ### If you are the vassal
 

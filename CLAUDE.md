@@ -107,7 +107,20 @@ with it (an NRE in `NavalDLCManager.OnGameStart`, not ours); `di_naval_test` is 
 branch, v1.5.3. Every live check and every "verified by IL on v1.4.8" written after that moment
 was made against v1.5.3. Players are on v1.4.8, so a release ships the DLL
 `scripts/compile-check.sh` builds against the v1.4.8 reference assemblies (`scripts/release.ps1`
-does this), never the local build.
+does this), never the local build. The lead confirms (2026-09-30) that this is also the DLL that
+has been running live on this v1.5.3 machine all along - every GABS session in this file loaded
+it there, not on v1.4.8 - so the v1.4.8-ref build is verified to *load* on v1.5.3. **Loading is
+not running**: on 2026-10-01 that same DLL could not start a single civil war on v1.5.3
+(`MissingMethodException` on `Kingdom.InitializeKingdom`, whose ten-parameter form v1.5.3 replaced
+with a twelve-parameter one). .NET binds a call when the method holding it first runs, so LoadProbe
+and a clean session cannot see a broken reference on a path nobody has walked. The fix calls that
+one method by reflection; a scan of every reference the DLL makes into `TaleWorlds.*` (689) then
+resolves against both v1.4.8 and v1.5.3. A scan checks names and signatures, not enum numbers or
+behaviour. That does not retire the rule: `DependedModules` in `SubModule.xml` gates on the *installed*
+game version being at least `v1.4.8`, which is a separate check from whether the compiled DLL's
+baked-in enum numbers still line up with a later version's API - the risk `release.ps1`'s header
+describes. Nothing has tested that a *future* version keeps the same numbering; build for a
+release against the v1.4.8 refs regardless of which branch this machine happens to be on.
 
 **A map faction must be a `Kingdom` whenever the clan is in one.** Vanilla casts
 `MapFaction` to `Kingdom` without checking at about 25 places: `GainKingdomInfluenceAction`,
@@ -269,8 +282,24 @@ its holder, who speaks for it, the houses in favour, and the AI's plan today), t
 `test_appoint <kingdom> | <seat> | <hero>` and `test_dismiss <kingdom> | <seat>`, and
 `test_court_seat <seat>` (selects a seat on the Court tab: "Envoy" also appears elsewhere in the
 widget tree, so a click by text is not reliable), `vassal_tribute [kingdom]` (every vassalage's
-tribute and what each level would do to its Hold target and income) and the lever
-`test_vassal_tribute <patron> | <vassal> | <None|Light|Standard|Heavy>`. Espionage: `diplomacy.networks`, `mission_odds <clan> | <kingdom>`, `missions`, `bribes` (every
+tribute and what each level would do to its Hold target and income), the lever
+`test_vassal_tribute <patron> | <vassal> | <None|Light|Standard|Heavy>`, and the summons
+(diagnose 04 §5.2a, story 1.10c): `summons [kingdom]` (every live summons, every cooldown and
+each link's eligibility, at the price the button would charge), `summons_value <patron> | <vassal>`
+(that price term by term; one kingdom alone is priced against each of its vassals),
+`ai_summons [kingdom]` (each AI hegemon's plan for the week, a dry run) and the lever
+`test_summon <patron> | <vassal>` (the real order, through the same call the Realm tab's button
+makes: it charges the full price, and a refusal earns a defiance mark - so it is a test save only), and
+the bound patron's choice (story 1.10d): `bound_choice <patron> | <vassal> | <attacker>` (what the
+link is worth against what breaking every treaty with the attacker costs, term by term, and the
+answer; one kingdom alone is priced against each of its vassals) and the lever
+`test_fail_bound_war [on|off]`, which tears the treaties up and refuses the war so the atomicity
+can be checked in the log. `test_set_hold <patron> | <vassal> | <0.1-100>` sets a link's Hold: a link made by `sign_treaty`
+has no starting Hold and falls under the 40 line within a day, so it is the only way to stage a
+vassal that serves (Hold drifts down one a day; re-set it while waiting). `test_raise_army <kingdom> [| <target settlement>]`
+has the ruler raise an army of their own party (the engine's `Kingdom.CreateArmy`; an AI ruler who is a
+governor has no party and cannot) - without it nothing past "commands no army" can be staged.
+Espionage: `diplomacy.networks`, `mission_odds <clan> | <kingdom>`, `missions`, `bribes` (every
 bribe still on the record and whether it binds anybody), `counter_intelligence [kingdom]` (every
 realm's defence term by term), `ai_espionage [kingdom]` (each AI realm's espionage plan for the week,
 a dry run), and the levers `test_set_network`, `test_counter_budget <kingdom> | <denars>`,
@@ -329,9 +358,12 @@ Screenshots do confirm rendering.
 
 **Driving the Kingdom screen, learned 2026-09-26.** `ui/answer_inquiry` takes `affirmative`,
 not `accept` - a wrong key is read as false and silently answers **No**. The same call dismisses
-a scene notification ("… joined the Kingdom of …", raised by `ChangeKingdomAction`), but a
-second one queued behind a Kingdom Decisions popup stayed on screen with no inquiry the bridge
-could see; test on a save where the player is already placed rather than joining mid-session.
+a scene notification ("… joined the Kingdom of …", raised by `ChangeKingdomAction`), but only when
+no inquiry is queued: it answers an inquiry first, even one hidden behind the notification (on
+2026-10-01 a call meant to clear the notification chose "break the treaty" on the prompt beneath
+it). A notification left up makes `save_game` fail silently. A second notification queued behind a
+Kingdom Decisions popup stayed on screen with no inquiry the bridge could see; after
+`test_player_rule`, dismiss the notification, save, and stage from that save.
 A Diplomacy-tab row is selected with `ui/call_viewmodel_method_at_index` (layer `KingdomScreen`,
 list `Diplomacy.PlayerTruces` or `PlayerWars`, method `OnSelect`), and the mod's own buttons
 are clicked by their text. **The mod's mixin properties are invisible to
@@ -353,23 +385,24 @@ suspect and say so.
 
 **Save data is frozen once shipped.** Never renumber or reuse a `SaveableProperty` id, never
 reuse a save-definer local id for a different type, never change the definer base id
-(`2749100`, block `2749100`–`2749199`). `Treaty` currently uses ids **1-18** (14 `Hold`, 15
-defiance marks, 16 last defiance, 17 the revolt clock, 18 `TributeSetOn`, design 09 C3), so the next free id there is **19**. `TrustRecord` uses **1-6** (5 `LastPositiveChange`, 6
+(`2749100`, block `2749100`–`2749199`). `Treaty` currently uses ids **1-19** (14 `Hold`, 15
+defiance marks, 16 last defiance, 17 the revolt clock, 18 `TributeSetOn`, design 09 C3, 19
+`LastSummonedOn`, story 1.10c), so the next free id there is **20**. `TrustRecord` uses **1-6** (5 `LastPositiveChange`, 6
 `LastOfferRefused`), next free **7**. `WarRecord` uses **1-16** (7 is the old `WarScore`, renamed
 `BattleScore` by design 10 - the save system keys by id, not name; 15-16 manpower at the war's
 start), next free **17**. `ModState` uses
-properties **1-18** (11 `Grievances`, 12 `Legitimacy`, 13 `Pretenders`, 14 `InternalWars`,
-15 `SpyNetworks`, 16 `SpyMissions`, 17 `CounterIntelligenceBudgets`, 18 `Offices`), next free **19**. The definer's class ids run to **18**
+properties **1-19** (11 `Grievances`, 12 `Legitimacy`, 13 `Pretenders`, 14 `InternalWars`,
+15 `SpyNetworks`, 16 `SpyMissions`, 17 `CounterIntelligenceBudgets`, 18 `Offices`, 19 `Summons`), next free **20**. The definer's class ids run to **19**
 (10 `Grievance`, 11 `KingdomLegitimacy`, 12 `Pretender`, 13 `InternalWar`, 14 `InternalWarMember`,
-15 `SpyNetwork`, 16 `SpyMission`, 17 `CounterIntelligenceBudget`, 18 `CourtOffice`), next free **19**. **Only 19
-is left below the enum block**: the definer adds its base to class and enum ids alike, and they are
+15 `SpyNetwork`, 16 `SpyMission`, 17 `CounterIntelligenceBudget`, 18 `CourtOffice`, 19 `SummonsRecord` - **19 is now taken, so nothing is left
+below the enum block**: the definer adds its base to class and enum ids alike, and they are
 believed to share one id space (not verified - the reference assemblies carry no method bodies), so
-the class after 19 takes **29** or above rather than risk 20 - not 28, which `Portfolio` took. Enums are **20-28**
+the next class takes **29** or above - not 20, not 28, which `Portfolio` took. Enums are **20-28**
 (26 `GrievanceType`, 27 `InternalWarOutcome`, 28 `Portfolio`, whose values 0-5 are now frozen), next free **29**. `CourtOffice` uses
 properties 1-4 (next free **5**). `Grievance` uses
 properties 1-7 (6 `AnsweredOn`, 7 `Answers`, design 09; next free **8**), `KingdomLegitimacy` 1-5, `Pretender` 1-4, `InternalWar` 1-15 (13 `Faction`,
 14 `SideChanges`, 15 `Captures`, next free **16**), `InternalWarMember` 1-2 (2 `Fief`, set only on a capture; next free **3**), `SpyNetwork` 1-8 (next free **9**), `SpyMission` 1-12 (12 `OfferOwed`, 2026-09-27; next free **13**),
-`CounterIntelligenceBudget` 1-3 (next free **4**). A new *value* on an enum the definer
+`CounterIntelligenceBudget` 1-3 (next free **4**), `SummonsRecord` 1-7 (next free **8**). A new *value* on an enum the definer
 already registers is safe (`GrievanceType.SuccessionPassedOver = 9`, `ForgedLetters = 10` and
 `DismissedFromOffice = 11` were added that way; next free value there is **12**);
 renumbering or reusing one is not. Adding a new savable type means a class definition

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using DiplomacyIntrigue.Behaviors;
 using DiplomacyIntrigue.Core;
 using DiplomacyIntrigue.Diplomacy;
@@ -654,6 +655,10 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         {
             var links = new List<Treaty>();
             Hegemony.CollectVassalages(state, us, links);
+            // AC1: the control is the ruler's alone. A lord of the realm would be shown a button for
+            // an order he cannot give, and a realm with no vassal has no row to put it on.
+            var maySummon = us.Leader == Hero.MainHero && links.Count > 0;
+
             for (var i = 0; i < links.Count; i++)
             {
                 var link = links[i];
@@ -661,6 +666,19 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 var target = Hegemony.HoldTarget(state, link, out _);
                 var threshold = Hegemony.SecessionThreshold(state, link);
                 var subordinate = link.SubordinateParty;
+
+                // Quoted here, not in the row: the composing method already has the state, and a
+                // row reaching for CoreBehavior.State would be a second way to ask (CLAUDE.md 3).
+                // The act is injected as the war row's is, so the click does not resolve anything.
+                Summons.Quote summonQuote = null;
+                Action issueSummon = null;
+                if (maySummon && subordinate != null)
+                {
+                    summonQuote = Summons.QuoteFor(state, us, subordinate);
+                    var who = subordinate;
+                    issueSummon = () => IssueSummon(state, us, who);
+                }
+
                 vassals.Add(new DiRealmVassalVM(
                     link.SubordinateParty.Name.ToString(),
                     subordinate != null ? Color.FromUint(subordinate.Color) : GoldColor,
@@ -673,7 +691,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                     link.DefianceMarks,
                     link.TributeAmount + " per period",
                     "renews in " + TermLeft(link),
-                    BuildTermChips(state, link)));
+                    BuildTermChips(state, link),
+                    summonQuote,
+                    issueSummon));
             }
 
             if (vassals.Count > 0)
@@ -681,6 +701,29 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 var first = links[0].SubordinateParty;
                 VassalNote = "Protection is the half of the bargain you owe: answer "
                              + first.Name + " when it is attacked, or watch this bar fall.";
+            }
+        }
+
+        /// <summary>
+        /// The act the row's button makes, and nothing else: <see cref="Summons.Issue"/> is the one
+        /// resolver the AI and the console levers reach too, so the price on the button is the price
+        /// charged (CLAUDE.md 3).
+        ///
+        /// The panel is rebuilt either way. A refusal moves nothing and is worth reading off a row
+        /// that says so, and Issue re-quotes rather than trusting this row's snapshot, so a world
+        /// that moved between the quote and the click cannot buy at a stale figure.
+        /// </summary>
+        private void IssueSummon(ModState state, Kingdom us, Kingdom vassal)
+        {
+            try
+            {
+                if (!Summons.Issue(state, us, vassal, out var failed))
+                    Log.Notify("No summons: " + failed, Colors.Red);
+                Rebuild();
+            }
+            catch (Exception ex)
+            {
+                Log.Error("UI", "Giving a summons from the Realm tab failed.", ex);
             }
         }
         /// <summary>
@@ -957,6 +1000,15 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         [DataSourceProperty] public string ButtonExplanation { get; }
         [DataSourceProperty] public TaleWorlds.Core.ViewModelCollection.Information.BasicTooltipViewModel ButtonHint { get; }
 
+        // The row's HintWidget binds both of these (DiRealmPanel.xml) and this class declared
+        // neither, so hovering a war row asked a view model that had no such method. Gauntlet
+        // binds a missing command to nothing and the tooltip never showed, which is why a price
+        // that was there to be read went unread. Empty on purpose: the hint is a constant, so
+        // there is nothing for the hover to compute.
+        public void ExecuteBeginHint() { }
+
+        public void ExecuteEndHint() { }
+
         public void ExecuteNegotiate()
         {
             try
@@ -985,7 +1037,14 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
     /// <summary>
     /// One of our vassals: the hold figure as a bar with its drift mark and revolt line,
-    /// the terms pulling it, its defiance marks, its tribute and its renewal.
+    /// the terms pulling it, its defiance marks, its tribute and its renewal - and, for the
+    /// ruler alone, what it would cost to call its parties up to serve under us
+    /// (design 04 5.2a, story 1.10c).
+    ///
+    /// The summon surface is built from <see cref="Summons.QuoteFor"/>'s one quote and nothing
+    /// else: the label, the price strip and the disabled reason are the numbers the act is
+    /// decided on, so they cannot drift from it (CLAUDE.md 3). The row does not resolve anything
+    /// itself - the act arrives as an injected <see cref="Action"/>, like the war row's.
     /// </summary>
     internal sealed class DiRealmVassalVM : ViewModel
     {
@@ -994,9 +1053,22 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         private static readonly Color EmptyDotColor = Color.ConvertStringToColor("#3A2F24FF");
         private static readonly Color GoldColor = Color.ConvertStringToColor("#D9A441FF");
 
+        /// <summary>
+        /// Summons marks an excuse with this prefix so that one refusal path reads both kinds
+        /// correctly. The row says what the excuse is instead of repeating the marker.
+        /// </summary>
+        private const string ExcusedMarker = "excused: ";
+
+        private readonly Summons.Quote _summon;
+        private readonly Action _issueSummon;
+        private bool _armed;
+        private string _summonText = string.Empty;
+        private string _summonNote = string.Empty;
+
         public DiRealmVassalVM(string name, Color accentColor, int holdValue, int thresholdValue,
             int driftValue, string holdText, string thresholdText, int defianceMarks,
-            string tributeText, string termText, MBBindingList<DiRealmTermVM> terms)
+            string tributeText, string termText, MBBindingList<DiRealmTermVM> terms,
+            Summons.Quote summonQuote = null, Action issueSummon = null)
         {
             Name = name;
             AccentColor = accentColor;
@@ -1020,6 +1092,23 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             TributeText = tributeText;
             TermText = termText;
             Terms = terms;
+
+            // A null quote is the whole gate: nobody but the ruler is given one, so nothing is
+            // drawn for a lord, and a realm with no vassals has no row to draw it on (AC1).
+            if (summonQuote == null) return;
+            _summon = summonQuote;
+            _issueSummon = issueSummon;
+
+            HasSummon = true;
+            HasSummonPrice = summonQuote.Eligible;
+            SummonInfluence = summonQuote.Influence;
+            SummonGold = summonQuote.Gold;
+            SummonEnabled = summonQuote.Eligible && summonQuote.Affordable;
+            // Eagerly: a hover must not have to reach for campaign state to describe a quote that
+            // was taken when the panel was built, and a tooltip may not wrap, so it is one line.
+            var hint = HintOf(summonQuote);
+            SummonHint = new TaleWorlds.Core.ViewModelCollection.Information.BasicTooltipViewModel(() => hint);
+            ComposeSummon();
         }
 
         private static int Clamp(int v) => v < 0 ? 0 : v > 100 ? 100 : v;
@@ -1042,6 +1131,149 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         [DataSourceProperty] public string TermText { get; }
         [DataSourceProperty] public MBBindingList<DiRealmTermVM> Terms { get; }
         [DataSourceProperty] public bool HasTerms => Terms != null && Terms.Count > 0;
+
+        // ----- the summons -----------------------------------------------------
+
+        [DataSourceProperty] public bool HasSummon { get; }
+        [DataSourceProperty] public bool HasSummonPrice { get; }
+        [DataSourceProperty] public int SummonInfluence { get; }
+        [DataSourceProperty] public int SummonGold { get; }
+        [DataSourceProperty] public bool SummonEnabled { get; }
+        [DataSourceProperty] public TaleWorlds.Core.ViewModelCollection.Information.BasicTooltipViewModel SummonHint { get; }
+
+        [DataSourceProperty]
+        public string SummonText
+        {
+            get => _summonText;
+            set { if (value == _summonText) return; _summonText = value; OnPropertyChangedWithValue(value, nameof(SummonText)); }
+        }
+
+        /// <summary>
+        /// The reason the order cannot be given, in full, under the button - a short note is never
+        /// enough here, because "not now" with nothing after it is how a button looks broken.
+        /// What it is worth when it is available is a line, and the arithmetic is in the hint.
+        /// </summary>
+        [DataSourceProperty]
+        public string SummonNote
+        {
+            get => _summonNote;
+            set { if (value == _summonNote) return; _summonNote = value; OnPropertyChangedWithValue(value, nameof(SummonNote)); }
+        }
+
+        [DataSourceProperty]
+        public Color SummonNoteColor
+        {
+            get => SummonEnabled ? DiRealmVM.MutedColor : DiRealmVM.NegativeColor;
+        }
+
+        private void ComposeSummon()
+        {
+            if (_summon == null) return;
+            var q = _summon;
+            var price = q.Influence.ToString("N0") + " influence, " + q.Gold.ToString("N0") + " denars";
+            // A quote refused before it was priced has no price and no party count to name: the
+            // first build printed "Summon 0 parties - 0 influence, 0 denars" on a button that
+            // was disabled for want of a war (seen live 2026-10-01).
+            SummonText = !q.Priced
+                ? "Summon"
+                : _armed
+                    ? "Confirm: pay " + price
+                    : "Summon " + q.PartyCount + (q.PartyCount == 1 ? " party - " : " parties - ") + price;
+
+            if (!q.Eligible)
+                SummonNote = (q.Excused ? "Excused: " : "Not now: ") + Plain(q.Reason) + ".";
+            else if (!q.Affordable)
+                SummonNote = "Cannot pay: " + Plain(q.Short) + ".";
+            else if (_armed)
+                SummonNote = "Click again to pay. The price is charged now and nothing is refunded, "
+                           + "whether they serve or refuse.";
+            else
+                SummonNote = "Its ruler's own party is never taken, and they are sent home before "
+                           + "your army takes anything they are at peace with. "
+                           + (q.WillServe ? "They would serve." : "They may refuse - and a refusal is a mark of defiance.");
+        }
+
+        /// <summary>
+        /// Two clicks: the first arms and names the price, the second gives the order. The same
+        /// shape as making amends, for the same two reasons - the act is dear and cannot be undone,
+        /// and the test bridge can click a panel button but not inside an inquiry, which is also
+        /// why the price and the reason sit on the panel rather than in a prompt.
+        /// </summary>
+        public void ExecuteSummon()
+        {
+            try
+            {
+                if (_summon == null || !_summon.Eligible || !_summon.Affordable) return;
+                if (!_armed)
+                {
+                    _armed = true;
+                    ComposeSummon();
+                    return;
+                }
+                _armed = false;
+                _issueSummon?.Invoke();
+            }
+            catch (Exception ex)
+            {
+                Log.Error("UI", "Ordering a summons from the Realm tab failed.", ex);
+            }
+        }
+
+        // The war row, above, binds these same two names to its own hint and declares neither: a
+        // pre-existing gap on this panel, left alone because the war button's hover is not this
+        // change's business. Declared here so this row's own hint is not in that position.
+        public void ExecuteBeginHint() { }
+
+        public void ExecuteEndHint() { }
+
+        private static string Plain(string reason)
+            => reason != null && reason.StartsWith(ExcusedMarker)
+                ? reason.Substring(ExcusedMarker.Length)
+                : reason ?? string.Empty;
+
+        /// <summary>
+        /// The whole quote in one line for the hover: the war, what would be taken and from how
+        /// many, the answer Hold gives, and the price term by term with both skill factors. This is
+        /// the arithmetic the note under the button has no room for, and it is the same arithmetic
+        /// <c>diplomacy.summons_value</c> prints - one resolver, three readers.
+        /// </summary>
+        private static string HintOf(Summons.Quote q)
+        {
+            var sb = new StringBuilder();
+            if (!q.Eligible)
+            {
+                sb.Append("No summons can be given. ").Append(Plain(q.Reason)).Append('.');
+                if (q.Link != null) sb.Append(" Hold ").Append(q.Hold.ToString("0")).Append('.');
+                if (q.CooldownLeft > 0f)
+                    sb.Append(" It can be asked again in ").Append(q.CooldownLeft.ToString("0")).Append(" days.");
+                if (q.Excused) sb.Append(" An excuse costs nobody anything: no mark, no charge.");
+                return sb.ToString();
+            }
+
+            sb.Append("Serving ").Append(q.Vassal.Name).Append(" in the war against ").Append(q.Enemy != null ? q.Enemy.Name.ToString() : "?")
+              .Append(": ").Append(q.PartyCount).Append(" of ").Append(q.Available)
+              .Append(" eligible war parties, nearest you first, its ruler's own party never taken. Hold ")
+              .Append(q.Hold.ToString("0")).Append(" - ")
+              .Append(q.WillServe ? "it would serve." : "it would refuse: " + q.Refusal + ".");
+
+            sb.Append(" Influence ").Append(DiplomacyConstants.SummonsInfluenceBase).Append(" + ")
+              .Append(DiplomacyConstants.SummonsInfluencePerParty).Append(" x ").Append(q.PartyCount)
+              .Append(" = ").Append(DiplomacyConstants.SummonsInfluenceBase + DiplomacyConstants.SummonsInfluencePerParty * q.PartyCount)
+              .Append(" x ").Append(q.InfluenceFactor.ToString("0.00"))
+              .Append(" (Leadership against its ruler) = ").Append(q.Influence.ToString("N0")).Append('.');
+            sb.Append(" Gold ").Append(DiplomacyConstants.SummonsGoldBase).Append(" + ")
+              .Append(DiplomacyConstants.SummonsGoldPerParty).Append(" x ").Append(q.PartyCount)
+              .Append(" = ").Append(DiplomacyConstants.SummonsGoldBase + DiplomacyConstants.SummonsGoldPerParty * q.PartyCount)
+              .Append(" x ").Append(q.GoldFactor.ToString("0.00"))
+              .Append(" (Trade, the realm's treasurer) = ").Append(q.Gold.ToString("N0")).Append(" denars.");
+
+            sb.Append(" They march ").Append(q.DurationDays.ToString("0"))
+              .Append(" days or until the war ends, and cannot be summoned again for ")
+              .Append(DiplomacyConstants.SummonsCooldownDays.ToString("0")).Append(" days.");
+            sb.Append(" The army charges its own per-party influence cost to each leader's clan on top of this, "
+                    + "and a refusal refunds nothing (design 04 5.2a).");
+            return sb.ToString();
+        }
     }
 
     /// <summary>Another hegemon's sphere: who answers to it and how strong it is.</summary>
