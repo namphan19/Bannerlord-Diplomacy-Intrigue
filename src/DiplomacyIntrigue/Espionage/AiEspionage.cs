@@ -32,6 +32,28 @@ namespace DiplomacyIntrigue.Espionage
         public string Refused;
     }
 
+    /// <summary>What the AI is looking for in a rival court: a house at the top of this band first.</summary>
+    public enum MarkRead
+    {
+        /// <summary>A bribe wants the ripest house there is: a defection risk, else merely sullen.</summary>
+        ForBribe = 0,
+        /// <summary>Forged letters want a sullen house: close to the line, not over it.</summary>
+        ForForge = 1,
+    }
+
+    /// <summary>
+    /// One house the AI would aim a court operation at, and what it read to choose it: the band
+    /// that made it a mark and the public sign that picked it inside that band. Both are things the
+    /// player can see of that court (story 3.9 R6) - the loyalty figure itself is never in here.
+    /// </summary>
+    public sealed class CourtMark
+    {
+        public Clan Clan;
+        public Hero Leader;
+        public LoyaltyBand Band;
+        public string Why;
+    }
+
     /// <summary>
     /// What an AI realm means to do with espionage this week, and every reason behind it. The
     /// weekly run executes it and <c>diplomacy.ai_espionage</c> prints it: one object, so the
@@ -63,6 +85,12 @@ namespace DiplomacyIntrigue.Espionage
         public string HandlerWhy;
         public int NetworkBudget;
 
+        /// <summary>
+        /// How the target's court reads from outside: the crown's band, whether a claimant stands,
+        /// whether it is at war with itself. Bands and public facts, never a figure (story 3.9 R1).
+        /// </summary>
+        public CourtBands.CourtSigns TargetCourt;
+
         public readonly List<EspionageMissionChoice> Candidates = new List<EspionageMissionChoice>();
         public EspionageMissionChoice Mission;
         public string MissionWhy;
@@ -82,8 +110,16 @@ namespace DiplomacyIntrigue.Espionage
     ///
     /// **ScoutArmies and ReadCourt are never chosen.** The AI already reads the numbers those two
     /// sell - exhaustion, loyalty, blocs, armies - and paying for a reveal it does not need would be
-    /// theatre. That is an asymmetry the project had before espionage existed (the AI's diplomacy
-    /// reads exact figures the player sees as bands), recorded here rather than hidden.
+    /// theatre. That asymmetry predates espionage and is recorded here rather than hidden.
+    ///
+    /// **What it chooses from, is what the player is shown.** Since story 3.9 (the lead's call,
+    /// 2026-10-01) the marks come off the same bands the Encyclopedia draws: the crown through
+    /// <see cref="CourtBands.SignsOf"/>, a house through <c>LoyaltyModel.BandOf</c>, and inside a
+    /// band only public signs - a great house, our ruler's own relation with it, then the clan's id.
+    /// The loyalty figure itself is nowhere on the planning path, because the player is shown four
+    /// bands and never the number behind them (design 02 §9.1). Two exact figures of our *own* are
+    /// still read, and are named in <see cref="Describe"/> and the class header of
+    /// <c>Power</c> rather than here: this realm's purse, and a handler's own skills.
     ///
     /// The player's own realm is never planned for: its espionage is the player's.
     /// </summary>
@@ -107,6 +143,13 @@ namespace DiplomacyIntrigue.Espionage
             PlanCounterIntelligence(state, p);
             PlanTarget(state, p);
             PlanNetwork(state, p);
+
+            // How the chosen court reads from outside, whatever the week decides: bands and public
+            // facts, so the diagnostic can say what the AI saw even on a week it did nothing
+            // (story 3.9 R6). Read here rather than in PlanMission because that returns early on a
+            // resting network, and "their court: Secure" would then be a default, not a reading.
+            if (p.Target != null) p.TargetCourt = CourtBands.SignsOf(state, p.Target);
+
             PlanMission(state, p);
             return p;
         }
@@ -158,7 +201,6 @@ namespace DiplomacyIntrigue.Espionage
                 p.Targets.Add(new EspionageTarget { Kingdom = them, Score = score, Why = why.ToString().TrimEnd(' ', ';') });
             }
             p.Targets.Sort((a, b) => b.Score.CompareTo(a.Score));
-
             // Keep the network where it is while that realm is still a rival: agents are years in the
             // making, and moving them to whoever scores a point higher this week would throw that away.
             var current = CurrentNetwork(state, p.Owner);
@@ -228,39 +270,33 @@ namespace DiplomacyIntrigue.Espionage
             var atWar = us.IsAtWarWith(them);
             var claim = ClaimRegistry.HasTerritorialClaim(state, us, them);
 
-            // Bribes and forgeries aim at a civil war, and only a shaky crown has one coming.
-            var shaky = LegitimacyRegistry.Of(state, them) < EspionageConstants.AiSubvertLegitimacy
-                        || SuccessionModel.PretendersTo(state, them).Count > 0;
+            // Bribes and forgeries aim at a civil war, and only a shaky crown has one coming. Read
+            // through the bands the Encyclopedia shows rather than the exact legitimacy (story 3.9
+            // R1): Questioned or Failing, or a claimant standing, which is announced either way.
+            // Same set as the figure it replaced - LegitimacyNeutral is the Questioned edge - so
+            // this changes what the AI knows, not who it looks at (AC4).
+            var signs = p.TargetCourt;
+            var shaky = signs.Crown != CrownStanding.Secure || signs.PretenderStands;
             if (shaky)
             {
-                Hero bribe = null, forge = null;
-                var bribeLoyalty = float.MaxValue;
-                var forgeLoyalty = float.MaxValue;
-                foreach (var clan in Court.MembersOf(them))
-                {
-                    if (clan == them.RulingClan || clan.Leader == null) continue;
-                    var loyalty = LoyaltyModel.Of(state, clan);
-                    if (loyalty < EspionageConstants.AiBribeMaxLoyalty && !Bribes.IsBought(state, clan) && loyalty < bribeLoyalty)
-                    {
-                        bribeLoyalty = loyalty;
-                        bribe = clan.Leader;
-                    }
-                    // Not the player's house: forged letters work by deceiving a lord, and the player
-                    // cannot be deceived about letters they never received.
-                    if (clan != Clan.PlayerClan && loyalty >= EspionageConstants.AiForgeMinLoyalty
-                        && loyalty < EspionageConstants.AiForgeMaxLoyalty && loyalty < forgeLoyalty)
-                    {
-                        forgeLoyalty = loyalty;
-                        forge = clan.Leader;
-                    }
-                }
+                // The bribe mark: the ripest band there is, and inside it the house a foreign court
+                // would name first (story 3.9 R2, R4). Public signs only, so the choice is one the
+                // player could have made from what they can see of that court.
+                var bribe = MarkOf(state, us, them, MarkRead.ForBribe);
                 if (bribe != null)
-                    Consider(state, p, SpyMissionType.BribeLord, bribe, null,
-                             2f + (EspionageConstants.AiBribeMaxLoyalty - bribeLoyalty) / 20f,
-                             bribe.Clan.Name + " at loyalty " + bribeLoyalty.ToString("0.0"));
+                    Consider(state, p, SpyMissionType.BribeLord, bribe.Leader, null,
+                             EspionageConstants.AiBribeScore(bribe.Band), bribe.Why);
+
+                // The forgery mark: the Disaffected band only - close enough to the defection line
+                // that a grievance of 8 (x1.5 on loyalty) can matter, and not over it yet. The old
+                // range ran to 45, five points into Transactional, where a letter had nothing to
+                // tip (story 3.9 R3).
+                //
+                // The player's house is not excluded: it is chosen by this same band rule as every
+                // other house, and what a success does there is story 3.10's offer.
+                var forge = MarkOf(state, us, them, MarkRead.ForForge);
                 if (forge != null)
-                    Consider(state, p, SpyMissionType.ForgeLetters, forge, null, 1.5f,
-                             forge.Clan.Name + " at loyalty " + forgeLoyalty.ToString("0.0"));
+                    Consider(state, p, SpyMissionType.ForgeLetters, forge.Leader, null, 1.5f, forge.Why);
             }
 
             if (atWar || claim)
@@ -301,6 +337,101 @@ namespace DiplomacyIntrigue.Espionage
             p.MissionWhy = p.Mission != null
                 ? "chose " + p.Mission.Type + " (" + p.Mission.Why + ")"
                 : p.Candidates.Count == 0 ? "nothing worth doing" : "nothing passed its gates";
+        }
+
+        /// <summary>
+        /// The house this realm would aim a court operation at, chosen from bands and public signs
+        /// only (story 3.9 R2, R4, R7). The loyalty figure decides which band a house is in and
+        /// nothing else; inside the band the three tie-breaks are what an envoy could report.
+        /// </summary>
+        private static CourtMark MarkOf(ModState state, Kingdom us, Kingdom them, MarkRead read)
+        {
+            var wanted = read == MarkRead.ForBribe
+                ? new[] { LoyaltyBand.DefectionRisk, LoyaltyBand.Disaffected }
+                : new[] { LoyaltyBand.Disaffected };
+
+            foreach (var band in wanted)
+            {
+                var best = BestInBand(state, us, them, band, read, out var tie);
+                if (best == null) continue;
+                return new CourtMark
+                {
+                    Clan = best, Leader = best.Leader, Band = band,
+                    Why = best.Name + " of " + them.Name + " is " + CourtBands.MoodName(band).ToLowerInvariant() + " - " + tie,
+                };
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// The best house of one band, by story 3.9's tie-break order: a great house first (more men
+        /// to take to a rising), then the house our own ruler gets on best with - we know our own
+        /// relations exactly - then the clan's string id, so the same court gives the same answer
+        /// every week and a log line can be matched against a save. The id last rather than first
+        /// because a stable choice is worth less than a sensible one: it only breaks ties the two
+        /// real signs left even.
+        /// </summary>
+        private static Clan BestInBand(ModState state, Kingdom us, Kingdom them, LoyaltyBand band, MarkRead read, out string why)
+        {
+            Clan best = null;
+            var bestWeight = CourtWeight.NoWeight;
+            var bestRelation = int.MinValue;
+            var rivals = 0;
+            string whyTie = null;
+            why = null;
+
+            foreach (var clan in Court.MembersOf(them))
+            {
+                if (clan == them.RulingClan || clan.Leader == null) continue;
+                if (LoyaltyModel.BandOf(state, clan) != band) continue;
+                // A house already bought is bought: another purse buys a longer window, not a second
+                // turn of its loyalty, so a second bribe on it is gold spent for nothing. The same
+                // reason Bribes.IsBought is the resolver loyalty reads.
+                if (read == MarkRead.ForBribe && Bribes.IsBought(state, clan)) continue;
+
+                var weight = CourtBands.WeightOf(clan, them);
+                var relation = us.Leader != null && clan.Leader != null
+                    ? FactionManager.GetRelationBetweenClans(us.RulingClan, clan) : 0;
+
+                // Which sign actually decided it, so the reason printed is the one that acted
+                // (story 3.9 R6) rather than a list of everything that was compared.
+                string wonBy = null;
+                if (best == null) wonBy = null;
+                else if (weight > bestWeight) wonBy = "it weighs more in that court than any other";
+                else if (weight == bestWeight && relation > bestRelation) wonBy = RelationNote(relation);
+                else if (weight == bestWeight && relation == bestRelation
+                         && string.CompareOrdinal(clan.StringId, best.StringId) < 0)
+                    wonBy = "the other houses compared equal, and this one is named first";
+                else continue;
+
+                if (best != null) rivals++;
+                if (wonBy != null) whyTie = wonBy;
+                best = clan;
+                bestWeight = weight;
+                bestRelation = relation;
+            }
+
+            if (best == null) return null;
+
+            // A single house in the band needed no tie-break at all, and claiming one was applied
+            // would be the diagnostic lying about why.
+            why = CourtBands.Name(bestWeight).ToLowerInvariant()
+                  + (bestWeight == CourtWeight.GreatHouse ? " - the most men to take to a rising" : "")
+                  + " (" + best.StringId + ")";
+            if (rivals > 0 && whyTie != null) why += ", chosen because " + whyTie;
+            return best;
+        }
+
+        /// <summary>
+        /// How our ruler stands with a house, in words rather than a number. A relation is public -
+        /// the map and the hero page both show it - but a signed integer in a diagnostic reads as
+        /// precision the reader does not have, and the order is what decides the choice.
+        /// </summary>
+        private static string RelationNote(int relation)
+        {
+            if (relation >= 40) return "and our ruler counts them a friend";
+            if (relation <= -40) return "and our ruler is hostile to them";
+            return "and our ruler is indifferent to them";
         }
 
         /// <summary>
@@ -533,9 +664,16 @@ namespace DiplomacyIntrigue.Espionage
                 sb.AppendLine("  rival " + p.Targets[i].Kingdom.Name + ": " + p.Targets[i].Score.ToString("0") + " (" + p.Targets[i].Why + ")");
             sb.AppendLine("  target: " + (p.Target == null ? "none" : p.Target.Name.ToString()) + " - " + p.TargetWhy);
             if (p.Target != null)
+            {
+                var signs = p.TargetCourt;
+                sb.AppendLine("  their court: crown " + CourtBands.Name(signs.Crown)
+                              + (signs.PretenderStands ? ", a claimant stands" : "")
+                              + (signs.AtWarWithItself ? ", at war with itself" : "")
+                              + " - worth subverting: " + (signs.Crown != CrownStanding.Secure || signs.PretenderStands));
                 sb.AppendLine("  handler: " + (p.Handler == null ? "none" : p.Handler.Name.ToString()) + " - " + p.HandlerWhy
                               + "; network " + (p.Network == null ? "not founded" : p.Network.Strength.ToString("0.0"))
                               + ", budget " + p.NetworkBudget + "/week");
+            }
             for (var i = 0; i < p.Candidates.Count; i++)
             {
                 var c = p.Candidates[i];
