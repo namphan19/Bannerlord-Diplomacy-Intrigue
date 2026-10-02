@@ -1,4 +1,4 @@
-# Status — 2026-09-27
+# Status — 2026-10-02
 
 Point-in-time state, and only the current part of it. [CLAUDE.md](../CLAUDE.md) holds what is
 always true. [TODO.md](../TODO.md) is the one list of open decisions and pending work.
@@ -13,6 +13,29 @@ checks the declarations before every build and deploy.
 Last completed measurement: **balance run 08** (statecraft on/off) — [balance/run-08.md](balance/run-08.md).
 Branch `development`. `main` sits well behind on purpose: cutting a release is Phase 4's job.
 opencode was removed from the project on 2026-09-27 (CLAUDE.md §7).
+
+## Start here — 2026-10-02: Phase 3 completion, three stories merged
+
+Stories 3.8, 3.9 and 3.10 were built by two devs on their own branches and reviewed and merged into
+`development` by the tech lead (`a0ddb6d`, `3e75885`). The 3.10 branch carried 3.9's commit, so one
+merge brought both; `feature/3.9-ai-reads-courts-as-bands` holds nothing more. Build and
+`compile-check.sh` (v1.4.8 refs) pass, `check-save-ids.ps1` unchanged (19 classes, 146 members), no
+Harmony patch added (6). **No test was run after the merge** - the lead's instruction; every live
+result below is the devs' own, from before it.
+
+| Story | What it does | Verified |
+|---|---|---|
+| [3.8](stories/3.8-handler-stays-posted.md) | A posted handler is refused a party (event veto), cannot be posted while in transit, and is fetched back to the station daily; each loss names its cause (`handler_lost`) | Live on one save for about a month: party veto holds on the common path; **2 `forced-party`** losses of one house (the residual, roughly 5 a year for that house - 3.12 measures the real rate); the move veto is not asked on the path that sends a lord home, so the daily return holds the station alone; a day-one `governor` loss in every session, likely carried in the save. AC1 and AC5's party count not seen. Full table in the story's §10 |
+| [3.9](stories/3.9-ai-reads-courts-as-bands.md) | The AI picks bribe and forgery marks from the bands the player sees, tie-broken by public signs | AC1-AC3, AC5 live on `di_pretender_test`; AC4's three-save print not run |
+| [3.10](stories/3.10-player-house-exemptions.md) | The player's house loses its two exemptions: it can be assassinated, and forged letters become a believe/dismiss offer | AC1 only. AC2/AC3 were blocked: no AI ruling house had a free lord to found a network |
+
+**Added by the tech lead the same day, decided by the lead:** `diplomacy.test_found_network <hero> |
+<kingdom> [| strength]`, a cheat-gated lever that founds a network without the handler rules, so 3.10's
+AC2/AC3 can be staged (CLAUDE.md §2). Not run. Also a wording fix in the forged-letters offer (no
+pronoun for the ruler).
+
+**Next:** 3.10's AC2/AC3 with the new lever, when the lead asks for a run; 3.11 (dev B) and then 3.12,
+the Phase 3 acceptance run, which also measures 3.8's `forced-party` rate.
 
 ## Start here — 2026-10-01: the vassal summons (story 1.10c)
 

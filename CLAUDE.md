@@ -299,12 +299,17 @@ has no starting Hold and falls under the 40 line within a day, so it is the only
 vassal that serves (Hold drifts down one a day; re-set it while waiting). `test_raise_army <kingdom> [| <target settlement>]`
 has the ruler raise an army of their own party (the engine's `Kingdom.CreateArmy`; an AI ruler who is a
 governor has no party and cannot) - without it nothing past "commands no army" can be staged.
-Espionage: `diplomacy.networks`, `mission_odds <clan> | <kingdom>`, `missions`, `bribes` (every
+Espionage: `diplomacy.networks` (each handler's settlement and realm, flagged when outside the target), `mission_odds <clan> | <kingdom>`, `missions`, `bribes` (every
 bribe still on the record and whether it binds anybody), `counter_intelligence [kingdom]` (every
 realm's defence term by term), `ai_espionage [kingdom]` (each AI realm's espionage plan for the week,
 a dry run), and the levers `test_set_network`, `test_counter_budget <kingdom> | <denars>`,
 `test_launch_mission <clan> | <kingdom> | <type> [| settlement or hero]` and
-`test_resolve_mission <clan> | <kingdom> [| success|failure|exposed]`.
+`test_resolve_mission <clan> | <kingdom> [| success|failure|exposed]`, and
+`test_found_network <hero> | <kingdom> [| strength]`, which founds a network **without the handler
+rules** (a clan head, party leader or governor may be put on it, and nobody is moved) - the only way to
+stage an AI ruling house's operation, since every such house tried had no free lord. It lasts until the
+next daily tick, which releases or re-stations that hero, so launch and force-resolve before any
+`tick_days`; `test_assign_handler` stays the lever for anything about who may handle.
 Statecraft (design 08): `diplomacy.statecraft [kingdom]` (each realm's six office-holders, the
 medians, and for one realm every term they feed), and the levers `test_set_skill hero | skill | value`,
 `test_add_perk hero | perk`, `test_statecraft on|off` (the MCM switch for this session - the A/B

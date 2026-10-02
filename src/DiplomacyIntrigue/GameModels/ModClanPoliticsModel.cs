@@ -21,17 +21,21 @@ namespace DiplomacyIntrigue.GameModels
     /// the town screen reads the same answer, so a player's own handler is not offered as a
     /// governor either - the same rule, not an AI exemption.
     ///
-    /// **NOT VERIFIED** that vanilla's AI governor assignment asks this method. The name says it
-    /// should; the reference assemblies carry no method bodies to confirm it. If a handler is
-    /// still made a governor in game, the daily check in <c>SpyNetworks</c> still releases them,
-    /// and the next step is to find what vanilla calls instead - with evidence, before any patch.
+    /// VANILLA DOES ASK THIS - settled by run 09 (§4, 2026-10-01, IL on v1.5.3 and two live
+    /// cases). An earlier version of this header said it was not verified, and design 03 §10 said
+    /// it was not asked; both were wrong. The governorships that were lost went through a hole in
+    /// our own <c>SpyNetworks.CanHandle</c>: a hero already travelling to a governorship has a null
+    /// <c>GovernorOf</c> until the teleport lands, so the mod posted them abroad and vanilla's queued
+    /// teleport completed 3-5 real seconds later. Story 3.8 closed it by refusing a hero who
+    /// <c>IsTraveling</c>.
     ///
-    /// DELIBERATELY NOT TOUCHED: raising a party from a handler. No model in v1.4.8 answers "may
-    /// this hero lead a party"; <c>DiplomacyModel.GetHeroCommandingStrengthForClan</c> is the
-    /// nearest, but what vanilla uses it for is unknown here, and lowering it on a guess could move
-    /// clan strength everywhere it is read.
+    /// A PARTY IS NOT THIS CLASS'S BUSINESS: no model in v1.4.8 answers "may this hero lead a
+    /// party", and story 3.8 answers it on <c>CampaignEvents.CanHeroLeadPartyEvent</c> instead
+    /// (<c>Behaviors/HandlerPostBehavior</c>). <c>DiplomacyModel.GetHeroCommandingStrengthForClan</c>
+    /// is still left alone: lowering it on a guess could move clan strength everywhere it is read.
     ///
-    /// VERIFIED AGAINST: Bannerlord v1.4.8 reference assemblies (signature and virtual only).
+    /// VERIFIED AGAINST: Bannerlord v1.4.8 reference assemblies (signature and virtual); that
+    /// vanilla calls it, on v1.5.3 by IL (run 09 §4).
     ///
     /// FAILURE MODE: falls through to vanilla on exception, so a fault here costs a handler, not a
     /// governorship.

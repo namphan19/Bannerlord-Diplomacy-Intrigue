@@ -474,12 +474,25 @@ Built in the same cloud session, with no game: 0 warnings against the v1.4.8 ref
 threat measure; keeping a network on a target that still scores; and the handler rule below.
 
 **The handler blocker, honestly:** `ModClanPoliticsModel.CanHeroBeGovernor` returns false for a
-hero running a network. It is virtual in v1.4.8, but whether vanilla's AI governor assignment asks
-it is **not known** - the reference assemblies carry no method bodies. Nothing in v1.4.8's models
-answers "may this hero lead a party", so a handler raised to command a party is still released by
-the daily check and replaced by the AI at its next weekly run. `DiplomacyModel.GetHeroCommandingStrengthForClan`
-looked close and was left alone: what vanilla uses it for is unknown here, and a guess could move clan
-strength everywhere it is read.
+hero running a network. This paragraph used to say that whether vanilla's AI governor assignment asks
+it was **not known**. Run 09 (§4, 2026-10-01, IL on v1.5.3 and two live cases) settled it: **vanilla
+does ask it.** The governorships lost went through a hole in our own check: a hero already travelling
+to take up a governorship has a null `GovernorOf` until the teleport lands, so `CanHandle` accepted
+them, the mod posted them abroad, and vanilla's queued teleport finished 3-5 real seconds later
+(Hajara, Simir). The party blocker was as described: nothing in v1.4.8's models answers "may this hero
+lead a party". **Both are story 3.8's** (below); `DiplomacyModel.GetHeroCommandingStrengthForClan`
+stays untouched, for the reason it always was.
+
+**Story 3.8, a handler stays at their post (merged 2026-10-02).** `CanHandle` refuses a hero in
+transit, a fugitive or one just released; a campaign-event veto refuses a handler a party
+(`CanHeroLeadPartyEvent`), the player's own included; a handler found outside the target realm is sent
+back to the station each day instead of released; every loss names its cause (`handler_lost`). No
+Harmony, by the lead's decision. Live on `di_36_espionage_test` over about a month: the party veto
+holds on the common path, with **2** handlers of one house lost through vanilla's second pass
+(`forced-party`, the residual the lead accepted); the move veto (`CanMoveToSettlementEvent`) is **not**
+asked on the path that sends a lord home, so the station is held by the daily return alone, some 36
+times a month across three handlers. The full table, and what was not verified, is in
+[story 3.8 §10](../stories/3.8-handler-stays-posted.md#10-what-was-built-and-what-is-verified).
 
 **By hand, not measured:** at the AI's 6,000 cap and roguery 50 against a counter-intelligence of
 12.6, a network gains about 1.34 a week - some 22 weeks to the 30 SpreadDissent needs and 34 to the 45
