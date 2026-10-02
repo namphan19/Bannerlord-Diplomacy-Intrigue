@@ -375,7 +375,7 @@ namespace DiplomacyIntrigue.Espionage
                 if (n.WeeklyBudget <= 0 && n.Handler == null) continue;
 
                 if (n.WeeklyBudget > 0) SpyNetworks.SetBudget(state, owner, n.Target, 0);
-                if (n.Handler != null) SpyNetworks.Release(state, n, "recalled - " + owner.Name + " no longer rules");
+                if (n.Handler != null) SpyNetworks.Release(state, n, HandlerLossCause.Recalled, owner.Name + " no longer rules");
                 Log.Info("Espionage", owner.Name + " no longer rules and winds down its network in " + n.Target?.Name + ".");
             }
         }
@@ -394,7 +394,7 @@ namespace DiplomacyIntrigue.Espionage
             {
                 if (other.Target == p.Target) continue;
                 if (other.WeeklyBudget > 0) SpyNetworks.SetBudget(state, p.Owner, other.Target, 0);
-                if (other.Handler != null) SpyNetworks.Release(state, other, "recalled - " + realm.Name + " looks elsewhere");
+                if (other.Handler != null) SpyNetworks.Release(state, other, HandlerLossCause.Recalled, realm.Name + " looks elsewhere");
             }
 
             if (p.Target == null || p.Handler == null)

@@ -257,7 +257,7 @@ namespace DiplomacyIntrigue.UI.ClanScreen
             {
                 var network = SelectedNetwork();
                 if (network?.Handler == null) return;
-                SpyNetworks.Release(CoreBehavior.State, network, "recalled by " + Clan.PlayerClan.Name);
+                SpyNetworks.Release(CoreBehavior.State, network, HandlerLossCause.Recalled, "recalled by " + Clan.PlayerClan.Name);
                 Rebuild();
             });
         }

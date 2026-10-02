@@ -71,7 +71,8 @@ namespace DiplomacyIntrigue.Espionage
                 }
             }
             if (network != null && network.Handler == handler)
-                SpyNetworks.Release(state, network, captured ? "captured on exposure" : "burned on exposure");
+                SpyNetworks.Release(state, network, HandlerLossCause.Exposed,
+                                    captured ? "captured on exposure" : "burned on exposure");
 
             Log.Info("Espionage", "EXPOSED: " + mission + ". " + victim.Name
                                   + (offender != null && offender != victim

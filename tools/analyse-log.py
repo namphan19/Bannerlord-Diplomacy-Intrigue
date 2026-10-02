@@ -17,7 +17,9 @@ Records it reads (all `[KIND] key=value`, one per line):
 [EVENT] kinds with a section of their own since run 09 (the 2026-09-27 build):
   battle_scored (design 10 war score)          indemnity_paid
   tribute_accepted / tribute_refused           ai_war_declared's fromOwnCourt / fromTargetWeakness (R-1)
-  amends, office_appointed / _dismissed / _vacated, tribute_level (court verbs, 2.9)
+    amends, office_appointed / _dismissed / _vacated, tribute_level (court verbs, 2.9)
+    handler_lost (story 3.8 R8, one per lost or re-stationed handler, cause from a closed set)
+
 and the new fields [WAR] battles= aggressorPrisoners= defenderPrisoners=, [WAR-ENDED] finalBattles=,
 [LINK] legalNeglect=.
 From story 1.10d (2026-10-01): bound_choice - the bound patron's choice, printed in HEGEMONY TIMELINE
@@ -1287,6 +1289,63 @@ else:
     else:
         none_here("vassal tribute levels: none")
 
+# ---------------- handler posts, story 3.8 R8 ---------------------------------
+# Every loss of a posted handler writes one handler_lost record with a cause from a closed set
+# (SpyNetworks.HandlerLossCause). The run-09 losses could only be counted by reading the prose of
+# SpyNetworks.Release, which is what this replaced.
+#
+# `left-realm` is in that set and is NOT a lost post: the daily check found the handler outside
+# the target realm and sent them back to the station, so the network kept its handler. It is
+# printed apart, and the loss count excludes it, because a run that fetched handlers back a
+# hundred times has not lost a hundred posts. It is also the number that says whether 3.8 worked:
+# before it, vanilla moved AI handlers home and the log could not see it at all.
+#
+# `forced-party` is the residual the lead accepted instead of Harmony (story 3.8 R5/D2): vanilla's
+# second pass for a clan with no other free lord ignores the party veto. AC4 judges it on its own,
+# and anything above 3 a year across all realms goes back to the lead as a finding.
+section("HANDLER POSTS  (story 3.8: [EVENT] handler_lost, one per lost or re-stationed handler)")
+LOST, KEPT_POST = [], []
+for day, d in kinds("handler_lost"):
+    (KEPT_POST if d.get("cause") == "left-realm" else LOST).append((day, d))
+span_years = ((max(all_days) - min(all_days)) / DAYS_PER_YEAR) if all_days else 0
+if not (LOST or KEPT_POST):
+    none_here("no handler_lost events: this log predates story 3.8, and the losses in it can only be read from prose")
+else:
+    if LOST:
+        by_cause = collections.Counter(d.get("cause", "?") for _, d in LOST)
+        per_year = f"{len(LOST) / span_years:.1f} a year" if span_years else "over an unmeasurable span"
+        print(f"  posts lost: {len(LOST)}  over {span_years:.1f} campaign years  ({per_year})")
+        print("    by cause: " + ", ".join(f"{c}={n}" for c, n in by_cause.most_common()))
+        if "replaced" in by_cause:
+            # Not a loss: the owner put a different hero on the network (lead, 2026-10-01).
+            print(f"    of which {by_cause['replaced']} replaced: the owner chose another hero, the old one is alive and "
+                  f"still posted abroad. Losses proper: {len(LOST) - by_cause['replaced']}")
+        by_year_counts = collections.Counter(day // DAYS_PER_YEAR for day, _ in LOST if day is not None)
+        if by_year_counts:
+            print("    per campaign year: " + ", ".join(
+                f"{k} (from {day_to_date(k * DAYS_PER_YEAR)}): {n}" for k, n in sorted(by_year_counts.items())))
+        print("    who lost them: " + ", ".join(f"{h}={n}" for h, n in
+                                                collections.Counter(d.get("hero", "?") for _, d in LOST).most_common(6)))
+        print("    which networks: " + ", ".join(f"{o} in {t}={n}" for (o, t), n in
+                                                 collections.Counter((d.get("owner", "?"), d.get("target", "?"))
+                                                                     for _, d in LOST).most_common(6)))
+    else:
+        none_here("posts lost: none - every handler in this log was only fetched back")
+    if KEPT_POST:
+        print(f"  found abroad and sent back to the station (cause=left-realm, the post is kept, not lost): "
+              f"{len(KEPT_POST)}"
+              + (f"  ({len(KEPT_POST) / span_years:.1f} a year)" if span_years else ""))
+        print("    who strayed: " + ", ".join(f"{h}={n}" for h, n in
+                                              collections.Counter(d.get("hero", "?") for _, d in KEPT_POST).most_common(6)))
+    forced = sum(1 for _, d in LOST if d.get("cause") == "forced-party")
+    if forced:
+        rate = f"{forced / span_years:.1f} a year" if span_years else "a year of unknown length"
+        print(f"  forced-party: {forced}  ({rate}) - vanilla's second pass took a handler the veto refused."
+              + ("  AC4: ABOVE 3 a year across all realms - this goes back to the lead."
+                 if span_years and forced / span_years > 3 else "  AC4: at or under 3 a year."))
+    else:
+        print("  forced-party: 0 - the residual path (story 3.8 R5) cost no handler in this log")
+
 # ---------------- what no log line records -----------------------------------
 section("NOT IN TELEMETRY  (what this build cannot be measured on from a log)")
 for line in [
@@ -1299,7 +1358,10 @@ for line in [
     "  in the log at all - only diplomacy.summons, in the live game, can say so).",
     "Not in the log in any parseable form:",
     "  legitimacy and its changes, grievances raised (amends are recorded, grievances are not),",
-    "  loyalty, bloc shares, pretenders, royal successions (Succession prose only), espionage;",
+    "  loyalty, bloc shares, pretenders, royal successions (Succession prose only);",
+    "  espionage apart from handler posts - network strength, counter-intelligence, missions and",
+    "  their odds are live figures in diplomacy.networks, not in the log (story 3.8 records only",
+    "  the loss of a post, so a run can count losses but cannot say what they cost);",
     "  a war a court of Doves talked a crown out of (nothing is written when no war is declared);",
     "  an internal war's exhaustion over time (prose on each battle, no weekly record).",
 ]:
