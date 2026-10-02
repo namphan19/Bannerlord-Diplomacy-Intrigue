@@ -353,7 +353,7 @@ namespace DiplomacyIntrigue.UI.EncyclopediaPages
                     {
                         if (g.Target != ruling) continue;
                         if (!first) line.Append("; ");
-                        line.Append(DiCourtGrievanceVM.TitleOf(g.Type)).Append(' ').Append(g.Weight.ToString("0.0"));
+                        line.Append(DiCourtGrievanceVM.TitleOf(g.Type, g.Holder)).Append(' ').Append(g.Weight.ToString("0.0"));
                         first = false;
                     }
                     line.Append(").");

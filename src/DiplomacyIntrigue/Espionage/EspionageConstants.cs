@@ -1,3 +1,5 @@
+using DiplomacyIntrigue.Models;
+
 namespace DiplomacyIntrigue.Espionage
 {
     /// <summary>
@@ -221,18 +223,40 @@ namespace DiplomacyIntrigue.Espionage
         /// <summary>Proximity (1 next door, 0 across the map) above which a stronger realm counts as a neighbour. UN-TUNED.</summary>
         public const float AiNeighbourProximity = 0.5f;
 
+        // What a court is worth subverting by, which house it picks, and how it ranks that house
+        // against its other operations: **all three are bands, never figures** (story 3.9, the
+        // lead's call of 2026-10-01). The player is shown a rival's crown as Failing / Questioned /
+        // Secure and its houses in four loyalty bands, so an AI acting on the exact legitimacy or
+        // the exact loyalty is acting on what the player is never shown - the same fault R-1 fixed
+        // for the AI's war valuation. The edges therefore live in
+        // <see cref="IntrigueConstants"/> beside the behaviour they divide, and
+        // <see cref="AiEspionage"/> reads them through <c>CourtBands</c> and
+        // <c>LoyaltyModel.BandOf</c>: one resolver, so the AI and the page cannot drift apart.
+
+        // The four constants that stood here until 2026-10-01 - AiSubvertLegitimacy 50,
+        // AiBribeMaxLoyalty 40, AiForgeMinLoyalty 25, AiForgeMaxLoyalty 45 - are gone rather than
+        // kept as numbers to compare against. Three of the four already sat on a band edge
+        // (LegitimacyNeutral 50, LoyaltyTransactional 40, LoyaltyDisaffected 25); the fourth, the
+        // forgery ceiling of 45, reached five points into Transactional, which is why forgeries on
+        // a house that showed no sign of strain were in the plan.
+
         /// <summary>
-        /// A court worth subverting: crown legitimacy below this, or a standing pretender. Bribes and
-        /// forgeries aim at a civil war, and a secure crown does not have one coming. UN-TUNED.
+        /// What a bribe of a house at the bottom of its court's mood is worth to the AI, against its
+        /// other operations (story 3.9 R5). A fixed score per band, not the house's exact distance
+        /// from the defection line, for the reason above. The band it replaced ran
+        /// <c>2 + (40 - loyalty) / 20</c>, which was 2.75-4 across Defection risk and 2.0-2.75 across
+        /// Disaffected; these are the midpoints of those two ranges, so the ranking against
+        /// StealTreasury (up to 5), SabotageGarrison (4), Assassinate (3), ForgeLetters and
+        /// SpreadDissent (1.5) lands where it did. UN-TUNED.
         /// </summary>
-        public const float AiSubvertLegitimacy = 50f;
+        public const float AiBribeScoreDefectionRisk = 3.5f;
 
-        /// <summary>A house head the AI will bribe: loyalty below this. UN-TUNED.</summary>
-        public const float AiBribeMaxLoyalty = 40f;
+        /// <summary>The same, for a house in the Disaffected band - ripe, not yet leaving. UN-TUNED.</summary>
+        public const float AiBribeScoreDisaffected = 2.4f;
 
-        /// <summary>A house head the AI sends forged letters to: loyalty in this band, close enough to the defection line for 8 of grievance (x1.5) to push it over. UN-TUNED.</summary>
-        public const float AiForgeMinLoyalty = 25f;
-        public const float AiForgeMaxLoyalty = 45f;
+        /// <summary>What a bribe is worth against the AI's other operations, by the band's mark. UN-TUNED.</summary>
+        public static float AiBribeScore(LoyaltyBand band)
+            => band == LoyaltyBand.DefectionRisk ? AiBribeScoreDefectionRisk : AiBribeScoreDisaffected;
 
         /// <summary>StealTreasury only when the take is at least this many times its price. UN-TUNED.</summary>
         public const float AiStealMinReturn = 3f;

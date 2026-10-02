@@ -94,9 +94,29 @@ namespace DiplomacyIntrigue.Intrigue
         /// Read by the Court tab, the Encyclopedia's ledger under a ReadCourt and the amends
         /// messages, so a slight is named the same wherever it is shown. Here rather than in the UI
         /// since amends (design 09) became a reader in this layer.
+        ///
+        /// <paramref name="holder"/> is the court that holds the slight, and only one type's wording
+        /// depends on it - see below. It is a parameter rather than a lookup of
+        /// <c>Clan.PlayerClan</c> because that clan is never null in a campaign, so asking "is this
+        /// the player's own court" by testing it would answer yes to every court in Calradia.
         /// </summary>
-        public static string TitleOf(GrievanceType type)
+        public static string TitleOf(GrievanceType type, Clan holder = null)
         {
+            // One label per court for forged letters, decided by what that court was told - never a
+            // second string at a call site, and no new GrievanceType, since every reader goes through
+            // this function.
+            //
+            // A rival's court is named as forged because an agent inside it is placed to know the
+            // crown's hand from a forgery - the forger's or a third realm's alike - and that ledger
+            // is only ever read under a ReadCourt. The player's own court is told neither (story 3.10
+            // R5, R6): they are handed a letter and asked whether to believe it, and if they do, the
+            // row that follows on their Court tab must not tell them the court was right to doubt.
+            // So it reads as the words on the paper, which is what that court can justify. An
+            // exposure is what names a forger to anyone (design 03 §5).
+            if (type == GrievanceType.ForgedLetters)
+                return holder != Clan.PlayerClan ? "Letters in the crown's hand - forged"
+                                                : "Letters in the crown's hand";
+
             switch (type)
             {
                 case GrievanceType.FiefToRival: return "A fief given to another";
@@ -108,11 +128,6 @@ namespace DiplomacyIntrigue.Intrigue
                 case GrievanceType.PeaceWhileWinning: return "Peace made while they were winning";
                 case GrievanceType.RequestRefused: return "A request refused";
                 case GrievanceType.SuccessionPassedOver: return "Their candidate for the throne passed over";
-                // Named as forged. The Court tab is the victim's own court, which was told so when the
-                // letters surfaced. On the Encyclopedia only a ReadCourt shows it, and an agent inside
-                // the court is placed to know the crown's hand from a forgery - the forger's or a
-                // third realm's alike.
-                case GrievanceType.ForgedLetters: return "Letters in the crown's hand - forged";
                 case GrievanceType.DismissedFromOffice: return "A seat at court taken back";
                 default: return "An old slight";
             }

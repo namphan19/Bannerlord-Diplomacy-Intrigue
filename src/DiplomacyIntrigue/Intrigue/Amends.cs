@@ -185,7 +185,7 @@ namespace DiplomacyIntrigue.Intrigue
                            + q.Gold.ToString("N0") + " denars. They set the grievance aside.", Colors.Green);
             else if (house == Clan.PlayerClan)
                 Log.Notify(ruler.Name + " has made amends to your house for "
-                           + GrievanceRegistry.TitleOf(type).ToLowerInvariant()
+                           + GrievanceRegistry.TitleOf(type, house).ToLowerInvariant()
                            + ". Your grievance (" + q.Weight.ToString("0.0") + ") is set aside.", Colors.Cyan);
             return true;
         }
