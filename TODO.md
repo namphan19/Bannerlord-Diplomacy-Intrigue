@@ -74,8 +74,9 @@ re-rolled after a reload (now saved, `SpyMission` 12); stale figures in six desi
       4 - an offer to believe or dismiss the letters (3.10). Odds that move after launch are told
       to the player (3.11, run 09 D-8). Phase 3 acceptance: story 3.12.
       **Merged into `development` 2026-10-02:** 3.8 (partly verified live, story §10), 3.9 (AC1-AC3
-      and AC5 live), 3.10 (AC1 only; AC2/AC3 now stageable with `test_found_network`). Still to build:
-      3.11, 3.12.
+      and AC5 live), 3.10 (AC1 only; AC2/AC3 now stageable with `test_found_network`), 3.11 (compile
+      only), and 3.12's telemetry and runbook. Design 03 §9 records the decisions as 14-18. **What is
+      left is run 11**, below.
 - [ ] **A rival's court can be read off the peace hint.** "They start listening at N" shows a
       rival's exact exhaustion (older than today) and now its court-moved bar, from which its
       Doves/Hawks balance can be inferred - against the band rule (design 02 §9 decision 1).
@@ -84,6 +85,11 @@ re-rolled after a reload (now saved, `SpyMission` 12); stale figures in six desi
       `townsFirst` flag. Out of this pass by the lead's call.
 
 ## Pending work
+
+- [ ] **Run 11, Phase 3's validation and acceptance** - [docs/balance/run-11-runbook.md](docs/balance/run-11-runbook.md).
+      **The lead reviews the runbook first and answers its §0** (Part B through GABS, which DLL, the
+      throwaway save for the player's death, Part A's seat). It closes every open AC of 3.8-3.11 and
+      plays story 3.12's Parts A and B.
 
 - [ ] **Run 09**, all of [docs/balance/run-09-runbook.md](docs/balance/run-09-runbook.md): the targeted
       checks (A), the 20-year balance run and the second statecraft pair (B), the civil-war run (C).

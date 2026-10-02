@@ -1380,6 +1380,7 @@ else:
     # 1-2. Handlers held, and AI network strength, at each year's last weekly record.
     print("  At each year's last week (AI ruling houses; the player's realm left out):")
     year2_median = None
+    war_parties = []
     print(f"    {'year':<5}{'eligible':>9}{'holding':>9}{'share':>8}  bar   {'nets':>5}{'median str':>12}"
           f"{'at post':>9}{'CI budgets':>11}{'mean CI':>9}")
     for y in years:
@@ -1401,6 +1402,8 @@ else:
         med_txt = f"{med:.1f}"
         if y == 2:
             year2_median = med if strengths else None
+        if any("warParties" in d for d in krows):
+            war_parties.append((y, statistics.mean(f(d.get("warParties")) for d in krows)))
         print(f"    {y:<5}{len(eligible):>9}{len(holding):>9}{pct(len(holding), len(eligible)):>8}  {bar}  {len(nets):>5}"
               f"{med_txt:>12}{(str(at_post) + '/' + str(len(with_handler))):>9}{budgets:>11}{mean_ci:>9.1f}")
 
@@ -1408,6 +1411,12 @@ else:
           + ("not reached (the run is shorter than two years)" if 2 not in years
              else "no AI network at year 2: FAIL" if year2_median is None
              else f"{year2_median:.1f}: " + ("PASS" if year2_median > 30 else "FAIL")))
+
+    if war_parties:
+        # Story 3.8 AC5: the party veto must not starve a realm of armies. No run before 11 recorded
+        # this, so it is a baseline to read for a fall over the run, not a comparison with run 09.
+        print("    AI war parties per realm at year's end (3.8 AC5): "
+              + ", ".join(f"year {y}={n:.1f}" for y, n in war_parties))
 
     # 3. Operations launched per year, by type, and how the AI's own rolls came out.
     ai_launched = [(day, d) for day, d in LAUNCHED if d.get("ai") == "true"]

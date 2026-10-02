@@ -525,6 +525,8 @@ Playable target: *information and subversion are a third way to fight.*
 
 **Acceptance:** a player can flip a border lord through bribery, and a caught operation drags them into a war they did not choose.
 
+**Completion, 3.8-3.12** *(resumed by the lead 2026-10-01 from run 09 §4; design/03 §9 decisions 14-18)* — a handler stays at their post (3.8), the AI chooses its marks from bands (3.9), the player's house is a mark like any other (3.10), the odds shown are today's (3.11), and the acceptance run (3.12). *All built and merged into `development` 2026-10-02; 3.12's espionage telemetry built with them. Verification and acceptance are run 11 ([runbook](balance/run-11-runbook.md)); until it runs, 3.11 and the telemetry are compile only and 3.8-3.10 carry only the devs' own pre-merge checks.*
+
 ---
 
 ## Phase 4 — Integration, balance, release

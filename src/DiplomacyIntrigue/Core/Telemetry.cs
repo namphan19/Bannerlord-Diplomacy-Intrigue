@@ -462,6 +462,9 @@ namespace DiplomacyIntrigue.Core
             Pair(line, "spyHandlers", handlers);
             Pair(line, "spyFree", free);
             Pair(line, "rulerIsPlayer", k.Leader != null && k.Leader == Hero.MainHero);
+            // Story 3.8 AC5: the party veto must not starve a realm of armies. No earlier run recorded
+            // a party count, so run 11 is the first baseline, not a comparison with run 09.
+            Pair(line, "warParties", k.WarPartyComponents.Count);
             return line.ToString();
         }
 

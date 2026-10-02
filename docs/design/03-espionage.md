@@ -189,9 +189,19 @@ And three before 3.6's:
 
 | # | Question | Decision |
 |---|---|---|
-| 11 | Does the AI assassinate? | **Only at war, and only a commander in the field** - the leader of their largest army. Never a ruler, never anyone of the player's house |
-| 12 | An AI bribe that reaches the player's own house? | **The player is asked.** Take the gold and the house is bought like any other; refuse and the operation fails. Only the player decides for the player's house |
+| 11 | Does the AI assassinate? | **Only at war, and only a commander in the field** - the leader of their largest army. Never a ruler. *Was also "never anyone of the player's house"; that exemption was removed on 2026-10-01 (decision 16)* |
+| 12 | An AI bribe that reaches the player's own house? | **The player is asked.** Take the gold and the house is bought like any other; refuse and the operation fails. Only the player decides for the player's house. *Extended to forged letters on 2026-10-01 (decision 17)* |
 | 13 | How busy is the AI? | **Clear rivals only.** One network per AI ruling house, aimed at a realm it is at war with, claims, is claimed by, or a stronger neighbour; spent only from a purse with room to spare; launched only when the overall chance of being caught is at most 10% |
+
+And five on 2026-10-01, completing the phase from run 09 §4 (stories 3.8-3.11):
+
+| # | Question | Decision |
+|---|---|---|
+| 14 | A handler's station: enforced, or dropped from the fiction? | **Enforced.** A handler outside the target realm is sent back each day, not released (story 3.8 D1). The lever is `IsTraveling` in `CanHandle` and two campaign-event vetoes; **no Harmony** - a path the vetoes do not reach is measured, not patched (3.8 D2) |
+| 15 | Should the AI read a rival court as bands? | **Yes**, as R-1 does for war: the crown through `CourtBands`, a house through its loyalty band, ties broken by public signs; the forgery band narrowed to Disaffected, 25-40 (story 3.9 D1) |
+| 16 | Assassination of the player's house? | **The exemption is removed outright**, the player hero included: a mark when commanding the realm's largest army and not ruling. Vanilla's own death path follows (story 3.10 D1) |
+| 17 | Forged letters to the player's house? | **An offer**, like decision 12's bribe: believe them and the grievance is recorded, dismiss them and the operation fails with no exposure. Nothing tells the player they are forged unless the operation is exposed (story 3.10 D2) |
+| 18 | Odds that move between launch and resolution? | **They move, and the UI says so**: the plan overlay, the "now" on an operation under way, and "on the day" in the result. Not frozen at launch, which would make a counter-intelligence budget useless against anything already launched (story 3.11 D1) |
 
 ### The questions as they were asked
 
@@ -459,12 +469,15 @@ Built in the same cloud session, with no game: 0 warnings against the v1.4.8 ref
 - *Operations,* at most one per network, none for 14 days after the last resolves, and each through
   `Missions.CanLaunch`, paid from the purse above the reserve, and only at an overall exposure of 10%
   or less: BribeLord and ForgeLetters against a shaky crown (legitimacy under 50, or a standing
-  pretender) - the least loyal head under 40 for a bribe, a head at 25-45 for letters; SpreadDissent
+  pretender) - the least loyal head under 40 for a bribe, a head at 25-45 for letters *(since story
+  3.9: a crown Questioned or Failing or with a claimant; a Defection-risk house, else a Disaffected one,
+  for a bribe; a Disaffected one for letters; ties broken by public signs, never the figure)*; SpreadDissent
   and StealTreasury at war or with a land claim; SabotageGarrison on a fief our own realm is
   besieging; Assassinate at war on their largest army's commander, with twice its price to spare.
 - *Never:* ScoutArmies and ReadCourt - the AI already reads the numbers they sell, an asymmetry the
-  project had before espionage; ForgeLetters on the player's house - a player cannot be deceived by
-  letters they never received.
+  project had before espionage. *Until story 3.10 also ForgeLetters on the player's house, on the
+  ground that a player cannot be deceived by letters they never received; since 3.10 the letters reach
+  them as an offer (decision 17).*
 - *Winding down:* a house that no longer rules - or any AI house that is not a ruling one - stops
   paying and recalls its handler at the next weekly run (decision 5). **This undoes, within a week,
   any network a test lever gives an AI vassal house**, such as Urkhunait's in the 3.1/3.2 checks: test
@@ -541,6 +554,20 @@ again, after the same handler and mark checks. That covers the reload and the se
 run in game. Whether a save can be made at all while the inquiry is up (it pauses the game; an
 autosave or a quicksave might still run) is not known, so how often the old fault bit is not known
 either.
+
+### 3.8-3.12, completion - merged 2026-10-02, verification is run 11
+
+Five stories from run 09 §4, decided by the lead on 2026-10-01 (decisions 14-18), built by two devs
+and the tech lead, and merged into `development` on 2026-10-02. Each story file holds what was built
+and what is verified; the open checks are gathered in one runbook, [run-11-runbook.md](../balance/run-11-runbook.md).
+
+| Story | What | Verified before run 11 |
+|---|---|---|
+| [3.8](../stories/3.8-handler-stays-posted.md) | a handler stays at their post; `handler_lost` by cause | partly, by the dev, on one save (see 3.6 above and the story's §10) |
+| [3.9](../stories/3.9-ai-reads-courts-as-bands.md) | the AI reads courts as bands | AC1-AC3, AC5 live; AC4 not |
+| [3.10](../stories/3.10-player-house-exemptions.md) | the player's house is a mark; forged letters as an offer | AC1 only; `test_found_network` added to stage the rest |
+| [3.11](../stories/3.11-odds-shown-are-odds-rolled.md) | the odds shown are today's | compile only |
+| [3.12](../stories/3.12-phase-3-acceptance.md) | the acceptance run; ST-2's espionage telemetry (`[NETWORK]`, `mission_launched`, `mission_resolved`, `espionage_exposed`, new `[KINGDOM]` fields) and the analyser's ESPIONAGE section | telemetry compile only; the analyser run on an old log and a synthetic one |
 
 ### 3.7, the UI - built and verified live, 2026-09-26
 

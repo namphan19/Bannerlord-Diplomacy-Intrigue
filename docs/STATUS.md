@@ -14,7 +14,23 @@ Last completed measurement: **balance run 08** (statecraft on/off) — [balance/
 Branch `development`. `main` sits well behind on purpose: cutting a release is Phase 4's job.
 opencode was removed from the project on 2026-09-27 (CLAUDE.md §7).
 
-## Start here — 2026-10-02: Phase 3 completion, three stories merged
+## Start here — 2026-10-02: Phase 3 completion - all dev work done, run 11 next
+
+**Every story of Phase 3's completion is built and on `development`; nothing since the merges has run in
+a game.** The next step is **run 11**, one run that validates all of it ([run-11-runbook.md](balance/run-11-runbook.md)),
+and **the lead reviews the runbook and answers its §0 first.**
+
+- **3.11, the odds shown are today's** (built by the tech lead, dev B's track): the plan overlay says
+  the roll uses the day's odds, an operation under way reads "N% to succeed now", and every result
+  notice ends "Success was N% on the day". No save data. Compile only.
+- **3.12 ST-2, espionage telemetry:** `[NETWORK]` weekly, `mission_launched`, `mission_resolved`,
+  `espionage_exposed`, and `[KINGDOM]` fields for counter-intelligence, the ruling house's free members
+  and its war parties. `analyse-log.py` gained ESPIONAGE and LOG HEALTH sections. No save data. Compile
+  only on the mod side; the analyser tested on an old log and a synthetic one.
+- **3.12 ST-1, the runbook**, which also gathers every AC 3.8-3.11 left open.
+- Design 03 §9 records the lead's 2026-10-01 calls as decisions 14-18.
+
+### The three merged stories
 
 Stories 3.8, 3.9 and 3.10 were built by two devs on their own branches and reviewed and merged into
 `development` by the tech lead (`a0ddb6d`, `3e75885`). The 3.10 branch carried 3.9's commit, so one
@@ -34,8 +50,7 @@ result below is the devs' own, from before it.
 AC2/AC3 can be staged (CLAUDE.md §2). Not run. Also a wording fix in the forged-letters offer (no
 pronoun for the ruler).
 
-**Next:** 3.10's AC2/AC3 with the new lever, when the lead asks for a run; 3.11 (dev B) and then 3.12,
-the Phase 3 acceptance run, which also measures 3.8's `forced-party` rate.
+**Next:** run 11 (above).
 
 ## Start here — 2026-10-01: the vassal summons (story 1.10c)
 
@@ -307,7 +322,7 @@ and the lords each side holds prisoner — the same rework that also touched war
 | **0 — Foundation** | ✅ done, verified in a live campaign |
 | **1 — Diplomacy core (1.1–1.12)** | ✅ **accepted by the lead, 2026-09-23**. Code complete including submission and hegemony (1.9/1.10), the vanilla takeover (1.11) and power (1.12). Measured over runs 01–08; run 08 answered the §13.7 questions the §13 rework had left open. **War score is being reworked under it since 2026-09-27** ([design/10](design/10-war-score.md), built, live-checked, D1/D2 decided and D6 dropped 2026-09-27; its balance run is owed) — acceptance stands, but the numbers behind it are mid-change. Carried debt: [ROADMAP.md](ROADMAP.md#phase-1--accepted-by-the-project-lead-2026-09-23) and "Not verified — carried" below |
 | **2 — Court intrigue** | ✅ **accepted by the lead, 2026-09-27.** 2.1–2.7 built and verified live on their main paths; **2.8 Statecraft** built and run live 2026-09-26 (S0–S2; S3 is run 08; S4 became design/09's C2; S5 traits waits); **2.9 Court verbs** C1, C2 and C3 built and run live 2026-09-26. The acceptance line is met by C1 under the lead's reading (prevention, design/09 D16). Carried debt — no balance run with the court verbs, civil war's rate unmeasured, 2.8's own §12 unmet — is listed in [ROADMAP.md](ROADMAP.md#phase-2--accepted-by-the-project-lead-2026-09-27) |
-| **3 — Espionage** | ⏸ **parked by the lead, 2026-09-26.** 3.1–3.7 built and run live ([design/03 §10](design/03-espionage.md)). The AI's handlers are still taken by vanilla, so an AI network never grows (TODO, "Still open"). Fixed 2026-09-27 while parked: the bribe window in campaign years, the 3.5 wording, the reloaded bribe offer |
+| **3 — Espionage** | 🔄 **completion built 2026-10-02, acceptance is run 11.** 3.1–3.7 built and run live ([design/03 §10](design/03-espionage.md)). Resumed by the lead 2026-10-01 with stories 3.8–3.12 (design/03 §9, decisions 14–18): the handler stays posted, the AI reads courts as bands, the player's house is a mark, the odds say they move, and espionage telemetry. All merged; run 11 ([runbook](balance/run-11-runbook.md)) validates them and plays the acceptance scenario |
 | **4 — Integration, balance, release** | 🔄 runs 01–08 archived; **run 08** is the current reference. **Run 09 is planned** ([balance/run-09-runbook.md](balance/run-09-runbook.md)): design 10's 20-year run, the second statecraft pair, the civil-war run, and a check of everything built on 2026-09-27 |
 
 ## What to do next
