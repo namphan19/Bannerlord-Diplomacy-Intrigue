@@ -528,13 +528,14 @@ namespace DiplomacyIntrigue.Espionage
             var crown = realm.Leader != null ? realm.Leader.Name.ToString() : "the crown";
             var weight = IntrigueConstants.WeightOf(GrievanceType.ForgedLetters);
             var clan = Hero.MainHero?.Clan;
-            return "A letter has reached your house in " + crown + "'s own hand, and it speaks of what he intends to do "
-                   + "with what is yours."
+            // No pronoun for the ruler: a crown can be a queen (Rhagaea), and the hand is named already.
+            return "A letter has reached your house in " + crown + "'s own hand, and it speaks of what the crown means "
+                   + "to do with what is yours."
                    + Environment.NewLine + Environment.NewLine
                    + "It says nothing you can check, and it says it as the crown's own word. Believe it and "
                    + (clan != null ? clan.Name + " holds" : "your house holds")
                    + " a grievance of " + weight.ToString("0") + " against " + crown
-                   + ", which lowers our loyalty to the crown. Dismiss it and nothing comes of the letter at all."
+                   + ", which lowers your house's loyalty to the crown. Dismiss it and nothing comes of the letter at all."
                    + Environment.NewLine + Environment.NewLine
                    + "Nobody is told who wrote it.";
         }
