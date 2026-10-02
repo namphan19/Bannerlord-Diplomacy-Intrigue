@@ -231,6 +231,59 @@ namespace DiplomacyIntrigue.Espionage
             return network;
         }
 
+        /// <summary>
+        /// Puts <paramref name="hero"/> on <paramref name="owner"/>'s network in
+        /// <paramref name="target"/> **without** <see cref="CanHandle"/>'s "free to go abroad" rules -
+        /// a clan head, a party leader, a governor, a hero on the road may all be put here - and
+        /// without moving them. For <c>diplomacy.test_found_network</c> only, and nothing else may
+        /// call it: the AI and the player go through <see cref="Assign"/>.
+        ///
+        /// Why it exists (story 3.10 §10, 2026-10-02): staging an AI operation on the player's house
+        /// needs an AI ruling house with a network on the player's realm, and in every save tried
+        /// each ruling house's free lords were already governing, leading a party or posted - the
+        /// wall run 09 §4 found. <see cref="Assign"/> refuses there, correctly.
+        ///
+        /// What it does NOT bypass, because a network that broke them would make a later check lie
+        /// about something other than eligibility: the hero is alive, grown, free and of the owning
+        /// clan; the realm exists, is foreign to the owner and holds a town; the hero runs no other
+        /// network. The hero is not teleported - moving a party leader out of their party or a
+        /// governor out of their town is a state no rule produces. So the arrangement lasts until the
+        /// next daily tick, which releases a busy hero through <see cref="StillHandles"/> or fetches
+        /// a free one to the station: launch and force-resolve the operation before it.
+        /// </summary>
+        public static SpyNetwork AssignForTest(ModState state, Hero hero, Clan owner, Kingdom target, out string reason)
+        {
+            reason = null;
+            if (state == null || hero == null || owner == null || target == null) { reason = "A hero, a clan and a realm are needed."; return null; }
+            if (!hero.IsAlive || hero.IsDead) { reason = hero.Name + " is dead."; return null; }
+            if (hero.Clan != owner) { reason = hero.Name + " is not of " + owner.Name + "."; return null; }
+            if (hero.IsChild) { reason = hero.Name + " is a child."; return null; }
+            if (hero.IsPrisoner) { reason = hero.Name + " is a prisoner."; return null; }
+            if (target.IsEliminated) { reason = target.Name + " is no more."; return null; }
+            if (owner.Kingdom == target) { reason = owner.Name + " serves " + target.Name + ": a network works a foreign realm, not its own."; return null; }
+            if (StationFor(target) == null) { reason = target.Name + " holds no town to station an agent in."; return null; }
+            var current = HandledBy(state, hero);
+            if (current != null && current.Target != target)
+            {
+                reason = hero.Name + " already runs " + owner.Name + "'s network in " + current.Target.Name + ".";
+                return null;
+            }
+
+            var network = Get(state, owner, target);
+            if (network == null)
+            {
+                network = new SpyNetwork(owner, target);
+                state.SpyNetworks.Add(network);
+            }
+            if (network.Handler == hero) return network;
+            if (network.Handler != null) Release(state, network, HandlerLossCause.Replaced, hero.Name + " (test lever)");
+            network.SetHandler(hero);
+
+            Log.Info("Espionage", "TEST LEVER: " + hero.Name + " put on " + owner.Name + "'s network in " + target.Name
+                                  + " without the handler rules and without moving them. The next daily tick releases or re-stations them.");
+            return network;
+        }
+
         /// <summary>Sets what the owner means to spend on a network each week, founding it if needed.</summary>
         public static SpyNetwork SetBudget(ModState state, Clan owner, Kingdom target, int weekly)
         {

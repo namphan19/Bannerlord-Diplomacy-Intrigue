@@ -2866,6 +2866,42 @@ namespace DiplomacyIntrigue.Core
         }
 
         /// <summary>
+        /// Founds a clan's network in a realm and puts a hero on it **without the handler rules**
+        /// (<see cref="SpyNetworks.AssignForTest"/>): the clan head, a party leader or a governor may
+        /// be put there, and nobody is moved. An optional strength is set at once, within the
+        /// handler's ceiling. Added 2026-10-02 for story 3.10's AC2/AC3, which need an AI ruling house
+        /// with a network on the player's realm, and every ruling house tried had no free lord.
+        ///
+        /// test_assign_handler stays the lever for anything about who may handle; this one is for
+        /// staging what a network does. It lasts until the next daily tick, which releases a busy
+        /// handler (logged as a party / governor / became-head loss) or fetches a free one to the
+        /// station - so launch and force-resolve the operation before any tick_days.
+        /// Usage: diplomacy.test_found_network <hero> | <kingdom> [| strength]
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_found_network", "diplomacy")]
+        public static string TestFoundNetwork(List<string> args)
+        {
+            if (!CheatsAllowed("test_found_network", out var cheatRefusal)) return cheatRefusal;
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var parts = SplitOnPipe(args);
+            if (parts.Count < 2) return "Usage: diplomacy.test_found_network <hero> | <kingdom> [| strength]";
+            var hero = FindHero(parts[0]);
+            if (hero == null) return "No living hero matching \"" + parts[0] + "\".";
+            var target = FindKingdom(parts[1]);
+            if (target == null) return "No kingdom matching \"" + parts[1] + "\".";
+
+            var network = SpyNetworks.AssignForTest(state, hero, hero.Clan, target, out var reason);
+            if (network == null) return "Refused: " + reason;
+            if (parts.Count >= 3 && float.TryParse(parts[2], out var strength))
+                network.Change(strength - network.Strength, SpyNetworks.CeilingOf(hero));
+            return "Founded without the handler rules - the next daily tick releases or re-stations "
+                   + hero.Name + ". " + network + Environment.NewLine
+                   + Networks(new List<string> { hero.Clan.Name.ToString() });
+        }
+
+        /// <summary>
         /// Sets a clan's weekly budget for its network in a realm.
         /// Usage: diplomacy.test_network_budget <clan> | <kingdom> | <weekly denars>
         /// </summary>
