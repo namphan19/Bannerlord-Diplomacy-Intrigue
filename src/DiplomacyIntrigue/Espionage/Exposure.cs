@@ -32,7 +32,9 @@ namespace DiplomacyIntrigue.Espionage
     /// </summary>
     public static class Exposure
     {
-        public static void Apply(ModState state, SpyMission mission, SpyNetwork network)
+        /// <param name="rolledAt">The closing sentence about the roll for the owner's notice (story
+        /// 3.11 R2), or null.</param>
+        public static void Apply(ModState state, SpyMission mission, SpyNetwork network, string rolledAt = null)
         {
             var victim = mission.Target;
             var offender = mission.Owner?.Kingdom;
@@ -86,7 +88,7 @@ namespace DiplomacyIntrigue.Espionage
                 Log.Notify("Our agents in " + victim.Name + " were caught " + what + ". The network is burned"
                            + (captured ? ", " + handler.Name + " is their prisoner" : "")
                            + (offender != null ? ", and " + victim.Name + " has a casus belli against " + offender.Name : "")
-                           + ".", Colors.Red);
+                           + "." + (string.IsNullOrEmpty(rolledAt) ? "" : " " + rolledAt), Colors.Red);
             else if (Clan.PlayerClan?.Kingdom != null && Clan.PlayerClan.Kingdom == victim)
                 Log.Notify("We caught agents of " + mission.Owner.Name
                            + (offender != null ? " (" + offender.Name + ")" : "") + " " + what

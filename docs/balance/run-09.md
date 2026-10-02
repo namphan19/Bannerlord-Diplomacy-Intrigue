@@ -213,7 +213,7 @@ with Aserai on Summer 1, 1086 by hand. Nothing from that peace is counted as evi
 | D-5 | `check_blockers` reports "clear" while the mod's peace table is open and the clock stopped | run09_roundtrip | runbook: also look for `DiPeaceTableLayer` |
 | D-6 | `ui/get_inquiry` fails on a vanilla Kingdom Decision (`Incident.GetOptionHint` not found) | run09_roundtrip, game v1.5.3 | GABS-side; note in CLAUDE.md §2 |
 | D-7 | Espionage: `CanHandle` accepts a hero travelling to a governorship; `StillHandles` ignores where the handler is | §4 | reject `IsTraveling`; decide whether the station is enforced or dropped from the fiction |
-| D-8 | Mission odds shown at launch are not the odds rolled | §4.3, 68% → 71% | roll against the launch odds, or show that they move |
+| D-8 | Mission odds shown at launch are not the odds rolled | §4.3, 68% → 71% | roll against the launch odds, or show that they move. **Lead 2026-10-01: show that they move. Built 2026-10-02, [story 3.11](../stories/3.11-odds-shown-are-odds-rolled.md); verified in run 11** |
 | D-9 | A peace table listed an indemnity of 170,000 where the rule gives 168,000 | run09_roundtrip, NE gold 562,172 | later staged checks round down correctly (868,000; 132,000); the 170,000 is unexplained - recheck the treasury at that moment |
 | D-10 | Internal war: a spent rising (75.2) against a crown at 40.2 ends in stalemate, not a concession | 09C rising 2 | make the two rules meet without a gap, e.g. concession when one side ≥ 75 and the other is lower |
 | D-11 | Two documents state something this run disproved: STATUS.md says the zero-manpower siege cause was "found in code and fixed"; design 03 §10 says vanilla does not ask `CanHeroBeGovernor` | 3.10.2, §4 | correct both (CLAUDE.md §5) |

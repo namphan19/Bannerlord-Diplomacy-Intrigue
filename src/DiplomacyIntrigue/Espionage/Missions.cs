@@ -381,8 +381,18 @@ namespace DiplomacyIntrigue.Espionage
             else if (MBRandom.RandomFloat < odds.Success) outcome = MissionOutcome.Success;
             else outcome = MBRandom.RandomFloat < odds.ExposureOnFailure ? MissionOutcome.Exposed : MissionOutcome.Failure;
 
-            var note = " (success was " + Pct(odds.Success) + ", exposure on failure " + Pct(odds.ExposureOnFailure)
+            var note = " (success was " + Pct(odds.Success) + " on the day, exposure on failure " + Pct(odds.ExposureOnFailure)
                        + (forced.HasValue ? ", outcome forced by a test lever" : "") + ")";
+
+            // What the owner's notice says about the roll (story 3.11 R2): the day's figure, named as
+            // the day's, because OddsOf is asked again here with the network, the handler and the
+            // target's counter-intelligence as they are now, not as they were at launch. The launch
+            // figure is not quoted: it is not saved, and a frozen save id only to print a comparison
+            // is not worth one (the lead's option (a), 2026-10-01). The launch line in the log still
+            // carries it, for a reader who wants to compare.
+            var rolledAt = forced.HasValue
+                ? "The outcome was forced by a test lever."
+                : "Success was " + Pct(odds.Success) + " on the day.";
 
             // A success on a mission that reaches the player's own house is the player's to answer,
             // not the court's (design 03 §9 decision 12 for the bribe, story 3.10 R4 for the forged
@@ -402,12 +412,18 @@ namespace DiplomacyIntrigue.Espionage
                 return MissionOutcome.Pending;
             }
 
-            Conclude(state, mission, network, outcome, note);
+            Conclude(state, mission, network, outcome, note, rolledAt);
             return outcome;
         }
 
         /// <summary>Everything after the roll: the record, the network's cost, and the effect.</summary>
-        private static void Conclude(ModState state, SpyMission mission, SpyNetwork network, MissionOutcome outcome, string note)
+        /// <remarks>
+        /// <paramref name="rolledAt"/> is the sentence the owner's notice ends with (story 3.11 R2), or
+        /// null where there is no roll to speak of - an offer the player answered, whose owner is never
+        /// the player.
+        /// </remarks>
+        private static void Conclude(ModState state, SpyMission mission, SpyNetwork network, MissionOutcome outcome, string note,
+                                     string rolledAt = null)
         {
             mission.Resolve(outcome);
             Log.Info("Espionage", "Resolved: " + mission + note + ".");
@@ -416,15 +432,15 @@ namespace DiplomacyIntrigue.Espionage
             {
                 case MissionOutcome.Success:
                     SpyNetworks.Spend(network, EspionageConstants.MissionSuccessNetworkCost);
-                    ApplyEffect(state, mission);
+                    ApplyEffect(state, mission, rolledAt);
                     break;
                 case MissionOutcome.Failure:
                     SpyNetworks.Spend(network, EspionageConstants.MissionFailureNetworkCost);
-                    TellOwner(mission, DescribeAtStart(mission.Type) + " in " + mission.Target.Name + " failed. The network paid for it.");
+                    TellOwner(mission, DescribeAtStart(mission.Type) + " in " + mission.Target.Name + " failed. The network paid for it.", rolledAt);
                     break;
                 case MissionOutcome.Exposed:
                     SpyNetworks.Spend(network, network.Strength);
-                    Exposure.Apply(state, mission, network);
+                    Exposure.Apply(state, mission, network, rolledAt);
                     break;
             }
         }
@@ -581,7 +597,7 @@ namespace DiplomacyIntrigue.Espionage
 
         // ----- Effects --------------------------------------------------------
 
-        private static void ApplyEffect(ModState state, SpyMission mission)
+        private static void ApplyEffect(ModState state, SpyMission mission, string rolledAt)
         {
             var target = mission.Target;
             switch (mission.Type)
@@ -591,7 +607,7 @@ namespace DiplomacyIntrigue.Espionage
                     var report = ArmiesReport(target);
                     Log.Info("Espionage", mission.Owner.Name + " has " + target.Name + "'s armies for "
                                           + EspionageConstants.ScoutArmiesRevealDays + " days: " + report);
-                    TellOwner(mission, "Our agents report " + target.Name + "'s forces: " + report);
+                    TellOwner(mission, "Our agents report " + target.Name + "'s forces: " + report, rolledAt);
                     break;
                 }
                 case SpyMissionType.ReadCourt:
@@ -599,14 +615,14 @@ namespace DiplomacyIntrigue.Espionage
                     var report = CourtReport(state, target);
                     Log.Info("Espionage", mission.Owner.Name + " reads " + target.Name + "'s court for "
                                           + EspionageConstants.ReadCourtRevealDays + " days: " + report);
-                    TellOwner(mission, "Our agents read " + target.Name + "'s court: " + report);
+                    TellOwner(mission, "Our agents read " + target.Name + "'s court: " + report, rolledAt);
                     break;
                 }
                 case SpyMissionType.SabotageGarrison:
                 {
                     var removed = Sabotage(mission.TargetSettlement);
                     Log.Info("Espionage", "Sabotage at " + mission.TargetSettlement.Name + ": " + removed + " of the garrison gone.");
-                    TellOwner(mission, "Sabotage at " + mission.TargetSettlement.Name + ": " + removed + " of its garrison are gone.");
+                    TellOwner(mission, "Sabotage at " + mission.TargetSettlement.Name + ": " + removed + " of its garrison are gone.", rolledAt);
                     TellVictim(mission, "Saboteurs struck the garrison of " + mission.TargetSettlement.Name + ": " + removed + " men lost.");
                     break;
                 }
@@ -618,7 +634,7 @@ namespace DiplomacyIntrigue.Espionage
                     Log.Info("Espionage", "Dissent in " + mission.TargetSettlement.Name + ": loyalty "
                                           + before.ToString("0") + " -> " + town.Loyalty.ToString("0") + ".");
                     TellOwner(mission, "Dissent spreads in " + mission.TargetSettlement.Name + ": loyalty "
-                                       + before.ToString("0") + " -> " + town.Loyalty.ToString("0") + ".");
+                                       + before.ToString("0") + " -> " + town.Loyalty.ToString("0") + ".", rolledAt);
                     TellVictim(mission, "Agitators have been stirring " + mission.TargetSettlement.Name + ": loyalty "
                                         + before.ToString("0") + " -> " + town.Loyalty.ToString("0") + ".");
                     break;
@@ -632,7 +648,7 @@ namespace DiplomacyIntrigue.Espionage
                     if (take > 0 && thief != null)
                         GiveGoldAction.ApplyBetweenCharacters(ruler, thief, take, mission.Owner != Clan.PlayerClan);
                     Log.Info("Espionage", mission.Owner.Name + " stole " + take + " from " + ruler?.Name + ".");
-                    TellOwner(mission, "Our agents lifted " + take + " denars from " + ruler?.Name + "'s treasury.");
+                    TellOwner(mission, "Our agents lifted " + take + " denars from " + ruler?.Name + "'s treasury.", rolledAt);
                     TellVictim(mission, take + " denars are missing from the treasury.");
                     break;
                 }
@@ -652,7 +668,7 @@ namespace DiplomacyIntrigue.Espionage
                                           + LoyaltyModel.Of(state, clan).ToString("0.0")
                                           + "), and it takes the rising's side if the realm goes to war with itself.");
                     TellOwner(mission, lord.Name + " has taken our gold. " + clan.Name + " will stand against "
-                                       + target.Leader?.Name + " if " + target.Name + " goes to war with itself in the next two years.");
+                                       + target.Leader?.Name + " if " + target.Name + " goes to war with itself in the next two years.", rolledAt);
                     if (lord == Hero.MainHero)
                         Log.Notify("You took " + mission.GoldPaid.ToString("N0") + " denars from agents of " + mission.Owner.Name
                                    + ". For two years your house stands with any rising against " + target.Leader?.Name + ".", Colors.Yellow);
@@ -669,7 +685,7 @@ namespace DiplomacyIntrigue.Espionage
                     GrievanceRegistry.Add(state, clan, ruling, GrievanceType.ForgedLetters, -1f,
                         "letters forged by agents of " + mission.Owner.Name);
                     TellOwner(mission, lord.Name + " has read our letters in " + target.Leader?.Name
-                                       + "'s hand. " + clan.Name + " now holds them against the crown.");
+                                       + "'s hand. " + clan.Name + " now holds them against the crown.", rolledAt);
                     // What the court was told, and nothing more (story 3.10 R5). This line used to
                     // read "never written by <ruler>", which is the truth and which was only ever
                     // shown to the player - the one reader the story now asks to choose whether to
@@ -697,7 +713,7 @@ namespace DiplomacyIntrigue.Espionage
                     // so the false is load-bearing and must not become a named argument that drifts.
                     KillCharacterAction.ApplyByMurder(victim, null, true);
                     Log.Info("Espionage", victim.Name + " was assassinated by agents of " + mission.Owner.Name + ".");
-                    TellOwner(mission, victim.Name + " is dead. Nobody knows who ordered it.");
+                    TellOwner(mission, victim.Name + " is dead. Nobody knows who ordered it.", rolledAt);
                     // The player's side (story 3.10 R3). Vanilla announces nothing for a murder, so
                     // without this the player's own house could lose a lord to an operation it never
                     // learned of - the harm is visible, the payer stays unknown until an exposure.
@@ -759,9 +775,14 @@ namespace DiplomacyIntrigue.Espionage
 
         // ----- Telling people -------------------------------------------------
 
-        private static void TellOwner(SpyMission mission, string text)
+        /// <summary>
+        /// Tells the player, when the operation is theirs. <paramref name="rolledAt"/>, when given, is
+        /// the closing sentence about the roll (story 3.11 R2).
+        /// </summary>
+        private static void TellOwner(SpyMission mission, string text, string rolledAt = null)
         {
-            if (mission.Owner == Clan.PlayerClan) Log.Notify(text, Colors.Cyan);
+            if (mission.Owner == Clan.PlayerClan)
+                Log.Notify(string.IsNullOrEmpty(rolledAt) ? text : text + " " + rolledAt, Colors.Cyan);
         }
 
         /// <summary>

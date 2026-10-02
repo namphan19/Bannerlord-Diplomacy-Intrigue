@@ -482,8 +482,9 @@ namespace DiplomacyIntrigue.UI.ClanScreen
                 var mission = m;
                 ops.Add(new DiOperationVM(
                     Capitalise(Espionage.Missions.Describe(m.Type)) + " · " + m.Target?.Name + MarkSuffix(m),
+                    // "now": the figure is today's, and the roll uses the day it resolves (story 3.11 R3).
                     m.Handler?.Name + " · " + Days(daysLeft) + " left · " + Espionage.Missions.Pct(odds.Success)
-                    + " to succeed · " + Denars(m.GoldPaid) + " paid",
+                    + " to succeed now · " + Denars(m.GoldPaid) + " paid",
                     "Call off (" + Denars(m.GoldPaid) + " lost)",
                     () => Guard("Calling off an operation", () =>
                     {
@@ -716,7 +717,13 @@ namespace DiplomacyIntrigue.UI.ClanScreen
             PlanCaughtPct = Espionage.Missions.Pct(caught);
             PlanOddsNote = "Success " + Espionage.Missions.Pct(odds.Success) + ". If it fails, "
                            + Espionage.Missions.Pct(odds.ExposureOnFailure) + " that we are caught (their counter-intelligence "
-                           + odds.CounterIntelligence.ToString("0.0") + " against a network of " + odds.Network.ToString("0.0") + ").";
+                           + odds.CounterIntelligence.ToString("0.0") + " against a network of " + odds.Network.ToString("0.0") + ")."
+                           // Story 3.11 R1: these are today's odds, and the roll is made on the day the
+                           // operation resolves. Said here, under the figures, so a result rolled at
+                           // another figure does not read as the page having lied (run 09 D-8: launched
+                           // at 68%, resolved at 71%).
+                           + "\nThe roll is made on the day it resolves, at that day's odds: their counter-intelligence "
+                           + "and our network's strength can change them before then.";
             PlanCostText = Denars(spec.Gold) + " denars, paid now";
             PlanWhenText = "Resolves in " + Days(spec.Days) + ". Calling it off before then does not refund the gold.";
             PlanSendText = "Send the order - " + Denars(spec.Gold);
