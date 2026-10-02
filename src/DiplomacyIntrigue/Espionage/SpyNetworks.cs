@@ -464,11 +464,29 @@ namespace DiplomacyIntrigue.Espionage
             var purse = owner?.Leader == null ? 0 : owner.Leader.Gold;
             t.Spend = Math.Max(0, Math.Min(network.WeeklyBudget, purse));
 
-            t.FromGold = t.Spend / EspionageConstants.NetworkGoldPerPoint
-                         * (1f + t.Roguery / EspionageConstants.NetworkRogueryScale);
+            t.FromGold = FromGold(t.Spend, t.Roguery);
             t.AtWar = owner?.Kingdom != null && owner.Kingdom.IsAtWarWith(target);
             t.Investment = t.AtWar ? t.FromGold * EspionageConstants.NetworkWartimeGrowth : t.FromGold;
             return t;
+        }
+
+        /// <summary>What a week's spend buys before the wartime rate: (spend / 2000) x (1 + roguery / 200).</summary>
+        public static float FromGold(int spend, float roguery)
+            => spend / EspionageConstants.NetworkGoldPerPoint * (1f + roguery / EspionageConstants.NetworkRogueryScale);
+
+        /// <summary>
+        /// The week a network <i>would</i> have, net of the daily decay, if it were run at this spend
+        /// by a handler of this roguery: the sum <see cref="Explain"/> applies, for a network that
+        /// may not exist yet. What the AI reads to ask "could a network there grow at all" before it
+        /// founds one (run 11 §8 item 1), from the same terms the tab shows the player.
+        /// </summary>
+        public static float ProjectedWeek(int spend, float roguery, bool atWar, float counterIntelligence)
+        {
+            var investment = FromGold(spend, roguery) * (atWar ? EspionageConstants.NetworkWartimeGrowth : 1f);
+            return investment
+                   - counterIntelligence * EspionageConstants.NetworkCounterIntelligenceDrag
+                   - EspionageConstants.NetworkWeeklyAttrition
+                   - EspionageConstants.NetworkDailyDecay * 7f;
         }
 
         /// <summary>

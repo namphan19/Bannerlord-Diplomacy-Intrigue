@@ -87,11 +87,17 @@ re-rolled after a reload (now saved, `SpyMission` 12); stale figures in six desi
 ## Pending work
 
 - [x] **Run 11** - done 2026-10-02, [docs/balance/run-11.md](docs/balance/run-11.md).
-- [ ] **For the lead, from run 11 §8:** (1) AI espionage economics - networks cannot grow at war, where
-      the AI aims them (cap, war halving, target ranking); (2) `forced-party` at 3.0 a year, on 3.8 R5's
-      line; (3) is the AI-to-AI exposure war enough for Phase 3's acceptance, or is a player-victim run
-      wanted; (4) legitimacy drains to 0-24 everywhere and no civil war starts in ten years; (5) 3.10
-      AC2a needs a player-led army to stage.
+- [x] **Run 11 §8, answered 2026-10-02** (design 03 §9, decisions 19-21): (1) the tech lead chose -
+      AI cap 12,000 and share 6%, a built network kept through a peace, a new one aimed where it can
+      grow; (2) Harmony, `HeroSpawn_GetBestAvailableCommander_Patch`; (5) `test_player_army`. Built and
+      compiled against v1.4.8 and v1.5.3; **not yet run live**.
+- [ ] **Live check of decisions 19-21:** `ai_espionage` shows the growth per rival and the keep rule;
+      `forced-party` stays at 0 over a Part B-length run (the startup line names the seventh patch);
+      AC2a staged with `test_player_army`.
+- [x] **(3)** The lead accepted the AI-to-AI exposure war for Phase 3's acceptance (2026-10-02).
+- [ ] **(4) Built 2026-10-02, three changes** (design 02 §4): vassal oath -8, wartime +1 per 21 days under 30,
+      a claimant from a weak crown. Live check owed: a Part B-length run should show claimants arising,
+      legitimacy off the floor, and (the point) whether a civil war now starts - and not too often.
 - [ ] No `player_died` telemetry when the player dies with no heir (run 11 D-4; vanilla's no-heir path
       never calls `MakeDead`).
 

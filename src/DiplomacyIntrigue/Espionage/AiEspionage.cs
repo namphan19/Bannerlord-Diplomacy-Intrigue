@@ -7,6 +7,7 @@ using DiplomacyIntrigue.Intrigue;
 using DiplomacyIntrigue.Models;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Settlements;
+using TaleWorlds.Core;
 
 namespace DiplomacyIntrigue.Espionage
 {
@@ -16,6 +17,13 @@ namespace DiplomacyIntrigue.Espionage
         public Kingdom Kingdom;
         public float Score;
         public string Why;
+
+        /// <summary>
+        /// The net week a network there would have at this week's planned budget, under the
+        /// house's best free handler (<see cref="SpyNetworks.ProjectedWeek"/>). Read only when a
+        /// new network is being chosen; a network already built is kept on other grounds.
+        /// </summary>
+        public float Growth;
     }
 
     /// <summary>One operation the AI considered: its mark, what it is worth, and why it was or was not chosen.</summary>
@@ -193,9 +201,32 @@ namespace DiplomacyIntrigue.Espionage
             p.CounterBudget = RoundDown(Math.Min(Math.Min(wanted, affordable), EspionageConstants.AiCounterBudgetCap));
         }
 
+        /// <summary>
+        /// Where the house's one network goes (decision 13: a clear rival). Three rules, the last two
+        /// added after run 11 found AI networks at a median 1.4 at year 2 (§8 item 1, the lead
+        /// asked the tech lead to choose on 2026-10-02):
+        ///
+        /// 1. **A network still aimed at a rival stays.** As before.
+        /// 2. **A network with real strength stays even when its realm stops scoring as a rival**,
+        ///    unless a pact now binds the two. Run 11's networks were founded against whoever the
+        ///    house was fighting, and the moment that war ended and the score fell the strength
+        ///    built there was thrown away. Decision 4 says a network built before a war is what the
+        ///    wartime missions run on; that needs the network to survive the peace before it.
+        /// 3. **A new network goes where it can grow.** Among the rivals, highest score first, the
+        ///    first where <see cref="SpyNetworks.ProjectedWeek"/> is positive at the budget the house
+        ///    would pay. Run 11 aimed new networks at a realm already at war with the house, where the
+        ///    war's half rate under 15 counter-intelligence left them shrinking for good. If no rival
+        ///    can be grown, the top one is taken as before rather than doing nothing - an idle
+        ///    handler there is still a post kept for the day the purse is fuller.
+        ///
+        /// The war halving itself stays: it is the lead's decision 4, and the same rule for the
+        /// player. What changed is where the AI chooses to build.
+        /// </summary>
         private static void PlanTarget(ModState state, EspionagePlan p)
         {
             var us = p.Realm;
+            var plannedBudget = PlannedNetworkBudget(p);
+            var roguery = BestRoguery(state, p.Owner);
             foreach (var them in Kingdom.All)
             {
                 if (them == us || !them.IsRealm()) continue;
@@ -212,7 +243,11 @@ namespace DiplomacyIntrigue.Espionage
                     why.Append("a stronger neighbour; ");
                 }
                 if (score <= 0f) continue;
-                p.Targets.Add(new EspionageTarget { Kingdom = them, Score = score, Why = why.ToString().TrimEnd(' ', ';') });
+                p.Targets.Add(new EspionageTarget
+                {
+                    Kingdom = them, Score = score, Why = why.ToString().TrimEnd(' ', ';'),
+                    Growth = SpyNetworks.ProjectedWeek(plannedBudget, roguery, us.IsAtWarWith(them), CounterIntelligence.Of(state, them)),
+                });
             }
             p.Targets.Sort((a, b) => b.Score.CompareTo(a.Score));
             // Keep the network where it is while that realm is still a rival: agents are years in the
@@ -227,12 +262,58 @@ namespace DiplomacyIntrigue.Espionage
                         return;
                     }
 
-            if (p.Targets.Count > 0 && p.Targets[0].Score >= EspionageConstants.AiTargetMinScore)
+            // Rule 2: strength already built is kept through a peace, unless a pact now binds us.
+            if (current != null && current.Strength >= EspionageConstants.AiKeepNetworkStrength
+                && current.Target != null && current.Target != us && current.Target.IsRealm()
+                && !IsBoundTo(state, us, current.Target))
+            {
+                p.Target = current.Target;
+                p.TargetWhy = "kept: " + current.Strength.ToString("0") + " of strength built there";
+                return;
+            }
+
+            // Rule 3: a new network goes to the best rival where it can grow.
+            EspionageTarget pick = null;
+            for (var i = 0; i < p.Targets.Count; i++)
+            {
+                if (p.Targets[i].Score < EspionageConstants.AiTargetMinScore) break;
+                if (p.Targets[i].Growth > 0f) { pick = p.Targets[i]; break; }
+            }
+            if (pick != null)
+            {
+                p.Target = pick.Kingdom;
+                p.TargetWhy = pick.Why
+                              + (pick == p.Targets[0] ? "" : "; " + p.Targets[0].Kingdom.Name + " scores higher, but a network there would shrink")
+                              + " (a network would grow " + pick.Growth.ToString("+0.00;-0.00") + " a week)";
+            }
+            else if (p.Targets.Count > 0 && p.Targets[0].Score >= EspionageConstants.AiTargetMinScore)
             {
                 p.Target = p.Targets[0].Kingdom;
-                p.TargetWhy = p.Targets[0].Why;
+                p.TargetWhy = p.Targets[0].Why + " (no rival where a network could grow; "
+                              + p.Targets[0].Growth.ToString("+0.00;-0.00") + " a week here)";
             }
             else p.TargetWhy = "no clear rival";
+        }
+
+        /// <summary>What the house would put into its network this week: a share of the purse above the reserve, capped.</summary>
+        private static int PlannedNetworkBudget(EspionagePlan p)
+            => RoundDown(Math.Min((int)(p.Spendable * EspionageConstants.AiNetworkBudgetShare), EspionageConstants.AiNetworkBudgetCap));
+
+        /// <summary>
+        /// The roguery of the hero the house would put on a new network: its current handler if it
+        /// has one, else the best of the members free to go. Roguery is what the growth term reads;
+        /// the handler is then chosen by ceiling in <see cref="PlanNetwork"/>, which leans on roguery
+        /// (roguery / 2 against charm / 4), so the two usually name the same hero.
+        /// </summary>
+        private static float BestRoguery(ModState state, Clan owner)
+        {
+            var best = 0f;
+            foreach (var n in SpyNetworks.OwnedBy(state, owner))
+                if (n.Handler != null) best = Math.Max(best, n.Handler.GetSkillValue(DefaultSkills.Roguery));
+            foreach (var hero in owner.Heroes)
+                if (SpyNetworks.IsFreeToGo(hero, owner, out _))
+                    best = Math.Max(best, hero.GetSkillValue(DefaultSkills.Roguery));
+            return best;
         }
 
         private static void PlanNetwork(ModState state, EspionagePlan p)
@@ -264,8 +345,7 @@ namespace DiplomacyIntrigue.Espionage
             }
 
             if (p.Handler != null)
-                p.NetworkBudget = RoundDown(Math.Min((int)(p.Spendable * EspionageConstants.AiNetworkBudgetShare),
-                                                     EspionageConstants.AiNetworkBudgetCap));
+                p.NetworkBudget = PlannedNetworkBudget(p);
         }
 
         private static void PlanMission(ModState state, EspionagePlan p)
@@ -690,7 +770,8 @@ namespace DiplomacyIntrigue.Espionage
             sb.AppendLine("  counter-intelligence: threat " + p.Threat.ToString("0.0") + " (" + p.ThreatWhy + ") -> orders "
                           + p.CounterBudget + "/week");
             for (var i = 0; i < p.Targets.Count; i++)
-                sb.AppendLine("  rival " + p.Targets[i].Kingdom.Name + ": " + p.Targets[i].Score.ToString("0") + " (" + p.Targets[i].Why + ")");
+                sb.AppendLine("  rival " + p.Targets[i].Kingdom.Name + ": " + p.Targets[i].Score.ToString("0") + " (" + p.Targets[i].Why
+                              + "), a network there " + p.Targets[i].Growth.ToString("+0.00;-0.00") + " a week");
             sb.AppendLine("  target: " + (p.Target == null ? "none" : p.Target.Name.ToString()) + " - " + p.TargetWhy);
             if (p.Target != null)
             {

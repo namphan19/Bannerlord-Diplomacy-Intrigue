@@ -3518,6 +3518,96 @@ namespace DiplomacyIntrigue.Core
                   + (hostile ? " (hostile: a besieging army)" : " (a patrol)") + ".";
         }
 
+        /// <summary>
+        /// Test lever: the player raises an army of their own party, with up to N of their realm's
+        /// lord parties called in, nearest first. Story 3.10 AC2a - the AI naming the player as an
+        /// assassination mark - needs the player to lead their realm's largest army without ruling
+        /// it (<c>AiEspionage.FieldCommander</c>), and run 11 found nothing in the toolbox that makes a
+        /// player-led army (§8 item 5). The lever <c>test_raise_army</c> raises one for a ruler only.
+        ///
+        /// The player must be in a realm (<c>test_player_join</c> puts the house in one as a vassal).
+        /// A ruling player is allowed and warned about: a ruler is never an assassination mark, so the
+        /// army is real but stages nothing for AC2a. Calling parties in uses the engine's own
+        /// <c>Kingdom.CreateArmy</c> list, so no influence is charged and the parties join by the
+        /// engine's rules. Test saves only.
+        /// Usage: diplomacy.test_player_army [&lt;target settlement&gt;] [| &lt;parties to call in, 0-20&gt;]
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("test_player_army", "diplomacy")]
+        public static string TestPlayerArmy(List<string> args)
+        {
+            if (!CheatsAllowed("test_player_army", out var cheatRefusal)) return cheatRefusal;
+            var state = CoreBehavior.State;
+            if (state == null) return NoCampaign;
+
+            var hero = Hero.MainHero;
+            var party = hero?.PartyBelongedTo;
+            var kingdom = hero?.Clan?.Kingdom;
+            if (kingdom == null) return "The player's house serves no realm. diplomacy.test_player_join <kingdom> puts it in one.";
+            if (party == null || party.LeaderHero != hero) return "The player leads no party.";
+            if (party.Army != null) return "The player is already in an army (" + party.Army.Name + ").";
+
+            var parts = SplitOnPipe(args);
+            // "| 3" arrives as one part, "3": a lone number is the party count, never a settlement.
+            if (parts.Count == 1 && int.TryParse(parts[0].Trim(), out _)) parts.Insert(0, "");
+            Settlement target = null;
+            if (parts.Count >= 1 && !string.IsNullOrWhiteSpace(parts[0]))
+            {
+                target = FindSettlement(parts[0]);
+                if (target == null) return "No settlement matching \"" + parts[0] + "\".";
+            }
+            if (target == null) target = hero.HomeSettlement ?? kingdom.FactionMidSettlement;
+            if (target == null) return "No settlement to aim the army at.";
+
+            var callIn = 0;
+            if (parts.Count >= 2 && (!int.TryParse(parts[1].Trim(), out callIn) || callIn < 0 || callIn > 20))
+                return "The number of parties to call in is 0-20.";
+
+            // The realm's free lord parties, nearest the player first: not in an army, not the
+            // ruler's, not besieging or fighting, led by a lord of the realm.
+            var called = new MBList<TaleWorlds.CampaignSystem.Party.MobileParty>();
+            if (callIn > 0)
+            {
+                var candidates = new List<TaleWorlds.CampaignSystem.Party.MobileParty>();
+                foreach (var p in kingdom.AllParties)
+                {
+                    if (p == null || p == party || !p.IsLordParty || p.Army != null || p.LeaderHero == null) continue;
+                    if (p.LeaderHero == kingdom.Leader || p.LeaderHero.Clan == hero.Clan) continue;
+                    if (p.MapEvent != null || p.SiegeEvent != null || p.CurrentSettlement?.SiegeEvent != null) continue;
+                    candidates.Add(p);
+                }
+                var here = party.GetPosition2D;
+                candidates.Sort((a, b) => a.GetPosition2D.Distance(here).CompareTo(b.GetPosition2D.Distance(here)));
+                for (var i = 0; i < candidates.Count && i < callIn; i++) called.Add(candidates[i]);
+            }
+
+            var hostile = target.MapFaction != null && kingdom.IsAtWarWith(target.MapFaction);
+            try
+            {
+                kingdom.CreateArmy(hero, target, hostile ? Army.ArmyTypes.Besieger : Army.ArmyTypes.Patrolling, called);
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Espionage", "The test lever could not raise the player's army.", ex);
+                return "Could not raise the army: " + ex.Message;
+            }
+
+            if (party.Army == null) return "The engine raised no army for the player.";
+
+            // What AC2a reads: is this the realm's largest army, and is the player its ruler.
+            var largest = true;
+            foreach (var army in kingdom.Armies)
+                if (army != party.Army && army.TotalManCount >= party.Army.TotalManCount) largest = false;
+
+            Log.Info("Espionage", "TEST LEVER: the player raises " + party.Army.Name + " in " + kingdom.Name + ", aimed at "
+                                  + target.Name + ", " + called.Count + " part(ies) called in.");
+            return "The player raises " + party.Army.Name + ", aimed at " + target.Name
+                   + (hostile ? " (hostile: a besieging army)" : " (a patrol)") + ", "
+                   + called.Count + " of " + callIn + " part(ies) called in (they join by the engine's rules, on the march). "
+                   + party.Army.TotalManCount + " men now"
+                   + (largest ? ", the largest army of " + kingdom.Name : ", NOT the largest army of " + kingdom.Name + " - an AI reads the largest")
+                   + "." + (kingdom.Leader == hero ? " The player rules " + kingdom.Name + ": a ruler is never an assassination mark." : "");
+        }
+
         /// <summary>The quote the button would show, so a refusal here is refused on the same numbers.</summary>
         private static string Describe(Summons.Quote q)
         {

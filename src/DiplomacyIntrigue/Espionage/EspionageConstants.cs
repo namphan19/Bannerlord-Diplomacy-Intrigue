@@ -177,17 +177,32 @@ namespace DiplomacyIntrigue.Espionage
         /// <summary>What an AI ruler keeps back before spending anything on espionage: the shared figure.</summary>
         public const int AiGoldReserve = Diplomacy.DiplomacyConstants.AiGoldReserve;
 
-        /// <summary>Share of the purse above the reserve an AI ruler puts into its network each week. UN-TUNED.</summary>
-        public const float AiNetworkBudgetShare = 0.04f;
+        /// <summary>
+        /// Share of the purse above the reserve an AI ruler puts into its network each week. Was 0.04
+        /// until run 11 (2026-10-02): at a ruler's opening ~200,000 that is 6,000, so the cap was what
+        /// every ruler paid. 0.06 gives 9,000 there. Run 11's rulers ended ten years three to six
+        /// times richer than they began while paying 6,000 a week, so the purse can carry it. UN-TUNED.
+        /// </summary>
+        public const float AiNetworkBudgetShare = 0.06f;
 
         /// <summary>
-        /// The most an AI ruler spends on its network in a week. UN-TUNED. By hand: at roguery 50
-        /// against a counter-intelligence of 12.6, 6,000 buys 3.75, less 1.01 of counter-intelligence,
-        /// 0.7 of attrition and 0.7 of daily decay - about +1.34 a week, so ~22 weeks to the 30 dissent
-        /// needs and ~34 to the 45 a bribe needs. Slow on purpose (§1), but a balance run should say
-        /// whether an AI ever gets there.
+        /// The most an AI ruler spends on its network in a week. Was 6,000 until run 11 (§8 item 1,
+        /// 2026-10-02), which measured what the hand figure here used to guess: against the ~15.5
+        /// counter-intelligence the AI's own budgets buy, 6,000 under roguery 50 is
+        /// 3.75 - 1.24 - 0.7 - 0.7 = +1.1 a week at peace and -0.8 at war, and the median AI network
+        /// was 1.4 at year 2. At 12,000: +4.9 at peace, +1.1 at war - a network founded at peace
+        /// reaches the 30 dissent needs in about six weeks and holds through a war. By hand, not
+        /// measured. The player has no cap. UN-TUNED.
         /// </summary>
-        public const int AiNetworkBudgetCap = 6000;
+        public const int AiNetworkBudgetCap = 12000;
+
+        /// <summary>
+        /// Strength at which an AI house keeps its network on a realm that no longer scores as a
+        /// rival, unless a pact now binds the two (run 11 §8 item 1). Ten: a few weeks of growth at
+        /// peace, and below the 15 the cheapest operation needs - a network that never got that far
+        /// is not worth keeping over a real rival. UN-TUNED.
+        /// </summary>
+        public const float AiKeepNetworkStrength = 10f;
 
         /// <summary>Counter-intelligence ordered per point of threat (a war is 1, a caught intrusion 2). UN-TUNED.</summary>
         public const int AiCounterBudgetPerThreat = 1500;

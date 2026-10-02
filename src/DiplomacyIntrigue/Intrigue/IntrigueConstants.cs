@@ -105,6 +105,35 @@ namespace DiplomacyIntrigue.Intrigue
         /// </summary>
         public const float LegitimacyBrokeTreaty = 20f;
 
+        /// <summary>
+        /// A vassal cutting the oath that bound it to its patron (the lead's call, 2026-10-02, run 11
+        /// §7). Was the full <see cref="LegitimacyBrokeTreaty"/> of 20: run 11 counted 22 treaty
+        /// breaks for -325 in ten years, most of them a vassal "defying its patron once too often", and
+        /// that one table row drained every crown to 0-24. A vassal leaving an overlord is a smaller
+        /// wrong than a crown breaking its word to an equal. UN-TUNED.
+        /// </summary>
+        public const float LegitimacyBrokeVassalOath = 8f;
+
+        /// <summary>
+        /// A realm at war still heals a little (the lead's call, 2026-10-02): this much every
+        /// <see cref="LegitimacyWartimeRecoveryDays"/>, scaled like the peace dividend by the ruling
+        /// house's steward, and only while the crown stands below
+        /// <see cref="LegitimacyWartimeRecoveryCeiling"/>. Run 11's realms were at war 89% of the
+        /// time and the peace dividend, which needs a year of none, paid once in ten years. UN-TUNED.
+        /// </summary>
+        public const float LegitimacyWartimeRecovery = 1f;
+
+        /// <summary>One season, 21 days: a stateless cadence, read from the date, so nothing is saved. UN-TUNED.</summary>
+        public const int LegitimacyWartimeRecoveryDays = 21;
+
+        /// <summary>
+        /// The wartime trickle stops here. Under <see cref="InternalWarLegitimacy"/> (35) on purpose:
+        /// a crown that only ever healed in war would climb out of the range a civil war can start in,
+        /// and the trigger (bloc, legitimacy, two disloyal clans, a claimant) would never be met.
+        /// It stops a crown sinking to nothing for good; it does not make one safe. UN-TUNED.
+        /// </summary>
+        public const float LegitimacyWartimeRecoveryCeiling = 30f;
+
         /// <summary>Lost a fief to an outside power. UN-TUNED.</summary>
         public const float LegitimacyLostFief = 3f;
 

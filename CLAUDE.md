@@ -299,6 +299,9 @@ has no starting Hold and falls under the 40 line within a day, so it is the only
 vassal that serves (Hold drifts down one a day; re-set it while waiting). `test_raise_army <kingdom> [| <target settlement>]`
 has the ruler raise an army of their own party (the engine's `Kingdom.CreateArmy`; an AI ruler who is a
 governor has no party and cannot) - without it nothing past "commands no army" can be staged.
+`test_player_army [<target settlement>] [| <n>]` does the same for the player, with up to n of the realm's
+lord parties called in, and says whether it is now the realm's largest army - story 3.10 AC2a's mark
+(the player must serve a realm, and not rule it, to be one).
 Espionage: `diplomacy.networks` (each handler's settlement and realm, flagged when outside the target), `mission_odds <clan> | <kingdom>`, `missions`, `bribes` (every
 bribe still on the record and whether it binds anybody), `counter_intelligence [kingdom]` (every
 realm's defence term by term), `ai_espionage [kingdom]` (each AI realm's espionage plan for the week,
@@ -426,15 +429,20 @@ check it and stay inert rather than half-running.
 
 **Prefer events and `GameModel` overrides. Harmony is the last resort.** Rules for
 `Patches/`: one patched method per file, a header stating *what* it changes, *why* no event
-exists, and the *game version verified against*; a `try/catch` that degrades to vanilla. Six
+exists, and the *game version verified against*; a `try/catch` that degrades to vanilla. Seven
 patch files exist today, one method each, and all follow this. Phase 1's three guard war
 initiation: `DeclareWarDecision_IsAllowed_Patch` and the two `DeclareWarAction_*` backstops,
 which were one file patching both methods until 2026-09-26 and now share one answer,
 `TreatyEnforcement.WhyWarActionRefused`. `KingdomDecision_DetermineSupportOption_Patch`
 (Phase 2.3 bloc voting), `Clan_MapFaction_Patch` and `Hero_MapFaction_Patch` (Phase 2.6
 internal war) record in their headers the evidence that no event or `GameModel` could do the
-job. The mod log's `Harmony patched N methods:` line, written at startup, names every method
-actually patched. Do not add a seventh without the same evidence.
+job, and so does `HeroSpawn_GetBestAvailableCommander_Patch` (2026-10-02, the lead's call after
+run 11): vanilla's second pass for a commander skips the `CanHeroLeadPartyEvent` veto, so a
+posted spy handler who was their house's only free lord was put on a party anyway. It is the
+only patch on a private method, so it finds its target in `TargetMethod` and skips itself in
+`Prepare` if the method is gone, rather than failing `PatchAll` for all seven. The mod log's
+`Harmony patched N methods:` line, written at startup, names every method actually patched. Do
+not add an eighth without the same evidence.
 
 **The AI plays by the same rules as the player.** A project decision, enforced in code:
 `ClaimRegistry`, `TreatyRegistry`, `PeaceTable` and `CallToArms` take no "is this the player"

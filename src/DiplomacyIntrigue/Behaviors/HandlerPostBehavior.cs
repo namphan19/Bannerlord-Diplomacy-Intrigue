@@ -28,11 +28,12 @@ namespace DiplomacyIntrigue.Behaviors
     ///   run 09 found 7 of 7 AI handlers outside their target on day 15 while their networks kept
     ///   growing, because nothing checked.
     ///
-    /// WHAT IS LEFT, ON PURPOSE: vanilla's second pass for a clan with no other free lord
-    /// ignores this veto (from IL, v1.5.3). That path loses the handler, and the daily check
-    /// records it as <c>forced-party</c> rather than the veto silently not holding (R5). The lead
-    /// decided against Harmony to close it (D2): it is measured and reported, and if it runs
-    /// above 3 a year across all realms it goes back as a finding.
+    /// WHAT THIS DOES NOT REACH: vanilla's second pass for a clan with no other free lord
+    /// ignores this veto (from IL, v1.5.3). Story 3.8 left that path measured, not patched (D2);
+    /// run 11 measured it at 3.0 a year (`forced-party`), and on 2026-10-02 the lead chose
+    /// Harmony for it: <c>HeroSpawn_GetBestAvailableCommander_Patch</c>. The daily check still
+    /// names a <c>forced-party</c> loss if one ever gets through, so the patch is checked by the
+    /// same count that justified it.
     ///
     /// VERIFIED AGAINST: the two event signatures read on the v1.4.8 reference assemblies
     /// (BUTR 1.4.8.119303) and on the v1.5.3 install, identical on both - see story 3.8 ST-1.

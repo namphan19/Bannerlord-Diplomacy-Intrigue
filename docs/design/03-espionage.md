@@ -203,6 +203,14 @@ And five on 2026-10-01, completing the phase from run 09 §4 (stories 3.8-3.11):
 | 17 | Forged letters to the player's house? | **An offer**, like decision 12's bribe: believe them and the grievance is recorded, dismiss them and the operation fails with no exposure. Nothing tells the player they are forged unless the operation is exposed (story 3.10 D2) |
 | 18 | Odds that move between launch and resolution? | **They move, and the UI says so**: the plan overlay, the "now" on an operation under way, and "on the day" in the result. Not frozen at launch, which would make a counter-intelligence budget useless against anything already launched (story 3.11 D1) |
 
+And three on 2026-10-02, from run 11 §8:
+
+| # | Question | Decision |
+|---|---|---|
+| 19 | AI networks cannot grow where the AI aims them (median 1.4 at year 2) | **The tech lead chooses, and may combine.** Chosen: the AI's weekly cap 6,000 -> 12,000 and its share of the purse 4% -> 6%; a network of 10 or more is kept on its realm through a peace unless a pact binds the two; a new network goes to the best rival where it can grow at the planned budget (`SpyNetworks.ProjectedWeek`), else to the top rival as before. The war halving stays (decision 4) - what changed is where the AI builds, not the rule a war imposes |
+| 20 | `forced-party` at 3.0 a year | **Harmony.** Reverses decision 14's "no Harmony" for this one path: a postfix on `HeroSpawnCampaignBehavior.GetBestAvailableCommander` turns vanilla's second-pass pick of a posted handler into "nobody today" (`HeroSpawn_GetBestAvailableCommander_Patch`, the seventh patch) |
+| 21 | Story 3.10 AC2a needs a player-led army | **A lever**: `diplomacy.test_player_army [settlement] [| n]` raises the player's army with up to n of the realm's lord parties called in |
+
 ### The questions as they were asked
 
 1. **Assassination at all?** It is in the enum and specced above, but it is the one mission

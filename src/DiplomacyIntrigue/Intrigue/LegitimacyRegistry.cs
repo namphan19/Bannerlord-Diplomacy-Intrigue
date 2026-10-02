@@ -119,6 +119,20 @@ namespace DiplomacyIntrigue.Intrigue
             => Adjust(state, breaker, -IntrigueConstants.LegitimacyBrokeTreaty, "broke a treaty");
 
         /// <summary>
+        /// A treaty broken, priced by who broke it: a vassal cutting its oath to its patron pays
+        /// <see cref="IntrigueConstants.LegitimacyBrokeVassalOath"/>; anyone else breaking anything pays
+        /// the full <see cref="IntrigueConstants.LegitimacyBrokeTreaty"/> (the lead, 2026-10-02).
+        /// The same price for the player and the AI: it reads the treaty, not the breaker.
+        /// </summary>
+        public static void OnTreatyBroken(ModState state, Treaty treaty, Kingdom breaker)
+        {
+            if (treaty != null && treaty.Type == TreatyType.Vassalage && treaty.SubordinateParty == breaker)
+                Adjust(state, breaker, -IntrigueConstants.LegitimacyBrokeVassalOath, "a vassal broke its oath");
+            else
+                OnTreatyBroken(state, breaker);
+        }
+
+        /// <summary>
         /// Caught manufacturing a grievance. The Phase 1 hook in <c>ClaimRegistry</c> has been
         /// computing this penalty and only logging it since 1.2; this is where it starts being
         /// paid.
@@ -160,7 +174,11 @@ namespace DiplomacyIntrigue.Intrigue
             foreach (var kingdom in Kingdom.All)
             {
                 if (!kingdom.IsRealm()) continue;
-                if (IsAtWar(state, kingdom)) continue;
+                if (IsAtWar(state, kingdom))
+                {
+                    WartimeRecovery(state, kingdom);
+                    continue;
+                }
 
                 // Created here, with its dividend mark at today, the first day a realm is seen at
                 // peace - as before. PeaceOf reads a missing record the same way.
@@ -172,6 +190,23 @@ namespace DiplomacyIntrigue.Intrigue
                 Adjust(state, kingdom, PeaceDividendOf(kingdom), "a year of peace");
                 Statecraft.SkillXp.PeaceDividend(kingdom);
             }
+        }
+
+        /// <summary>
+        /// A realm at war heals a little, one step every season and only below a ceiling
+        /// (<see cref="IntrigueConstants.LegitimacyWartimeRecovery"/>). Paid on the date, not from a
+        /// stored mark, so it needs no save data - and like the dividend it cannot run under
+        /// <c>diplomacy.tick_days</c>, whose clock does not move.
+        /// </summary>
+        private static void WartimeRecovery(ModState state, Kingdom kingdom)
+        {
+            if (Of(state, kingdom) >= IntrigueConstants.LegitimacyWartimeRecoveryCeiling) return;
+            if ((long)CampaignTime.Now.ToDays % IntrigueConstants.LegitimacyWartimeRecoveryDays != 0) return;
+
+            var step = IntrigueConstants.LegitimacyWartimeRecovery
+                       * Statecraft.StatecraftTerms.RecoveryFactor(kingdom.RulingClan);
+            var room = IntrigueConstants.LegitimacyWartimeRecoveryCeiling - Of(state, kingdom);
+            Adjust(state, kingdom, step < room ? step : room, "a season of war, the crown holds on");
         }
 
         /// <summary>Where a crown stands against its next peace dividend. What <see cref="PeaceOf"/> returns.</summary>

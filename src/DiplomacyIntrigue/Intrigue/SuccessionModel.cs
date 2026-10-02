@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using DiplomacyIntrigue.Core;
 using DiplomacyIntrigue.Models;
@@ -157,6 +158,62 @@ namespace DiplomacyIntrigue.Intrigue
 
                 LastKnownRulers[kingdom] = ruler;
                 Resolve(state, kingdom, previous);
+            }
+
+            MintPowerClaimants(state);
+        }
+
+        /// <summary>
+        /// A claimant who arises from a weak crown rather than from a succession (the lead's call,
+        /// 2026-10-02, run 11 §7). Until now a claim existed only after a contested succession, and run
+        /// 11 had every crown Failing for ten years with no claimant ever standing and so no civil war:
+        /// the trigger was met in every term but the one that needs a succession to happen.
+        ///
+        /// The rule is <see cref="HasPowerClaim"/> - a magnate, below the transactional band - applied
+        /// when the crown has fallen under <see cref="IntrigueConstants.InternalWarLegitimacy"/>, the
+        /// same line a civil war needs. One claimant at a time per realm, never the player's house
+        /// (the player is not made a pretender by a rule they cannot see coming), never during a civil
+        /// war. The strongest house by influence takes it; ties go to the clan's string id.
+        /// </summary>
+        private static void MintPowerClaimants(ModState state)
+        {
+            foreach (var kingdom in Kingdom.All)
+            {
+                try
+                {
+                    if (!kingdom.IsRealm() || kingdom.Leader == null) continue;
+                    if (LegitimacyRegistry.Of(state, kingdom) >= IntrigueConstants.InternalWarLegitimacy) continue;
+                    if (InternalWars.OngoingIn(state, kingdom) != null) continue;
+                    if (PretendersTo(state, kingdom).Count > 0) continue;
+
+                    Clan best = null;
+                    foreach (var clan in kingdom.Clans)
+                    {
+                        if (clan == null || clan == kingdom.RulingClan || clan == Clan.PlayerClan) continue;
+                        if (!Court.IsMember(clan) || !HasPowerClaim(state, clan, kingdom)) continue;
+                        if (best == null || clan.Influence > best.Influence
+                            || (clan.Influence == best.Influence && string.CompareOrdinal(clan.StringId, best.StringId) < 0))
+                            best = clan;
+                    }
+                    if (best == null) continue;
+
+                    var total = 0f;
+                    foreach (var c in kingdom.Clans)
+                        if (Court.IsMember(c) && c.Influence > 0f) total += c.Influence;
+                    var share = total > 0f ? best.Influence / total : 0f;
+
+                    state.Pretenders.Add(new Pretender(kingdom, best.Leader, share));
+                    BlocModel.Invalidate();
+                    Log.Info("Succession", kingdom.Name + ": " + best.Leader.Name + " of " + best.Name
+                                           + " presses a claim to the throne - the crown stands at "
+                                           + LegitimacyRegistry.Of(state, kingdom).ToString("0") + " and the house is the court's strongest of the disaffected.");
+                    Telemetry.Event("claimant_arose", "kingdom", kingdom, "claimant", best.Leader, "clan", best,
+                                    "legitimacy", LegitimacyRegistry.Of(state, kingdom), "share", share);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error("Succession", "Looking for a claimant to " + kingdom?.Name + " failed.", ex);
+                }
             }
         }
 

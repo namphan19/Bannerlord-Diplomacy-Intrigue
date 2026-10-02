@@ -121,6 +121,16 @@ saved). The review's alternative, mean reversion toward 50, was **rejected**: a 
 not heal on its own, and civil war is already rare. `diplomacy.legitimacy` shows each realm's days
 of continuous peace and the days to its next dividend.
 
+**Three changes on 2026-10-02, the lead's call after run 11** (every crown at 0-24 after ten years, no civil war):
+a **vassal cutting its oath to its patron** pays **-8** instead of -20 (22 breaks cost -325 in the run, most
+of them vassal defiance); a realm **at war heals +1 every 21 days** (scaled by the steward, as the dividend is)
+**while below 30** - under the civil war's 35, so it stops a crown sinking to nothing without making one safe;
+and a **claimant can arise from a weak crown**, not only from a contested succession: below 35, with no
+claimant standing and no war running, the strongest disaffected magnate (`HasPowerClaim`; never the player's
+house) presses a claim (`SuccessionModel.MintPowerClaimants`, telemetry `claimant_arose`). The wartime step
+reads the date, so `tick_days` cannot show it. Verified live only for the claimant: Battania at legitimacy 0
+raised fen Uvain's claim on the next daily tick. The oath price and the wartime step are compiled, not run.
+
 ## 5. Succession
 
 When a ruler dies, vanilla silently assigns the throne. Instead:
