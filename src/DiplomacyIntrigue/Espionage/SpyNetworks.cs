@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DiplomacyIntrigue.Behaviors;
 using DiplomacyIntrigue.Core;
 using DiplomacyIntrigue.Models;
 using TaleWorlds.CampaignSystem;
@@ -9,6 +10,55 @@ using TaleWorlds.Core;
 
 namespace DiplomacyIntrigue.Espionage
 {
+    /// <summary>
+    /// Why a hero is no longer a handler. A closed set, not a free-text reason: 3.12 counts
+    /// handler losses per cause per year, and a reason read out of a sentence drifts the moment
+    /// the sentence is reworded (CLAUDE.md §5). Every <see cref="SpyNetworks.Release"/> names one.
+    ///
+    /// Two of the eleven are not losses, and are kept in the same record rather than left to
+    /// prose or dropped, because either would under-report the count AC4 is judged on
+    /// (lead's call, 2026-10-01): <see cref="Exposed"/>, an operation traced back to the owner,
+    /// and <see cref="Replaced"/>, the owner choosing a different hero - a decision, not a loss.
+    /// </summary>
+    public enum HandlerLossCause
+    {
+        /// <summary>The hero is still posted. Never passed to <see cref="SpyNetworks.Release"/>.</summary>
+        None = 0,
+
+        /// <summary>Vanilla gave them a party to lead. Should not happen: the veto in HandlerPostBehavior.</summary>
+        Party,
+
+        /// <summary>Vanilla made them governor of a town. Should not happen: ModClanPoliticsModel refuses.</summary>
+        Governor,
+
+        /// <summary>Taken prisoner.</summary>
+        Prisoner,
+
+        /// <summary>Died.</summary>
+        Died,
+
+        /// <summary>Left the clan that owned the network.</summary>
+        LeftClan,
+
+        /// <summary>Inherited the clan, and leads it, and a leader cannot go abroad.</summary>
+        BecameHead,
+
+        /// <summary>The owner recalled them on purpose.</summary>
+        Recalled,
+
+        /// <summary>Forced onto a party despite the veto - vanilla's second pass, which ignores it (story 3.8 R5).</summary>
+        ForcedParty,
+
+        /// <summary>Found outside the target realm and sent back to the station, rather than released (story 3.8 R4).</summary>
+        LeftRealm,
+
+        /// <summary>An operation of theirs was exposed; the network burned with the handler on it.</summary>
+        Exposed,
+
+        /// <summary>The owner put a different hero on the network. The old one is still alive and still posted abroad.</summary>
+        Replaced,
+    }
+
     /// <summary>A week of one network's upkeep, term by term. What the upkeep applies and what the diagnostic prints.</summary>
     public sealed class NetworkGrowthTerms
     {
@@ -114,7 +164,16 @@ namespace DiplomacyIntrigue.Espionage
         /// Whether <paramref name="hero"/> may run a network of <paramref name="owner"/>'s in
         /// <paramref name="target"/>. A handler is stationed in the target realm, so the hero has
         /// to be free to go there: of the owning clan, grown, free, not the head of the clan, not
-        /// leading a party and not governing a town. A companion in the player's party qualifies.
+        /// leading a party, not governing a town, and not already on the road to some other post.
+        /// A companion in the player's party qualifies.
+        ///
+        /// The three refusals added on 2026-10-01 (story 3.8 R1) close the hole run 09 found: a
+        /// hero already travelling to take up a governorship has a null <c>GovernorOf</c> until the
+        /// teleport lands 3-5 real seconds later, so the mod posted them abroad and vanilla then
+        /// moved them home (Hajara, Simir). A hero in transit is going somewhere, and it is not
+        /// here. <c>IsReleased</c> is read the same way vanilla reads it: it marks a hero who has
+        /// just come out of captivity and is not yet back in play - <c>ClanPartiesVM</c> filters
+        /// party-leader candidates on it, for the same reason.
         /// </summary>
         public static bool CanHandle(ModState state, Hero hero, Clan owner, Kingdom target, out string reason)
         {
@@ -124,6 +183,9 @@ namespace DiplomacyIntrigue.Espionage
             if (hero.Clan != owner) { reason = hero.Name + " is not of " + owner.Name + "."; return false; }
             if (hero.IsChild) { reason = hero.Name + " is a child."; return false; }
             if (hero.IsPrisoner) { reason = hero.Name + " is a prisoner."; return false; }
+            if (hero.IsTraveling) { reason = hero.Name + " is on the way to a post."; return false; }
+            if (hero.IsFugitive) { reason = hero.Name + " is a fugitive."; return false; }
+            if (hero.IsReleased) { reason = hero.Name + " has just been let out of captivity."; return false; }
             if (hero == owner.Leader) { reason = hero.Name + " leads the clan and cannot go abroad as a handler."; return false; }
             if (hero.IsPartyLeader) { reason = hero.Name + " leads a party."; return false; }
             if (hero.GovernorOf != null) { reason = hero.Name + " governs " + hero.GovernorOf.Name + "."; return false; }
@@ -158,7 +220,7 @@ namespace DiplomacyIntrigue.Espionage
                 state.SpyNetworks.Add(network);
             }
             if (network.Handler == hero) return network;
-            if (network.Handler != null) Release(state, network, "replaced by " + hero.Name);
+            if (network.Handler != null) Release(state, network, HandlerLossCause.Replaced, hero.Name.ToString());
 
             var station = StationFor(target);
             TeleportHeroAction.ApplyImmediateTeleportToSettlement(hero, station);
@@ -184,17 +246,106 @@ namespace DiplomacyIntrigue.Espionage
         }
 
         /// <summary>
-        /// Takes the handler off a network. The hero stays where they were stationed, as a
+        /// Takes the handler off a network, naming why in the closed set of
+        /// <see cref="HandlerLossCause"/>. The hero stays where they were stationed, as a
         /// companion sent to a town does in vanilla; the owner fetches them. The network keeps its
         /// strength and wears down until someone else takes it on.
+        ///
+        /// Every loss writes a <c>handler_lost</c> record (story 3.8 R8). Run 09 could say 21
+        /// handlers were lost and name three of the causes, because the reasons were prose: to
+        /// count a cause per year, which is what 3.12's acceptance turns on, the cause has to be
+        /// a field.
         /// </summary>
-        public static void Release(ModState state, SpyNetwork network, string why)
+        public static void Release(ModState state, SpyNetwork network, HandlerLossCause cause, string detail = null)
         {
             if (network?.Handler == null) return;
             var hero = network.Handler;
             network.SetHandler(null);
+
+            Telemetry.Event("handler_lost", "owner", network.Owner, "target", network.Target, "hero", hero,
+                                  "cause", TokenOf(cause), "detail", detail);
             Log.Info("Espionage", hero.Name + " no longer runs " + network.Owner?.Name + "'s network in "
-                                  + network.Target?.Name + " (" + why + ").");
+                                  + network.Target?.Name + " (" + TokenOf(cause)
+                                  + (string.IsNullOrEmpty(detail) ? "" : ": " + detail) + ").");
+        }
+
+        /// <summary>The cause as the log's one token: <c>left-realm</c>, not <c>LeftRealm</c>.</summary>
+        public static string TokenOf(HandlerLossCause cause)
+        {
+            switch (cause)
+            {
+                case HandlerLossCause.None: return "none";
+                case HandlerLossCause.Party: return "party";
+                case HandlerLossCause.Governor: return "governor";
+                case HandlerLossCause.Prisoner: return "prisoner";
+                case HandlerLossCause.Died: return "died";
+                case HandlerLossCause.LeftClan: return "left-clan";
+                case HandlerLossCause.BecameHead: return "became-head";
+                case HandlerLossCause.Recalled: return "recalled";
+                case HandlerLossCause.ForcedParty: return "forced-party";
+                case HandlerLossCause.LeftRealm: return "left-realm";
+                case HandlerLossCause.Exposed: return "exposed";
+                case HandlerLossCause.Replaced: return "replaced";
+                default: return "unknown";
+            }
+        }
+
+        /// <summary>
+        /// The network this hero is posted on, if the handler rules are live: espionage on, the
+        /// module healthy, and the hero on a network. One gate for every rule that refuses
+        /// something over a handler (story 3.8 R2, R4, R7), so the pillar's switch cannot be
+        /// honoured by one of them and missed by another.
+        /// </summary>
+        public static SpyNetwork PostedNetwork(Hero hero)
+        {
+            if (hero == null) return null;
+            var state = CoreBehavior.State;
+            if (state == null || !SubModule.Healthy || !Settings.Current.EnableEspionage) return null;
+            return HandledBy(state, hero);
+        }
+
+        // ----- The residual, told apart from an ordinary loss ---------------------
+
+        // Heroes the party veto refused since the last daily tick. Vanilla's second pass for a
+        // clan with no other free lord ignores the veto (story 3.8 R5, from IL), and when that
+        // happens the hero leads a party anyway. The daily check cannot tell that apart from any
+        // other route to a party by looking at the hero - both arrive as `IsPartyLeader` - so the
+        // veto records what it refused and the check reads it back. A static, not save data: a
+        // transient reporting detail, and one day of memory is all it means (CLAUDE.md §3).
+        private static readonly HashSet<Hero> PartyVetoRefused = new HashSet<Hero>();
+
+        /// <summary>Called by the party veto when it refuses, so the loss can be named (story 3.8 R5).</summary>
+        public static void MarkPartyVetoRefused(Hero hero)
+        {
+            if (hero == null) return;
+            if (PostedNetwork(hero) == null) return;
+            lock (PartyVetoRefused) PartyVetoRefused.Add(hero);
+        }
+
+        private static bool WasPartyVetoRefused(Hero hero)
+        {
+            lock (PartyVetoRefused) return PartyVetoRefused.Contains(hero);
+        }
+
+        private static void ForgetPartyVetoRefusals()
+        {
+            lock (PartyVetoRefused) PartyVetoRefused.Clear();
+        }
+
+        /// <summary>
+        /// Whether <paramref name="hero"/> is standing in a settlement of <paramref name="target"/>:
+        /// the station, or another town of the same realm. False also for a hero on the road, who
+        /// is therefore out of station (story 3.8 R4).
+        ///
+        /// Read through the settlement's <c>MapFaction</c> cast to <c>Kingdom</c>, which is the
+        /// same read <c>ClaimsBehavior</c> makes: a clan's map faction is its kingdom whenever it
+        /// is in one, and a village's is its owner's.
+        /// </summary>
+        public static bool InTargetRealm(Hero hero, Kingdom target)
+        {
+            var where = hero?.CurrentSettlement;
+            if (where == null || target == null) return false;
+            return where.MapFaction as Kingdom == target;
         }
 
         /// <summary>
@@ -296,54 +447,132 @@ namespace DiplomacyIntrigue.Espionage
         public static void DailyTick(ModState state)
         {
             if (state == null) return;
-            for (var i = state.SpyNetworks.Count - 1; i >= 0; i--)
+            try
             {
-                var network = state.SpyNetworks[i];
-                try
+                for (var i = state.SpyNetworks.Count - 1; i >= 0; i--)
                 {
-                    if (network.Owner == null || network.Owner.IsEliminated
-                        || network.Target == null || network.Target.IsEliminated)
+                    var network = state.SpyNetworks[i];
+                    try
                     {
-                        Log.Info("Espionage", "Dropped " + network + ": its owner or its target is gone.");
-                        state.SpyNetworks.RemoveAt(i);
-                        continue;
+                        if (network.Owner == null || network.Owner.IsEliminated
+                            || network.Target == null || network.Target.IsEliminated)
+                        {
+                            Log.Info("Espionage", "Dropped " + network + ": its owner or its target is gone.");
+                            state.SpyNetworks.RemoveAt(i);
+                            continue;
+                        }
+
+                        var handler = network.Handler;
+                        if (handler != null)
+                        {
+                            var cause = StillHandles(handler, network, out var why);
+                            if (cause != HandlerLossCause.None) Release(state, network, cause, why);
+                            else RestationIfAbroad(state, network, handler);
+                        }
+
+                        network.Change(-EspionageConstants.NetworkDailyDecay, EspionageConstants.NetworkMaxStrength);
+
+                        // A network worn to nothing with nobody on it is not an asset any more. Kept
+                        // while it has a handler or a budget: the owner is still building it.
+                        if (network.Strength <= 0f && network.Handler == null && network.WeeklyBudget <= 0)
+                            state.SpyNetworks.RemoveAt(i);
                     }
-
-                    var handler = network.Handler;
-                    if (handler != null && !StillHandles(handler, network, out var why))
-                        Release(state, network, why);
-
-                    network.Change(-EspionageConstants.NetworkDailyDecay, EspionageConstants.NetworkMaxStrength);
-
-                    // A network worn to nothing with nobody on it is not an asset any more. Kept
-                    // while it has a handler or a budget: the owner is still building it.
-                    if (network.Strength <= 0f && network.Handler == null && network.WeeklyBudget <= 0)
-                        state.SpyNetworks.RemoveAt(i);
+                    catch (Exception ex)
+                    {
+                        Log.Error("Espionage", "The daily upkeep of " + network + " failed.", ex);
+                    }
                 }
-                catch (Exception ex)
-                {
-                    Log.Error("Espionage", "The daily upkeep of " + network + " failed.", ex);
-                }
+            }
+            finally
+            {
+                // Read once per day by StillHandles, then spent: a refusal from yesterday must not
+                // name the cause of a party taken today.
+                ForgetPartyVetoRefusals();
             }
         }
 
-        private static bool StillHandles(Hero hero, SpyNetwork network, out string why)
+        private static HandlerLossCause StillHandles(Hero hero, SpyNetwork network, out string why)
         {
             why = null;
-            if (!hero.IsAlive || hero.IsDead) { why = "died"; return false; }
-            if (hero.Clan != network.Owner) { why = "left " + network.Owner.Name; return false; }
-            if (hero.IsPrisoner) { why = "taken prisoner"; return false; }
-            if (hero == network.Owner.Leader) { why = "became head of the clan"; return false; }
-            if (hero.IsPartyLeader) { why = "took command of a party"; return false; }
-            if (hero.GovernorOf != null) { why = "became governor of " + hero.GovernorOf.Name; return false; }
-            return true;
+            if (!hero.IsAlive || hero.IsDead) { why = "died"; return HandlerLossCause.Died; }
+            if (hero.Clan != network.Owner) { why = "left " + network.Owner.Name; return HandlerLossCause.LeftClan; }
+            if (hero.IsPrisoner) { why = "taken prisoner"; return HandlerLossCause.Prisoner; }
+            if (hero == network.Owner.Leader) { why = "became head of the clan"; return HandlerLossCause.BecameHead; }
+            // Two different things end a post with a party, and 3.12 counts them apart (R5): the
+            // veto answered no and vanilla took the hero anyway, or the hero was given a party by
+            // a path that never asked. Only the first is the residual the lead accepted instead
+            // of Harmony, so only the first is `forced-party`.
+            if (hero.IsPartyLeader)
+            {
+                why = WasPartyVetoRefused(hero) ? "forced onto a party despite the veto" : "took command of a party";
+                return WasPartyVetoRefused(hero) ? HandlerLossCause.ForcedParty : HandlerLossCause.Party;
+            }
+            if (hero.GovernorOf != null) { why = "became governor of " + hero.GovernorOf.Name; return HandlerLossCause.Governor; }
+            return HandlerLossCause.None;
+        }
+
+        /// <summary>
+        /// Sends a handler back to the station if they are not standing in the target realm
+        /// (story 3.8 R4; the lead's D1: the station is enforced, not dropped from the fiction).
+        /// Re-stationed, not released - the handler is still the right hero, they are simply in
+        /// the wrong place, and losing a network's only handler to a relocation is what made AI
+        /// networks look unable to grow. Run 09 saw 7 of 7 AI handlers outside their target on
+        /// day 15 while their networks kept growing: vanilla moves idle AI lords home, and
+        /// nothing here noticed.
+        ///
+        /// The station is the target's own <see cref="StationFor"/>, so a handler whose town fell
+        /// to a third realm is moved to the target's new one rather than left in enemy hands.
+        /// A target with no town left is left alone: there is nowhere to station anyone, and
+        /// releasing the handler over it would be a loss the owner did nothing to earn.
+        /// </summary>
+        private static void RestationIfAbroad(ModState state, SpyNetwork network, Hero handler)
+        {
+            if (InTargetRealm(handler, network.Target)) return;
+
+            var station = StationFor(network.Target);
+            if (station == null) return;
+
+            // Where the handler was found, read BEFORE anything moves them. Read after the
+            // teleport it always reads the station, which is a line that cannot tell a vanilla
+            // relocation from a check that is simply wrong - and a live check on 2026-10-01
+            // produced exactly that for a whole run: every day said "abroad at <the station>".
+            var from = handler.CurrentSettlement;
+            var fromFaction = from?.MapFaction;
+            var fromWhere = from == null
+                ? "no settlement (on the road)"
+                : from.Name.ToString() + " in " + (fromFaction?.Name?.ToString() ?? "no realm")
+                               + (fromFaction is Kingdom ? "" : " [not a kingdom]");
+
+            // A hero in a map event or a siege waits for the next day. Teleporting a hero out of
+            // a battle is the kind of thing that ends a campaign, and one day of a handler being
+            // abroad costs nothing that the loss of the handler would have.
+            if (handler.HitPoints <= 0) return;
+            var party = handler.PartyBelongedTo;
+            if (party != null && (party.MapEvent != null || party.SiegeEvent != null))
+            {
+                Log.Info("Espionage", handler.Name + " is outside " + network.Target.Name + " - at " + fromWhere
+                                      + " - but is in a battle or a siege, and stays there until the next day.");
+                return;
+            }
+
+            TeleportHeroAction.ApplyImmediateTeleportToSettlement(handler, station);
+            // Recorded on the same record as a loss, with the cause R4 names, because that is
+            // where 3.12 counts (AC4) and because a post found abroad is the number that says
+            // whether 3.8 worked. The detail says what happened - the post was kept, not lost -
+            // and analyse-log.py prints `left-realm` apart from the causes that ended a post.
+            Telemetry.Event("handler_lost", "owner", network.Owner, "target", network.Target, "hero", handler,
+                                  "cause", TokenOf(HandlerLossCause.LeftRealm), "from", fromFaction,
+                                  "detail", "sent back to " + station.Name);
+            Log.Info("Espionage", handler.Name + " was found outside " + network.Target.Name + " - at "
+                                  + fromWhere + " - and is sent back to the station at " + station.Name
+                                  + " (left-realm: the post is kept).");
         }
 
         /// <summary>
         /// Where a handler is sent: the target realm's most prosperous town, which is where a
         /// court's business - and its gossip - collects. Null for a realm with no town.
         /// </summary>
-        private static Settlement StationFor(Kingdom target)
+        public static Settlement StationFor(Kingdom target)
         {
             Settlement best = null;
             var bestProsperity = float.MinValue;

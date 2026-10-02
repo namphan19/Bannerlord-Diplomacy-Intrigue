@@ -250,6 +250,11 @@ namespace DiplomacyIntrigue
             if (Settings.Current.EnableEspionage)
             {
                 starter.AddBehavior(new EspionageBehavior());
+
+                // The two engine vetoes that keep a posted handler on their post (story 3.8). Under
+                // the same toggle, and each listener re-checks it per call as well: a player who
+                // turns espionage off mid-campaign gets a hero back on a party the same day.
+                starter.AddBehavior(new HandlerPostBehavior());
             }
         }
 

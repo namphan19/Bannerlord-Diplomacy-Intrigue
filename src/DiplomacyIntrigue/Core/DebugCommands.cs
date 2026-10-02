@@ -2811,9 +2811,17 @@ namespace DiplomacyIntrigue.Core
                               + " of " + t.Ceiling.ToString("0") + ", budget " + n.WeeklyBudget + "/week"
                               + ", last week " + n.LastWeekChange.ToString("+0.00;-0.00;0.00")
                               + " for " + n.LastWeekSpent + " spent");
+                // Where the handler is, and in which realm: story 3.8 AC3 reads this line to check
+                // the station holds, so it has to say whether the handler is inside the target
+                // realm and not merely name a town.
+                var where = n.Handler?.CurrentSettlement;
+                var whereRealm = where?.MapFaction as Kingdom;
+                var atPost = n.Handler != null && whereRealm != null && whereRealm == n.Target;
                 sb.AppendLine("    handler: " + (n.Handler == null ? "none" : n.Handler.Name
                               + " (roguery " + t.Roguery.ToString("0") + ", charm " + t.Charm.ToString("0")
-                              + ") at " + (n.Handler.CurrentSettlement?.Name?.ToString() ?? "no settlement")));
+                              + ") at " + (n.Handler.CurrentSettlement?.Name?.ToString() ?? "no settlement")
+                              + ", " + (whereRealm?.Name?.ToString() ?? "no realm")
+                              + (atPost ? " [in the target realm]" : n.Handler == null ? "" : " [OUTSIDE the target realm]")));
                 if (t.Idle != null) sb.AppendLine("    idle: " + t.Idle + " - nothing is spent, nothing grows");
                 sb.AppendLine("    next week: gold " + t.Spend + " -> " + t.FromGold.ToString("+0.00;-0.00;0.00")
                               + (t.AtWar ? " x " + EspionageConstants.NetworkWartimeGrowth.ToString("0.0") + " at war = " + t.Investment.ToString("+0.00;-0.00;0.00") : "")
