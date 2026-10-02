@@ -86,10 +86,14 @@ re-rolled after a reload (now saved, `SpyMission` 12); stale figures in six desi
 
 ## Pending work
 
-- [ ] **Run 11, Phase 3's validation and acceptance** - [docs/balance/run-11-runbook.md](docs/balance/run-11-runbook.md).
-      **The lead reviews the runbook first and answers its §0** (Part B through GABS, which DLL, the
-      throwaway save for the player's death, Part A's seat). It closes every open AC of 3.8-3.11 and
-      plays story 3.12's Parts A and B.
+- [x] **Run 11** - done 2026-10-02, [docs/balance/run-11.md](docs/balance/run-11.md).
+- [ ] **For the lead, from run 11 §8:** (1) AI espionage economics - networks cannot grow at war, where
+      the AI aims them (cap, war halving, target ranking); (2) `forced-party` at 3.0 a year, on 3.8 R5's
+      line; (3) is the AI-to-AI exposure war enough for Phase 3's acceptance, or is a player-victim run
+      wanted; (4) legitimacy drains to 0-24 everywhere and no civil war starts in ten years; (5) 3.10
+      AC2a needs a player-led army to stage.
+- [ ] No `player_died` telemetry when the player dies with no heir (run 11 D-4; vanilla's no-heir path
+      never calls `MakeDead`).
 
 - [ ] **Run 09**, all of [docs/balance/run-09-runbook.md](docs/balance/run-09-runbook.md): the targeted
       checks (A), the 20-year balance run and the second statecraft pair (B), the civil-war run (C).

@@ -22,6 +22,8 @@ story left open, then plays 3.12's acceptance scenario and its long run.
 
 ## 0. For the lead, before the run
 
+**Approved by the lead, 2026-10-02: all four recommendations below, as written.**
+
 1. **Part B through GABS, monitored, rather than `play.ps1`.** Story 3.12 says Part B runs unattended
    through `scripts/play.ps1` with no GABS module (CLAUDE.md §1: GABS once crashed a game). But no lever
    reaches `test_set_speed` without the bridge, and at the default multiplier five years take about
@@ -109,7 +111,7 @@ them. **The arrangement lasts only until the next daily tick**: run each sequenc
 | AC3, staging | A shaky realm with the player a vassal in the Disaffected band (`test_set_legitimacy`, grievances); `test_found_network ... \| 80`; `test_launch_mission <AI ruling house> \| <realm> \| ForgeLetters \| <player>`; `test_resolve_mission ... \| success` | "Letters in the crown's hand" opens (`ui/get_inquiry`). The body names no forger and does not say "forged" |
 | AC3, believe | `answer_inquiry affirmative=true` | `diplomacy.grievances`: `ForgedLetters 8.0` on the player's house; the Court tab row reads "Letters in the crown's hand", without "- forged" (screenshot) |
 | AC3, dismiss | the same, `affirmative=false` | No grievance; `diplomacy.missions` shows a Failure; no exposure; the yellow notice |
-| AC3, reload | Save while the inquiry is open, `games_stop`, a fresh process, reload | The offer is asked again, not rolled again (`mission_resolved how=offer` once only) |
+| AC3, reload | Save while the inquiry is open, `games_stop`, a fresh process, reload | The offer is asked again, not rolled again (`mission_resolved how=offer` once only). *Run 11 found a save cannot be made while the inquiry is up (`save_game` waits until it is answered), so the reload was staged through the guard instead: two offers at once, the second held, saved, reloaded, re-asked* |
 
 ### 3.4 Story 3.11 - the odds shown are today's
 
@@ -131,7 +133,7 @@ and their bar are 3.12 §4's; the levers each step may use:
 | A3 the internal war | its own trigger first (`tick_days 1` runs the trigger); `test_start_internal_war` if not (say which) | the bought house with the rebels, "bought with our gold" in the notice and the log |
 | A4 an exposure in a realm **at peace** with the player | launch at low odds and repeat; force only if it never comes (say so) | red notice; `EspionageExposed` held against Khuzait; trust -25; handler a prisoner; network 0; `espionage_exposed` in the log |
 | A5 the victim's war | **none**: the real clock only, `test_set_speed 20-50`, up to the claim's 168 days; `diplomacy.war_value <victim> \| Khuzait` read weekly | `war_opened ... casusBelli=EspionageExposed`, or the weekly war values that explain why not |
-| A6 the "caught in our realm" list | `test_found_network` on an AI house aimed at Khuzait, then a forced exposure (say so) | the list with the entry, through `test_intel open` (screenshot) |
+| A6 the "caught in our realm" list | `test_found_network` on an AI house aimed at Khuzait, then a forced exposure (say so) | the list with the entry. *Corrected in run 11: the list is the Realm tab's counter-intelligence block (`DiRealmPanel.xml`, `CounterIntelVM`), at the foot of the tab, not the Intelligence tab* |
 
 ## 5. Part B - the long run (story 3.12 §5)
 
