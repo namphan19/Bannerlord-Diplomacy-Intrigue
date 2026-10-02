@@ -179,16 +179,7 @@ namespace DiplomacyIntrigue.Espionage
         {
             reason = null;
             if (hero == null || owner == null || target == null) { reason = "A hero, a clan and a realm are needed."; return false; }
-            if (!hero.IsAlive || hero.IsDead) { reason = hero.Name + " is dead."; return false; }
-            if (hero.Clan != owner) { reason = hero.Name + " is not of " + owner.Name + "."; return false; }
-            if (hero.IsChild) { reason = hero.Name + " is a child."; return false; }
-            if (hero.IsPrisoner) { reason = hero.Name + " is a prisoner."; return false; }
-            if (hero.IsTraveling) { reason = hero.Name + " is on the way to a post."; return false; }
-            if (hero.IsFugitive) { reason = hero.Name + " is a fugitive."; return false; }
-            if (hero.IsReleased) { reason = hero.Name + " has just been let out of captivity."; return false; }
-            if (hero == owner.Leader) { reason = hero.Name + " leads the clan and cannot go abroad as a handler."; return false; }
-            if (hero.IsPartyLeader) { reason = hero.Name + " leads a party."; return false; }
-            if (hero.GovernorOf != null) { reason = hero.Name + " governs " + hero.GovernorOf.Name + "."; return false; }
+            if (!IsFreeToGo(hero, owner, out reason)) return false;
             if (target.IsEliminated) { reason = target.Name + " is no more."; return false; }
             if (owner.Kingdom == target) { reason = owner.Name + " serves " + target.Name + ": a network works a foreign realm, not its own."; return false; }
             if (StationFor(target) == null) { reason = target.Name + " holds no town to station an agent in."; return false; }
@@ -229,6 +220,31 @@ namespace DiplomacyIntrigue.Espionage
             Log.Info("Espionage", owner.Name + " put " + hero.Name + " in charge of its network in " + target.Name
                                   + ", stationed at " + station.Name + " (ceiling " + CeilingOf(hero).ToString("0") + ").");
             return network;
+        }
+
+        /// <summary>
+        /// The half of <see cref="CanHandle"/> that is about the hero alone, whatever the realm: of the
+        /// owning clan, alive, grown, free, not the head of the clan, not leading a party, not
+        /// governing, not on the road to another post. Split out on 2026-10-02 so the weekly
+        /// telemetry can count a ruling house's free members by the very rule the AI's plan applies
+        /// (story 3.12 §5: "at least half of the ruling houses that have a free member") rather than
+        /// by a copy of it.
+        /// </summary>
+        public static bool IsFreeToGo(Hero hero, Clan owner, out string reason)
+        {
+            reason = null;
+            if (hero == null || owner == null) { reason = "A hero and a clan are needed."; return false; }
+            if (!hero.IsAlive || hero.IsDead) { reason = hero.Name + " is dead."; return false; }
+            if (hero.Clan != owner) { reason = hero.Name + " is not of " + owner.Name + "."; return false; }
+            if (hero.IsChild) { reason = hero.Name + " is a child."; return false; }
+            if (hero.IsPrisoner) { reason = hero.Name + " is a prisoner."; return false; }
+            if (hero.IsTraveling) { reason = hero.Name + " is on the way to a post."; return false; }
+            if (hero.IsFugitive) { reason = hero.Name + " is a fugitive."; return false; }
+            if (hero.IsReleased) { reason = hero.Name + " has just been let out of captivity."; return false; }
+            if (hero == owner.Leader) { reason = hero.Name + " leads the clan and cannot go abroad as a handler."; return false; }
+            if (hero.IsPartyLeader) { reason = hero.Name + " leads a party."; return false; }
+            if (hero.GovernorOf != null) { reason = hero.Name + " governs " + hero.GovernorOf.Name + "."; return false; }
+            return true;
         }
 
         /// <summary>

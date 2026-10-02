@@ -76,6 +76,13 @@ namespace DiplomacyIntrigue.Espionage
                 SpyNetworks.Release(state, network, HandlerLossCause.Exposed,
                                     captured ? "captured on exposure" : "burned on exposure");
 
+            // Story 3.12 §5: exposures per year, and - matched against war_opened by the analyser -
+            // whether the victim went to war over it inside the claim's life.
+            var claimed = offender != null && offender != victim;
+            Telemetry.Event("espionage_exposed", "owner", mission.Owner, "offender", offender, "victim", victim,
+                "type", mission.Type, "claim", claimed, "claimDays", claimed ? (int)(EspionageConstants.ExposureClaimYears * CampaignTime.DaysInYear) : 0,
+                "handler", handler, "captured", captured,
+                "trust", claimed ? TrustRegistry.Get(state, victim, offender) : 0f);
             Log.Info("Espionage", "EXPOSED: " + mission + ". " + victim.Name
                                   + (offender != null && offender != victim
                                       ? " holds EspionageExposed against " + offender.Name + ", trust "

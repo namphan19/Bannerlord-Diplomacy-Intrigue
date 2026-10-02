@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using DiplomacyIntrigue.Diplomacy;
+using DiplomacyIntrigue.Espionage;
 using DiplomacyIntrigue.Models;
 using TaleWorlds.CampaignSystem;
 
@@ -36,6 +37,7 @@ namespace DiplomacyIntrigue.Core
         private const string WarPrefix = "[WAR]";
         private const string RunPrefix = "[RUN]";
         private const string ConfigPrefix = "[CONFIG]";
+        private const string NetworkPrefix = "[NETWORK]";
 
         /// <summary>How a war ended, from the point of view of whose code ended it.</summary>
         public enum PeaceCause
@@ -322,9 +324,17 @@ namespace DiplomacyIntrigue.Core
                     Log.Info("Telemetry", KingdomLine(state, kingdom));
                 }
 
+                // One line per spy network (story 3.12 §5): who holds a handler at year's end, how
+                // strong AI networks grow, whether the handler is at the post. Written even with the
+                // pillar off, as an empty set - the list is simply empty then.
+                for (var i = 0; i < state.SpyNetworks.Count; i++)
+                {
+                    var line = NetworkLine(state, state.SpyNetworks[i]);
+                    if (line != null) Log.Info("Telemetry", line);
+                }
+
                 var links = new List<Treaty>();
                 Hegemony.CollectLinks(state, links);
-                for (var i = 0; i < links.Count; i++) Log.Info("Telemetry", LinkLine(state, links[i]));
 
                 foreach (var kingdom in Kingdom.All)
                 {
@@ -431,6 +441,49 @@ namespace DiplomacyIntrigue.Core
             Pair(line, "treasurerTrade", SkillOfActor(k, Models.Portfolio.Treasurer));
             Pair(line, "spymasterRoguery", SkillOfActor(k, Models.Portfolio.Spymaster));
             Pair(line, "watchScouting", SkillOfActor(k, Models.Portfolio.Watch));
+            // Espionage (story 3.12 §5). counterIntel is the realm's defence as every operation
+            // against it reads it; counterBudget what it ordered and counterSpent what it paid last
+            // week. spyHandlers / spyFree are the ruling house's members already on a network and
+            // those free to go, by SpyNetworks.IsFreeToGo - the denominator of "half the ruling
+            // houses with a free member hold a handler".
+            var counter = CounterIntelligence.Explain(state, k);
+            Pair(line, "counterIntel", counter.Total);
+            Pair(line, "counterBudget", counter.WeeklyBudget);
+            Pair(line, "counterSpent", counter.WeeklySpent);
+            int handlers = 0, free = 0;
+            if (k.RulingClan != null)
+            {
+                foreach (var hero in k.RulingClan.Heroes)
+                {
+                    if (SpyNetworks.HandledBy(state, hero) != null) handlers++;
+                    else if (SpyNetworks.IsFreeToGo(hero, k.RulingClan, out _)) free++;
+                }
+            }
+            Pair(line, "spyHandlers", handlers);
+            Pair(line, "spyFree", free);
+            Pair(line, "rulerIsPlayer", k.Leader != null && k.Leader == Hero.MainHero);
+            return line.ToString();
+        }
+
+        private static string NetworkLine(ModState state, SpyNetwork n)
+        {
+            if (n == null || n.Owner == null || n.Target == null) return null;
+            var terms = SpyNetworks.Explain(state, n);
+            var ownerRealm = n.Owner.Kingdom;
+            var line = new StringBuilder(NetworkPrefix);
+            AppendWhen(line);
+            Pair(line, "owner", n.Owner);
+            Pair(line, "ownerKingdom", ownerRealm);
+            Pair(line, "rules", ownerRealm != null && ownerRealm.RulingClan == n.Owner);
+            Pair(line, "player", n.Owner == Clan.PlayerClan);
+            Pair(line, "target", n.Target);
+            Pair(line, "handler", n.Handler);
+            Pair(line, "atPost", n.Handler != null && SpyNetworks.InTargetRealm(n.Handler, n.Target));
+            Pair(line, "strength", n.Strength);
+            Pair(line, "ceiling", terms.Ceiling);
+            Pair(line, "budget", n.WeeklyBudget);
+            Pair(line, "lastWeekChange", n.LastWeekChange);
+            Pair(line, "idle", terms.Idle != null);
             return line.ToString();
         }
 

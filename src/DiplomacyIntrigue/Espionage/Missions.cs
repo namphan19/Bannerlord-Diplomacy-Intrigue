@@ -272,6 +272,16 @@ namespace DiplomacyIntrigue.Espionage
             state.SpyMissions.Add(mission);
 
             var odds = OddsOf(state, network, type);
+            // Story 3.12 §5: operations per year by type, the odds they were launched at (the mean
+            // exposure against each realm is read from here), and how often the mark was the player's
+            // house. The launch odds are also what 3.11 R2 leaves to the log for a reader to compare.
+            Telemetry.Event("mission_launched", "owner", owner, "ownerKingdom", owner.Kingdom,
+                "ai", owner != Clan.PlayerClan, "target", target, "type", type,
+                "markHero", mission.TargetHero, "markSettlement", mission.TargetSettlement?.Name?.ToString(),
+                "markPlayerHouse", mission.TargetHero != null && mission.TargetHero.Clan == Clan.PlayerClan,
+                "markPlayer", mission.TargetHero != null && mission.TargetHero == Hero.MainHero,
+                "success", odds.Success, "exposureOnFailure", odds.ExposureOnFailure, "exposure", odds.Exposure,
+                "network", odds.Network, "counterIntel", odds.CounterIntelligence, "gold", spec.Gold, "days", spec.Days);
             Log.Info("Espionage", owner.Name + " launched " + mission + ": " + spec.Gold + " paid, resolves in "
                                   + spec.Days + " days, success " + Pct(odds.Success) + ", exposure if it fails "
                                   + Pct(odds.ExposureOnFailure) + ".");
@@ -348,6 +358,7 @@ namespace DiplomacyIntrigue.Espionage
             if (network == null || network.Handler == null || network.Handler != mission.Handler)
             {
                 mission.Resolve(MissionOutcome.Failure);
+                RecordResolved(mission, MissionOutcome.Failure, "no-handler", null);
                 Log.Info("Espionage", "Failed for want of a handler: " + mission + ".");
                 TellOwner(mission, DescribeAtStart(mission.Type) + " in " + mission.Target.Name + " came to nothing: nobody was left to run it.");
                 return MissionOutcome.Failure;
@@ -361,6 +372,7 @@ namespace DiplomacyIntrigue.Espionage
             if (spec != null && spec.NeedsHouseHead && !IsHouseHead(mission.TargetHero, mission.Target, out var gone))
             {
                 mission.Resolve(MissionOutcome.Failure);
+                RecordResolved(mission, MissionOutcome.Failure, "no-mark", null);
                 Log.Info("Espionage", "Failed for want of a mark: " + mission + " - " + gone);
                 TellOwner(mission, DescribeAtStart(mission.Type) + " in " + mission.Target.Name + " came to nothing: " + gone);
                 return MissionOutcome.Failure;
@@ -407,11 +419,13 @@ namespace DiplomacyIntrigue.Espionage
             // the operation and could turn an offer into an exposure (design 03 §10).
             if (outcome == MissionOutcome.Success && ReachesThePlayer(mission))
             {
+                RecordResolved(mission, MissionOutcome.Pending, forced.HasValue ? "forced-offer" : "offer", odds);
                 mission.MarkOfferOwed();
                 if (!_askingPlayer) OfferToPlayer(state, mission, note);
                 return MissionOutcome.Pending;
             }
 
+            RecordResolved(mission, outcome, forced.HasValue ? "forced" : "rolled", odds);
             Conclude(state, mission, network, outcome, note, rolledAt);
             return outcome;
         }
@@ -443,6 +457,23 @@ namespace DiplomacyIntrigue.Espionage
                     Exposure.Apply(state, mission, network, rolledAt);
                     break;
             }
+        }
+
+        /// <summary>
+        /// One <c>mission_resolved</c> record per ending (story 3.12 §5): the outcome and how it was
+        /// reached - <c>rolled</c>, <c>forced</c> by a test lever, an <c>offer</c> put to the player
+        /// (outcome <c>pending</c>, answered later as <c>player-accepted</c> / <c>player-refused</c>, or
+        /// <c>lapsed</c>), or a failure before any roll for want of a handler or a mark. A balance run
+        /// counts only <c>rolled</c> as the AI's own luck; the rest are told apart so they cannot be.
+        /// </summary>
+        private static void RecordResolved(SpyMission mission, MissionOutcome outcome, string how, MissionOdds odds)
+        {
+            Telemetry.Event("mission_resolved", "owner", mission.Owner, "ownerKingdom", mission.Owner?.Kingdom,
+                "ai", mission.Owner != Clan.PlayerClan, "target", mission.Target, "type", mission.Type,
+                "outcome", outcome.ToString().ToLowerInvariant(), "how", how,
+                "markPlayerHouse", mission.TargetHero != null && mission.TargetHero.Clan == Clan.PlayerClan,
+                "markPlayer", mission.TargetHero != null && mission.TargetHero == Hero.MainHero,
+                "success", odds?.Success, "exposureOnFailure", odds?.ExposureOnFailure);
         }
 
         // ----- An offer the player is asked about ----------------------------------
@@ -570,6 +601,7 @@ namespace DiplomacyIntrigue.Espionage
                     || !IsHouseHead(mission.TargetHero, mission.Target, out _))
                 {
                     mission.Resolve(MissionOutcome.Failure);
+                    RecordResolved(mission, MissionOutcome.Failure, "lapsed", null);
                     Log.Info("Espionage", "The offer made to the player lapsed before the answer: " + mission + ".");
                     if (accepted) Log.Notify("The agents are gone - the offer no longer stands.", Colors.Red);
                     return;
@@ -586,6 +618,8 @@ namespace DiplomacyIntrigue.Espionage
                         : "The player turned away " + mission.Owner.Name + "'s agents.");
                     if (forLetters) Log.Notify("You dismiss the letters. Nothing comes of them.", Colors.Yellow);
                 }
+                RecordResolved(mission, accepted ? MissionOutcome.Success : MissionOutcome.Failure,
+                               accepted ? "player-accepted" : "player-refused", null);
                 Conclude(state, mission, network, accepted ? MissionOutcome.Success : MissionOutcome.Failure,
                          note + (accepted ? ", taken by the player" : ", refused by the player"));
             }

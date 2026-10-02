@@ -19,6 +19,9 @@ Records it reads (all `[KIND] key=value`, one per line):
   tribute_accepted / tribute_refused           ai_war_declared's fromOwnCourt / fromTargetWeakness (R-1)
     amends, office_appointed / _dismissed / _vacated, tribute_level (court verbs, 2.9)
     handler_lost (story 3.8 R8, one per lost or re-stationed handler, cause from a closed set)
+    mission_launched / mission_resolved / espionage_exposed (story 3.12 Part B, 2026-10-02)
+  [NETWORK] weekly, one per spy network; [KINGDOM] counterIntel= counterBudget= counterSpent=
+    spyHandlers= spyFree= rulerIsPlayer= (story 3.12)
 
 and the new fields [WAR] battles= aggressorPrisoners= defenderPrisoners=, [WAR-ENDED] finalBattles=,
 [LINK] legalNeglect=.
@@ -62,6 +65,8 @@ def kv(body):
 records = []     # (day, kind, dict); kind PLAIN is a prose line, {"source", "text"}
 configs = []     # (file, {name: value})
 runs = []        # [RUN] dicts
+log_errors = []  # (file, line) of every [ERROR] line: story 3.12's bar is 0
+log_warns = 0
 
 # Prose lines worth keeping (see the docstring). An (AI) line is kept only when it is a peace,
 # the one kind of AI prose read here. A PLAIN record takes the day of the telemetry record before
@@ -74,7 +79,11 @@ for name in sys.argv[1:]:
     file_records = []
     file_config = {}
     for line in lines:
-        m = re.search(r"\[(SNAPSHOT|KINGDOM|LINK|WAR|WAR-ENDED|EVENT|RUN|CONFIG)\]", line)
+        if "[ERROR]" in line:
+            log_errors.append((name, line.strip()))
+        elif "[WARN]" in line:
+            log_warns += 1
+        m = re.search(r"\[(SNAPSHOT|KINGDOM|LINK|WAR|WAR-ENDED|EVENT|RUN|CONFIG|NETWORK)\]", line)
         if not m:
             p = PLAIN.search(line)
             if p and (p.group(1) != "AI" or " at exhaustion " in p.group(2)):
@@ -1346,6 +1355,146 @@ else:
     else:
         print("  forced-party: 0 - the residual path (story 3.8 R5) cost no handler in this log")
 
+# ---------------- espionage, story 3.12 Part B ---------------------------------
+# Every row of story 3.12 §5 that a log can answer. Years are counted from the first day of the run
+# (year 1, year 2, ...), because the bars are stated that way ("median at year 2", "from year 2").
+# Only a `rolled` resolution is the AI's own luck: forced rolls, offers put to the player and
+# failures before any roll are counted apart (Missions.RecordResolved).
+section("ESPIONAGE  (story 3.12 Part B: [NETWORK] weekly, mission_launched / _resolved, espionage_exposed)")
+NET_ROWS = [(day, d) for day, k, d in records if k == "NETWORK"]
+LAUNCHED = kinds("mission_launched")
+RESOLVED = kinds("mission_resolved")
+EXPOSED = kinds("espionage_exposed")
+SPY_KROWS = [(day, d) for day, d in kingdom_rows if "spyFree" in d]
+AI_TYPES = ["SabotageGarrison", "SpreadDissent", "BribeLord", "ForgeLetters", "StealTreasury", "Assassinate"]
+if not (NET_ROWS or LAUNCHED or RESOLVED or EXPOSED or SPY_KROWS):
+    none_here("no espionage telemetry: this log predates story 3.12 (2026-10-02)")
+else:
+    origin_day = min(all_days)
+
+    def run_year(day):
+        return (day - origin_day) // DAYS_PER_YEAR + 1
+
+    years = sorted({run_year(d) for d in all_days})
+
+    # 1-2. Handlers held, and AI network strength, at each year's last weekly record.
+    print("  At each year's last week (AI ruling houses; the player's realm left out):")
+    year2_median = None
+    print(f"    {'year':<5}{'eligible':>9}{'holding':>9}{'share':>8}  bar   {'nets':>5}{'median str':>12}"
+          f"{'at post':>9}{'CI budgets':>11}{'mean CI':>9}")
+    for y in years:
+        kdays = [day for day, _ in SPY_KROWS if day is not None and run_year(day) == y]
+        if not kdays:
+            continue
+        last = max(kdays)
+        krows = [d for day, d in SPY_KROWS if day == last and d.get("rulerIsPlayer") != "true"]
+        eligible = [d for d in krows if f(d.get("spyHandlers")) > 0 or f(d.get("spyFree")) > 0]
+        holding = [d for d in eligible if f(d.get("spyHandlers")) > 0]
+        nets = [d for day, d in NET_ROWS if day == last and d.get("rules") == "true" and d.get("player") != "true"]
+        strengths = [f(d.get("strength")) for d in nets]
+        with_handler = [d for d in nets if has(d, "handler")]
+        at_post = sum(1 for d in with_handler if d.get("atPost") == "true")
+        budgets = sum(1 for d in krows if f(d.get("counterBudget")) > 0)
+        mean_ci = statistics.mean(f(d.get("counterIntel")) for d in krows) if krows else 0
+        bar = ("PASS" if len(holding) * 2 >= len(eligible) else "FAIL") if eligible else " -  "
+        med = statistics.median(strengths) if strengths else 0
+        med_txt = f"{med:.1f}"
+        if y == 2:
+            year2_median = med if strengths else None
+        print(f"    {y:<5}{len(eligible):>9}{len(holding):>9}{pct(len(holding), len(eligible)):>8}  {bar}  {len(nets):>5}"
+              f"{med_txt:>12}{(str(at_post) + '/' + str(len(with_handler))):>9}{budgets:>11}{mean_ci:>9.1f}")
+
+    print("    bar: median AI network strength at year 2 above 30 (the SpreadDissent floor) -> "
+          + ("not reached (the run is shorter than two years)" if 2 not in years
+             else "no AI network at year 2: FAIL" if year2_median is None
+             else f"{year2_median:.1f}: " + ("PASS" if year2_median > 30 else "FAIL")))
+
+    # 3. Operations launched per year, by type, and how the AI's own rolls came out.
+    ai_launched = [(day, d) for day, d in LAUNCHED if d.get("ai") == "true"]
+    print()
+    print(f"  AI operations launched: {len(ai_launched)}   (player: {len(LAUNCHED) - len(ai_launched)})")
+    if ai_launched:
+        by_year = collections.defaultdict(collections.Counter)
+        for day, d in ai_launched:
+            by_year[run_year(day)][d.get("type", "?")] += 1
+        for y in years:
+            row = by_year.get(y)
+            print(f"    year {y}: " + (", ".join(f"{t}={n}" for t, n in row.most_common()) if row else "none")
+                  + ("   <- bar: > 0 from year 2" if y >= 2 and not row else ""))
+        seen = {d.get("type") for _, d in ai_launched}
+        missing = [t for t in AI_TYPES if t not in seen]
+        print("    types never launched by the AI: " + (", ".join(missing) if missing else "none - every type seen"))
+    rolled = [(day, d) for day, d in RESOLVED if d.get("ai") == "true" and d.get("how") == "rolled"]
+    if rolled:
+        out = collections.Counter(d.get("outcome", "?") for _, d in rolled)
+        print(f"    AI rolls: {len(rolled)}  " + ", ".join(f"{o}={n} ({pct(n, len(rolled))})" for o, n in out.most_common()))
+        by_type = collections.defaultdict(collections.Counter)
+        for _, d in rolled:
+            by_type[d.get("type", "?")][d.get("outcome", "?")] += 1
+        for t, c in sorted(by_type.items()):
+            print(f"      {t:<18} " + ", ".join(f"{o}={n}" for o, n in c.most_common()))
+    other = collections.Counter(d.get("how", "?") for _, d in RESOLVED if d.get("how") != "rolled")
+    if other:
+        print("    not the AI's own roll (counted apart): " + ", ".join(f"{h}={n}" for h, n in other.most_common()))
+
+    # 4-5. Exposures, and whether the victim went to war over them inside the claim's life.
+    print()
+    print(f"  exposures: {len(EXPOSED)}")
+    if EXPOSED:
+        per_year = collections.Counter(run_year(day) for day, _ in EXPOSED)
+        print("    per year: " + ", ".join(f"year {y}={per_year.get(y, 0)}" for y in years))
+        opened = kinds("war_opened")
+        led, cited = 0, 0
+        for day, d in EXPOSED:
+            if d.get("claim") != "true":
+                continue
+            life = int(f(d.get("claimDays"), 168))
+            wars_after = [w for wd, w in opened if wd is not None and day <= wd <= day + life
+                          and w.get("aggressor") == d.get("victim") and w.get("defender") == d.get("offender")]
+            if wars_after:
+                led += 1
+                if any(w.get("casusBelli") == "EspionageExposed" for w in wars_after):
+                    cited += 1
+            print(f"    {day_to_date(day)}: {d.get('owner')} ({d.get('offender')}) caught {d.get('type')} in {d.get('victim')}"
+                  f"{', handler captured' if d.get('captured') == 'true' else ''}"
+                  f" -> {'war within the claim' if wars_after else 'no war within the claim'}")
+        claimed = sum(1 for _, d in EXPOSED if d.get("claim") == "true")
+        print(f"    led to a war by the victim within the claim's life: {led} of {claimed} ({pct(led, claimed)}),"
+              f" citing EspionageExposed: {cited}")
+    cb_wars = [d for _, d in kinds("war_opened") if d.get("casusBelli") == "EspionageExposed"]
+    print(f"  wars opened citing EspionageExposed: {len(cb_wars)}  (no bar: zero is a finding for the lead)")
+
+    # 6. The player's house as a mark (story 3.10).
+    marks = [d for _, d in ai_launched if d.get("markPlayerHouse") == "true"]
+    print()
+    print(f"  the player's house as the AI's mark: {len(marks)}"
+          + (" (" + ", ".join(f"{t}={n}" for t, n in collections.Counter(d.get('type') for d in marks).most_common()) + ")"
+             if marks else "")
+          + f"; the player hero: {sum(1 for d in marks if d.get('markPlayer') == 'true')}")
+
+    # 7. Counter-intelligence against what the AI's operations met.
+    if ai_launched:
+        print("  exposure odds the AI's operations were launched at (overall / on failure), against 3.3's hand"
+              " figures of 6.4% (ScoutArmies) and 11.7% (Assassinate) at network 80, skill 62, 15,000 a week:")
+        by_type = collections.defaultdict(list)
+        for _, d in ai_launched:
+            by_type[d.get("type", "?")].append((f(d.get("exposure")), f(d.get("exposureOnFailure")), f(d.get("counterIntel"))))
+        for t, xs in sorted(by_type.items()):
+            print(f"    {t:<18} n={len(xs):3d}  overall {100 * statistics.mean(x[0] for x in xs):5.1f}%"
+                  f"  on failure {100 * statistics.mean(x[1] for x in xs):5.1f}%"
+                  f"  target's counter-intelligence {statistics.mean(x[2] for x in xs):5.1f}")
+
+    # 3.8's bar, read from the handler section's records.
+    lost = collections.Counter(d.get("cause") for _, d in kinds("handler_lost"))
+    print()
+    print(f"  story 3.8 bar - party={lost.get('party', 0)}, governor={lost.get('governor', 0)} (bar: 0 each);"
+          f" forced-party={lost.get('forced-party', 0)} (above 3 a year goes to the lead)")
+
+section("LOG HEALTH  (story 3.12 bar: 0 ERROR)")
+print(f"  [ERROR] lines: {len(log_errors)}   [WARN] lines: {log_warns}")
+for name, line in log_errors[:10]:
+    print(f"    {pathlib.Path(name).name}: {line[:180]}")
+
 # ---------------- what no log line records -----------------------------------
 section("NOT IN TELEMETRY  (what this build cannot be measured on from a log)")
 for line in [
@@ -1359,9 +1508,8 @@ for line in [
     "Not in the log in any parseable form:",
     "  legitimacy and its changes, grievances raised (amends are recorded, grievances are not),",
     "  loyalty, bloc shares, pretenders, royal successions (Succession prose only);",
-    "  espionage apart from handler posts - network strength, counter-intelligence, missions and",
-    "  their odds are live figures in diplomacy.networks, not in the log (story 3.8 records only",
-    "  the loss of a post, so a run can count losses but cannot say what they cost);",
+    "  the AI's espionage plan on a week it launched nothing (only diplomacy.ai_espionage shows why),",
+    "  and a bribe's binding over its two years (diplomacy.bribes, live);",
     "  a war a court of Doves talked a crown out of (nothing is written when no war is declared);",
     "  an internal war's exhaustion over time (prose on each battle, no weekly record).",
 ]:
