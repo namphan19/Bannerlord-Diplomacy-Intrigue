@@ -815,8 +815,13 @@ namespace DiplomacyIntrigue.Espionage
         /// </summary>
         private static void TellOwner(SpyMission mission, string text, string rolledAt = null)
         {
-            if (mission.Owner == Clan.PlayerClan)
-                Log.Notify(string.IsNullOrEmpty(rolledAt) ? text : text + " " + rolledAt, Colors.Cyan);
+            if (mission.Owner != Clan.PlayerClan) return;
+            if (string.IsNullOrEmpty(rolledAt)) { Log.Notify(text, Colors.Cyan); return; }
+            // Some texts end on a report with no full stop of its own ("... no army in the field"), and
+            // the roll's sentence then ran straight on from it (run 11 D-2).
+            var trimmed = text.TrimEnd();
+            var ends = trimmed.Length > 0 && ".!?".IndexOf(trimmed[trimmed.Length - 1]) >= 0;
+            Log.Notify(trimmed + (ends ? " " : ". ") + rolledAt, Colors.Cyan);
         }
 
         /// <summary>

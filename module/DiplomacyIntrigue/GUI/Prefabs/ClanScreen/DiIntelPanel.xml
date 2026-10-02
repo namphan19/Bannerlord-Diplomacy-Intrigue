@@ -386,12 +386,16 @@
                     <ListPanel DataSource="{Operations}" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
                         StackLayout.LayoutMethod="VerticalTopToBottom">
                       <ItemTemplate>
-                        <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="58" MarginBottom="4">
+                        <!-- Run 11 D-1: the text used a fixed 300 in a column about 440 wide, under a 160 button
+                             anchored right, so the button covered the end of the line. The text now stretches and
+                             leaves the button's width (160 + 10 margin + a 12 gap) clear, and the row is tall enough
+                             for the line to wrap to three. -->
+                        <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="76" MarginBottom="4">
                           <Children>
                             <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
                                 Sprite="BlankWhiteSquare_9" Color="#201A13CC" />
-                            <ListPanel WidthSizePolicy="Fixed" SuggestedWidth="300" HeightSizePolicy="CoverChildren"
-                                MarginLeft="12" VerticalAlignment="Center" StackLayout.LayoutMethod="VerticalTopToBottom">
+                            <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                MarginLeft="12" MarginRight="182" VerticalAlignment="Center" StackLayout.LayoutMethod="VerticalTopToBottom">
                               <Children>
                                 <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
                                     Brush="DiRealm.Value" Text="@Title" />
