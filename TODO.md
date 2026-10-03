@@ -85,7 +85,8 @@ re-rolled after a reload (now saved, `SpyMission` 12); stale figures in six desi
       `townsFirst` flag. Out of this pass by the lead's call.
 - [ ] **Localization (Phase 4)** - about 1,300 player-facing literals, none behind a `TextObject` key.
       **Decided 2026-10-03:** its own story, [4.1](docs/stories/4.1-localization.md), 10 sub-tasks,
-      starting with the ST-1 spike. Until it ships the pages say "English only" (the Nexus page's
+      starting with the ST-1 spike. Vietnamese is separate, [story 4.2](docs/stories/4.2-vietnamese.md),
+      blocked on 4.1. Until it ships the pages say "English only" (the Nexus page's
       "ready for translation" was untrue and is gone).
 
 ## Pending work
