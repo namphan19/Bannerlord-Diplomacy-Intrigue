@@ -477,7 +477,11 @@ it meets the statecraft terms. Acts built before it are not retrofitted without 
   alternative, the comment says which alternative and why it lost.
 - Constants live in one file per pillar (`Diplomacy/DiplomacyConstants.cs`) so a balance pass
   edits one file. An un-tuned constant says so in its own doc comment.
-- All player-facing text is English. The design docs are English.
+- Player-facing text is written in English as the source. Story 4.1 puts it behind
+  `{=DI_<area>_<slug>}English` keys so the mod follows the game's language setting; **until its
+  ST-6 check exists, new text is still a plain literal, and from the day it exists a new
+  player-facing string without a key fails the build.** Logs, telemetry and `diplomacy.*` output stay
+  English and are never keyed. The design docs are English.
 - **Reply to the user in Vietnamese.** The lead writes in Vietnamese; the codebase is not.
 - Any Vietnamese meant to be read (the Vietnamese handbook, player text, write-ups for the lead)
   goes through the `vietnamese-writing` skill (`.claude/skills/vietnamese-writing/`), with its
@@ -506,6 +510,7 @@ This project has a standing expectation, set by the lead and by several correcti
 | [docs/STATUS-history.md](docs/STATUS-history.md) | every earlier handoff, checkpoint and verification table, verbatim |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | layering, the runtime facts in full, save rules, how the game is hooked |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | all four phases, what is done, what is verified, acceptance criteria |
+| [docs/stories/](docs/stories/) | one file per story: scope, rules, acceptance criteria, sub-tasks (e.g. [4.1 localization](docs/stories/4.1-localization.md)) |
 | [docs/design/01-diplomacy.md](docs/design/01-diplomacy.md) | Phase 1 spec, formulas, and the lead's decisions |
 | [docs/design/02-intrigue.md](docs/design/02-intrigue.md) | Phase 2 spec — grievances, loyalty, blocs, legitimacy, civil war |
 | [docs/design/03-espionage.md](docs/design/03-espionage.md) | Phase 3 spec — networks, missions, exposure as diplomacy |

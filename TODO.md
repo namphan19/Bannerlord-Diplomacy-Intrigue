@@ -84,10 +84,9 @@ re-rolled after a reload (now saved, `SpyMission` 12); stale figures in six desi
 - [ ] **The Kingdom-UI loose ends** - the Realm tab widening the tab strip, `ConcessionLadder`'s
       `townsFirst` flag. Out of this pass by the lead's call.
 - [ ] **Localization (Phase 4)** - about 1,300 player-facing literals, none behind a `TextObject` key.
-      Recommended: its own story after 1.0's balance, not inside a release; until then the pages say
-      "English only" (the Nexus page's "ready for translation" was untrue and is gone).
-      Planned 2026-10-03 as [story 4.1](docs/stories/4.1-localization.md) (10 sub-tasks, four
-      decisions for the lead in its §7); not scheduled.
+      **Decided 2026-10-03:** its own story, [4.1](docs/stories/4.1-localization.md), 10 sub-tasks,
+      starting with the ST-1 spike. Until it ships the pages say "English only" (the Nexus page's
+      "ready for translation" was untrue and is gone).
 
 ## Pending work
 

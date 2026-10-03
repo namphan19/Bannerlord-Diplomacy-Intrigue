@@ -443,7 +443,7 @@ saved over it (CLAUDE.md §2).
 |---|---|
 | Three pillars | Diplomacy, court intrigue, espionage. **Not** economy/trade |
 | Standalone | No dependency on the BUTR Diplomacy mod. Mutually incompatible with it by design |
-| English UI only | Localization keys for future translation, English shipped |
+| English UI only, for now | Story 4.1 (2026-10-03): the mod follows the game's language setting; English and Vietnamese ship first. Until it lands, English only |
 | Minor factions out of scope | Treaties, claims and exhaustion are kingdom-only |
 | AI plays by the same rules | Enforced in code — no "is this the player" argument anywhere |
 | Enemy exhaustion shown as a band | Five bands whose edges are the behavioural thresholds. Phase 3 `ReadCourt` buys the exact figure |
