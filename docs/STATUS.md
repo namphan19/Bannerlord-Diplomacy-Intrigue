@@ -7,7 +7,7 @@ table, verbatim. When a section here stops being current, move it there: by 2026
 had grown to 1,266 lines, most of it history, and the "What to do next" in its middle still called
 Statecraft "not yet started" on the day it was built.
 
-Module version 0.2.0 (released 2026-09-28; 0.1.0 went to Nexus on 2026-09-26 from `4adba72`). Save schema **v4**, definer base id **2749100**. The save ids in use and
+Module version 0.3.0 (uploaded to the Steam Workshop 2026-10-03; Nexus upload by hand still owed, TODO). 0.2.0 was released 2026-09-28; 0.1.0 went to Nexus on 2026-09-26 from `4adba72`. Save schema **v4**, definer base id **2749100**. The save ids in use and
 the next free ones are kept in CLAUDE.md §3 and nowhere else; `scripts/check-save-ids.ps1`
 checks the declarations before every build and deploy.
 Last completed measurement: **balance run 08** (statecraft on/off) — [balance/run-08.md](balance/run-08.md).
@@ -30,6 +30,12 @@ for any length of time**:
 **Run 12 (2026-10-03) measured it** - [balance/run-12.md](balance/run-12.md), 12.1 years, 0 errors, local build: AI operations 27 -> 131, BribeLord and SabotageGarrison now launched, network median 3.5 at year 2 (bar 30: still fails) and 40-99 from year 3, `forced-party` 3.0 a year -> 0, one `party` loss on a path the patch does not cover, StealTreasury 76% of operations. **The legitimacy changes overshot:** 14 civil wars in 12 years, 12 stalemates, 1 dissolved, none won, the same claimant starting war after war. **The lead took all three remedies on 2026-10-03** (a stalemate retires the claim; 252-day cooldown after one; the claimant barred 84 days) - built, and seen in a staged case on `di_phase1_full`, **not yet over a long run**. Still the lead's: whether the year-2 network bar moves to year 3, and whether StealTreasury at 76% of AI operations is wanted (run-12.md §4).
 
 **Next:** one more long run (12 years) to see the civil-war count fall from 14 to a few, with the analyser and the log counts of `claimant_arose` and "takes up arms".
+**Phase 4 (2026-10-03):** the incompatibility warning, release defaults (telemetry off), the tick-budget
+instrumentation and the Workshop update are built and shipped in 0.3.0, **not run in game** (TODO).
+**Localization is planned and ready for a dev:** [story 4.1](stories/4.1-localization.md), ten
+sub-tasks, decisions made. Start with ST-1, the spike on whether prefab text can take keys; the answer
+sizes the rest. Nothing of it is built. Until it ships the mod is English only.
+
 Also owed: a report of what looks wrong on the Members and Parties tabs (the lead raised it on
 2026-10-02; the Clan screen's code and a live look found nothing, and nothing in Phase 3 touches them).
 
