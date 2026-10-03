@@ -27,7 +27,7 @@
 
   <PropertyGroup>
     <ModuleName>DiplomacyIntrigue</ModuleName>
-    <ModuleVersion>0.2.0</ModuleVersion>
+    <ModuleVersion>0.3.0</ModuleVersion>
     <Version>$(ModuleVersion)</Version>
     <Authors>namphan19</Authors>
   </PropertyGroup>

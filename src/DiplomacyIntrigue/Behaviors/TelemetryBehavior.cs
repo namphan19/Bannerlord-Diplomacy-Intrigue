@@ -28,7 +28,7 @@ namespace DiplomacyIntrigue.Behaviors
             CampaignEvents.OnClanChangedKingdomEvent.AddNonSerializedListener(this, OnClanChangedKingdom);
             CampaignEvents.RulingClanChanged.AddNonSerializedListener(this, OnRulingClanChanged);
             CampaignEvents.BeforeHeroKilledEvent.AddNonSerializedListener(this, OnBeforeHeroKilled);
-            CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
+            CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, TickBudget.Wrap("Telemetry.OnDailyTick", OnDailyTick));
         }
 
         public override void SyncData(IDataStore dataStore) { }

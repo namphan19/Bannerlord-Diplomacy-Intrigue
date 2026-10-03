@@ -21,8 +21,8 @@ namespace DiplomacyIntrigue.Behaviors
     {
         public override void RegisterEvents()
         {
-            CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
-            CampaignEvents.MapEventEnded.AddNonSerializedListener(this, OnMapEventEnded);
+            CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, TickBudget.Wrap("WarExhaustion.OnDailyTick", OnDailyTick));
+            CampaignEvents.MapEventEnded.AddNonSerializedListener(this, TickBudget.Wrap<MapEvent>("WarExhaustion.OnMapEventEnded", OnMapEventEnded));
             CampaignEvents.OnSettlementOwnerChangedEvent.AddNonSerializedListener(this, OnSettlementOwnerChanged);
             CampaignEvents.VillageLooted.AddNonSerializedListener(this, OnVillageLooted);
         }

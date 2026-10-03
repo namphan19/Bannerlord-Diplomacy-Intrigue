@@ -22,7 +22,7 @@ namespace DiplomacyIntrigue.Behaviors
 
         public override void RegisterEvents()
         {
-            CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
+            CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, TickBudget.Wrap("AiDiplomacy.OnDailyTick", OnDailyTick));
         }
 
         public override void SyncData(IDataStore dataStore) { }

@@ -42,7 +42,7 @@ namespace DiplomacyIntrigue.Behaviors
             CampaignEvents.WarDeclared.AddNonSerializedListener(this, OnWarDeclared);
             CampaignEvents.MakePeace.AddNonSerializedListener(this, OnPeaceMade);
             CampaignEvents.KingdomDestroyedEvent.AddNonSerializedListener(this, OnKingdomDestroyed);
-            CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
+            CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, TickBudget.Wrap("Core.OnDailyTick", OnDailyTick));
         }
 
         /// <summary>

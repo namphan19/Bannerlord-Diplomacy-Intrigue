@@ -2,7 +2,7 @@
 <Module>
   <Name value="Diplomacy &amp; Intrigue"/>
   <Id value="DiplomacyIntrigue"/>
-  <Version value="v0.2.0"/>
+  <Version value="v0.3.0"/>
   <DefaultModule value="false"/>
   <ModuleCategory value="Singleplayer"/>
   <ModuleType value="Community"/>
@@ -18,6 +18,15 @@
     <DependedModule Id="Bannerlord.UIExtenderEx"    DependentVersion="v2.13.2" Optional="false"/>
     <DependedModule Id="Bannerlord.MBOptionScreen"  DependentVersion="v5.11.4" Optional="false"/>
   </DependedModules>
+
+  <!-- Read only by BUTR's launcher and BLSE, which then refuse to start the pair together; the
+       official launcher ignores this block, so SubModule.WarnAboutIncompatibleModules covers it at
+       runtime too. Bannerlord.Diplomacy is the id in DiplomacyTeam/Bannerlord.Diplomacy's csproj
+       (checked 2026-10-03). Only the incompatibility is declared here: the load order of the
+       modules above stays with DependedModules, which BUTR's parser keeps as a separate list. -->
+  <DependedModuleMetadatas>
+    <DependedModuleMetadata id="Bannerlord.Diplomacy" incompatible="true"/>
+  </DependedModuleMetadatas>
 
   <SubModules>
     <SubModule>

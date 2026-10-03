@@ -22,7 +22,7 @@ namespace DiplomacyIntrigue.Behaviors
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
             CampaignEvents.OnSettlementOwnerChangedEvent.AddNonSerializedListener(this, OnSettlementOwnerChanged);
             CampaignEvents.VillageLooted.AddNonSerializedListener(this, OnVillageLooted);
-            CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
+            CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, TickBudget.Wrap("Claims.OnDailyTick", OnDailyTick));
         }
 
         // All data lives in ModState, owned by CoreBehavior.

@@ -24,7 +24,7 @@ namespace DiplomacyIntrigue
     public sealed class SubModule : MBSubModuleBase
     {
         public const string ModuleId = "DiplomacyIntrigue";
-        public const string ModuleVersion = "0.2.0";
+        public const string ModuleVersion = "0.3.0";
         public const string HarmonyId = "com.namphan19.diplomacyintrigue";
 
         public static SubModule Instance { get; private set; }
@@ -168,6 +168,40 @@ namespace DiplomacyIntrigue
                 Log.Notify("Diplomacy & Intrigue v" + ModuleVersion + " loaded. Press Ctrl+D on the map.", Colors.Cyan);
             else
                 Log.Notify("Diplomacy & Intrigue failed to load - see Documents/Mount and Blade II Bannerlord/DiplomacyIntrigue/Logs.", Colors.Red);
+
+            WarnAboutIncompatibleModules();
+        }
+
+        /// <summary>
+        /// Modules that take over the same diplomacy this one does. Both would override the same
+        /// GameModels and answer the same war and peace decisions, and whichever registers last wins
+        /// each one separately, so the result is neither mod's rules.
+        /// </summary>
+        private static readonly string[] IncompatibleModuleIds = { "Bannerlord.Diplomacy" };
+
+        /// <summary>
+        /// Warns, and does not disable anything. SubModule.xml declares the same incompatibility,
+        /// but only BUTR's launcher and BLSE read that; the official launcher starts both mods
+        /// without a word. Refusing to run was the alternative and lost: a player who loads a save
+        /// with both still needs our behaviors registered to read our own save data back, and the
+        /// roadmap's call (Phase 4, Compatibility) is to detect and warn.
+        /// </summary>
+        private static void WarnAboutIncompatibleModules()
+        {
+            try
+            {
+                foreach (var m in TaleWorlds.ModuleManager.ModuleHelper.GetActiveModules())
+                {
+                    if (Array.IndexOf(IncompatibleModuleIds, m.Id) < 0) continue;
+                    Log.Warn("SubModule", "Incompatible module active: " + m.Id + ".");
+                    Log.Notify("Diplomacy & Intrigue does not work alongside " + m.Name
+                               + ". Both replace the game's diplomacy; disable one of them.", Colors.Red);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error("SubModule", "Could not check for incompatible modules.", ex);
+            }
         }
 
         protected override void OnGameStart(Game game, IGameStarter gameStarterObject)

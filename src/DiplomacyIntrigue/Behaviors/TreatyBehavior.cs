@@ -18,8 +18,8 @@ namespace DiplomacyIntrigue.Behaviors
     {
         public override void RegisterEvents()
         {
-            CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
-            CampaignEvents.WeeklyTickEvent.AddNonSerializedListener(this, OnWeeklyTick);
+            CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, TickBudget.Wrap("Treaty.OnDailyTick", OnDailyTick));
+            CampaignEvents.WeeklyTickEvent.AddNonSerializedListener(this, TickBudget.Wrap("Treaty.OnWeeklyTick", OnWeeklyTick));
             CampaignEvents.WarDeclared.AddNonSerializedListener(this, OnWarDeclared);
             CampaignEvents.MakePeace.AddNonSerializedListener(this, OnPeaceMade);
         }
@@ -72,6 +72,7 @@ namespace DiplomacyIntrigue.Behaviors
             try
             {
                 Telemetry.WriteSnapshot(state);
+                Telemetry.WritePerf();
             }
             catch (Exception ex)
             {

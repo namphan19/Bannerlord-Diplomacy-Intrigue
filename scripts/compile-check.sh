@@ -64,5 +64,8 @@ rm -rf "$SRC" && cp -r "$REPO/src" "$SRC"
 cp "$REPO/Directory.Build.props" "$CACHE/" 2>/dev/null || true
 sed -i '/MapEvent.BattleTypes.SiegeAmbush/d' "$SRC/DiplomacyIntrigue/Diplomacy/WarExhaustion.cs"
 
+# DI_RELEASE_BUILD=1 (set only by scripts/release.ps1) compiles the player-facing defaults, today
+# just telemetry off (TODO decision 11). Any other caller gets the build the balance runs use.
 dotnet build "$SRC/DiplomacyIntrigue/DiplomacyIntrigue.csproj" -c Release \
-  -p:GameFolder="$GAME" -p:OutputPath="$OUT/" -p:BaseOutputPath="$OUT/"
+  -p:GameFolder="$GAME" -p:OutputPath="$OUT/" -p:BaseOutputPath="$OUT/" \
+  -p:DiReleaseBuild="${DI_RELEASE_BUILD:-0}"

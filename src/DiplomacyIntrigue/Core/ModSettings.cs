@@ -76,7 +76,18 @@ namespace DiplomacyIntrigue.Core
             HintText = "One line per week plus one per war that ends, so a long campaign can be "
                        + "measured afterwards. Costs almost nothing and is what balance reports are built from.")]
         [SettingPropertyGroup(DebugGroup)]
-        public bool EnableTelemetry { get; set; } = true;
+        public bool EnableTelemetry { get; set; } = TelemetryDefault;
+
+        /// <summary>
+        /// Off in a release build (TODO decision 11): a player's log should hold what a bug report
+        /// needs, not a weekly line per kingdom they never asked for. On everywhere else, because
+        /// every balance run is read from it. Only the default changes; MCM keeps a player's choice.
+        /// </summary>
+#if DI_RELEASE
+        private const bool TelemetryDefault = false;
+#else
+        private const bool TelemetryDefault = true;
+#endif
     }
 
     /// <summary>

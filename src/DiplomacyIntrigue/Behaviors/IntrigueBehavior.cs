@@ -26,12 +26,12 @@ namespace DiplomacyIntrigue.Behaviors
         public override void RegisterEvents()
         {
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
-            CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
-            CampaignEvents.WeeklyTickEvent.AddNonSerializedListener(this, OnWeeklyTick);
+            CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, TickBudget.Wrap("Intrigue.OnDailyTick", OnDailyTick));
+            CampaignEvents.WeeklyTickEvent.AddNonSerializedListener(this, TickBudget.Wrap("Intrigue.OnWeeklyTick", OnWeeklyTick));
             CampaignEvents.WarDeclared.AddNonSerializedListener(this, OnWarDeclared);
             CampaignEvents.OnSettlementOwnerChangedEvent.AddNonSerializedListener(this, OnSettlementOwnerChanged);
             CampaignEvents.RulingClanChanged.AddNonSerializedListener(this, OnRulingClanChanged);
-            CampaignEvents.MapEventEnded.AddNonSerializedListener(this, OnMapEventEnded);
+            CampaignEvents.MapEventEnded.AddNonSerializedListener(this, TickBudget.Wrap<TaleWorlds.CampaignSystem.MapEvents.MapEvent>("Intrigue.OnMapEventEnded", OnMapEventEnded));
             CampaignEvents.OnClanChangedKingdomEvent.AddNonSerializedListener(this, OnClanChangedKingdom);
             CampaignEvents.MobilePartyCreated.AddNonSerializedListener(this, OnMobilePartyCreated);
             CampaignEvents.MobilePartyDestroyed.AddNonSerializedListener(this, OnMobilePartyDestroyed);

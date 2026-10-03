@@ -38,6 +38,7 @@ namespace DiplomacyIntrigue.Core
         private const string RunPrefix = "[RUN]";
         private const string ConfigPrefix = "[CONFIG]";
         private const string NetworkPrefix = "[NETWORK]";
+        private const string PerfPrefix = "[PERF]";
 
         /// <summary>How a war ended, from the point of view of whose code ended it.</summary>
         public enum PeaceCause
@@ -466,6 +467,28 @@ namespace DiplomacyIntrigue.Core
             // a party count, so run 11 is the first baseline, not a comparison with run 09.
             Pair(line, "warParties", k.WarPartyComponents.Count);
             return line.ToString();
+        }
+
+        /// <summary>
+        /// The week's tick budget (<see cref="TickBudget"/>), then a reset, so each line covers one
+        /// week and a run shows whether the mod's daily cost grows as the world fills with
+        /// treaties, grievances and networks. Not part of <see cref="WriteSnapshot"/>, which also
+        /// runs at load and from <c>diplomacy.report</c>: a reset there would cut a week short.
+        /// </summary>
+        public static void WritePerf()
+        {
+            try
+            {
+                var line = new StringBuilder(PerfPrefix);
+                AppendWhen(line);
+                line.Append(' ').Append(TickBudget.DescribeLine());
+                Log.Info("Telemetry", line.ToString());
+                TickBudget.Reset();
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Telemetry", "Tick budget line failed.", ex);
+            }
         }
 
         private static string NetworkLine(ModState state, SpyNetwork n)

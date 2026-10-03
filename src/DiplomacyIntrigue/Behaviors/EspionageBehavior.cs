@@ -19,8 +19,8 @@ namespace DiplomacyIntrigue.Behaviors
     {
         public override void RegisterEvents()
         {
-            CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, OnDailyTick);
-            CampaignEvents.WeeklyTickEvent.AddNonSerializedListener(this, OnWeeklyTick);
+            CampaignEvents.DailyTickEvent.AddNonSerializedListener(this, TickBudget.Wrap("Espionage.OnDailyTick", OnDailyTick));
+            CampaignEvents.WeeklyTickEvent.AddNonSerializedListener(this, TickBudget.Wrap("Espionage.OnWeeklyTick", OnWeeklyTick));
             CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
         }
 

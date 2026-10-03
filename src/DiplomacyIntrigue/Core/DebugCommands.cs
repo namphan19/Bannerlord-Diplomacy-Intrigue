@@ -2211,6 +2211,23 @@ namespace DiplomacyIntrigue.Core
             return "Snapshot written to the log, full report written to:" + Environment.NewLine + path;
         }
 
+        /// <summary>
+        /// The mod's tick budget (Phase 4): each daily and weekly handler's calls, mean and worst,
+        /// and the worst campaign day. Read-only, so no cheat mode. "reset" starts a fresh window;
+        /// with telemetry on, the weekly [PERF] line resets it too.
+        /// </summary>
+        [CommandLineFunctionality.CommandLineArgumentFunction("perf", "diplomacy")]
+        public static string Perf(List<string> args)
+        {
+            if (Campaign.Current == null) return NoCampaign;
+            if (args != null && args.Count > 0 && args[0].Equals("reset", StringComparison.OrdinalIgnoreCase))
+            {
+                TickBudget.Reset();
+                return "Tick budget reset.";
+            }
+            return TickBudget.Describe();
+        }
+
         /// <summary>Kingdom names contain spaces, so arguments are separated by a pipe.</summary>
         private static List<string> SplitOnPipe(List<string> args)
         {
