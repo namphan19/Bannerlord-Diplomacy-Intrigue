@@ -605,7 +605,10 @@ namespace DiplomacyIntrigue.Intrigue
                 if (war.IsOngoing || war.Kingdom != kingdom) continue;
 
                 var since = (float)war.EndedOn.ElapsedDaysUntilNow;
-                var left = IntrigueConstants.InternalWarCooldownDays - since;
+                var wait = war.Outcome == InternalWarOutcome.Stalemate
+                    ? IntrigueConstants.InternalWarStalemateCooldownDays
+                    : IntrigueConstants.InternalWarCooldownDays;
+                var left = wait - since;
                 if (left > daysLeft) daysLeft = left;
             }
             return daysLeft > 0f;
@@ -1387,8 +1390,14 @@ namespace DiplomacyIntrigue.Intrigue
                     break;
 
                 default:
-                    // A stalemate settles nothing: the claim stands and the crown keeps its
-                    // standing, as a white peace between kingdoms moves neither pool (2.4).
+                    // A stalemate settles nothing for the crown's standing, as a white peace between
+                    // kingdoms moves neither pool (2.4). It does end the claim (the lead, 2026-10-03,
+                    // run 12): both sides fought to exhaustion and neither won it, and a claim that
+                    // outlived the war started the next one as soon as the cooldown ran out - Aserai
+                    // fought seven in a row over one man. Retired here, and the claimant cannot be
+                    // raised again for a year (SuccessionModel.MintPowerClaimants), and the realm waits
+                    // three years rather than one before it can rise again (InCooldown).
+                    SuccessionModel.RetireClaim(state, kingdom, war.Claimant, "the war ended with nothing settled");
                     Log.Notify("The civil war in " + kingdom.Name + " has ended with nothing settled.", Colors.Yellow);
                     break;
             }

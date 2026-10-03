@@ -366,6 +366,22 @@ namespace DiplomacyIntrigue.Intrigue
         public const float InternalWarCooldownDays = 84f;
 
         /// <summary>
+        /// The cooldown after a war that ended in a **stalemate**: three campaign years (the lead's
+        /// call, 2026-10-03, run 12). Run 12 had 14 civil wars in 12 years, 12 of them stalemates, and
+        /// Aserai fought seven in a row over one claimant: a stalemate settles nothing, so after the
+        /// one-year wait the same bloc, the same claimant and the same low crown started it again.
+        /// A war with a winner keeps <see cref="InternalWarCooldownDays"/>. UN-TUNED.
+        /// </summary>
+        public const float InternalWarStalemateCooldownDays = 252f;
+
+        /// <summary>
+        /// How long a claimant whose war ended in a stalemate cannot be raised again by a weak crown
+        /// (<c>SuccessionModel.MintPowerClaimants</c>): one campaign year, the lead's call of
+        /// 2026-10-03. Derived from the war's own record, so nothing is saved. UN-TUNED.
+        /// </summary>
+        public const float StalematedClaimantBarDays = 84f;
+
+        /// <summary>
         /// Days before the player, as a claimant, is asked again after declining to raise the
         /// banner. UN-TUNED. Not saved: a reload may ask again sooner, which is a nuisance, not
         /// a wrong answer.

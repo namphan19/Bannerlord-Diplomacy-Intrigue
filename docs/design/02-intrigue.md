@@ -129,7 +129,7 @@ of them vassal defiance); a realm **at war heals +1 every 21 days** (scaled by t
 and a **claimant can arise from a weak crown**, not only from a contested succession: below 35, with no
 claimant standing and no war running, the strongest disaffected magnate (`HasPowerClaim`; never the player's
 house) presses a claim (`SuccessionModel.MintPowerClaimants`, telemetry `claimant_arose`). The wartime step
-reads the date, so `tick_days` cannot show it. Verified live only for the claimant: Battania at legitimacy 0
+reads the date, so `tick_days` cannot show it. **Run 12 then showed the claimant overshooting** (14 civil wars in 12 years, 12 of them stalemates, the same claimant seven times), and on 2026-10-03 the lead took all three remedies: a **stalemate retires the claim**, the realm waits **252 days** (three years) after a stalemate instead of 84, and a claimant whose war ended in a stalemate **cannot be raised again for 84 days** (`InternalWars.End`, `InCooldown`, `SuccessionModel.RecentlyStalemated`; nothing saved, read from the war records). Verified live: Battania at legitimacy 0
 raised fen Uvain's claim on the next daily tick. The oath price and the wartime step are compiled, not run.
 
 ## 5. Succession

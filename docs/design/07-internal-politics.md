@@ -180,7 +180,7 @@ recorded as the `Pretender`.
 |---|---|
 | **Rebels win** | `ChangeRulingClanAction.Apply(kingdom, claimantClan)`. The new crown takes the existing −15 for irregular succession (`SuccessionContestedLegitimacy`). The deposed ruling clan **stays at court** and becomes a standing `Pretender` if its side held ≥ 30% (`SuccessionPretenderShare`), so the ladder can turn again |
 | **Crown wins** | The claim is retired (`Pretender` removed). Legitimacy +12, the figure for a just war won. Rebel clans stay in the kingdom and keep their fiefs **as the war left them** — what was taken stays taken |
-| **Negotiated / stalemate** | Nothing moves, as with a white peace at 2.4. The claimant keeps the claim, and the war simply ends |
+| **Negotiated / stalemate** | Legitimacy does not move, as with a white peace at 2.4. **The claim ends** (2026-10-03, the lead, after run 12: with the claim left standing the same war restarted every cooldown - Aserai fought seven in a row over one claimant), the realm waits **252 days** (`InternalWarStalemateCooldownDays`, three campaign years) before it can rise again, and the claimant cannot be raised by a weak crown for 84 days. *Until then: the claimant kept the claim, and the war simply ended* |
 | **Loser's fate** | **No exile, execution or demotion in v1.** Exile expels a clan into a rival's arms, and execution is irreversible and has vanilla consequences of its own. Both are good choices for a *ruler* to make later, as a decision with costs, not an automatic outcome |
 
 **Changed 2026-09-27 (review R-6, the lead's decision): what the rebels took goes back on a crown
@@ -572,7 +572,7 @@ end of this section.
 - A concession calls the existing ending with the existing outcome: the crown conceding is a
   rebel win, and the rising conceding is a crown win. Legitimacy, the pretender left behind, the
   cooldown (`InternalWarCooldownDays`, one campaign year - corrected 2026-09-27 from a
-  365-calendar-day figure to 84): all as §3a Q1.
+  365-calendar-day figure to 84; after a *stalemate* it is 252, 2026-10-03): all as §3a Q1.
 - **The AI concedes by rule**, so the act is not the player's alone: a leader concedes when its
   own side's exhaustion is at **75** or more while the other side's is **under 40**
   (`InternalWarConcedeExhaustion`, `InternalWarConcedeOtherBelow`, both UN-TUNED). The condition

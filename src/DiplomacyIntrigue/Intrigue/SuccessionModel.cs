@@ -164,6 +164,23 @@ namespace DiplomacyIntrigue.Intrigue
         }
 
         /// <summary>
+        /// Whether this hero was the claimant of a civil war here that ended in a stalemate within the
+        /// last <see cref="IntrigueConstants.StalematedClaimantBarDays"/>. Read off the war records,
+        /// which are never pruned, so no new saved field stands in for a fact already kept.
+        /// </summary>
+        private static bool RecentlyStalemated(ModState state, Kingdom kingdom, Hero claimant)
+        {
+            for (var i = 0; i < state.InternalWars.Count; i++)
+            {
+                var war = state.InternalWars[i];
+                if (war.IsOngoing || war.Kingdom != kingdom || war.Claimant != claimant) continue;
+                if (war.Outcome != InternalWarOutcome.Stalemate) continue;
+                if (war.EndedOn.ElapsedDaysUntilNow < IntrigueConstants.StalematedClaimantBarDays) return true;
+            }
+            return false;
+        }
+
+        /// <summary>
         /// A claimant who arises from a weak crown rather than from a succession (the lead's call,
         /// 2026-10-02, run 11 §7). Until now a claim existed only after a contested succession, and run
         /// 11 had every crown Failing for ten years with no claimant ever standing and so no civil war:
@@ -191,6 +208,7 @@ namespace DiplomacyIntrigue.Intrigue
                     {
                         if (clan == null || clan == kingdom.RulingClan || clan == Clan.PlayerClan) continue;
                         if (!Court.IsMember(clan) || !HasPowerClaim(state, clan, kingdom)) continue;
+                        if (RecentlyStalemated(state, kingdom, clan.Leader)) continue;
                         if (best == null || clan.Influence > best.Influence
                             || (clan.Influence == best.Influence && string.CompareOrdinal(clan.StringId, best.StringId) < 0))
                             best = clan;
