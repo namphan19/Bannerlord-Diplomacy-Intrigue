@@ -533,10 +533,10 @@ Playable target: *information and subversion are a third way to fight.*
 
 - **Cross-pillar wiring pass** — every hinge above actually connected and logged.
 - **Balance pass** — long AI-only campaign runs with telemetry from the log; tune exhaustion, costs, decay rates.
-- **Compatibility** — detect BUTR Diplomacy and warn (the two are mutually exclusive by design); document every overridden `GameModel`.
-- **Localization** — all strings behind `TextObject` keys in `ModuleData/Languages/EN`; community translations become drop-in.
-- **Performance** — daily/weekly tick budget measured; no per-frame work.
-- **Release** — Nexus page, changelog, bug-report instructions pointing at the log directory.
+- **Compatibility** — detect BUTR Diplomacy and warn (the two are mutually exclusive by design); document every overridden `GameModel`. *Built 2026-10-03, not run in game: `SubModule.xml` declares `Bannerlord.Diplomacy` incompatible (BUTR's launcher and BLSE read it), and the main menu warns when it is active (the official launcher does not read the XML). The overridden models and patches are listed on the Nexus and Workshop pages.*
+- **Localization** — all strings behind `TextObject` keys in `ModuleData/Languages/EN`; community translations become drop-in. *Not started. About 1,300 player-facing literals across 42k lines (2026-10-03 count): a story of its own, for the lead to schedule (TODO).*
+- **Performance** — daily/weekly tick budget measured; no per-frame work. *No per-frame work, read from code 2026-10-03: no hourly or frame listener, and the two `MapFaction` patches return on one static bool outside a civil war. The budget is instrumented (`TickBudget`, a weekly `[PERF]` line, `diplomacy.perf`) and **not yet measured**: the next long run produces the numbers.*
+- **Release** — Nexus page, changelog, bug-report instructions pointing at the log directory. *0.1.0 and 0.2.0 shipped to Nexus; Workshop item `3810668052` was created 2026-09-30 from the game's Modules folder. 0.3.0 is packaged (`release.ps1` then `workshop.ps1`), telemetry off in a release build; not uploaded.*
 
 ---
 

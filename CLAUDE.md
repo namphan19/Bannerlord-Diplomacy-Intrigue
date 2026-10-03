@@ -231,7 +231,18 @@ dotnet run --project tools/ApiDump -- "TypeNameOrFilter"   # real v1.4.8 API sur
 pwsh ./scripts/check-save-ids.ps1   # the save-data rules of §3, read from source; build and deploy run it first
 scripts/compile-check.sh     # no game on this box (Linux, cloud): compile against NuGet reference assemblies
 pwsh ./scripts/release.ps1   # Nexus zip from the committed tree, DLL built against v1.4.8 refs
+pwsh ./scripts/workshop.ps1 -ChangeNotes <file>   # Steam Workshop update from release.ps1's folder; -Upload publishes
 ```
+
+**The Steam Workshop item already exists: `3810668052`** (created 2026-09-30, public, subscribed).
+`workshop.ps1` updates it; a `CreateItem` task would publish a duplicate. The "Bannerlord: Mod
+Uploader" tool that created it uploads from the game's `Modules\DiplomacyIntrigue`, which holds
+whatever `deploy.ps1` last installed - not the v1.4.8-reference build a release must be - so do not
+publish through it. Its own log is `bin\Win64_Shipping_Client\steam_workshop_uploader.txt`.
+
+A release build (`DI_RELEASE_BUILD=1`, set only by `release.ps1`) compiles player-facing defaults:
+today, telemetry off. Every other build keeps telemetry on, so a balance run is never short of it.
+`diplomacy.perf [reset]` prints the tick budget; with telemetry on a weekly `[PERF]` line logs it.
 
 `compile-check.sh` builds against BUTR's `Bannerlord.ReferenceAssemblies.Core` 1.4.8.119303 and
 the framework packages at `SubModule.xml`'s versions, into a temp folder. A clean result there

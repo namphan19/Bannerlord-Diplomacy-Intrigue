@@ -83,6 +83,9 @@ re-rolled after a reload (now saved, `SpyMission` 12); stale figures in six desi
       Show those as bands, or accept. Found by package A; left as it was.
 - [ ] **The Kingdom-UI loose ends** - the Realm tab widening the tab strip, `ConcessionLadder`'s
       `townsFirst` flag. Out of this pass by the lead's call.
+- [ ] **Localization (Phase 4)** - about 1,300 player-facing literals, none behind a `TextObject` key.
+      Recommended: its own story after 1.0's balance, not inside a release; until then the pages say
+      "English only" (the Nexus page's "ready for translation" was untrue and is gone).
 
 ## Pending work
 
@@ -102,6 +105,13 @@ re-rolled after a reload (now saved, `SpyMission` 12); stale figures in six desi
       legitimacy off the floor, and (the point) whether a civil war now starts - and not too often.
 - [ ] No `player_died` telemetry when the player dies with no heir (run 11 D-4; vanilla's no-heir path
       never calls `MakeDead`).
+- [ ] **Phase 4 B/C, built 2026-10-03, not run in game:** the incompatibility warning (load with
+      `Bannerlord.Diplomacy` present, or read the code), the `[PERF]` line and `diplomacy.perf` (the next
+      long run gives the first tick budget).
+- [ ] **Before 0.3.0 is uploaded** (`release.ps1`, then `workshop.ps1 ... -Upload`): the civil-war
+      remedies seen over a long run; a 0.2.0 save loaded in the 0.3.0 release build (the changelog says
+      it loads - not yet tried); the Workshop page's required items (Harmony, ButterLib, UIExtenderEx,
+      MCM) set by hand on Steam. Texts and preview are in the lead's untracked `docs/release/`.
 
 - [ ] **Run 09**, all of [docs/balance/run-09-runbook.md](docs/balance/run-09-runbook.md): the targeted
       checks (A), the 20-year balance run and the second statecraft pair (B), the civil-war run (C).
