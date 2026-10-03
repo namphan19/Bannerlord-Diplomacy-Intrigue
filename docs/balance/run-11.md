@@ -154,6 +154,14 @@ the lead:** the cap, the war halving and the target ranking. Changing them is th
 
 ## 8. For the lead
 
+**Answered 2026-10-02.** (1) The tech lead was asked to choose and combine: AI cap 12,000 and share 6%,
+a built network kept through a peace, a new one aimed where it can grow (design 03 decision 19).
+(2) Harmony: the seventh patch (decision 20). (3) The AI-to-AI exposure war is accepted for Phase 3.
+(4) Three legitimacy changes: a vassal's oath costs -8, a realm at war heals +1 every 21 days under 30,
+a claimant can arise from a weak crown (design 02 §4). (5) `test_player_army` (decision 21). All built
+and compiled against v1.4.8 and v1.5.3; **none re-measured** - the list below is what was asked, as it
+was asked.
+
 1. **AI espionage economics** (headline 2): the AI's networks cannot grow where it aims them. Options,
    none built: raise the AI's weekly cap; drop the war halving for a realm already at war with the
    target; rank a target at peace above one at war; or accept that AI espionage is rare.

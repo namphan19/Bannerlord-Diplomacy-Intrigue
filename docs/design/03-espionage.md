@@ -208,7 +208,7 @@ And three on 2026-10-02, from run 11 §8:
 | # | Question | Decision |
 |---|---|---|
 | 19 | AI networks cannot grow where the AI aims them (median 1.4 at year 2) | **The tech lead chooses, and may combine.** Chosen: the AI's weekly cap 6,000 -> 12,000 and its share of the purse 4% -> 6%; a network of 10 or more is kept on its realm through a peace unless a pact binds the two; a new network goes to the best rival where it can grow at the planned budget (`SpyNetworks.ProjectedWeek`), else to the top rival as before. The war halving stays (decision 4) - what changed is where the AI builds, not the rule a war imposes |
-| 20 | `forced-party` at 3.0 a year | **Harmony.** Reverses decision 14's "no Harmony" for this one path: a postfix on `HeroSpawnCampaignBehavior.GetBestAvailableCommander` turns vanilla's second-pass pick of a posted handler into "nobody today" (`HeroSpawn_GetBestAvailableCommander_Patch`, the seventh patch) |
+| 20 | `forced-party` at 3.0 a year | **Harmony** (built, loads, and the patched method is named in the startup line; its effect on the `forced-party` count is not yet measured). Reverses decision 14's "no Harmony" for this one path: a postfix on `HeroSpawnCampaignBehavior.GetBestAvailableCommander` turns vanilla's second-pass pick of a posted handler into "nobody today" (`HeroSpawn_GetBestAvailableCommander_Patch`, the seventh patch) |
 | 21 | Story 3.10 AC2a needs a player-led army | **A lever**: `diplomacy.test_player_army [settlement] [| n]` raises the player's army with up to n of the realm's lord parties called in |
 
 ### The questions as they were asked
@@ -471,9 +471,11 @@ Built in the same cloud session, with no game: 0 warnings against the v1.4.8 ref
 - *Target:* at war 3, we claim their land 2, they claim ours 1, a stronger neighbour 1; a realm bound
   to us by a pact, defensive pact, alliance or vassalage is never a target (a truce is). The network
   stays on its target while that realm still scores, rather than moving each week to whoever scores
-  higher.
-- *Handler:* the free house member with the highest ceiling; budget 4% of the purse above the
-  reserve, at most 6,000 a week.
+  higher. **Since 2026-10-02 (decision 19):** a network of 10 or more also stays through a peace
+  unless a pact now binds the two, and a *new* network goes to the best-scoring rival where it could
+  grow at the planned budget (`SpyNetworks.ProjectedWeek` positive), else to the top rival as before.
+- *Handler:* the free house member with the highest ceiling; budget **6%** of the purse above the
+  reserve, at most **12,000** a week (4% and 6,000 until run 11).
 - *Operations,* at most one per network, none for 14 days after the last resolves, and each through
   `Missions.CanLaunch`, paid from the purse above the reserve, and only at an overall exposure of 10%
   or less: BribeLord and ForgeLetters against a shaky crown (legitimacy under 50, or a standing
@@ -508,7 +510,7 @@ stays untouched, for the reason it always was.
 transit, a fugitive or one just released; a campaign-event veto refuses a handler a party
 (`CanHeroLeadPartyEvent`), the player's own included; a handler found outside the target realm is sent
 back to the station each day instead of released; every loss names its cause (`handler_lost`). No
-Harmony, by the lead's decision. Live on `di_36_espionage_test` over about a month: the party veto
+Harmony, by the lead's decision *(reversed for the one residual path on 2026-10-02, decision 20)*. Live on `di_36_espionage_test` over about a month: the party veto
 holds on the common path, with **2** handlers of one house lost through vanilla's second pass
 (`forced-party`, the residual the lead accepted); the move veto (`CanMoveToSettlementEvent`) is **not**
 asked on the path that sends a lord home, so the station is held by the daily return alone, some 36
@@ -518,7 +520,9 @@ times a month across three handlers. The full table, and what was not verified, 
 **By hand, not measured:** at the AI's 6,000 cap and roguery 50 against a counter-intelligence of
 12.6, a network gains about 1.34 a week - some 22 weeks to the 30 SpreadDissent needs and 34 to the 45
 of a bribe. An AI operation is therefore a year-two event at the earliest; whether it happens at all
-is for a long run.
+is for a long run. *Run 11 measured it: it did not - median network strength 1.4 at year 2, 27
+operations in ten years (§10, run-11.md §5). Decision 19 raised the cap to 12,000 and changed where a
+network is built; that is also by hand, and not yet run.*
 
 **What to check in game** (none done yet):
 1. `diplomacy.ai_espionage` on a rich save: each realm's plan reads sensibly - rivals, target, a

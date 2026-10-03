@@ -102,11 +102,12 @@ A per-kingdom pool, 0–100, starting at 60.
 | Won a war with legitimacy < 0.3 | **+2** (a win is a win, barely) |
 | Lost a war | **−10** |
 | Declared a war with no casus belli | **−8** |
-| Broke a treaty | **−20** |
+| Broke a treaty | **−20**; a vassal cutting its oath to its patron **−8** (2026-10-02) |
 | Caught fabricating a claim | **−15** (the Phase 1 hook already logs this) |
 | Lost a fief | **−3** |
 | Took the throne by irregular succession | **−15** |
 | Per year of peace | **+3** |
+| Per 21 days at war, while below 30 | **+1** (2026-10-02, below) |
 
 Effects: legitimacy feeds vassal loyalty (§2), gates pretender bids (§5), and scales the
 influence cost of pushing decisions through a hostile court.
@@ -118,7 +119,7 @@ once per campaign year (**84 days**) of **continuous** peace: no foreign war and
 A war resets the clock, which counts again from the day the last war ended, or from the last
 dividend if that is later (`LegitimacyRegistry.PeaceOf`, derived from the war records, nothing new
 saved). The review's alternative, mean reversion toward 50, was **rejected**: a weak crown must
-not heal on its own, and civil war is already rare. `diplomacy.legitimacy` shows each realm's days
+not heal on its own, and civil war is already rare. *(Softened on 2026-10-02: a trickle in war, under 30, below.)* `diplomacy.legitimacy` shows each realm's days
 of continuous peace and the days to its next dividend.
 
 **Three changes on 2026-10-02, the lead's call after run 11** (every crown at 0-24 after ten years, no civil war):

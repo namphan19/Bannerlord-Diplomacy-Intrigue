@@ -1,4 +1,4 @@
-# Status — 2026-10-02
+# Status — 2026-10-03
 
 Point-in-time state, and only the current part of it. [CLAUDE.md](../CLAUDE.md) holds what is
 always true. [TODO.md](../TODO.md) is the one list of open decisions and pending work.
@@ -14,7 +14,25 @@ Last completed measurement: **balance run 08** (statecraft on/off) — [balance/
 Branch `development`. `main` sits well behind on purpose: cutting a release is Phase 4's job.
 opencode was removed from the project on 2026-09-27 (CLAUDE.md §7).
 
-## Start here — 2026-10-02, evening: run 11 done - Phase 3 acceptance, for the lead
+## Start here — 2026-10-03: run 11 answered and built; a long run to check it
+
+The lead answered run 11 §8 on 2026-10-02 and accepted Phase 3 (the exposure-to-war chain seen between AI
+realms counts). Built that day, pushed in `6830ebb`, **compiled against v1.4.8 and v1.5.3 and not yet run
+for any length of time**:
+
+| Change | Where | Seen live | Not yet seen |
+|---|---|---|---|
+| AI espionage economics: cap 12,000, share 6%, a built network kept through a peace, a new one aimed where it can grow | design 03 decision 19 | `ai_espionage` picks Vlandia (+3.47 a week) over Khuzait (-5.77); budgets 12,000 | median strength at year 2 above 30; operations of every type |
+| Harmony for `forced-party`: the seventh patch | decision 20, story 3.8 §12 | loads; named in the startup line | `forced-party` at 0 over a long run |
+| `test_player_army` | decision 21, story 3.10 §12 | raises an army (player ruling Khuzait) | AC2a itself, with a vassal player |
+| Legitimacy: vassal oath -8, +1 per 21 days at war under 30, a claimant from a weak crown | design 02 §4 | the claimant (Battania at 0 raised fen Uvain's claim next day) | the oath price, the wartime step, and whether civil wars now start and not too often |
+
+**Next:** one long run (Part B's length or more) with the analyser, reading: network strength and
+operations by type, `forced-party`, legitimacy by realm, claimants arising, internal wars started.
+Also owed: a report of what looks wrong on the Members and Parties tabs (the lead raised it on
+2026-10-02; the Clan screen's code and a live look found nothing, and nothing in Phase 3 touches them).
+
+## Earlier the same day: run 11 done - Phase 3 acceptance, for the lead
 
 [balance/run-11.md](balance/run-11.md). 0 errors in every session; the v1.4.8-reference DLL ran Parts A
 and B on v1.5.3.
@@ -22,7 +40,7 @@ and B on v1.5.3.
 | Phase 3 item | Verified |
 |---|---|
 | 3.1-3.7 | live before (design/03 §10); 3.7's "caught in our realm" list: data live, the rendered row below a fold not seen |
-| 3.8 handler stays posted | **live**: party 0, governor 0 over ten years, every handler at post; `forced-party` 3.0 a year (on R5's line) |
+| 3.8 handler stays posted | **live**: party 0, governor 0 over ten years, every handler at post; `forced-party` 3.0 a year (on R5's line; Harmony added after, see above) |
 | 3.9 AI reads bands | **live**, AC4 8/8 on two saves |
 | 3.10 player's house a mark | **live** except AC2a (needs a player-led army): offer believe/dismiss/reload, companion and player assassination, heir and Game Over paths |
 | 3.11 odds shown are today's | **live** |
