@@ -91,7 +91,9 @@ re-rolled after a reload (now saved, `SpyMission` 12); stale figures in six desi
       AI cap 12,000 and share 6%, a built network kept through a peace, a new one aimed where it can
       grow; (2) Harmony, `HeroSpawn_GetBestAvailableCommander_Patch`; (5) `test_player_army`. Built and
       compiled against v1.4.8 and v1.5.3; **not yet run live**.
-- [ ] **Live check of decisions 19-21:** `ai_espionage` shows the growth per rival and the keep rule;
+- [x] Live check of decisions 19-21 and the legitimacy changes: **run 12**, [docs/balance/run-12.md](docs/balance/run-12.md) (AC2a and the oath price still unrun).
+- [ ] **For the lead, from run 12 §4:** year-2 or year-3 network bar; StealTreasury at 76% of AI operations; **the civil-war loop** - the lead took all three remedies on 2026-10-03 (stalemate retires the claim, 252-day cooldown, 84-day bar on the claimant); built and seen live in a staged case, a long run still owed.
+- [ ] (old) **Live check of decisions 19-21:** `ai_espionage` shows the growth per rival and the keep rule;
       `forced-party` stays at 0 over a Part B-length run (the startup line names the seventh patch);
       AC2a staged with `test_player_army`.
 - [x] **(3)** The lead accepted the AI-to-AI exposure war for Phase 3's acceptance (2026-10-02).

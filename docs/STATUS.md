@@ -27,8 +27,9 @@ for any length of time**:
 | `test_player_army` | decision 21, story 3.10 §12 | raises an army (player ruling Khuzait) | AC2a itself, with a vassal player |
 | Legitimacy: vassal oath -8, +1 per 21 days at war under 30, a claimant from a weak crown | design 02 §4 | the claimant (Battania at 0 raised fen Uvain's claim next day) | the oath price, the wartime step, and whether civil wars now start and not too often |
 
-**Next:** one long run (Part B's length or more) with the analyser, reading: network strength and
-operations by type, `forced-party`, legitimacy by realm, claimants arising, internal wars started.
+**Run 12 (2026-10-03) measured it** - [balance/run-12.md](balance/run-12.md), 12.1 years, 0 errors, local build: AI operations 27 -> 131, BribeLord and SabotageGarrison now launched, network median 3.5 at year 2 (bar 30: still fails) and 40-99 from year 3, `forced-party` 3.0 a year -> 0, one `party` loss on a path the patch does not cover, StealTreasury 76% of operations. **The legitimacy changes overshot:** 14 civil wars in 12 years, 12 stalemates, 1 dissolved, none won, the same claimant starting war after war. **The lead took all three remedies on 2026-10-03** (a stalemate retires the claim; 252-day cooldown after one; the claimant barred 84 days) - built, and seen in a staged case on `di_phase1_full`, **not yet over a long run**. Still the lead's: whether the year-2 network bar moves to year 3, and whether StealTreasury at 76% of AI operations is wanted (run-12.md §4).
+
+**Next:** one more long run (12 years) to see the civil-war count fall from 14 to a few, with the analyser and the log counts of `claimant_arose` and "takes up arms".
 Also owed: a report of what looks wrong on the Members and Parties tabs (the lead raised it on
 2026-10-02; the Clan screen's code and a live look found nothing, and nothing in Phase 3 touches them).
 
