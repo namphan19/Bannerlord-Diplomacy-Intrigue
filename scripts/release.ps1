@@ -51,8 +51,15 @@ $stage = Join-Path $repo "artifacts/release/v$version"
 if (Test-Path $stage) { throw "$stage already exists - a shipped folder is never overwritten; bump the version." }
 
 # Git's own bash: from PowerShell a bare "bash" can resolve to WSL's.
-$bash = Join-Path (Split-Path (Split-Path (Get-Command git).Source)) "bin/bash.exe"
-if (-not (Test-Path $bash)) { throw "Git Bash not found at $bash." }
+# Walk up from git.exe: it sits in Git\cmd from PowerShell but in Git\mingw64\bin from Git Bash.
+$bash = $null
+$dir = Split-Path (Get-Command git).Source
+while ($dir -and -not $bash) {
+    $candidate = Join-Path $dir "bin/bash.exe"
+    if ((Test-Path $candidate) -and (Test-Path (Join-Path $dir "git-bash.exe"))) { $bash = $candidate }
+    $dir = Split-Path $dir
+}
+if (-not $bash) { throw "Git Bash not found above $((Get-Command git).Source)." }
 $cache = Join-Path ([IO.Path]::GetTempPath()) "di-compile-check"
 $env:DI_RELEASE_BUILD = "1"
 try {
