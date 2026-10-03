@@ -108,10 +108,16 @@ re-rolled after a reload (now saved, `SpyMission` 12); stale figures in six desi
 - [ ] **Phase 4 B/C, built 2026-10-03, not run in game:** the incompatibility warning (load with
       `Bannerlord.Diplomacy` present, or read the code), the `[PERF]` line and `diplomacy.perf` (the next
       long run gives the first tick budget).
-- [ ] **Before 0.3.0 is uploaded** (`release.ps1`, then `workshop.ps1 ... -Upload`): the civil-war
-      remedies seen over a long run; a 0.2.0 save loaded in the 0.3.0 release build (the changelog says
-      it loads - not yet tried); the Workshop page's required items (Harmony, ButterLib, UIExtenderEx,
-      MCM) set by hand on Steam. Texts and preview are in the lead's untracked `docs/release/`.
+- [x] **0.3.0 uploaded to the Steam Workshop** 2026-10-03 at the lead's call, from `3693030` on
+      `feature/phase4-bc` (item `3810668052`: content, description and preview replaced). Uploaded before
+      the checks below, which are still owed:
+- [ ] The civil-war remedies over a long run (run 12 overshot: 14 in 12 years).
+- [ ] A 0.2.0 save loaded in the 0.3.0 release build. The changelog says it loads; the evidence is
+      indirect (saves from before 1.10c's new save data, `di_phase1_full` among them, load in the current
+      code), not a 0.2.0 save in the release DLL.
+- [ ] The Workshop page's required items (Harmony, ButterLib, UIExtenderEx, MCM), set by hand on Steam.
+- [ ] 0.3.0 on Nexus: the zip is `artifacts/release/DiplomacyIntrigue-v0.3.0.zip`; texts in the lead's
+      untracked `docs/release/`. Uploaded by hand.
 
 - [ ] **Run 09**, all of [docs/balance/run-09-runbook.md](docs/balance/run-09-runbook.md): the targeted
       checks (A), the 20-year balance run and the second statecraft pair (B), the civil-war run (C).

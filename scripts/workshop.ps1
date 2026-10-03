@@ -21,9 +21,9 @@
     Uploader's templates/UpdateExisting.xml uses. It is written with XmlWriter so a change note's
     line breaks survive as &#xA; - a raw newline inside an XML attribute is read back as a space.
 
-    NOT YET RUN WITH -Upload. The prepare path was run on 2026-10-03; the upload path follows the
-    documented invocation (TaleWorlds.MountAndBlade.SteamWorkshop.exe <task.xml>, from the game's
-    bin folder, Steam running and logged in as the item's owner) and has not been exercised.
+    Run with -Upload for 0.3.0 on 2026-10-03 (from 3693030): Steam showed the new content, preview and
+    description within a minute. Needs Steam running and logged in as the item's owner; the uploader
+    (TaleWorlds.MountAndBlade.SteamWorkshop.exe <task.xml>) runs from the game's bin folder.
 
     Usage:
       pwsh ./scripts/workshop.ps1 -ChangeNotes docs/release/CHANGELOG-v0.3.0.txt
@@ -80,6 +80,10 @@ $task = Join-Path $repo "artifacts/release/workshop-update-v$version.xml"
 $settings = New-Object System.Xml.XmlWriterSettings
 $settings.Indent = $true
 $settings.Encoding = New-Object System.Text.UTF8Encoding($false)
+# The uploader reads its tasks from doc.FirstChild.ChildNodes (Program.LoadTasks, read by IL on
+# 2026-10-03). With an <?xml?> declaration the first child is the declaration, it finds no tasks, and
+# it exits as if it had succeeded - which is how the first -Upload of 0.3.0 did nothing.
+$settings.OmitXmlDeclaration = $true
 $w = [System.Xml.XmlWriter]::Create($task, $settings)
 try {
     $w.WriteStartElement("Tasks")
@@ -117,10 +121,15 @@ if (-not $Upload) {
 }
 
 if (-not (Get-Process steam -ErrorAction SilentlyContinue)) { throw "Steam is not running." }
+# The exit code says nothing: the uploader ends every run on Console.ReadKey ("press a key"), which
+# throws when there is no interactive console, so it always exits non-zero from a script. Its log -
+# rewritten on each run - is the answer: UpdateItemTask writes "Uploading done!" only on success.
+$uploaderLog = Join-Path $bin "steam_workshop_uploader.txt"
 Push-Location $bin
-try {
-    & $uploader $task
-    if ($LASTEXITCODE -ne 0) { throw "The uploader exited with $LASTEXITCODE - see $bin\steam_workshop_uploader.txt" }
-}
+try { & $uploader $task 2>&1 | Out-Null }
 finally { Pop-Location }
-Write-Host "Done. The uploader's own log: $bin\steam_workshop_uploader.txt" -ForegroundColor Green
+$logText = Get-Content $uploaderLog -Raw
+$messages = ($logText -split "`r?`n") | Where-Object { $_ -and $_ -notmatch '^Status:' -and $_ -notmatch '^\s+at ' }
+$messages | ForEach-Object { "  uploader: $_" }
+if ($logText -notmatch 'Uploading done!') { throw "The upload did not complete - see $uploaderLog" }
+Write-Host "Uploaded. Confirm on Steam: https://steamcommunity.com/sharedfiles/filedetails/?id=$itemId" -ForegroundColor Green
