@@ -630,12 +630,12 @@
                                       </ItemTemplate>
                                     </ListPanel>
 
-                                    <!-- Tribute, per period -->
-                                    <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
-                                        MarginTop="4" IsVisible="@HasTribute">
+                                    <!-- Tribute, per period. Story 4.3: was a CoverChildren block with a
+                                     StretchToParent backdrop (the 0b.1 shape); background
+                                     is now the block's own Brush. -->
+                                    <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                        MarginTop="4" IsVisible="@HasTribute" Brush="DiRealm.CardStrip">
                                       <Children>
-                                        <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
-                                            Sprite="BlankWhiteSquare_9" Color="#24201888" />
                                         <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
                                             MarginLeft="13" MarginRight="13" MarginTop="10" MarginBottom="10"
                                             StackLayout.LayoutMethod="VerticalTopToBottom">
@@ -649,7 +649,7 @@
                                           </Children>
                                         </ListPanel>
                                       </Children>
-                                    </Widget>
+                                    </ListPanel>
 
                                     <!-- Report, at the foot of the last column -->
                                     <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
@@ -700,10 +700,18 @@
                                 <ListPanel DataSource="{Rows}" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
                                     MarginTop="8" StackLayout.LayoutMethod="VerticalTopToBottom">
                                   <ItemTemplate>
-                                    <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginBottom="4">
+                                    <!-- Story 4.3. This row had a StretchToParent backdrop
+                                         under a CoverChildren root - the 0b.1 shape, measured on
+                                         the claim card at 538px of row for 79px of text. With
+                                         six offices that is several screens of scroll to read
+                                         six lines, and it is why the Statecraft block looked
+                                         like tall empty rows. Background on the row's own Brush
+                                         so the row measures its content; @Stand is optional and
+                                         @Moves wraps, so a Fixed height would not hold in a
+                                         long language (R4). -->
+                                    <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                        MarginBottom="4" Brush="DiRealm.CardRow">
                                       <Children>
-                                        <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
-                                            Sprite="BlankWhiteSquare_9" Color="#201A13CC" />
                                         <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
                                             MarginLeft="12" MarginRight="12" MarginTop="6" MarginBottom="6">
                                           <Children>
@@ -729,7 +737,7 @@
                                           </Children>
                                         </ListPanel>
                                       </Children>
-                                    </Widget>
+                                    </ListPanel>
                                   </ItemTemplate>
                                 </ListPanel>
                                 <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
@@ -849,10 +857,14 @@
                                         <ListPanel DataSource="{Caught}" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
                                             MarginTop="6" StackLayout.LayoutMethod="VerticalTopToBottom">
                                           <ItemTemplate>
-                                            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="52" MarginBottom="4">
+                                            <!-- Story 4.3: was Fixed at 52px over a
+                                                 StretchToParent backdrop. @Line is
+                                                 DiRealm.Label and wraps for a handler with
+                                                 a long crime, so the row measures its
+                                                 content now (R4). -->
+                                            <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                                MarginBottom="4" Brush="DiRealm.CardRow">
                                               <Children>
-                                                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
-                                                    Sprite="BlankWhiteSquare_9" Color="#201A13CC" />
                                                 <Widget WidthSizePolicy="Fixed" SuggestedWidth="4" HeightSizePolicy="StretchToParent"
                                                     Sprite="BlankWhiteSquare_9" Color="@AccentColor" />
                                                 <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginLeft="12"
@@ -865,7 +877,7 @@
                                                   </Children>
                                                 </ListPanel>
                                               </Children>
-                                            </Widget>
+                                            </ListPanel>
                                           </ItemTemplate>
                                         </ListPanel>
                                         <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginTop="4"
