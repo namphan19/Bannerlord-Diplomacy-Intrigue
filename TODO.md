@@ -83,6 +83,11 @@ re-rolled after a reload (now saved, `SpyMission` 12); stale figures in six desi
       Show those as bands, or accept. Found by package A; left as it was.
 - [ ] **The Kingdom-UI loose ends** - the Realm tab widening the tab strip, `ConcessionLadder`'s
       `townsFirst` flag. Out of this pass by the lead's call.
+- [ ] **Realm tab layout** - [story 4.3](docs/stories/4.3-realm-tab-layout.md), drafted 2026-10-04 on the
+      lead's report (text overlapping, long scrolls past empty space). Three faults seen, causes **not yet
+      found** (ST-1). **D1 and D2 decided 2026-10-04** (tech lead, delegated): the layout may leave the
+      mockup's three equal columns but not its information order or look; the Court tab's "Make amends"
+      overlap is ST-6 of the same story. Ready for a dev.
 - [x] **Localization (Phase 4)** - built 2026-10-03, [story 4.1](docs/stories/4.1-localization.md):
       852 keys behind `DiText.T` (including all 92 prefab labels, moved into view models), English generated into `Languages/EN/di_strings.xml`, 13 language
       folders ready to drop a translation into, `scripts/check-localization.ps1` in
