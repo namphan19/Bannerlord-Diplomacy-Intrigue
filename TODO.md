@@ -93,15 +93,16 @@ re-rolled after a reload (now saved, `SpyMission` 12); stale figures in six desi
       where the prefab had U+00B7; the Court panel's heading had lost "The"; and enum names
       (`ReclaimAncestralLand`, `DefensivePact`) were reaching the screen as text. All four fixed,
       each re-seen on screen, and rule 8 of the check now blocks the first of them.
-- [ ] **AC2: one session in German, from the official launcher.** This is now the **only** thing
-      between story 4.1 and a verified second language, and it is **a person, not a build**:
-      writing `Language=Deutsch` into `BannerlordConfig.txt` does nothing, because the game
-      rewrites that line at every startup. The language lives in the launcher's UI - no Language
-      entry in the in-game Options, no console command, no registry key, nothing in
-      `LauncherData.xml`. Story §6a has the table of what was checked. Put a handful of keys in
-      `Languages/DE/di_strings.xml` first (the folder ships empty on purpose, and an empty folder
-      makes the session look like a pass), then switch the language in the launcher and start the
-      game **from the launcher**.
+- [ ] **AC2: one look at the German fixture, and it is already written.** The plumbing is **proven
+      live** - the lead's session on 2026-10-04 switched the game to Deutsch and the game log shows
+      it opening `DiplomacyIntrigue/ModuleData/Languages/DE/di_strings.xml`, so the mod's folder is
+      found and read. Every screen read English because that file holds no entries: the 12 folders
+      ship empty on purpose, so all 653 keys took the English fallback, which is R1 working and looks
+      exactly like the mod ignoring the language. `scripts/localization-fixture.ps1 -Action Write`
+      has put fourteen German keys into the deployed folder; switch the language in the launcher
+      (**no restart needed** - the game reloads every module's strings at runtime), open the Realm
+      and Court tabs, then `-Action Remove`. What to expect is in story §6a. `deploy.ps1` overwrites
+      that folder, so re-run the fixture after a deploy. It is a fixture, not a translation.
 - [ ] **`diplomacy.test_open_encyclopedia` crashes the game on v1.5.3** - a vanilla
       `NullReferenceException` in `GauntletLayer.IsFocusedOnInput` from
       `SandBox.EncyclopediaData.OnTick`, mod log clean, no frames of ours (story §9). The

@@ -44,13 +44,27 @@ and it looks like the setting - it is an **output**. The game rewrites it to Eng
 startup (checked 2026-10-04: the file's timestamp is the launch second). There is no Language entry
 in the in-game Options screen, no console command that sets one (`list_commands` on `lang` and
 `locale`: none), no registry key under `HKCU\Software`, and no attribute containing "lang" in
-`LauncherData.xml`. Because the launcher hosts the game in its own process (§1), a
-`games_start` / BLSE Standalone launch bypasses the launcher's UI and therefore always comes up
-English. **To test another language, a person changes it in the official launcher and starts the
-game from the launcher.** Story 4.1 §6a has the full table, and a language folder that is empty
-proves nothing - the 12 non-English folders ship empty on purpose, so a language session needs a
-handful of translated keys written into the folder first or every screen reads English and the
-session looks like a pass.
+`LauncherData.xml`. The language belongs to the **official launcher's UI**, and because the launcher
+hosts the game in its own process (§1), a `games_start` / BLSE Standalone launch bypasses that UI
+and comes up English.
+
+**A language change takes effect without restarting the game** (the lead's session, 2026-10-04), and
+**the game's own log is where you prove any of this**: `C:\ProgramData\Mount and Blade II Bannerlord\logs\rgl_log_<pid>.txt`
+names **every language file it opens, per module**. That log is how AC2 was answered - it shows
+`Native/.../Languages/DE/de_functions.xml` at 11:15:45 and then
+`DiplomacyIntrigue/.../Languages/DE/di_strings.xml` at 11:15:46, so the mod's folder is found and
+read. It also shows a `Languages/VI/` load, because the Vietnamese community patch is installed in
+`Native` on this machine (story 4.2).
+
+**An empty language folder proves nothing.** The 12 non-English folders ship empty on purpose (lead,
+2026-10-03), so with an empty `DE` folder every key falls back to the English the code carries -
+which is R1 working - and a screen full of English is indistinguishable from the mod ignoring the
+language. That is exactly what the lead's first test showed.
+`scripts/localization-fixture.ps1 -Action Write` writes fourteen German keys into the **deployed**
+folder for a look, `-Action Remove` puts the repo's empty file back, and it refuses to write a key
+that is not in `EN` or whose `{VARIABLES}` differ. `deploy.ps1` overwrites the deployed folder, so
+re-run it after a deploy. It is a fixture, not a translation: machine-written and unreviewed, which
+is the same argument the lead accepted for shipping the folders empty.
 
 **`bannerlord.diplomacy.declare_war` reports success when the war was refused.** It answers
 `"Khuzait declared war on Battania"` and nothing happens - the mod refuses a vassal declaring a war
