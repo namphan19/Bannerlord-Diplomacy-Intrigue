@@ -106,6 +106,16 @@ re-rolled after a reload (now saved, `SpyMission` 12); stale figures in six desi
       and a **second live enum-on-the-screen defect in eight places** (`Treaty.Type` printed
       `TributaryPact` on the war row). `Treaty.NameOf` names the six kinds behind keys in one place;
       **852 keys** now, AC1 re-checked live on all three tabs, 0 ERROR / 0 WARN.
+- [ ] **Language-folder fixes from the 2026-10-04 review of this branch** (done on the branch, none seen in game):
+      (1) `under_development` removed from all 13 `language_data.xml` - by IL it overwrote vanilla's flag
+      and the retail game hides such a language, which could turn a player's own language into English;
+      (2) every `di_strings.xml` had a comment before `<base>`, and `LoadLanguage` reads
+      `ChildNodes[1].FirstChild`, so **no non-English file would ever have loaded a string** - comments now
+      sit inside `<base>`, in the emitter and the fixture too; (3) `release.ps1` drops `VI`, `deploy.ps1`
+      finds the game folder through MSBuild (its VI step never ran). `check-localization.ps1` rules 12-13
+      block (1) and (2). **Still open from that review:** 28 keys whose English is one `{VARIABLE}` carrying
+      English text, the lowercase `{cost}` variable the check cannot see, and keyed producers reaching
+      log/`diplomacy.*` output. The AC2 look below now also tests (1) and (2).
 - [ ] **AC2: one look at the German fixture, and it is already written.** The plumbing is **proven
       live** - the lead's session on 2026-10-04 switched the game to Deutsch and the game log shows
       it opening `DiplomacyIntrigue/ModuleData/Languages/DE/di_strings.xml`, so the mod's folder is

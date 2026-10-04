@@ -3,8 +3,7 @@
      generated from those calls by tools/Localize emit. Edit the code, not this file. -->
 <LanguageData id="English" name="English" subtitle_extension="en-GB"
               supported_iso="en-GB,en-US,en,eng,en-us,en-gb,en-au,en-bz,en-ca,en-ie,en-jm,en-nz,en-za,en-tt"
-              text_processor="TaleWorlds.Localization.TextProcessor.LanguageProcessors.EnglishTextProcessor"
-              under_development="false">
+              text_processor="TaleWorlds.Localization.TextProcessor.LanguageProcessors.EnglishTextProcessor">
   <LanguageFile xml_path="EN/std_module_strings.xml" />
   <LanguageFile xml_path="EN/di_strings.xml" />
 </LanguageData>

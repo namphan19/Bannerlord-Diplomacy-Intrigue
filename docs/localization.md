@@ -14,7 +14,7 @@ one file.
 module/DiplomacyIntrigue/ModuleData/Languages/
   EN/                          English: the source. Generated from the code - do not edit.
     language_data.xml
-    di_strings.xml            596 keys, the whole of the mod
+    di_strings.xml            852 keys, the whole of the mod
     std_module_strings.xml
   DE/  FR/  RU/  ...           one folder per language the game itself offers
     language_data.xml
@@ -26,13 +26,18 @@ The thirteen folders are the languages Bannerlord offers: `EN`, `BR`, `CNs`, `CN
 `Español (LA)` - is already in that folder's `language_data.xml`, copied from the game install, so
 do not retype it.
 
-`VI` is deliberately absent: Vietnamese is a community patch over the game, not one of its
-languages, and it needs a separate font mod to draw the accents.
+`VI` is in the repository but **never in a release zip** (`release.ps1` removes it): Vietnamese is a
+community patch over the game, not one of its languages, and it needs a separate font mod to draw the
+accents. `deploy.ps1` keeps it only where the patch is installed.
 
 ## Filling in a language
 
 1. Copy `Languages/EN/di_strings.xml` to `Languages/<your code>/di_strings.xml`. Keep the file
    name; `language_data.xml` already points at it.
+   Keep any comment **inside** `<base>`, never between `<?xml ...?>` and `<base>`: the game reads
+   the file's second top-level node, so a comment there makes the whole file load nothing, with no
+   warning. Do not add `under_development` to `language_data.xml` either: it overwrites the game's
+   own flag and the retail game then hides that language. The check refuses both.
 2. Change the tag near the top to your language, exactly as `language_data.xml` spells it:
 
    ```xml

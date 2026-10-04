@@ -127,12 +127,13 @@ if ($Action -eq 'Remove') {
 # is the same shape a translator's file would be.
 $sb = New-Object System.Text.StringBuilder
 [void]$sb.AppendLine('<?xml version="1.0" encoding="utf-8"?>')
+[void]$sb.AppendLine('<base xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" type="string">')
+# The comment is inside <base>: the game reads ChildNodes[1].FirstChild, and a comment before <base> makes the file load nothing.
 [void]$sb.AppendLine('<!-- TEST FIXTURE, written by scripts/localization-fixture.ps1 on ' +
     (Get-Date -Format 'yyyy-MM-dd HH:mm') + '. Not a translation and not for release: machine-written,')
 [void]$sb.AppendLine('     unreviewed by a native reader, and it exists only to answer story 4.1 AC2 - does the')
 [void]$sb.AppendLine('     text switch when the game switches language. scripts/localization-fixture.ps1 -Remove')
 [void]$sb.AppendLine('     puts the repo''s empty file back. The shipped folders stay empty (lead, 2026-10-03). -->')
-[void]$sb.AppendLine('<base xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" type="string">')
 [void]$sb.AppendLine('  <tags>')
 [void]$sb.AppendLine("    <tag language=""Deutsch"" />")
 [void]$sb.AppendLine('  </tags>')

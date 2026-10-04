@@ -1,3 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Untranslated: the game shows the English that each DiText call carries in the code, so this
-     folder changes nothing until someone fills it in. See docs/localization.md for how. -->
+<base xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" type="string">
+    <!-- Untranslated: the game shows the English that each DiText call carries in the code, so this
+      folder changes nothing until someone fills it in. See docs/localization.md for how. -->
+  <tags>
+    <tag language="Vietnamese" />
+  </tags>
+  <strings>
+  </strings>
+</base>

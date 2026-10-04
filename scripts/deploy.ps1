@@ -74,7 +74,12 @@ if ($LASTEXITCODE -ne 0) { throw "Deploy failed with exit code $LASTEXITCODE." }
 # patch is absent. That makes AC2 true by construction instead of by argument, and it cannot
 # be got wrong by a player: no patch, no folder. Nothing of the patch's is touched or read
 # apart from one file's existence.
-if ($GameFolder) {
+# The folder MSBuild actually deployed to. $GameFolder is empty when BANNERLORD_GAME_DIR is unset and
+# Directory.Build.props found the install itself, which used to skip this whole block silently.
+$resolved = $GameFolder
+if (-not $resolved) { $resolved = (dotnet msbuild (Join-Path $repo "src/DiplomacyIntrigue/DiplomacyIntrigue.csproj") -getProperty:GameFolder -nologo 2>$null | Select-Object -Last 1).Trim() }
+if ($resolved) {
+    $GameFolder = $resolved
     $patch = Join-Path $GameFolder "Modules\Native\ModuleData\Languages\VI\language_data.xml"
     $ours = Join-Path $GameFolder "Modules\DiplomacyIntrigue\ModuleData\Languages\VI"
     if (-not (Test-Path $patch) -and (Test-Path $ours)) {

@@ -15,7 +15,6 @@
 -->
 <LanguageData id="Vietnamese" name="Tiếng Việt" subtitle_extension="vi"
               supported_iso="vi,vie,vi-VN"
-              text_processor="TaleWorlds.Localization.TextProcessor.LanguageProcessors.VietnameseTextProcessor"
-              under_development="true">
+              text_processor="TaleWorlds.Localization.TextProcessor.LanguageProcessors.VietnameseTextProcessor">
   <LanguageFile xml_path="VI/di_strings.xml" />
 </LanguageData>

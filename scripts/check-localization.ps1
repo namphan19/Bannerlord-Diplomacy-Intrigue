@@ -31,6 +31,16 @@
          passed, because the bug is in the format the engine is handed rather than in the key or
          the English. Rule 8 is the whole reason the ninth rule exists.
       9. A duplicate id inside one strings file.
+     10. (see the prefab rule below)
+     11. A language folder that is part-filled (empty or complete, never part-way).
+     12. A strings file the game would load as nothing: not well-formed XML, or whose second
+         top-level node is not <base>. LocalizedTextManager.LoadLanguage reads
+         doc.ChildNodes[1].FirstChild, so a comment between the declaration and <base> makes
+         the whole file load zero strings with no warning (IL, 2026-10-04).
+     13. An `under_development` attribute in any language_data.xml. LanguageData.Deserialize
+         overwrites the flag when the attribute is present, and the retail game hides every
+         "under development" language from GetLanguageIds, so one such attribute can make the
+         game fall back to English for a player who chose that language (IL, 2026-10-04).
 
     Reported, not failed: a literal left in a prefab's Text attribute (rule below). A widget's
     Text is a plain string, so it cannot be keyed where it stands and each one has to move into a
@@ -259,6 +269,30 @@ if (Test-Path $languagesRoot) {
 $enData = Join-Path $Module "ModuleData\Languages\EN\language_data.xml"
 if ((Test-Path $languagesRoot) -and -not (Test-Path $enData)) {
     $problems.Add("EN: no language_data.xml. The English strings load without it; the other languages need the same file to be found.")
+}
+
+# ----- Rules 12 and 13: what the game reads out of a language folder ------------------------------
+
+$langRoot = Join-Path $Module "ModuleData\Languages"
+if (Test-Path $langRoot) {
+    foreach ($dir in Get-ChildItem $langRoot -Directory) {
+        foreach ($f in Get-ChildItem $dir.FullName -Filter *.xml) {
+            $doc = New-Object System.Xml.XmlDocument
+            try { $doc.Load($f.FullName) }
+            catch { $problems.Add("$($dir.Name)/$($f.Name): not well-formed XML - $($_.Exception.Message)"); continue }
+            if ($f.Name -eq 'language_data.xml') {
+                if ($doc.DocumentElement.HasAttribute('under_development')) {
+                    $problems.Add("$($dir.Name)/language_data.xml sets under_development. It overwrites vanilla's flag and the retail game hides such a language, so the player's own language can be replaced by English. Leave the attribute out.")
+                }
+            }
+            elseif ($f.Name -like '*strings*.xml') {
+                $second = $doc.ChildNodes[1]
+                if ($null -eq $second -or $second.Name -ne 'base') {
+                    $problems.Add("$($dir.Name)/$($f.Name): the second top-level node is not <base> (a comment before <base>?). The game reads ChildNodes[1].FirstChild, so this file would load no strings at all.")
+                }
+            }
+        }
+    }
 }
 
 # ----- Prefab text ------------------------------------------------------------------------------
