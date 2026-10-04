@@ -87,6 +87,17 @@ to the property that replaced it by line number, and comparing that property's E
 heading that had lost its first word. **Compare against the base commit when a pass rewrites text
 in bulk, not against a file the same pass generated.**
 
+**A tool's own list is a list of things it wants to do, not evidence.** `tools/Localize`'s dry run
+offered 122 strings to key on 2026-10-04 and 32 of them were wrong, three losing English outright: a
+conditional the rewriter would not rewrite was turned into an opaque `{VARIABLE}`, so
+`Clan {NAME}, the crown` came out as `Clan {NAME}{TOLOWERINVARIANT}` and the word left the screen.
+**Read the dry-run list against the source before applying it**, and check the three shapes that are
+wrong for a translation rather than for C#: a template that is nothing but one `{VARIABLE}`, a
+variable whose value is a word or a sentence rather than a number or a name, and a conditional
+whose branches are not both plain text. Story 4.1 §9a has the rest. Two more rules followed from the
+same reading, and one of them (`ShapeVerdict` must run *after* the boundary rule, never before) is
+why a shape check that relabels rows must come last in `Describe`.
+
 **Never force-kill Bannerlord.** `deploy.ps1` refuses to run while the game is open, and
 that guard is the point - the lead may be playing, and a balance run can be hours long. Use
 `mcp__gabs__games_stop`, and only for a session you started. If the game is running and you

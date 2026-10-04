@@ -207,24 +207,15 @@ namespace Localize
             c.Variables = string.Join(",", vars.Select(v => v.Name));
             c.Key = Keys.For(Area, template, vars.Select(v => v.Name).ToArray());
 
-            if (IsFragment(template))
+            // An exception is a judgement about a whole sentence, so it is read here, where the
+            // whole sentence exists. The skip-reason chain above runs before the template is built
+            // and sees only the first literal, which is how a rule naming the wording found nothing
+            // to match: `c.English` was "Refused: " rather than "Refused: {REASON}".
+            var exempt = Exceptions.IsExempt(_file, method, c.Line, c.English);
+            if (exempt != null)
             {
-                c.Verdict = Candidate.VerdictManual;
-                c.Reason = "a fragment of a longer sentence (" + template.Trim()
-                           + "): it was one piece of a sentence built elsewhere, so it is keyed with that sentence by hand";
-                return c;
-            }
-
-            // The shape rules are not the UI folder's alone. A conditional with another
-            // conditional inside it, or a sentence assembled somewhere else, is untranslatable
-            // wherever it sits - and converting it anyway is worse than leaving it English, because
-            // the English would end up inside a variable: half a sentence in one language and half
-            // in another. Two conditionals in one sentence read the same way.
-            var shape = ShapeVerdict(expr, spread);
-            if (shape != null)
-            {
-                c.Verdict = Candidate.VerdictManual;
-                c.Reason = shape;
+                c.Verdict = Candidate.VerdictSkip;
+                c.Reason = exempt;
                 return c;
             }
 
@@ -271,6 +262,31 @@ namespace Localize
                     c.Verdict = Candidate.VerdictSkip;
                     c.Reason = "not a screen: outside UI/, no sink, and no text-producing method";
                 }
+            }
+
+            // The shape rules come last, and only for something a player actually reads. Run first,
+            // they relabelled a log line or a telemetry row as "a human decides", which overstates
+            // the work: the word-producer rule did exactly that to 34 rows on 2026-10-04, none of
+            // which is a screen.
+            if (c.Verdict != Candidate.VerdictConvert) return c;
+
+            if (IsFragment(template))
+            {
+                c.Verdict = Candidate.VerdictManual;
+                c.Reason = "a fragment of a longer sentence (" + template.Trim()
+                           + "): it was one piece of a sentence built elsewhere, so it is keyed with that sentence by hand";
+                return c;
+            }
+
+            // A conditional with another conditional inside it, or a sentence assembled somewhere
+            // else, is untranslatable wherever it sits - and converting it anyway is worse than
+            // leaving it English, because the English ends up inside a variable: half a sentence in
+            // one language and half in another.
+            var shape = ShapeVerdict(expr, spread, choice);
+            if (shape != null)
+            {
+                c.Verdict = Candidate.VerdictManual;
+                c.Reason = shape;
             }
 
 return c;
@@ -343,8 +359,8 @@ if (IsCaseLabel(expr)) return "switch label: an id the code compares, not a word
             var constant = ConstantContext(expr);
             if (constant != null) return constant;
 
-            var exempt = Exceptions.IsExempt(_file, method);
-            if (exempt != null) return exempt;
+            // The exemption is read in Describe, after the whole sentence has been built.
+            //
             if (Regex.IsMatch(c.English, "^#[0-9A-Fa-f]{6,8}$")) return "colour";
             if (expr.Ancestors().OfType<ObjectCreationExpressionSyntax>()
                 .Any(o => o.Type.ToString().EndsWith("Color", StringComparison.Ordinal))) return "colour";
@@ -472,10 +488,16 @@ private string PlayerFacingSink(ExpressionSyntax expr)
         ///    a variable. Two conditionals in one sentence are the same problem: which wording goes
         ///    with which is a judgement about the sentence, not about the syntax.
         /// </summary>
-        private static string ShapeVerdict(ExpressionSyntax expr, int spread)
+        private static string ShapeVerdict(ExpressionSyntax expr, int spread, TextChoice choice)
         {
             if (!IsInConvertiblePosition(expr))
                 return "built in pieces elsewhere, or not a value the rewriter can own";
+
+            // Both branches when it is a choice the rewriter turns into two keys, and the whole
+            // expression either way: a variable can hide in a branch as easily as in the line.
+            var behind = EnglishBehindVariables(expr, choice);
+            if (behind != null) return behind;
+
             if (spread > 1)
                 return "one sentence spread over " + spread + " Append calls: a language cannot reorder words across statements, so it is written by hand (story 4.1 ST-5)";
             if (!SupportsChoices(expr))
@@ -499,6 +521,21 @@ private string PlayerFacingSink(ExpressionSyntax expr)
             foreach (var part in parts)
             {
                 if (FindTextChoice(part) != null) continue;
+
+                // A conditional the tool will not rewrite as two whole sentences - a branch that is
+                // itself a concatenation, a branch that is punctuation, a branch that is a value -
+                // must never be treated as an opaque {VARIABLE}. Its text would leave the English
+                // without a trace, and the screen would silently lose a word. This is not
+                // hypothetical: on 2026-10-04 the dry run offered
+                //     Clan {NAME}, the crown        ->  Clan {NAME}{TOLOWERINVARIANT}
+                //     Speaks through nobody         ->  Speaks through {TOSTRING}
+                //     The network can grow to 40; it stands at 20.0 now.
+                //                                     ->  ... can grow to {CEILINGOF}{TOSTRING}
+                // and applying it would have deleted English from three screens. IsTextBranch is
+                // what declines these, and the loop below only looked for a conditional nested one
+                // level down, so the conditional sitting in the part itself fell through.
+                if (part is ConditionalExpressionSyntax) return false;
+
                 if (part.DescendantNodesAndSelf().OfType<ConditionalExpressionSyntax>()
                     .Any(c => IsTextBranch(c.WhenTrue) && IsTextBranch(c.WhenFalse)
                               && !c.DescendantNodes().OfType<ConditionalExpressionSyntax>().Any()))
@@ -527,6 +564,119 @@ private string PlayerFacingSink(ExpressionSyntax expr)
             if (template.Contains("{")) return false;
             var words = Regex.Matches(template.Trim(), "[A-Za-z]+").Count;
             return words <= 2;
+        }
+
+        /// <summary>
+        /// Why a variable in this expression carries English rather than a value, or null when every
+        /// variable holds a value.
+        ///
+        /// R5 lets a value travel as a <c>{VARIABLE}</c>, and the value is a number or a name. A
+        /// *word* or a *sentence* travelling that way is the same hole one level out: the language
+        /// is asked to supply English inside its own sentence. Three shapes reach here, all found on
+        /// 2026-10-04:
+        ///
+        ///  - a local assigned a conditional of two words, as in
+        ///    <c>var verb = leader == Hero.MainHero ? " are " : " is ";</c>, which would have made
+        ///    <c>{WHO}{VERB}held - 3 of 30 days</c> a key;
+        ///  - a local assigned by a method this project lists as producing text, as in
+        ///    <c>var side = SideChange.SideName(...)</c>, which would have made
+        ///    <c>Pay {PRICE} - they come over to {SIDE}</c> a key;
+        ///  - an <c>out</c> parameter, which is by definition something the callee computed, and
+        ///    for <c>TreatyRegistry.Sign</c> it is a whole refusal sentence - <c>{REASON}</c>.
+        ///
+        /// One hop through the locals of the enclosing method, which covers the shapes above and
+        /// stops there on purpose: a second hop is dataflow analysis, and a wrong answer from one
+        /// would put an English word inside a translation nobody can fix. What one hop cannot see
+        /// goes in <c>text-producers.txt</c> or <c>exceptions.txt</c>, which a person reads.
+        /// </summary>
+        private static string EnglishBehindVariables(ExpressionSyntax expr, TextChoice choice)
+        {
+            var method = EnclosingMethod(expr);
+            if (method == null) return null;
+
+            var declared = new Dictionary<string, ExpressionSyntax>(StringComparer.Ordinal);
+            foreach (var declarator in method.DescendantNodes().OfType<VariableDeclaratorSyntax>())
+            {
+                if (declarator.Initializer?.Value == null) continue;
+                if (declared.ContainsKey(declarator.Identifier.ValueText)) continue;
+                declared[declarator.Identifier.ValueText] = declarator.Initializer.Value;
+            }
+
+            // A name an out argument introduced. It has no declarator initialiser to look through,
+            // so without this list "out var reason" reads as a plain identifier and the refusal
+            // sentence behind it slips into a key - which is what happened to five sites in
+            // DiplomacyMenu on 2026-10-04 ("Refused: {REASON}", "Failed: {FAILED}").
+            var outNames = new HashSet<string>(StringComparer.Ordinal);
+            foreach (var argument in method.DescendantNodes().OfType<ArgumentSyntax>())
+            {
+                // Either signal: the keyword, or the fact that the argument *is* a declaration,
+                // which is what `out var reason` parses to.
+                var declares = argument.Expression is DeclarationExpressionSyntax;
+                if (!declares && !argument.RefOrOutKeyword.IsKind(SyntaxKind.OutKeyword)) continue;
+                foreach (var declarator in argument.DescendantNodes().OfType<VariableDeclaratorSyntax>())
+                    outNames.Add(declarator.Identifier.ValueText);
+            }
+
+            // The parts of the expression, and of both branches when it is a choice the rewriter
+            // turns into two keys - a variable can hide in a branch as easily as in the whole.
+            var parts = new List<ExpressionSyntax>(Flatten(expr));
+            if (choice != null)
+            {
+                if (choice.WhenTrue != null) parts.AddRange(Flatten(choice.WhenTrue));
+                if (choice.WhenFalse != null) parts.AddRange(Flatten(choice.WhenFalse));
+            }
+
+            foreach (var part in parts.Concat(parts.SelectMany(RightHandSide)))
+            {
+                if (part is IdentifierNameSyntax named && outNames.Contains(named.Identifier.ValueText))
+                    return "a variable filled by an out parameter, which is a sentence the callee built, so the line would read half in one language and half in another";
+
+                var throughLocal = part is IdentifierNameSyntax identifier
+                                   && declared.TryGetValue(identifier.Identifier.ValueText, out _);
+                var resolved = throughLocal
+                    ? declared[((IdentifierNameSyntax)part).Identifier.ValueText]
+                    : part;
+
+                var isOut = resolved.DescendantNodesAndSelf().OfType<ArgumentSyntax>()
+                    .Any(a => a.RefOrOutKeyword.IsKind(SyntaxKind.OutKeyword));
+                if (!isOut && resolved is DeclarationExpressionSyntax declaration)
+                    isOut = declaration.FirstAncestorOrSelf<ArgumentSyntax>()?
+                        .RefOrOutKeyword.IsKind(SyntaxKind.OutKeyword) == true;
+                if (isOut)
+                    return "a variable filled by an out parameter, which is a sentence the callee built, so the line would read half in one language and half in another";
+
+                // Only through a local. A conditional written in the expression is what the rewriter
+                // turns into two whole keys - a plural, a two-wording label - and looking inside it
+                // finds the next conditional, which is a value. The same conditional reached through
+                // a local is the other thing entirely: the local holds a finished English fragment
+                // the caller cannot reorder, so there is nothing left to key.
+                if (throughLocal)
+                {
+                    var conditional = resolved as ConditionalExpressionSyntax
+                                      ?? resolved.DescendantNodesAndSelf().OfType<ConditionalExpressionSyntax>().FirstOrDefault();
+                    if (conditional != null && IsTextBranch(conditional.WhenTrue) && IsTextBranch(conditional.WhenFalse))
+                        return "a variable whose value is a piece of English the code picks at run time (\" are \" / \" is \"), so a language would have to supply the English words inside its own sentence";
+                }
+
+                var producer = TextProducers.WordProducerIn(resolved);
+                if (producer != null)
+                    return "a variable filled by " + producer + "(), which returns text rather than a value, so the sentence would read half in one language and half in another";
+            }
+            return null;
+        }
+
+        /// <summary>The expressions an expression depends on: its arguments, and a call's receiver.</summary>
+        private static IEnumerable<ExpressionSyntax> RightHandSide(ExpressionSyntax part)
+        {
+            if (part is InvocationExpressionSyntax call)
+            {
+                foreach (var a in call.ArgumentList.Arguments)
+                {
+                    if (a.Expression != null) yield return a.Expression;
+                }
+            }
+            if (part is MemberAccessExpressionSyntax member && member.Expression != null)
+                yield return member.Expression;
         }
 
         /// <summary>
@@ -1169,6 +1319,43 @@ private string PlayerFacingSink(ExpressionSyntax expr)
             return _keys.Contains(relative + "|" + name);
         }
 
+        /// <summary>
+        /// Whether a call inside an expression is to a method this list says produces text, and the
+        /// method's name if so.
+        ///
+        /// A value is allowed to travel as a <c>{VARIABLE}</c> - R5 is about numbers, so a
+        /// translation can never change how one is formatted. A *word* is not a value: passing one
+        /// as a variable asks a language to supply English words inside its own sentence, which is
+        /// the same hole as <c>{VERB}</c>, one level further out. "Pay {PRICE} - they come over to
+        /// {SIDE}" with <c>SideChange.SideName</c> behind the variable is the shape (found
+        /// 2026-10-04). The fix is not here: the producer itself has to return a keyed string, and
+        /// until it does the site is written by hand.
+        /// </summary>
+        public static string WordProducerIn(ExpressionSyntax expr)
+        {
+            foreach (var call in expr.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>())
+            {
+                var name = Calls.Name(call);
+                if (string.IsNullOrEmpty(name)) continue;
+                var shortName = name.Substring(name.LastIndexOf('.') + 1);
+                if (shortName == "ToString" || shortName == "Format") continue;
+
+                // The list is consulted by method name alone, because the declaring file is not
+                // knowable from the call site. It is a short list of deliberately distinctive
+                // names, and a false positive only moves a site from "the tool can do it" to "a
+                // human decides", which is the safe direction.
+                if (_keys == null) _keys = Load();
+                foreach (var key in _keys)
+                {
+                    var at = key.IndexOf('|');
+                    if (at < 0) continue;
+                    if (key.Substring(at + 1) != shortName) continue;
+                    return shortName;
+                }
+            }
+            return null;
+        }
+
         private static HashSet<string> Load()
         {
             var set = new HashSet<string>(StringComparer.Ordinal);
@@ -1202,12 +1389,63 @@ private string PlayerFacingSink(ExpressionSyntax expr)
     {
         private static List<(string File, string Method, string Reason)> _rules;
 
-        public static string IsExempt(string file, MethodDeclarationSyntax method)
+        /// <summary>
+        /// The judgement <c>exceptions.txt</c> holds for this expression, or null when it holds none.
+        ///
+        /// Two ways to name one expression, and the choice matters. <c>Name:123</c> is a line
+        /// number: precise, but our own rewriter inserts lines above the site, so on 2026-10-04 six
+        /// rules written that way stopped firing the moment they were used, and the sites went back
+        /// into the convert list with nothing to say why. <c>Name#English</c> anchors on the wording
+        /// the tool computed instead, which no edit to the file above it can move - and if the
+        /// wording does change, the rule stops matching and the site reappears in the report for a
+        /// person, which is the direction that costs nothing. Prefer it; use <c>Name:123</c> only
+        /// where there is no stable wording to name.
+        ///
+        /// Either way the rule is a judgement a person wrote, not something the shapes decided, and
+        /// it must never make a site invisible: a rule that stops matching turns the site back into
+        /// an ordinary convert candidate, which the dry run prints.
+        /// </summary>
+        /// <summary>
+        /// A sentence with its line breaks written as <c>&lt;br&gt;</c>, so a rule can name it on one
+        /// line. A rules file has one rule per line and a sentence does not always fit on one: the
+        /// submission offer is two paragraphs. <c>&lt;br&gt;</c> rather than <c>{NL}</c> because a
+        /// brace is what a variable looks like in this file's other column, and a rule should not be
+        /// able to be mistaken for a placeholder.
+        /// </summary>
+        private static string FoldBreaks(string english)
+        {
+            if (string.IsNullOrEmpty(english)) return english;
+            if (english.IndexOf('\n') < 0 && english.IndexOf('\r') < 0) return english;
+            return english.Replace("\r\n", "<br>").Replace("\r", "<br>").Replace("\n", "<br>");
+        }
+
+        public static string IsExempt(string file, MethodDeclarationSyntax method, int line, string english)
         {
             foreach (var rule in Rules(file))
             {
-                if (rule.Method != "*" && (method == null || method.Identifier.ValueText != rule.Method))
-                    continue;
+                if (rule.Method != "*" && rule.Method != "*:*")
+                {
+                    var hash = rule.Method.LastIndexOf('#');
+                    if (hash > 0)
+                    {
+                        if (method == null || method.Identifier.ValueText != rule.Method.Substring(0, hash)) continue;
+                        if (!string.Equals(rule.Method.Substring(hash + 1), english, StringComparison.Ordinal))
+                        if (!string.Equals(rule.Method.Substring(hash + 1), FoldBreaks(english), StringComparison.Ordinal)) continue;
+                    }
+                    else
+                    {
+                        var at = rule.Method.LastIndexOf(':');
+                        if (at > 0 && int.TryParse(rule.Method.Substring(at + 1), out var wanted))
+                        {
+                            if (method == null || method.Identifier.ValueText != rule.Method.Substring(0, at)) continue;
+                            if (line != wanted) continue;
+                        }
+                        else if (method == null || method.Identifier.ValueText != rule.Method)
+                        {
+                            continue;
+                        }
+                    }
+                }
                 return "exempt by tools/Localize/exceptions.txt: " + rule.Reason;
             }
             return null;

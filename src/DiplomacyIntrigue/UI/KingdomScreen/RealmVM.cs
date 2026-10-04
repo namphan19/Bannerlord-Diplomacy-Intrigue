@@ -523,7 +523,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
             if (patron != null)
             {
-                StandingTitle = "Vassal of " + patron.Name;
+                StandingTitle = DiText.T("DI_REALM_VASSAL_OF_NAME_2", "Vassal of {NAME}", ("NAME", patron.Name));
                 StandingColor = NegativeColor;
                 StandingDetail = DiText.T("DI_REALM_ONE_KINGDOM_ANSWERS_TO_NAME_2",
                     "one kingdom answers to {NAME}",
@@ -569,13 +569,19 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             }
 
             var sphereHead = Hegemony.SphereHead(state, us);
-            SphereStrengthText = "sphere " + Hegemony.SphereStrength(state, sphereHead).ToString("0");
+            SphereStrengthText = DiText.T("DI_REALM_SPHERE_SPHERESTRENGTH_2",
+                "sphere {SPHERESTRENGTH}",
+                ("SPHERESTRENGTH", Hegemony.SphereStrength(state, sphereHead).ToString("0")));
             var dominance = Power.Dominance(us);
             var ambition = Power.Ambition(us);
             var greed = Power.Greed(state, us);
-            DominanceText = "dominance " + dominance.ToString("0.00");
-            AmbitionText = "ambition " + ambition.ToString("0.00");
-            GreedText = "greed " + greed.ToString("0.00");
+            DominanceText = DiText.T("DI_REALM_DOMINANCE_DOMINANCE_2",
+                "dominance {DOMINANCE}",
+                ("DOMINANCE", dominance.ToString("0.00")));
+            AmbitionText = DiText.T("DI_REALM_AMBITION_AMBITION_2",
+                "ambition {AMBITION}",
+                ("AMBITION", ambition.ToString("0.00")));
+            GreedText = DiText.T("DI_REALM_GREED_GREED_2", "greed {GREED}", ("GREED", greed.ToString("0.00")));
             GreedColor = greed > 0f ? NegativeColor : PositiveColor;
 
             // The bond we answer to, if there is one.
@@ -620,8 +626,15 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                     DiText.T("DI_REALM_DAYS_FOR_THE_THRONE_ELAPSEDDAYSUNTILNOW_2",
                         "{ELAPSEDDAYSUNTILNOW} days, for the throne",
                         ("ELAPSEDDAYSUNTILNOW", (int)civil.StartedOn.ElapsedDaysUntilNow)),
-                    "our exhaustion " + ours.ToString("0.0") + "   -   theirs " + theirs.ToString("0.0")
-                        + "   -   " + against + (against == 1 ? " house" : " houses") + " against us",
+                    against == 1 ? DiText.T("DI_REALM_OUR_EXHAUSTION_THEIRS_HOUSE_AGAINST_US_OURS_THEIRS_AGAINST_2",
+                        "our exhaustion {OURS}   -   theirs {THEIRS}   -   {AGAINST} house against us",
+                        ("OURS", ours.ToString("0.0")),
+                        ("THEIRS", theirs.ToString("0.0")),
+                        ("AGAINST", against)) : DiText.T("DI_REALM_OUR_EXHAUSTION_THEIRS_HOUSES_AGAINST_US_OURS_THEIRS_AGAINST_2",
+                        "our exhaustion {OURS}   -   theirs {THEIRS}   -   {AGAINST} houses against us",
+                        ("OURS", ours.ToString("0.0")),
+                        ("THEIRS", theirs.ToString("0.0")),
+                        ("AGAINST", against)),
                     string.Empty,
                     MutedColor,
                     civil.Faction == null ? NegativeColor : Color.FromUint(civil.Faction.Color),
@@ -717,10 +730,16 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                     (int)(target < 0f ? 0f : target > 100f ? 100f : target),
                     "hold " + hold.ToString("0") + "  ->  " + DriftWord(hold, target)
                         + " " + target.ToString("0"),
-                    "revolts below " + threshold.ToString("0"),
+                    DiText.T("DI_REALM_REVOLTS_BELOW_THRESHOLD_2",
+                        "revolts below {THRESHOLD}",
+                        ("THRESHOLD", threshold.ToString("0"))),
                     link.DefianceMarks,
-                    link.TributeAmount + " per period",
-                    "renews in " + TermLeft(link),
+                    DiText.T("DI_REALM_PER_PERIOD_TRIBUTEAMOUNT_2",
+                        "{TRIBUTEAMOUNT} per period",
+                        ("TRIBUTEAMOUNT", link.TributeAmount)),
+                    DiText.T("DI_REALM_RENEWS_IN_TERMLEFT_2",
+                        "renews in {TERMLEFT}",
+                        ("TERMLEFT", TermLeft(link))),
                     BuildTermChips(state, link),
                     summonQuote,
                     issueSummon));
@@ -904,7 +923,10 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                     progress));
             }
 
-            ClaimsCountText = live + " live   -   " + fabrications.Count + " being fabricated";
+            ClaimsCountText = DiText.T("DI_REALM_LIVE_BEING_FABRICATED_LIVE_COUNT_2",
+                "{LIVE} live   -   {COUNT} being fabricated",
+                ("LIVE", live),
+                ("COUNT", fabrications.Count));
         }
 
         // ----- column 3: our agreements ----------------------------------------
@@ -1003,7 +1025,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                         "{NAME} - neither may declare war",
                         ("NAME", other.Name));
                 default:
-                    return other.Name + " - active truce";
+                    return DiText.T("DI_REALM_ACTIVE_TRUCE_NAME_2",
+                        "{NAME} - active truce",
+                        ("NAME", other.Name));
             }
         }
     }
@@ -1125,10 +1149,11 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             DefianceMarks = defianceMarks;
             HasDefiance = defianceMarks > 0;
             // The mockup's defiance line: how many marks, and what the next ones cost.
-            DefianceText = defianceMarks > 0
-                ? "defiance: " + defianceMarks + " mark(s)"
-                : "defiance: none - " + DiplomacyConstants.DefianceMarksToLapse
-                  + " marks and the link does not renew";
+            DefianceText = defianceMarks > 0 ? DiText.T("DI_REALM_DEFIANCE_MARK_DEFIANCEMARKS_2",
+                "defiance: {DEFIANCEMARKS} mark(s)",
+                ("DEFIANCEMARKS", defianceMarks)) : DiText.T("DI_REALM_DEFIANCE_NONE_MARKS_AND_THE_LINK_DEFIANCEMARKSTOLAPSE_2",
+                "defiance: none - {DEFIANCEMARKSTOLAPSE} marks and the link does not renew",
+                ("DEFIANCEMARKSTOLAPSE", DiplomacyConstants.DefianceMarksToLapse));
             // One slot per mark the bond can take before it lapses, filled as they land.
             Dot1Color = defianceMarks >= 1 ? GoldColor : EmptyDotColor;
             Dot2Color = defianceMarks >= 2 ? GoldColor : EmptyDotColor;

@@ -1741,7 +1741,9 @@ namespace DiplomacyIntrigue.Diplomacy
             try
             {
                 InformationManager.ShowInquiry(new InquiryData(
-                    demander.Name + " demands tribute",
+                    DiText.T("DI_DIPLOMACY_DEMANDS_TRIBUTE_NAME_2",
+                        "{NAME} demands tribute",
+                        ("NAME", demander.Name)),
                     body,
                     true, true,
                     DiText.T("DI_DIPLOMACY_PAY_THE_TRIBUTE_2", "Pay the tribute"), DiText.T("DI_DIPLOMACY_REFUSE", "Refuse"),

@@ -39,3 +39,10 @@ Espionage/Missions.cs | Describe | the mission's type, shown in the Intelligence
 Espionage/Missions.cs | Pct | a chance, formatted for a screen
 Espionage/SpyNetworks.cs | Name | the network's own name
 Diplomacy/Summons.cs | Name | the summons' own name
+
+# Added 2026-10-04. The dry run offered keys whose {VARIABLE} carried one of these, which is the
+# hole rule 3 of story 4.1 R3 is about: a value may travel as a variable, a word may not.
+Diplomacy/CasusBelli.cs | NameOf | a war justification as the player reads it
+UI/KingdomScreen/RealmVM.cs | DriftWord | the Hold row's direction, a word spliced into a sentence
+UI/KingdomScreen/RealmVM.cs | Plain | a summons refusal with its marker stripped: a whole sentence
+UI/KingdomScreen/CourtVM.cs | AgendaName | a bloc's name, shown next to its shareDiplomacy/VassalTribute.cs | NameOf | a tribute level as the player reads it

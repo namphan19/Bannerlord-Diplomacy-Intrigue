@@ -469,7 +469,9 @@ namespace DiplomacyIntrigue.Diplomacy
             try
             {
                 InformationManager.ShowInquiry(new InquiryData(
-                    "Secede from " + patron.Name + "?",
+                    DiText.T("DI_DIPLOMACY_SECEDE_FROM_NAME_2",
+                        "Secede from {NAME}?",
+                        ("NAME", patron.Name)),
                     body,
                     true, true, DiText.T("DI_DIPLOMACY_SECEDE_2", "Secede"), DiText.T("DI_DIPLOMACY_STAY_2", "Stay"),
                     () =>

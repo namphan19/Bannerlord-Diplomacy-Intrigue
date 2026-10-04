@@ -303,7 +303,9 @@ namespace DiplomacyIntrigue.UI.Negotiation
             }
             else
             {
-                Title = (_weAreWinner ? "Peace with " : "Sue for peace with ") + _them.Name;
+                Title = _weAreWinner ? DiText.T("DI_PEACE_PEACE_WITH_NAME_2", "Peace with {NAME}", ("NAME", _them.Name)) : DiText.T("DI_PEACE_SUE_FOR_PEACE_WITH_NAME_2",
+                    "Sue for peace with {NAME}",
+                    ("NAME", _them.Name));
                 Subtitle = story + "   -   their condition: "
                            + ExhaustionBands.Condition(war.ExhaustionOf(_them));
                 BuildEditable();
@@ -334,7 +336,9 @@ namespace DiplomacyIntrigue.UI.Negotiation
             var cliff = PeaceTable.SubjugationCost;
             ShowCliff = budget >= cliff;
             CliffPercent = budget <= 0f ? 0 : (int)Math.Min(100f, cliff / budget * 100f);
-            CliffText = "the cliff   -   " + cliff.ToString("0");
+            CliffText = DiText.T("DI_PEACE_THE_CLIFF_CLIFF_2",
+                "the cliff   -   {CLIFF}",
+                ("CLIFF", cliff.ToString("0")));
 
             _specs.Clear();
             foreach (var spec in Catalogue(winner, loser)) _specs.Add(spec);
@@ -367,9 +371,11 @@ namespace DiplomacyIntrigue.UI.Negotiation
             var winner = _incoming.Winner;
             var cost = PeaceTable.CostOf(_incoming);
             var theirScore = WarScore.For(_war, _them);
-            BudgetLabel = conceding
-                ? "What " + _them.Name + "'s offer costs them"
-                : "What " + _them.Name + " asks of you";
+            BudgetLabel = conceding ? DiText.T("DI_PEACE_WHAT_OFFER_COSTS_THEM_NAME_2",
+                "What {NAME}'s offer costs them",
+                ("NAME", _them.Name)) : DiText.T("DI_PEACE_WHAT_ASKS_OF_YOU_NAME_2",
+                "What {NAME} asks of you",
+                ("NAME", _them.Name));
             BudgetText = cost.ToString("0");
             SpentText = theirScore < 0f ? DiText.T("DI_PEACE_OF_WAR_THEY_ARE_LOSING_AT_THEIRSCORE_THEIRSCORE_2_2",
                 "of a war they are losing at score {THEIRSCORE}{THEIRSCORE_2}",
@@ -451,9 +457,9 @@ namespace DiplomacyIntrigue.UI.Negotiation
 
             // Tribute.
             Add(specs, PeaceTermKind.Tribute, null,
-                _weAreWinner
-                    ? "Tribute, " + DiplomacyConstants.AiDefaultTributePerPeriod + " per period"
-                    : "Agree to pay tribute",
+                _weAreWinner ? DiText.T("DI_PEACE_TRIBUTE_PER_PERIOD_AIDEFAULTTRIBUTEPERPERIOD_2",
+                    "Tribute, {AIDEFAULTTRIBUTEPERPERIOD} per period",
+                    ("AIDEFAULTTRIBUTEPERPERIOD", DiplomacyConstants.AiDefaultTributePerPeriod)) : DiText.T("DI_PEACE_AGREE_TO_PAY_TRIBUTE_2", "Agree to pay tribute"),
                 _weAreWinner ? DiText.T("DI_PEACE_THEY_BUY_THE_PEACE_THEY_OWE_2",
                     "They buy the peace. They owe you no army.") : DiText.T("DI_PEACE_TRIBUTARY_PAYS_FOR_PEACE_AND_KEEPS_2",
                     "A tributary pays for peace and keeps everything else."),

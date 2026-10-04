@@ -551,7 +551,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 // Phase 3's espionage sells, and the mockup's figure is sample data. The
                 // row carries the band's short word ("loyal", "resisting"); the full
                 // sentence lives in the detail pane.
-                DiRowStatus = "Vassal of " + theirLink.DominantParty.Name;
+                DiRowStatus = DiText.T("DI_DIPLOMACY_VASSAL_OF_NAME_2",
+                    "Vassal of {NAME}",
+                    ("NAME", theirLink.DominantParty.Name));
                 DiRowValue = ShortHold(DiplomacyMenu.HoldMeaning(state, theirLink));
                 DiRowValueColor = MutedColor;
                 return;
@@ -561,9 +563,11 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             if (tribute != null && tribute.TributeAmount > 0)
             {
                 DiRowStatus = DiText.T("DI_DIPLOMACY_TRIBUTARY_2", "Tributary");
-                DiRowValue = tribute.TributePayer == them
-                    ? tribute.TributeAmount + " to us"
-                    : tribute.TributeAmount + " to them";
+                DiRowValue = tribute.TributePayer == them ? DiText.T("DI_DIPLOMACY_TO_US_TRIBUTEAMOUNT_2",
+                    "{TRIBUTEAMOUNT} to us",
+                    ("TRIBUTEAMOUNT", tribute.TributeAmount)) : DiText.T("DI_DIPLOMACY_TO_THEM_TRIBUTEAMOUNT_2",
+                    "{TRIBUTEAMOUNT} to them",
+                    ("TRIBUTEAMOUNT", tribute.TributeAmount));
                 DiRowValueColor = tribute.TributePayer == them ? PositiveColor : NegativeColor;
                 return;
             }
@@ -583,7 +587,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
         private void SetHoldValue(float hold)
         {
-            DiRowValue = "Hold  " + hold.ToString("0");
+            DiRowValue = DiText.T("DI_DIPLOMACY_HOLD_HOLD_2", "Hold  {HOLD}", ("HOLD", hold.ToString("0")));
             DiRowValueColor = hold >= DiplomacyConstants.HoldRenewThreshold ? PositiveColor
                 : hold >= DiplomacyConstants.HoldPassiveResistanceThreshold ? GoldColor
                     : NegativeColor;
@@ -627,7 +631,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 return Duration(age);
             }
             var days = (float)(treaty.ExpiresOn - CampaignTime.Now).ToDays;
-            return Duration(days) + " left";
+            return DiText.T("DI_DIPLOMACY_LEFT_DURATION_2",
+                "{DURATION} left",
+                ("DURATION", Duration(days)));
         }
 
         private static string Duration(float days)
@@ -790,12 +796,12 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
         private static string TrustHint(Kingdom holder, Kingdom other, float value)
         {
-            return "What " + holder.Name + " makes of " + other.Name + "'s word: "
-                   + value.ToString("0") + ". Trust is reputation, not feeling: it fades only if"
-                   + " nobody tends it - goodwill within two years, a grudge far more slowly - and"
-                   + " a war drives it down. Below " + DiplomacyConstants.TrustFloorForPacts.ToString("0")
-                   + " they will sign nothing but a truce or the terms that end a war - save a defensive"
-                   + " pact, a little lower, while a greater power outweighs you both.";
+            return DiText.T("DI_DIPLOMACY_WHAT_MAKES_OF_WORD_TRUST_IS_NAME_NAME_2_VALUE_2",
+                "What {NAME} makes of {NAME_2}'s word: {VALUE}. Trust is reputation, not feeling: it fades only if nobody tends it - goodwill within two years, a grudge far more slowly - and a war drives it down. Below {TRUSTFLOORFORPACTS} they will sign nothing but a truce or the terms that end a war - save a defensive pact, a little lower, while a greater power outweighs you both.",
+                ("NAME", holder.Name),
+                ("NAME_2", other.Name),
+                ("VALUE", value.ToString("0")),
+                ("TRUSTFLOORFORPACTS", DiplomacyConstants.TrustFloorForPacts.ToString("0")));
         }
 
         private static string ClaimHint(Kingdom holder, Kingdom other, Claim best)
@@ -805,8 +811,11 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                     "{NAME} holds no claim on {NAME_2}.",
                     ("NAME", holder.Name),
                     ("NAME_2", other.Name));
-            var text = holder.Name + "'s best: " + best.Type + " at legitimacy "
-                       + CasusBelli.Legitimacy(best.Type).ToString("0.00");
+            var text = DiText.T("DI_DIPLOMACY_BEST_AT_LEGITIMACY_NAME_TYPE_LEGITIMACY_2",
+                "{NAME}'s best: {TYPE} at legitimacy {LEGITIMACY}",
+                ("NAME", holder.Name),
+                ("TYPE", best.Type),
+                ("LEGITIMACY", CasusBelli.Legitimacy(best.Type).ToString("0.00")));
             if (best.AllowsFiefDemands)
                 text += DiText.T("DI_DIPLOMACY_IT_ENTITLES_THEM_TO_LAND_AT_2",
                     ". It entitles them to land at the peace table.");
@@ -868,11 +877,11 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                             "{WHY}",
                             ("WHY", why ?? "Not possible now.")),
                         0, can,
-                        can
-                            ? "We abandon " + ourLink.DominantParty.Name + ", which would not"
-                              + " defend us, and kneel to our attacker - they are named the"
-                              + " oathbreaker in every court."
-                            : why ?? "Not possible now.",
+                        can ? DiText.T("DI_DIPLOMACY_WE_ABANDON_WHICH_WOULD_NOT_DEFEND_NAME_2",
+                            "We abandon {NAME}, which would not defend us, and kneel to our attacker - they are named the oathbreaker in every court.",
+                            ("NAME", ourLink.DominantParty.Name)) : DiText.T("DI_DIPLOMACY_WHY_2",
+                            "{WHY}",
+                            ("WHY", why ?? "Not possible now.")),
                         () => DiplomacyMenu.DefectToAttacker(state, us, them),
                         DiplomacyActionVM.DangerText));
                 }
@@ -944,9 +953,11 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
                 var canTribute = AiDiplomacy.CanDemandTribute(state, us, them, out var whyTribute);
                 into.Add(new DiplomacyActionVM(DiText.T("DI_DIPLOMACY_DEMAND_TRIBUTE_2", "Demand tribute"),
-                    canTribute
-                        ? DiplomacyConstants.AiDefaultTributePerPeriod + " per period."
-                        : whyTribute ?? "Not possible now.",
+                    canTribute ? DiText.T("DI_DIPLOMACY_PER_PERIOD_AIDEFAULTTRIBUTEPERPERIOD_2",
+                        "{AIDEFAULTTRIBUTEPERPERIOD} per period.",
+                        ("AIDEFAULTTRIBUTEPERPERIOD", DiplomacyConstants.AiDefaultTributePerPeriod)) : DiText.T("DI_DIPLOMACY_WHYTRIBUTE_2",
+                        "{WHYTRIBUTE}",
+                        ("WHYTRIBUTE", whyTribute ?? "Not possible now.")),
                     0, canTribute,
                     canTribute ? DiText.T("DI_DIPLOMACY_COERCION_NOT_NEGOTIATION_OUR_CLAIM_MAKES_2",
                         "Coercion, not negotiation: our claim makes the pretext and our strength makes the argument - the same demand the AI makes.") : DiText.T("DI_DIPLOMACY_WHYTRIBUTE_2",
@@ -978,12 +989,14 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 {
                     var can = Hegemony.CanPoach(state, us, theirLink, out var value, out var why);
                     into.Add(new DiplomacyActionVM(DiText.T("DI_DIPLOMACY_COURT_THEM_2", "Court them"),
-                        can ? "Valued at " + value.ToString("0") + "." : why ?? "Not possible now.",
+                        can ? DiText.T("DI_DIPLOMACY_VALUED_AT_VALUE_2",
+                            "Valued at {VALUE}.",
+                            ("VALUE", value.ToString("0"))) : DiText.T("DI_DIPLOMACY_WHY", "{WHY}", ("WHY", why ?? "Not possible now.")),
                         0, can,
-                        can
-                            ? "They leave " + theirLink.DominantParty.Name + " and kneel to us -"
-                              + " which means war with " + theirLink.DominantParty.Name + "."
-                            : why ?? "Not possible now.",
+                        can ? DiText.T("DI_DIPLOMACY_THEY_LEAVE_AND_KNEEL_TO_US_NAME_NAME_2_2",
+                            "They leave {NAME} and kneel to us - which means war with {NAME_2}.",
+                            ("NAME", theirLink.DominantParty.Name),
+                            ("NAME_2", theirLink.DominantParty.Name)) : DiText.T("DI_DIPLOMACY_WHY", "{WHY}", ("WHY", why ?? "Not possible now.")),
                         () => DiplomacyMenu.CourtVassal(state, us, them),
                         DiplomacyActionVM.DangerText));
                 }
@@ -993,9 +1006,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 {
                     into.Add(new DiplomacyActionVM(DiText.T("DI_DIPLOMACY_TEAR_UP_THEIR_OATH_2", "Tear up their oath"),
                         DiText.T("DI_DIPLOMACY_BREACH_THEN_CONQUEST_2", "Breach, then conquest."), 0, true,
-                        "We break " + them.Name + "'s oath at the full price and take their"
-                        + " lands - the move a greedy patron makes. Every other vassal we"
-                        + " hold takes the lesson in hold.",
+                        DiText.T("DI_DIPLOMACY_WE_BREAK_OATH_AT_THE_FULL_NAME_2",
+                            "We break {NAME}'s oath at the full price and take their lands - the move a greedy patron makes. Every other vassal we hold takes the lesson in hold.",
+                            ("NAME", them.Name)),
                         () => DiplomacyMenu.AnnexVassal(state, us, them),
                         DiplomacyActionVM.DangerText));
                 }
@@ -1012,17 +1025,13 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                         ("HOLDOF", Hegemony.HoldOf(ourLink).ToString("0")),
                         ("SECESSIONTHRESHOLD", Hegemony.SecessionThreshold(state, ourLink).ToString("0"))),
                     0, breaking,
-                    breaking
-                        ? "Hold " + Hegemony.HoldOf(ourLink).ToString("0")
-                          + ", below the breaking point of "
-                          + Hegemony.SecessionThreshold(state, ourLink).ToString("0")
-                          + ". We renounce the oath and fight - their other resentful vassals"
-                          + " may rise with us."
-                        : "Hold " + Hegemony.HoldOf(ourLink).ToString("0")
-                          + " against a secession line of "
-                          + Hegemony.SecessionThreshold(state, ourLink).ToString("0")
-                          + ". Renouncing the oath is always possible; a war of independence"
-                          + " needs a realm already breaking.",
+                    breaking ? DiText.T("DI_DIPLOMACY_HOLD_BELOW_THE_BREAKING_POINT_OF_HOLDOF_SECESSIONTHRESHOLD_2",
+                        "Hold {HOLDOF}, below the breaking point of {SECESSIONTHRESHOLD}. We renounce the oath and fight - their other resentful vassals may rise with us.",
+                        ("HOLDOF", Hegemony.HoldOf(ourLink).ToString("0")),
+                        ("SECESSIONTHRESHOLD", Hegemony.SecessionThreshold(state, ourLink).ToString("0"))) : DiText.T("DI_DIPLOMACY_HOLD_AGAINST_SECESSION_LINE_OF_RENOUNCING_HOLDOF_2",
+                        "Hold {HOLDOF} against a secession line of {SECESSIONTHRESHOLD}. Renouncing the oath is always possible; a war of independence needs a realm already breaking.",
+                        ("HOLDOF", Hegemony.HoldOf(ourLink).ToString("0")),
+                        ("SECESSIONTHRESHOLD", Hegemony.SecessionThreshold(state, ourLink).ToString("0"))),
                     () => DiplomacyMenu.SecedeFromPatron(state, us, them),
                     DiplomacyActionVM.DangerText));
             }
@@ -1042,7 +1051,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                                  + (q.Amount == 0 ? "no income"
                                     : q.Withheld ? "withheld: under " + DiplomacyConstants.HoldPassiveResistanceThreshold.ToString("0") + " they stop paying"
                                     : q.YearlyIncome.ToString("N0") + " a year");
-                    into.Add(new DiplomacyActionVM("Tribute: " + level,
+                    into.Add(new DiplomacyActionVM("Tribute: " + VassalTribute.NameOf(level),
                         current ? "Now: " + effect + "." : effect + ".",
                         0, q.Eligible,
                         (q.Amount == 0 ? "No tribute" : q.Amount + " denars every " + DiplomacyConstants.TributePeriodDays + " days")
@@ -1068,7 +1077,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 // torn up between equals - the mockup names both cases differently.
                 var ours = breakable.Type == TreatyType.Vassalage && breakable.DominantParty == us;
                 into.Add(new DiplomacyActionVM(
-                    ours ? "Release " + them.Name : "Renounce " + breakable.Type,
+                    ours ? DiText.T("DI_DIPLOMACY_RELEASE_NAME_2", "Release {NAME}", ("NAME", them.Name)) : DiText.T("DI_DIPLOMACY_RENOUNCE_TYPE_2",
+                        "Renounce {TYPE}",
+                        ("TYPE", breakable.Type)),
                     ours ? DiText.T("DI_DIPLOMACY_ENDS_THE_VASSALAGE_COSTS_TRUST_WITH_2",
                         "Ends the vassalage. Costs trust with every court.") : DiText.T("DI_DIPLOMACY_BREAKS_THE_PACT_TRUST_WITH_THEM_TRUSTTREATYBROKENVICTIM_2",
                         "Breaks the pact. {TRUSTTREATYBROKENVICTIM} trust with them, {TRUSTTREATYBROKENOBSERVER} with every other court.",
@@ -1085,10 +1096,11 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             }
 
             into.Add(new DiplomacyActionVM(DiText.T("DI_DIPLOMACY_FABRICATE_CLAIM_2", "Fabricate a claim"),
-                DiplomacyConstants.FabricateClaimDurationDays + " days and "
-                + DiplomacyConstants.FabricateClaimGoldCost + " denars, "
-                + (StatecraftTerms.ExposureChance(us, them) * 100f).ToString("0")
-                + "% chance of exposure.",
+                DiText.T("DI_DIPLOMACY_DAYS_AND_DENARS_CHANCE_OF_EXPOSURE_2",
+                    "{FABRICATECLAIMDURATIONDAYS} days and {FABRICATECLAIMGOLDCOST} denars, {THEM}% chance of exposure.",
+                    ("FABRICATECLAIMDURATIONDAYS", DiplomacyConstants.FabricateClaimDurationDays),
+                    ("FABRICATECLAIMGOLDCOST", DiplomacyConstants.FabricateClaimGoldCost),
+                    ("THEM", (StatecraftTerms.ExposureChance(us, them) * 100f).ToString("0"))),
                 DiplomacyConstants.FabricateClaimInfluenceCost, true,
                 "A " + StatecraftTerms.ExposureLine(us, them)
                 + ". Being caught damages relations with every court and hands "

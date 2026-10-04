@@ -86,8 +86,13 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             {
                 if (_clans[i].Clan.Name.ToString() != name) continue;
                 Select(_clans[i]);
-                return "Selected " + name + ": " + _clans[i].LoyaltyText + " " + _clans[i].BandText
-                       + ", " + _terms.Count + " terms, " + _grievances.Count + " grievance(s).";
+                return DiText.T("DI_COURT_SELECTED_TERMS_GRIEVANCE_NAME_LOYALTYTEXT_BANDTEXT_COUNT_2",
+                    "Selected {NAME}: {LOYALTYTEXT} {BANDTEXT}, {COUNT} terms, {COUNT_2} grievance(s).",
+                    ("NAME", name),
+                    ("LOYALTYTEXT", _clans[i].LoyaltyText),
+                    ("BANDTEXT", _clans[i].BandText),
+                    ("COUNT", _terms.Count),
+                    ("COUNT_2", _grievances.Count));
             }
             return DiText.T("DI_COURT_NO_CLAN_NAMED_IN_THE_COURT_NAME_2",
                 "No clan named \"{NAME}\" in the court list.",
@@ -469,11 +474,12 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 "Take the {TITLE}'s seat back",
                 ("TITLE", title));
             var house = record.Holder?.Clan;
-            DismissNote = house != null && house != kingdom.RulingClan
-                ? "Free, but " + house.Name + " takes a grievance (" + IntrigueConstants.GrievanceDismissedFromOffice.ToString("0")
-                  + "): loyalty -" + (IntrigueConstants.GrievanceDismissedFromOffice * IntrigueConstants.LoyaltyGrievanceFactor).ToString("0.0")
-                  + " and the favour gone."
-                : "Free; your own house takes no grievance.";
+            DismissNote = house != null && house != kingdom.RulingClan ? DiText.T("DI_COURT_FREE_BUT_TAKES_GRIEVANCE_LOYALTY_AND_NAME_2",
+                "Free, but {NAME} takes a grievance ({GRIEVANCEDISMISSEDFROMOFFICE}): loyalty -{LOYALTYGRIEVANCEFACTOR} and the favour gone.",
+                ("NAME", house.Name),
+                ("GRIEVANCEDISMISSEDFROMOFFICE", IntrigueConstants.GrievanceDismissedFromOffice.ToString("0")),
+                ("LOYALTYGRIEVANCEFACTOR", (IntrigueConstants.GrievanceDismissedFromOffice * IntrigueConstants.LoyaltyGrievanceFactor).ToString("0.0"))) : DiText.T("DI_COURT_FREE_YOUR_OWN_HOUSE_TAKES_NO_2",
+                "Free; your own house takes no grievance.");
         }
 
         /// <summary>Giving the selected seat to the selected house: the price, term by term, and the button.</summary>
@@ -867,7 +873,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 var record = state.Legitimacy[i];
                 if (record.Kingdom != kingdom) continue;
                 if (string.IsNullOrEmpty(record.LastReason) || record.LastReason == "founded") break;
-                return "last change: " + record.LastReason;
+                return DiText.T("DI_COURT_LAST_CHANGE_LASTREASON_2",
+                    "last change: {LASTREASON}",
+                    ("LASTREASON", record.LastReason));
             }
             return DiText.T("DI_COURT_LAST_CHANGE_NONE_YET_2", "last change: none yet");
         }
@@ -945,8 +953,10 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             ShareAmount = (int)Math.Round(share * 100f);
             ShareText = ShareAmount + "%";
             LeaderText = "Speaks through " + (bloc.Leader == null ? "nobody" : bloc.Leader.Name.ToString());
-            CountText = bloc.Members.Count + (bloc.Members.Count == 1 ? " clan" : " clans");
-            PowerText = "influence " + bloc.Power.ToString("N0");
+            CountText = bloc.Members.Count == 1 ? DiText.T("DI_COURT_CLAN_COUNT_2", "{COUNT} clan", ("COUNT", bloc.Members.Count)) : DiText.T("DI_COURT_CLANS_COUNT_2", "{COUNT} clans", ("COUNT", bloc.Members.Count));
+            PowerText = DiText.T("DI_COURT_INFLUENCE_POWER_2",
+                "influence {POWER}",
+                ("POWER", bloc.Power.ToString("N0")));
             // Loyalty beats agenda (design 02 §3): members at 70+ vote with the ruler anyway,
             // so a bloc's real weight can be less than its size suggests.
             LoyalNote = bloc.LoyalMembers > 0 ? DiText.T("DI_COURT_OF_THEM_WILL_VOTE_WITH_THE_LOYALMEMBERS_2",
@@ -983,7 +993,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             var loyalty = explained.Total;
             var band = LoyaltyModel.Band(loyalty);
 
-            Name = clan.Name.ToString() + (isPlayer ? " (you)" : string.Empty);
+            Name = isPlayer ? DiText.T("DI_COURT_YOU_NAME_2", "{NAME} (you)", ("NAME", clan.Name.ToString())) : DiText.T("DI_COURT_NAME_2", "{NAME}", ("NAME", clan.Name.ToString()));
             BlocText = bloc == null ? "-" : DiCourtVM.AgendaName(bloc.Agenda)
                                             + (bloc.Leader == clan ? " (leads)" : string.Empty);
             InfluenceText = clan.Influence.ToString("N0");
@@ -1144,20 +1154,27 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             HasAmendNote = true;
             foreach (var term in Amends.PriceTerms(_quote))
                 PriceLines.Add(new DiCourtTermVM(term.Key, term.Value));
-            OutcomeText = "Loyalty " + _quote.LoyaltyBefore.ToString("0.0") + " -> " + _quote.LoyaltyAfter.ToString("0.0")
-                          + ", " + LoyaltyModel.Band(_quote.LoyaltyAfter);
+            OutcomeText = DiText.T("DI_COURT_LOYALTY_LOYALTYBEFORE_LOYALTYAFTER_BAND_2",
+                "Loyalty {LOYALTYBEFORE} -> {LOYALTYAFTER}, {BAND}",
+                ("LOYALTYBEFORE", _quote.LoyaltyBefore.ToString("0.0")),
+                ("LOYALTYAFTER", _quote.LoyaltyAfter.ToString("0.0")),
+                ("BAND", LoyaltyModel.Band(_quote.LoyaltyAfter)));
             AmendEnabled = _quote.Affordable;
             ComposeButton();
         }
 
         private DiCourtGrievanceVM(Grievance g)
         {
-            Title = TitleOf(g.Type, g.Holder) + " - answered";
+            Title = DiText.T("DI_COURT_ANSWERED_TITLEOF_2",
+                "{TITLEOF} - answered",
+                ("TITLEOF", TitleOf(g.Type, g.Holder)));
             WeightText = "0.0";
-            AgeText = "Answered " + g.AnsweredOn.ElapsedDaysUntilNow.ToString("0") + " days ago. Remembered for "
-                      + IntrigueConstants.AmendsMemoryYears.ToString("0") + " years: the same wrong again weighs x"
-                      + IntrigueConstants.AmendsRepeatWrongFactor.ToString("0.#") + ", and amends to this house cost x"
-                      + IntrigueConstants.AmendsRepeatPriceFactor.ToString("0.#") + ".";
+            AgeText = DiText.T("DI_COURT_ANSWERED_DAYS_AGO_REMEMBERED_FOR_YEARS_ELAPSEDDAYSUNTILNOW_2",
+                "Answered {ELAPSEDDAYSUNTILNOW} days ago. Remembered for {AMENDSMEMORYYEARS} years: the same wrong again weighs x{AMENDSREPEATWRONGFACTOR}, and amends to this house cost x{AMENDSREPEATPRICEFACTOR}.",
+                ("ELAPSEDDAYSUNTILNOW", g.AnsweredOn.ElapsedDaysUntilNow.ToString("0")),
+                ("AMENDSMEMORYYEARS", IntrigueConstants.AmendsMemoryYears.ToString("0")),
+                ("AMENDSREPEATWRONGFACTOR", IntrigueConstants.AmendsRepeatWrongFactor.ToString("0.#")),
+                ("AMENDSREPEATPRICEFACTOR", IntrigueConstants.AmendsRepeatPriceFactor.ToString("0.#")));
             AccentColor = DiCourtVM.ReliableColor;
             PriceLines = new MBBindingList<DiCourtTermVM>();
         }
@@ -1172,7 +1189,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 "{INFLUENCE} influence, {GOLD} denars",
                 ("INFLUENCE", _quote.Influence.ToString("N0")),
                 ("GOLD", _quote.Gold.ToString("N0")));
-            AmendText = _armed ? "Confirm: pay " + price : "Make amends - " + price;
+            AmendText = _armed ? DiText.T("DI_COURT_CONFIRM_PAY_PRICE_2", "Confirm: pay {PRICE}", ("PRICE", price)) : DiText.T("DI_COURT_MAKE_AMENDS_PRICE_2", "Make amends - {PRICE}", ("PRICE", price));
             AmendNote = !_quote.Affordable ? "Cannot pay: " + _quote.Short + "."
                 : _armed ? "Click again to pay. Anything else leaves it unpaid."
                 : "Paid to the house's head; the influence is spent.";

@@ -31,6 +31,25 @@ namespace DiplomacyIntrigue.Diplomacy
 
         public static readonly Level[] Levels = { Level.None, Level.Light, Level.Standard, Level.Heavy };
 
+        /// <summary>
+        /// A tribute level as a player reads it, behind a key.
+        ///
+        /// The enum's own name is an identifier the save system and the analysis script key on, it
+        /// cannot be translated, and it reads as a bug on a screen - the same reasoning as
+        /// <c>CasusBelli.NameOf</c>, which was written the same day for the same reason (story 4.1).
+        /// The patron's own tribute buttons on the Diplomacy tab used to say "Tribute: Standard".
+        /// </summary>
+        public static string NameOf(Level level)
+        {
+            switch (level)
+            {
+                case Level.Light: return Core.DiText.T("DI_DIPLOMACY_TRIBUTE_LEVEL_LIGHT", "light");
+                case Level.Standard: return Core.DiText.T("DI_DIPLOMACY_TRIBUTE_LEVEL_STANDARD", "standard");
+                case Level.Heavy: return Core.DiText.T("DI_DIPLOMACY_TRIBUTE_LEVEL_HEAVY", "heavy");
+                default: return Core.DiText.T("DI_DIPLOMACY_TRIBUTE_LEVEL_NONE", "none");
+            }
+        }
+
         public static int AmountOf(Level level)
         {
             switch (level)

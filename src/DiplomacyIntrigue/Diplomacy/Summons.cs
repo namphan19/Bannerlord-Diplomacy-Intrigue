@@ -711,7 +711,9 @@ namespace DiplomacyIntrigue.Diplomacy
                         ("NAME", q.Patron.Name)),
                     body,
                     true, true,
-                    "Send " + parties + " parties", DiText.T("DI_DIPLOMACY_REFUSE", "Refuse"),
+                    DiText.T("DI_DIPLOMACY_SEND_PARTIES_PARTIES_2",
+                        "Send {PARTIES} parties",
+                        ("PARTIES", parties)), DiText.T("DI_DIPLOMACY_REFUSE", "Refuse"),
                     () => { try { Serve(state, q); } catch (Exception ex) { Log.Error("Summons", "Answering a summons failed.", ex); } },
                     () => { try { Refuse(state, q, "declined by the ruler"); } catch (Exception ex) { Log.Error("Summons", "Refusing a summons failed.", ex); } },
                     ""), true);

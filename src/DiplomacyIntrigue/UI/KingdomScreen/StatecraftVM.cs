@@ -59,15 +59,18 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
             var ruler = StatecraftModel.Actor(realm, Portfolio.Ruler);
             rows.Add(Row(realm, Portfolio.Ruler,
-                "War exhaustion " + StatecraftModel.Factor(StatecraftTerms.ResolveFactor(realm))
-                + " · every vassal's Hold " + Signed(StatecraftTerms.Authority(realm))
-                + " · every house's loyalty " + Signed(StatecraftTerms.Presence(realm))));
+                DiText.T("DI_STATECRAFT_WAR_EXHAUSTION_EVERY_VASSAL_HOLD_EVERY_FACTOR_SIGNED_2",
+                    "War exhaustion {FACTOR} · every vassal's Hold {SIGNED} · every house's loyalty {SIGNED_2}",
+                    ("FACTOR", StatecraftModel.Factor(StatecraftTerms.ResolveFactor(realm))),
+                    ("SIGNED", Signed(StatecraftTerms.Authority(realm))),
+                    ("SIGNED_2", Signed(StatecraftTerms.Presence(realm))))));
 
             var envoyLevel = StatecraftModel.Level(realm, Portfolio.Envoy);
             rows.Add(Row(realm, Portfolio.Envoy,
-                "Peace budgets " + StatecraftModel.Factor(1f + StatecraftConstants.NegotiationWeight * envoyLevel)
-                + " against a median envoy · " + Signed(StatecraftTerms.Persuasion(realm))
-                + " on any court we ask for a pact"));
+                DiText.T("DI_STATECRAFT_PEACE_BUDGETS_AGAINST_MEDIAN_ENVOY_ON_FACTOR_SIGNED_2",
+                    "Peace budgets {FACTOR} against a median envoy · {SIGNED} on any court we ask for a pact",
+                    ("FACTOR", StatecraftModel.Factor(1f + StatecraftConstants.NegotiationWeight * envoyLevel)),
+                    ("SIGNED", Signed(StatecraftTerms.Persuasion(realm))))));
 
             rows.Add(Row(realm, Portfolio.Steward,
                 DiText.T("DI_STATECRAFT_GRIEVANCES_AGAINST_THE_CROWN_FADE_DAY_FADEPERDAY_2",

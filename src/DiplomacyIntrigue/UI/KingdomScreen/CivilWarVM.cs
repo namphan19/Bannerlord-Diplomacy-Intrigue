@@ -419,7 +419,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 note = q != null && _war.HasChangedSides(clan) ? DiText.T("DI_CIVILWAR_CHANGED_SIDES_2", "changed sides") : DiText.T("DI_CIVILWAR_CANNOT_CHANGE_NOW_2", "cannot change now");
             else if (q.Buyer != Hero.MainHero && SideChange.AiWouldPay(q, out _))
             {
-                note = q.Buyer.Name + " would pay";
+                note = DiText.T("DI_CIVILWAR_WOULD_PAY_NAME_2",
+                    "{NAME} would pay",
+                    ("NAME", q.Buyer.Name));
                 // A house the other leader would buy from our own side is a threat, not a fact.
                 var ours = _war.IsRebel(Clan.PlayerClan) == _war.IsRebel(clan);
                 noteColor = ours ? DiCourtVM.DefectionColor : DiCourtVM.MutedColor;
@@ -491,7 +493,11 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
             if (buyer == Hero.MainHero)
             {
-                SelectedTitle = (q.ToRising ? "WIN OVER " : "WIN BACK ") + clan.Name.ToString().ToUpperInvariant();
+                SelectedTitle = q.ToRising ? DiText.T("DI_CIVILWAR_WIN_OVER_TOUPPERINVARIANT_2",
+                    "WIN OVER {TOUPPERINVARIANT}",
+                    ("TOUPPERINVARIANT", clan.Name.ToString().ToUpperInvariant())) : DiText.T("DI_CIVILWAR_WIN_BACK_TOUPPERINVARIANT_2",
+                    "WIN BACK {TOUPPERINVARIANT}",
+                    ("TOUPPERINVARIANT", clan.Name.ToString().ToUpperInvariant()));
                 ActionVisible = true;
                 ActionText = "Pay " + q.Price.ToString("N0") + " - they come over to " + side;
                 if (!q.Eligible) ActionNote = q.Reason;
@@ -594,7 +600,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         {
             _owner = owner;
             Clan = clan;
-            Name = clan.Name.ToString() + (isPlayer ? " (you)" : string.Empty);
+            Name = isPlayer ? DiText.T("DI_CIVILWAR_YOU_NAME_2", "{NAME} (you)", ("NAME", clan.Name.ToString())) : DiText.T("DI_CIVILWAR_NAME_2", "{NAME}", ("NAME", clan.Name.ToString()));
             FiefsText = fiefsText;
             LoyaltyText = loyaltyText;
             LoyaltyColor = loyaltyColor;

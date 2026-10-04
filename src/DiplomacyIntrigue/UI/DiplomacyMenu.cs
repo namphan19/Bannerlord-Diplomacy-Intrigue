@@ -332,10 +332,13 @@ namespace DiplomacyIntrigue.UI
 
                 var atWar = kingdom.IsAtWarWith(other);
                 var trust = TrustRegistry.Get(state, kingdom, other);
-                var label = other.Name + (atWar ? "  (at war)" : "");
+                var label = atWar ? DiText.T("DI_MENU_AT_WAR_NAME_2", "{NAME}  (at war)", ("NAME", other.Name)) : DiText.T("DI_MENU_NAME_2", "{NAME}", ("NAME", other.Name));
 
                 elements.Add(Element(other, label,
-                    "Trust " + trust.ToString("0") + ". Strength " + other.CurrentTotalStrength.ToString("0") + "."));
+                    DiText.T("DI_MENU_TRUST_STRENGTH_TRUST_CURRENTTOTALSTRENGTH_2",
+                        "Trust {TRUST}. Strength {CURRENTTOTALSTRENGTH}.",
+                        ("TRUST", trust.ToString("0")),
+                        ("CURRENTTOTALSTRENGTH", other.CurrentTotalStrength.ToString("0")))));
             }
 
             if (elements.Count == 0)
@@ -460,22 +463,20 @@ namespace DiplomacyIntrigue.UI
                 {
                     var breaking = Hegemony.IsAtBreakingPoint(state, ourLink);
                     elements.Add(new InquiryElement("secede", DiText.T("DI_MENU_DECLARE_INDEPENDENCE_2", "Declare independence"), null, breaking,
-                        breaking
-                            ? "Hold " + Hegemony.HoldOf(ourLink).ToString("0") + ", below the"
-                              + " breaking point of "
-                              + Hegemony.SecessionThreshold(state, ourLink).ToString("0")
-                              + " - a war of independence, and their other resentful vassals"
-                              + " may rise with us."
-                            : "Hold " + Hegemony.HoldOf(ourLink).ToString("0")
-                              + " - above the breaking point of "
-                              + Hegemony.SecessionThreshold(state, ourLink).ToString("0")
-                              + ". Renouncing the oath is always possible; rebellion needs a"
-                              + " realm already breaking."));
+                        breaking ? DiText.T("DI_MENU_HOLD_BELOW_THE_BREAKING_POINT_OF_HOLDOF_SECESSIONTHRESHOLD_2",
+                            "Hold {HOLDOF}, below the breaking point of {SECESSIONTHRESHOLD} - a war of independence, and their other resentful vassals may rise with us.",
+                            ("HOLDOF", Hegemony.HoldOf(ourLink).ToString("0")),
+                            ("SECESSIONTHRESHOLD", Hegemony.SecessionThreshold(state, ourLink).ToString("0"))) : DiText.T("DI_MENU_HOLD_ABOVE_THE_BREAKING_POINT_OF_HOLDOF_SECESSIONTHRESHOLD_2",
+                            "Hold {HOLDOF} - above the breaking point of {SECESSIONTHRESHOLD}. Renouncing the oath is always possible; rebellion needs a realm already breaking.",
+                            ("HOLDOF", Hegemony.HoldOf(ourLink).ToString("0")),
+                            ("SECESSIONTHRESHOLD", Hegemony.SecessionThreshold(state, ourLink).ToString("0")))));
                 }
 
                 var breakable = FirstBreakableTreaty(state, us, them);
                 if (breakable != null)
-                    elements.Add(Element("break", "Renounce our " + breakable.Type,
+                    elements.Add(Element("break", DiText.T("DI_MENU_RENOUNCE_OUR_TYPE_2",
+                        "Renounce our {TYPE}",
+                        ("TYPE", breakable.Type)),
                         DiText.T("DI_MENU_ALWAYS_POSSIBLE_NEVER_FREE_TRUST_WITH_TRUSTTREATYBROKENVICTIM_2",
                             "Always possible, never free: -{TRUSTTREATYBROKENVICTIM} trust with them, -{TRUSTTREATYBROKENOBSERVER} with every other court, and they gain a reason for war.",
                             ("TRUSTTREATYBROKENVICTIM", (-DiplomacyConstants.TrustTreatyBrokenVictim).ToString("0")),
@@ -524,7 +525,7 @@ namespace DiplomacyIntrigue.UI
                   + " (they need " + ThresholdFor(type).ToString("0") + ")."
                 : reason;
 
-            into.Add(new InquiryElement(type, "Propose " + type, null, allowed, hint));
+            into.Add(new InquiryElement(type, DiText.T("DI_MENU_PROPOSE_TYPE_2", "Propose {TYPE}", ("TYPE", type)), null, allowed, hint));
         }
 
         internal static float ThresholdFor(TreatyType type)
@@ -688,7 +689,7 @@ namespace DiplomacyIntrigue.UI
                        + " vassals loses them. What the move is worth to a court in our position: "
                        + value.ToString("0") + " (" + explanation + ").";
 
-            Confirm("Submission to " + them.Name, body, DiText.T("DI_MENU_KNEEL_2", "Kneel"), () =>
+            Confirm(DiText.T("DI_MENU_SUBMISSION_TO_NAME_2", "Submission to {NAME}", ("NAME", them.Name)), body, DiText.T("DI_MENU_KNEEL_2", "Kneel"), () =>
             {
                 // Re-asked rather than trusted: the inquiry can sit open through a whole
                 // day of drift, so the world may have moved since the button was clicked.
@@ -775,13 +776,13 @@ namespace DiplomacyIntrigue.UI
             }
 
             var patron = link.DominantParty;
-            Confirm("Kneel to " + them.Name,
-                "We abandon " + patron.Name + ", which will not defend us, and submit to our"
-                + " attacker: the war ends as our submission, and " + patron.Name
-                + " is named the oathbreaker in every court for failing its duty."
-                + Environment.NewLine + Environment.NewLine
-                + "Tribute of " + DiplomacyConstants.AiDefaultTributePerPeriod
-                + " per period, and our foreign policy answers to " + them.Name + ".",
+            Confirm(DiText.T("DI_MENU_KNEEL_TO_NAME_2", "Kneel to {NAME}", ("NAME", them.Name)),
+                DiText.T("DI_MENU_WE_ABANDON_WHICH_WILL_NOT_DEFEND_NAME_NAME_2_2",
+                    "We abandon {NAME}, which will not defend us, and submit to our attacker: the war ends as our submission, and {NAME_2} is named the oathbreaker in every court for failing its duty.\n\nTribute of {AIDEFAULTTRIBUTEPERPERIOD} per period, and our foreign policy answers to {NAME_3}.",
+                    ("NAME", patron.Name),
+                    ("NAME_2", patron.Name),
+                    ("AIDEFAULTTRIBUTEPERPERIOD", DiplomacyConstants.AiDefaultTributePerPeriod),
+                    ("NAME_3", them.Name)),
                 DiText.T("DI_MENU_KNEEL", "Kneel"), () =>
                 {
                     if (!AiDiplomacy.CanDefectToAttacker(state, us, them, out var lapsed,
@@ -817,18 +818,24 @@ namespace DiplomacyIntrigue.UI
             }
 
             var patron = link.DominantParty;
-            var body = them.Name + " answers to " + patron.Name + " at hold "
-                       + Hegemony.HoldOf(link).ToString("0")
-                       + ", and would kneel to us (valued at " + value.ToString("0") + ")."
-                       + Environment.NewLine + Environment.NewLine
-                       + "Taking them repudiates their oath at no charge to them - the blame is"
-                       + " ours: " + (-DiplomacyConstants.PoachingTrustCost).ToString("0")
-                       + " trust with " + patron.Name + ", a broken-treaty claim against us, and"
-                       + (us.IsAtWarWith(patron)
-                           ? " we are already at war with them."
-                           : " war with " + patron.Name + " the moment the oath moves.");
+            var body = us.IsAtWarWith(patron) ? DiText.T("DI_MENU_ANSWERS_TO_AT_HOLD_AND_WOULD_NAME_NAME_2_HOLDOF_VALUE_2",
+                "{NAME} answers to {NAME_2} at hold {HOLDOF}, and would kneel to us (valued at {VALUE}).\n\nTaking them repudiates their oath at no charge to them - the blame is ours: {POACHINGTRUSTCOST} trust with {NAME_3}, a broken-treaty claim against us, and we are already at war with them.",
+                ("NAME", them.Name),
+                ("NAME_2", patron.Name),
+                ("HOLDOF", Hegemony.HoldOf(link).ToString("0")),
+                ("VALUE", value.ToString("0")),
+                ("POACHINGTRUSTCOST", (-DiplomacyConstants.PoachingTrustCost).ToString("0")),
+                ("NAME_3", patron.Name)) : DiText.T("DI_MENU_ANSWERS_TO_AT_HOLD_AND_WOULD_NAME_NAME_2_HOLDOF_VALUE_3",
+                "{NAME} answers to {NAME_2} at hold {HOLDOF}, and would kneel to us (valued at {VALUE}).\n\nTaking them repudiates their oath at no charge to them - the blame is ours: {POACHINGTRUSTCOST} trust with {NAME_3}, a broken-treaty claim against us, and war with {NAME_4} the moment the oath moves.",
+                ("NAME", them.Name),
+                ("NAME_2", patron.Name),
+                ("HOLDOF", Hegemony.HoldOf(link).ToString("0")),
+                ("VALUE", value.ToString("0")),
+                ("POACHINGTRUSTCOST", (-DiplomacyConstants.PoachingTrustCost).ToString("0")),
+                ("NAME_3", patron.Name),
+                ("NAME_4", patron.Name));
 
-            Confirm("Court " + them.Name, body, DiText.T("DI_MENU_COURT_THEM_2", "Court them"), () =>
+            Confirm(DiText.T("DI_MENU_COURT_NAME_2", "Court {NAME}", ("NAME", them.Name)), body, DiText.T("DI_MENU_COURT_THEM_2", "Court them"), () =>
             {
                 if (!Hegemony.CanPoach(state, us, link, out var currentValue, out var lapsed))
                 {
@@ -865,7 +872,7 @@ namespace DiplomacyIntrigue.UI
             var cost = AiDiplomacy.WarDeclarationCost(state, us,
                 CasusBelli.Legitimacy(terms.Casus));
 
-            Confirm("Turn on " + them.Name,
+            Confirm(DiText.T("DI_MENU_TURN_ON_NAME_2", "Turn on {NAME}", ("NAME", them.Name)),
                 DiText.T("DI_MENU_WE_TEAR_UP_OATH_AND_TAKE_NAME_COST_2",
                     "We tear up {NAME}'s oath and take their lands ourselves: the full price of a breach in every court, every vassal we hold takes the lesson in hold, and war opens at once.\n\nDeclaring costs {COST} influence.",
                     ("NAME", them.Name),
@@ -913,7 +920,7 @@ namespace DiplomacyIntrigue.UI
                 return;
             }
 
-            Confirm("Secede from " + them.Name,
+            Confirm(DiText.T("DI_MENU_SECEDE_FROM_NAME_2", "Secede from {NAME}", ("NAME", them.Name)),
                 DiText.T("DI_MENU_WE_RENOUNCE_OUR_OATH_TO_AND_NAME_2",
                     "We renounce our oath to {NAME} and fight for our independence: every court counts the breach, their loyal vassals answer their call to arms, and their resentful ones may rise with us.\n\nThe war of independence opens at once.",
                     ("NAME", them.Name)),
@@ -950,7 +957,9 @@ namespace DiplomacyIntrigue.UI
         internal static string PeaceButtonSub(float ourBudget, float theirBudget, Kingdom them)
         {
             if (ourBudget > 0f)
-                return "Budget " + ourBudget.ToString("0") + " - see hint for the price list.";
+                return DiText.T("DI_MENU_BUDGET_SEE_HINT_FOR_THE_PRICE_OURBUDGET_2",
+                    "Budget {OURBUDGET} - see hint for the price list.",
+                    ("OURBUDGET", ourBudget.ToString("0")));
             if (theirBudget > 0f)
                 return DiText.T("DI_MENU_THE_WAR_HAS_EARNED_OFFER_WHAT_NAME_THEIRBUDGET_2",
                     "The war has earned {NAME} {THEIRBUDGET}. Offer what it takes.",
@@ -997,7 +1006,7 @@ namespace DiplomacyIntrigue.UI
                     return;
                 }
 
-                Confirm("Peace with " + them.Name,
+                Confirm(DiText.T("DI_MENU_PEACE_WITH_NAME_2", "Peace with {NAME}", ("NAME", them.Name)),
                     DiText.T("DI_MENU_NEITHER_SIDE_HAS_EARNED_ENOUGH_TO_2",
                         "Neither side has earned enough to ask for anything - a white peace is all this war can produce. Propose it and they sign if the war has worn them too."),
                     DiText.T("DI_MENU_PROPOSE_WHITE_PEACE_2", "Propose white peace"),
@@ -1012,7 +1021,7 @@ namespace DiplomacyIntrigue.UI
                 Log.Error("UI", "The peace table could not open; falling back to the checklist.", ex);
                 if (ourBudget > 0f) ShowDemandTable(state, war, us, them, ourBudget);
                 else if (theirBudget > 0f) ShowOfferTable(state, war, us, them, theirBudget);
-                else Confirm("Peace with " + them.Name,
+                else Confirm(DiText.T("DI_MENU_PEACE_WITH_NAME", "Peace with {NAME}", ("NAME", them.Name)),
                     DiText.T("DI_MENU_NEITHER_SIDE_HAS_EARNED_ENOUGH_TO",
                         "Neither side has earned enough to ask for anything - a white peace is all this war can produce. Propose it and they sign if the war has worn them too."),
                     DiText.T("DI_MENU_PROPOSE_WHITE_PEACE", "Propose white peace"),
@@ -1094,8 +1103,13 @@ namespace DiplomacyIntrigue.UI
                 var price = fief.IsTown ? DiplomacyConstants.PeaceCostTown : DiplomacyConstants.PeaceCostCastle;
                 var affordable = price <= budget;
                 elements.Add(new InquiryElement(fief,
-                    "Annex " + fief.Name + (fief.IsTown ? " (town)" : " (castle)")
-                    + "   -   " + Priced(price, budget),
+                    fief.IsTown ? DiText.T("DI_MENU_ANNEX_TOWN_NAME_PRICED_2",
+                        "Annex {NAME} (town)   -   {PRICED}",
+                        ("NAME", fief.Name),
+                        ("PRICED", Priced(price, budget))) : DiText.T("DI_MENU_ANNEX_CASTLE_NAME_PRICED_2",
+                        "Annex {NAME} (castle)   -   {PRICED}",
+                        ("NAME", fief.Name),
+                        ("PRICED", Priced(price, budget))),
                     null,
                     hasClaim && affordable,
                     !hasClaim
@@ -1107,7 +1121,7 @@ namespace DiplomacyIntrigue.UI
                               + " this war has earned."));
             }
 
-            ShowTerms("Peace with " + them.Name,
+            ShowTerms(DiText.T("DI_MENU_PEACE_WITH_NAME", "Peace with {NAME}", ("NAME", them.Name)),
                 DiText.T("DI_MENU_AT_WAR_FOR_DAYS_OVER_THEY_DAYSELAPSED_JUSTIFICATION_DESCRIBE_2",
                     "At war for {DAYSELAPSED} days over {JUSTIFICATION}. They are {DESCRIBE}. This war has earned us {BUDGET} - the most our terms may cost. Choose nothing for a white peace.",
                     ("DAYSELAPSED", war.DaysElapsed.ToString("0")),
@@ -1212,8 +1226,13 @@ namespace DiplomacyIntrigue.UI
                 var price = fief.IsTown ? DiplomacyConstants.PeaceCostTown : DiplomacyConstants.PeaceCostCastle;
                 var affordable = price <= budget;
                 elements.Add(new InquiryElement(fief,
-                    "Cede " + fief.Name + (fief.IsTown ? " (town)" : " (castle)")
-                    + "   -   worth " + price.ToString("0"),
+                    fief.IsTown ? DiText.T("DI_MENU_CEDE_TOWN_WORTH_NAME_PRICE_2",
+                        "Cede {NAME} (town)   -   worth {PRICE}",
+                        ("NAME", fief.Name),
+                        ("PRICE", price.ToString("0"))) : DiText.T("DI_MENU_CEDE_CASTLE_WORTH_NAME_PRICE_2",
+                        "Cede {NAME} (castle)   -   worth {PRICE}",
+                        ("NAME", fief.Name),
+                        ("PRICE", price.ToString("0"))),
                     null,
                     hasClaim && affordable,
                     !hasClaim
@@ -1265,7 +1284,10 @@ namespace DiplomacyIntrigue.UI
 
         /// <summary>"costs 12 of 122" - a term's price against what the war earned.</summary>
         private static string Priced(float cost, float budget)
-            => "costs " + cost.ToString("0") + " of " + budget.ToString("0");
+            => DiText.T("DI_MENU_COSTS_OF_COST_BUDGET_2",
+                "costs {COST} of {BUDGET}",
+                ("COST", cost.ToString("0")),
+                ("BUDGET", budget.ToString("0")));
 
         /// <summary>
         /// The multi-select wrapper both tables share. Ticking nothing is legal - that is the

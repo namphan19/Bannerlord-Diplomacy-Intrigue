@@ -84,7 +84,7 @@ re-rolled after a reload (now saved, `SpyMission` 12); stale figures in six desi
 - [ ] **The Kingdom-UI loose ends** - the Realm tab widening the tab strip, `ConcessionLadder`'s
       `townsFirst` flag. Out of this pass by the lead's call.
 - [x] **Localization (Phase 4)** - built 2026-10-03, [story 4.1](docs/stories/4.1-localization.md):
-      641 keys behind `DiText.T` (including all 92 prefab labels, moved into view models), English generated into `Languages/EN/di_strings.xml`, 13 language
+      771 keys behind `DiText.T` (including all 92 prefab labels, moved into view models), English generated into `Languages/EN/di_strings.xml`, 13 language
       folders ready to drop a translation into, `scripts/check-localization.ps1` in
       `build.ps1`/`deploy.ps1`, guide in [docs/localization.md](docs/localization.md).
       **First live pass 2026-10-04** (story ST-7, §9): six surfaces seen on two saves, and it
@@ -93,12 +93,19 @@ re-rolled after a reload (now saved, `SpyMission` 12); stale figures in six desi
       where the prefab had U+00B7; the Court panel's heading had lost "The"; and enum names
       (`ReclaimAncestralLand`, `DefensivePact`) were reaching the screen as text. All four fixed,
       each re-seen on screen, and rule 8 of the check now blocks the first of them.
+      **Second pass, same day** (story §9a): the tool's remaining 122 candidates were read by eye
+      for the first time and **32 were wrong, three of them losing English outright** - a conditional
+      the tool would not rewrite was being turned into a `{VARIABLE}` with its text deleted. Three
+      rules fixed, then 90 expressions keyed into **118 keys**, for **771** in all, screenshot-checked
+      on the Realm, Court and Diplomacy tabs. A fourth fix - the shape rules used to run before the
+      boundary rule, which mislabelled log lines as "a human has to write this" - is why the
+      backlog below is 162 and not 440.
 - [ ] **AC2: one look at the German fixture, and it is already written.** The plumbing is **proven
       live** - the lead's session on 2026-10-04 switched the game to Deutsch and the game log shows
       it opening `DiplomacyIntrigue/ModuleData/Languages/DE/di_strings.xml`, so the mod's folder is
       found and read. Every screen read English because that file holds no entries: the 12 folders
-      ship empty on purpose, so all 653 keys took the English fallback, which is R1 working and looks
-      exactly like the mod ignoring the language. `scripts/localization-fixture.ps1 -Action Write`
+      ship empty on purpose, so all 653 keys then took the English fallback, which is R1 working and
+      looks exactly like the mod ignoring the language. `scripts/localization-fixture.ps1 -Action Write`
       has put fourteen German keys into the deployed folder; switch the language in the launcher
       (**no restart needed** - the game reloads every module's strings at runtime), open the Realm
       and Court tabs, then `-Action Remove`. What to expect is in story §6a. `deploy.ps1` overwrites
@@ -109,13 +116,14 @@ re-rolled after a reload (now saved, `SpyMission` 12); stale figures in six desi
       Encyclopedia court page is therefore the one converted surface never seen. Worth deciding
       whether it is our push or vanilla's before anyone runs it again.
 - [ ] **Localization, what is left** (story 4.1, in order of risk):
-      (1) **440 strings.** 122 the tool can now key on approval - read the dry-run list first, it
-      has never been reviewed by eye and the earlier sample of it was wrong - and 318 a human has
-      to write: 200 sentences spread over several statements, 70 fragments of a longer sentence,
-      41 with a conditional inside a clause, 7 built in pieces elsewhere. Plus 18 that cannot be
-      keyed at all (MCM's setting names and hints). Listed as `manual` with a reason in
-      artifacts/localization/inventory.csv; until they are done those particular sentences stay
-      English in every language.
+      (1) **162 strings**, a human has to write: 78 sentences spread over several statements, 34 with
+      a conditional inside a clause, 27 fragments of a longer sentence, 23 whose `{VARIABLE}` would
+      carry English rather than a value. Plus 18 that cannot be keyed at all (MCM's setting names
+      and hints). Listed as `manual` with a reason in artifacts/localization/inventory.csv; until they
+      are done those particular sentences stay English in every language. The worst files are
+      `UI/DiplomacyMenu.cs` (47), `UI/EncyclopediaPages/EncyclopediaCourtVM.cs` (39) and
+      `UI/KingdomScreen/RealmVM.cs` (31). **The earlier figure of 440 was inflated by the tool
+      counting log lines as screens** (§9a) - do not treat any old number here as current.
       (2) Then AC6 - fit in the longest language and a CJK one - which needs the launcher session.
       Two layout overlaps seen in English are pre-existing and not localization: the Realm tab's
       left column (a long sphere explanation runs into the block below it) and the Court tab's

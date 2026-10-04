@@ -1,3 +1,4 @@
+using DiplomacyIntrigue.Core;
 using System;
 using DiplomacyIntrigue.Diplomacy;
 using TaleWorlds.Core.ViewModelCollection.Information;
@@ -112,7 +113,10 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             // "this is what each treaty has to clear".
             var offset = (int)(Math.Max(0, Math.Min(100, threshold)) / 100f * BarWidth) - 1;
             NeedPixelOffset = offset < 0 ? 0 : offset > BarWidth - 2 ? BarWidth - 2 : offset;
-            DetailText = "valued " + value + " / need " + threshold;
+            DetailText = DiText.T("DI_KINGDOMSCREEN_VALUED_NEED_VALUE_THRESHOLD_2",
+                "valued {VALUE} / need {THRESHOLD}",
+                ("VALUE", value),
+                ("THRESHOLD", threshold));
             VerdictText = !canSign ? "Cannot sign" : clears ? "Would sign" : "Refuses";
             VerdictColor = !canSign ? DimName : clears ? LitName : RefuseText;
             // A tinted plate behind the verdict words: a brush border colour cannot be

@@ -24,3 +24,31 @@ Core/ModSettings.cs | * | MCM setting text: an attribute argument, so it cannot 
 
 # DiplomacyMenu.DescribeOurStanding is a menu row a player clicks, so it is keyed - it is
 # listed here only to say the file's other Describe* helpers are not.
+
+# One sentence the shapes cannot judge, named by method AND wording. Added 2026-10-04.
+#
+# The method field may be "Name#English as the tool reports it" - "Name:123" for a line number also
+# works. Prefer the wording: a line number is moved by this tool's own rewriter, and six rules
+# written that way stopped firing the same day they were added, because applying the rewrite
+# inserted lines above them and put every site back into the convert list with nothing to say why.
+# The wording does not move. If the wording does change, the rule stops matching and the site comes
+# back into the report for a person - the direction that costs nothing.
+#
+# A rule is one line, so a sentence that breaks across lines writes its breaks as <br>. Braces are
+# what a variable looks like here, so the marker is not {NL}.
+#
+# Each has to name one expression rather than its whole method: DefectToAttacker holds "Kneel to
+# {NAME}" and a long defection line that the tool keys correctly, right beside "Cannot defect:
+# {REASON}", and a whole-method rule would take those too.
+#
+# What these six have in common: a {VARIABLE} holding a refusal sentence the callee wrote and the
+# method only receives - `TreatyRegistry.Sign(..., out var reason)` and its five relatives. The
+# tool's own out-parameter rule catches an `out var` written *inside* the expression; one written
+# on an earlier line of the same method is a hop it does not take, and one more hop would be
+# dataflow analysis. A key here would read "Refused: {REASON}" with English inside the braces.
+UI/DiplomacyMenu.cs | ProposePact#Refused: {REASON} | {REASON} is a refusal sentence from TreatyRegistry.Sign, written on an earlier line
+UI/DiplomacyMenu.cs | DemandTribute#Refused: {FAILED} | {FAILED} is a refusal sentence from TreatyRegistry.Sign, written on an earlier line
+UI/DiplomacyMenu.cs | DefectToAttacker#Cannot defect: {REASON} | {REASON} is a refusal sentence from AiDiplomacy.CanDefectToAttacker, written on an earlier line
+UI/DiplomacyMenu.cs | TryPeace#Failed: {FAILED} | {FAILED} is a refusal sentence from PeaceTable.Apply, written on an earlier line
+UI/DiplomacyMenu.cs | ShowFabricationTargets#Cannot fabricate: {REASON} | {REASON} is a refusal sentence from ClaimRegistry, written on an earlier line
+UI/DiplomacyMenu.cs | OfferSubmission#We offer {NAME} our oath: tribute of {AIDEFAULTTRIBUTEPERPERIOD} per period, troops in their wars, and our foreign policy answers to them.<br><br>The oath is the peace - our war with them ends the day it is sworn.<br><br>In exchange they owe us protection; a patron that does not defend its vassals loses them. What the move is worth to a court in our position: {VALUE} ({EXPLANATION}). | {EXPLANATION} is Hegemony.SubmissionValue's own sentence, so the line would read half in one language
