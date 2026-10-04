@@ -697,8 +697,7 @@ namespace DiplomacyIntrigue.Diplomacy
                        + "Send: they march until the war ends or "
                        + DiplomacyConstants.SummonsDurationDays.ToString("0") + " days pass. Your ruler's "
                        + "own party is never taken." + Environment.NewLine
-                       + "Refuse: defiance. It costs " + refusedTrust + " trust with " + q.Patron.Name
-                       + ", earns a mark, and " + CallToArms.RenounceClause(q.Link)
+                        + CallToArms.SummonsRenounceLine(q.Link, q.Patron.Name.ToString(), refusedTrust)
                        + Environment.NewLine + Environment.NewLine
                        + q.Patron.Name + " has already paid " + q.Influence + " influence and "
                        + q.Gold.ToString("N0") + " denars for the order. Neither answer refunds it.";

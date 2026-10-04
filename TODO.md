@@ -84,7 +84,7 @@ re-rolled after a reload (now saved, `SpyMission` 12); stale figures in six desi
 - [ ] **The Kingdom-UI loose ends** - the Realm tab widening the tab strip, `ConcessionLadder`'s
       `townsFirst` flag. Out of this pass by the lead's call.
 - [x] **Localization (Phase 4)** - built 2026-10-03, [story 4.1](docs/stories/4.1-localization.md):
-      771 keys behind `DiText.T` (including all 92 prefab labels, moved into view models), English generated into `Languages/EN/di_strings.xml`, 13 language
+      852 keys behind `DiText.T` (including all 92 prefab labels, moved into view models), English generated into `Languages/EN/di_strings.xml`, 13 language
       folders ready to drop a translation into, `scripts/check-localization.ps1` in
       `build.ps1`/`deploy.ps1`, guide in [docs/localization.md](docs/localization.md).
       **First live pass 2026-10-04** (story ST-7, §9): six surfaces seen on two saves, and it
@@ -99,12 +99,18 @@ re-rolled after a reload (now saved, `SpyMission` 12); stale figures in six desi
       rules fixed, then 90 expressions keyed into **118 keys**, for **771** in all, screenshot-checked
       on the Realm, Court and Diplomacy tabs. A fourth fix - the shape rules used to run before the
       boundary rule, which mislabelled log lines as "a human has to write this" - is why the
-      backlog below is 162 and not 440.
+      backlog below is not 440.
+      **Third pass, same day** (story §9b): a lookup in the tool had **never matched**, so the whole
+      producer list was dead and the exhaustion bands, office titles and grievance titles were being
+      called log text - work this file had claimed was done. Fixing it surfaced 69 real candidates
+      and a **second live enum-on-the-screen defect in eight places** (`Treaty.Type` printed
+      `TributaryPact` on the war row). `Treaty.NameOf` names the six kinds behind keys in one place;
+      **852 keys** now, AC1 re-checked live on all three tabs, 0 ERROR / 0 WARN.
 - [ ] **AC2: one look at the German fixture, and it is already written.** The plumbing is **proven
       live** - the lead's session on 2026-10-04 switched the game to Deutsch and the game log shows
       it opening `DiplomacyIntrigue/ModuleData/Languages/DE/di_strings.xml`, so the mod's folder is
       found and read. Every screen read English because that file holds no entries: the 12 folders
-      ship empty on purpose, so all 653 keys then took the English fallback, which is R1 working and
+      ship empty on purpose, so all 653 keys then took the English fallback (852 now), which is R1 working and
       looks exactly like the mod ignoring the language. `scripts/localization-fixture.ps1 -Action Write`
       has put fourteen German keys into the deployed folder; switch the language in the launcher
       (**no restart needed** - the game reloads every module's strings at runtime), open the Realm
@@ -116,14 +122,19 @@ re-rolled after a reload (now saved, `SpyMission` 12); stale figures in six desi
       Encyclopedia court page is therefore the one converted surface never seen. Worth deciding
       whether it is our push or vanilla's before anyone runs it again.
 - [ ] **Localization, what is left** (story 4.1, in order of risk):
-      (1) **162 strings**, a human has to write: 78 sentences spread over several statements, 34 with
-      a conditional inside a clause, 27 fragments of a longer sentence, 23 whose `{VARIABLE}` would
+      (1) **166 strings**, a human has to write: 78 sentences spread over several statements, 34 with
+      a conditional inside a clause, 31 fragments of a longer sentence, 23 whose `{VARIABLE}` would
       carry English rather than a value. Plus 18 that cannot be keyed at all (MCM's setting names
-      and hints). Listed as `manual` with a reason in artifacts/localization/inventory.csv; until they
-      are done those particular sentences stay English in every language. The worst files are
-      `UI/DiplomacyMenu.cs` (47), `UI/EncyclopediaPages/EncyclopediaCourtVM.cs` (39) and
-      `UI/KingdomScreen/RealmVM.cs` (31). **The earlier figure of 440 was inflated by the tool
-      counting log lines as screens** (§9a) - do not treat any old number here as current.
+      and hints), and two whole methods held in `exceptions.txt` with their reason:
+      `Power.Describe` (a line assembled in code from a share plus a band clause) and
+      `PeaceTable.DescribeAllowance` (price rows carry their column alignment inside the string, so
+      the padding has to move into the prefab first). Listed as `manual` with a reason in
+      artifacts/localization/inventory.csv; until they are done those particular sentences stay
+      English in every language. The worst files are `UI/DiplomacyMenu.cs`,
+      `UI/EncyclopediaPages/EncyclopediaCourtVM.cs` and `UI/KingdomScreen/RealmVM.cs`.
+      **The figure moved 440 -> 318 -> 162 -> 166.** The first was inflated by the tool counting log
+      lines as screens (§9a); the last rose because a lookup in the tool had never matched and was
+      hiding real work (§9b). **Do not treat any older number here as current.**
       (2) Then AC6 - fit in the longest language and a CJK one - which needs the launcher session.
       Two layout overlaps seen in English are pre-existing and not localization: the Realm tab's
       left column (a long sphere explanation runs into the block below it) and the Court tab's

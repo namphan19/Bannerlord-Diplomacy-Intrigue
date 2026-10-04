@@ -161,9 +161,13 @@ namespace DiplomacyIntrigue.Diplomacy
         {
             var treasury = IndemnityTreasury(loser);
             var share = treasury > 0 ? gold / (float)treasury * 100f : 0f;
-            return gold + " denars, " + share.ToString("0") + "% of the " + treasury + " "
-                   + (loser?.Name?.ToString() ?? "the loser") + "'s ruler holds, "
-                   + IndemnityPoints(gold, loser).ToString("0") + " points";
+            return DiText.T("DI_DIPLOMACY_DENARS_OF_THE_RULER_HOLDS_POINTS_GOLD_SHARE_TREASURY_2",
+                "{GOLD} denars, {SHARE}% of the {TREASURY} {TOSTRING}'s ruler holds, {INDEMNITYPOINTS} points",
+                ("GOLD", gold),
+                ("SHARE", share.ToString("0")),
+                ("TREASURY", treasury),
+                ("TOSTRING", loser?.Name?.ToString() ?? "the loser"),
+                ("INDEMNITYPOINTS", IndemnityPoints(gold, loser).ToString("0")));
         }
 
         /// <summary>The rate as a line of text, for the allowance readout.</summary>

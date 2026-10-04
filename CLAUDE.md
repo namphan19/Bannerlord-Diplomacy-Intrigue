@@ -98,6 +98,22 @@ whose branches are not both plain text. Story 4.1 §9a has the rest. Two more ru
 same reading, and one of them (`ShapeVerdict` must run *after* the boundary rule, never before) is
 why a shape check that relabels rows must come last in `Describe`.
 
+**A lookup that silently never matches is worse than a wrong rule.** `TextProducers.IsTextProducer`
+compared `src/<module>/Diplomacy/ExhaustionBands.cs|Name` against a set built by stripping the module
+directory, so **not one entry in `text-producers.txt` had ever matched**. The five exhaustion band
+names and the five band meanings - the most visible words the war rows carry - were reported "not a
+screen", and the story said they were converted. They were not. A wrong rule shouts; a lookup that
+never matches is silent and *hides* work, which is why it survived a day of reading the report.
+**When a report says "not a screen", check that the lookup that decided it can actually return
+true** - print the key it built and the set it searched, once, before believing the verdict.
+
+**Never type a module directory's name.** `DiplomacyIntrigue` is not `DiplomacyIntrague`, and the
+console renders both the same way. A string constant with the wrong spelling produced a second silent
+lookup failure with an identical symptom, which is what made the first one hard to find. Take such
+paths from disk (`Get-ChildItem src -Directory`) or, better, key the logic on the shape of the path -
+`Tail()` reduces any source path to what `text-producers.txt` writes by cutting at the last `src/`
+and dropping the module directory, so no spelling is involved.
+
 **Never force-kill Bannerlord.** `deploy.ps1` refuses to run while the game is open, and
 that guard is the point - the lead may be playing, and a balance run can be hours long. Use
 `mcp__gabs__games_stop`, and only for a session you started. If the game is running and you

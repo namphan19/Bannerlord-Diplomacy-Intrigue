@@ -609,7 +609,11 @@ namespace DiplomacyIntrigue.UI
 
             TaleWorlds.CampaignSystem.Actions.ChangeClanInfluenceAction.Apply(us.RulingClan, -cost);
             SkillXp.PactSigned(us, type);
-            Notify(us.Name + " and " + them.Name + " sign a " + type + ".", Colors.Green);
+            Notify(DiText.T("DI_MENU_SIGN_A_TREATY",
+                    "{US} and {THEM} sign a {TREATY}.",
+                    ("US", us.Name),
+                    ("THEM", them.Name),
+                    ("TREATY", Models.Treaty.NameOf(type))), Colors.Green);
         }
 
         /// <summary>
@@ -1375,8 +1379,10 @@ namespace DiplomacyIntrigue.UI
                 ("NAME", them.Name))); return; }
 
             TreatyRegistry.Break(state, treaty, us);
-            Notify("We renounce our " + treaty.Type + " with " + them.Name
-                   + ". Every court has taken note.", Colors.Red);
+            Notify(DiText.T("DI_MENU_WE_RENOUNCE_OUR_TREATY",
+                    "We renounce our {TREATY} with {THEM}. Every court has taken note.",
+                    ("TREATY", Models.Treaty.NameOf(treaty.Type)),
+                    ("THEM", them.Name)), Colors.Red);
         }
 
         internal static void ShowFabricationTargets(ModState state, Kingdom us, Kingdom them)

@@ -1027,7 +1027,10 @@ namespace DiplomacyIntrigue.UI.ClanScreen
                 case SpyMissionType.BribeLord: return DiText.T("DI_INTEL_BRIBE_LORD_2", "Bribe a lord");
                 case SpyMissionType.ForgeLetters: return DiText.T("DI_INTEL_FORGE_LETTERS_2", "Forge letters");
                 case SpyMissionType.Assassinate: return DiText.T("DI_INTEL_ASSASSINATE_2", "Assassinate");
-                default: return type.ToString();
+                // Not type.ToString(): the enum member name, untranslatable and a bug on a screen. The
+                // identifier stays in brackets so a missing word is a visible gap, not a silent one.
+                default:
+                    return DiText.T("DI_INTEL_MISSION_OTHER", "Another scheme") + " (" + type + ")";
             }
         }
 

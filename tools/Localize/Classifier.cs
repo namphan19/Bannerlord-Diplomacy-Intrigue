@@ -1315,8 +1315,37 @@ private string PlayerFacingSink(ExpressionSyntax expr)
             var name = method.Identifier.ValueText;
             if (name == "ToString") return false;
             if (_keys == null) _keys = Load();
-            var relative = Paths.Relative(Exceptions.RepoRoot, file).Replace('\\', '/');
+            var relative = Tail(Paths.Relative(Exceptions.RepoRoot, file));
             return _keys.Contains(relative + "|" + name);
+        }
+
+        /// <summary>
+        /// A source path reduced to the form text-producers.txt writes: everything after the last
+        /// <c>src/</c>. A path that already has that shape - which is every line in the list file -
+        /// comes back unchanged, so both sides of the lookup can use this and agree.
+        ///
+        /// They did not agree for the whole of 2026-10-04, and the disagreement was invisible in the
+        /// one direction that matters. <c>Load</c> stripped the module directory and
+        /// <c>IsTextProducer</c> did not, so the set held <c>"Diplomacy/ExhaustionBands.cs|Name"</c>
+        /// and the lookup asked for <c>"src/&lt;module&gt;/Diplomacy/ExhaustionBands.cs|Name"</c>:
+        /// never a match, so **every entry in text-producers.txt was dead**. The five exhaustion band
+        /// names and the five band meanings - the most visible words the war rows carry - read
+        /// "not a screen: outside UI/, no sink, and no text-producing method", and the story said
+        /// they were converted. They were not.
+        ///
+        /// The first attempt at this fix spelled the module directory wrong in a string constant
+        /// (<c>Intrague</c> for <c>Intrigue</c>), so it matched nothing either and the symptom was
+        /// identical. Hence no module name in here at all: the shape of the path is enough, and a
+        /// spelling cannot be got wrong.
+        /// </summary>
+        private static string Tail(string path)
+        {
+            var p = path.Replace('\\', '/');
+            var at = p.LastIndexOf("src/", StringComparison.Ordinal);
+            if (at < 0) return p;                       // already the shape the list writes
+            var rest = p.Substring(at + 4);             // src/<module>/Diplomacy/X.cs
+            var slash = rest.IndexOf('/');
+            return slash < 0 ? rest : rest.Substring(slash + 1);
         }
 
         /// <summary>
@@ -1369,9 +1398,7 @@ private string PlayerFacingSink(ExpressionSyntax expr)
                 if (line.Length == 0 || line.StartsWith("#", StringComparison.Ordinal)) continue;
                 var parts = line.Split(new[] { '|' }, 3);
                 if (parts.Length < 3) continue;
-                var file = parts[0].Trim().Replace('\\', '/');
-                var at = file.IndexOf("DiplomacyIntrigue/", StringComparison.Ordinal);
-                if (at >= 0) file = file.Substring(at);
+                var file = Tail(parts[0].Trim());
                 set.Add(file + "|" + parts[1].Trim());
             }
             return set;

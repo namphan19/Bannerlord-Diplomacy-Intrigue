@@ -945,7 +945,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 if (treaty.ExpiresOn != CampaignTime.Never)
                     daysLeft = (float)(treaty.ExpiresOn - CampaignTime.Now).ToDays;
                 agreements.Add(new DiRealmAgreementVM(
-                    TreatyLabel(treaty.Type),
+                    Models.Treaty.NameOf(treaty.Type),
                     Color.FromUint(other.Color),
                     TermLeft(treaty),
                     daysLeft >= 0f && daysLeft < ExpiringSoonDays ? NegativeColor : MutedColor,
@@ -984,18 +984,8 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             return rem > 0 ? years + "y " + rem + "d" : years + "y";
         }
 
-        private static string TreatyLabel(TreatyType type)
-        {
-            switch (type)
-            {
-                case TreatyType.NonAggressionPact: return DiText.T("DI_REALM_NON_AGGRESSION_PACT_2", "Non-aggression pact");
-                case TreatyType.DefensivePact: return DiText.T("DI_REALM_DEFENSIVE_PACT_2", "Defensive pact");
-                case TreatyType.Alliance: return DiText.T("DI_REALM_ALLIANCE_2", "Alliance");
-                case TreatyType.TributaryPact: return DiText.T("DI_REALM_TRIBUTARY_PACT_2", "Tributary pact");
-                case TreatyType.Vassalage: return DiText.T("DI_REALM_VASSALAGE_2", "Vassalage");
-                default: return DiText.T("DI_REALM_TRUCE_2", "Truce");
-            }
-        }
+        // The six kinds of agreement are named by Treaty.NameOf, in one place, because eight other
+        // call sites were writing the enum and printing "NonAggressionPact" on a screen.
 
         /// <summary>What each treaty type means for us, in the direction it actually runs.</summary>
         private static string AgreementDetail(Treaty treaty, Kingdom us, Kingdom other)

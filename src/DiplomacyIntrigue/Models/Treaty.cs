@@ -219,6 +219,41 @@ namespace DiplomacyIntrigue.Models
         public override string ToString()
             => Type + "(" + NameOf(PartyA) + " / " + NameOf(PartyB) + ", " + Status + ")";
 
+        /// <summary>
+        /// A treaty kind as a player reads it, behind a key.
+        ///
+        /// The enum's own name is an identifier the save system keys on and it cannot be
+        /// translated, and it reads as a bug on a screen: "the NonAggressionPact with Battania
+        /// forbids it". This was the same defect class as <c>CasusBelli.NameOf</c>, and it was
+        /// still live in eight places in 2026-10-04 - the call-to-arms announcements and inquiry,
+        /// two Diplomacy notifications, the war row's blocking reason, Hegemony's bound list -
+        /// because each of them wrote <c>+ treaty.Type +</c> and <c>Type</c> stringifies to the
+        /// member name.
+        ///
+        /// It lives here rather than in a view model because six kinds of agreement are named in
+        /// more places than any one panel owns. <see cref="ToString"/> keeps the enum, on purpose:
+        /// that string is for the log and the telemetry, and a translated word there would break
+        /// <c>analyse-log.py</c>.
+        /// </summary>
+        public static string NameOf(TreatyType type)
+        {
+            switch (type)
+            {
+                case TreatyType.NonAggressionPact:
+                    return Core.DiText.T("DI_TREATY_NON_AGGRESSION_PACT", "Non-aggression pact");
+                case TreatyType.DefensivePact:
+                    return Core.DiText.T("DI_TREATY_DEFENSIVE_PACT", "Defensive pact");
+                case TreatyType.Alliance:
+                    return Core.DiText.T("DI_TREATY_ALLIANCE", "Alliance");
+                case TreatyType.TributaryPact:
+                    return Core.DiText.T("DI_TREATY_TRIBUTARY_PACT", "Tributary pact");
+                case TreatyType.Vassalage:
+                    return Core.DiText.T("DI_TREATY_VASSALAGE", "Vassalage");
+                default:
+                    return Core.DiText.T("DI_TREATY_TRUCE", "Truce");
+            }
+        }
+
         private static string NameOf(Kingdom k) => k == null ? "?" : k.Name.ToString();
     }
 }

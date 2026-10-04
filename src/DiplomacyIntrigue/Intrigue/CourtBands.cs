@@ -60,9 +60,9 @@ namespace DiplomacyIntrigue.Intrigue
         {
             switch (standing)
             {
-                case CrownStanding.Failing: return "Failing";
-                case CrownStanding.Questioned: return "Questioned";
-                default: return "Secure";
+                case CrownStanding.Failing: return DiText.T("DI_INTRIGUE_FAILING_2", "Failing");
+                case CrownStanding.Questioned: return DiText.T("DI_INTRIGUE_QUESTIONED_2", "Questioned");
+                default: return DiText.T("DI_INTRIGUE_SECURE_2", "Secure");
             }
         }
 
@@ -72,11 +72,16 @@ namespace DiplomacyIntrigue.Intrigue
             switch (standing)
             {
                 case CrownStanding.Failing:
-                    return "Low enough that a claimant's party may gather openly.";
+                    return DiText.T("DI_INTRIGUE_LOW_ENOUGH_THAT_CLAIMANT_PARTY_MAY_2",
+                        "Low enough that a claimant's party may gather openly.");
                 case CrownStanding.Questioned:
-                    return "Doubted enough to cost " + his + " the loyalty of every house.";
+                    return DiText.T("DI_INTRIGUE_DOUBTED_ENOUGH_TO_COST_THE_LOYALTY_HIS_2",
+                        "Doubted enough to cost {HIS} the loyalty of every house.",
+                        ("HIS", his));
                 default:
-                    return "Firm enough to steady " + his + " court.";
+                    return DiText.T("DI_INTRIGUE_FIRM_ENOUGH_TO_STEADY_COURT_HIS_2",
+                        "Firm enough to steady {HIS} court.",
+                        ("HIS", his));
             }
         }
 
@@ -130,10 +135,10 @@ namespace DiplomacyIntrigue.Intrigue
         {
             switch (band)
             {
-                case LoyaltyBand.Reliable: return "Steadfast";
-                case LoyaltyBand.Transactional: return "Self-interested";
-                case LoyaltyBand.Disaffected: return "Sullen";
-                default: return "Ready to break";
+                case LoyaltyBand.Reliable: return DiText.T("DI_INTRIGUE_STEADFAST_2", "Steadfast");
+                case LoyaltyBand.Transactional: return DiText.T("DI_INTRIGUE_SELF_INTERESTED_2", "Self-interested");
+                case LoyaltyBand.Disaffected: return DiText.T("DI_INTRIGUE_SULLEN_2", "Sullen");
+                default: return DiText.T("DI_INTRIGUE_READY_TO_BREAK_2", "Ready to break");
             }
         }
 
@@ -158,9 +163,10 @@ namespace DiplomacyIntrigue.Intrigue
         {
             switch (weight)
             {
-                case CourtWeight.GreatHouse: return "Among the great houses of the realm";
-                case CourtWeight.Middling: return "Of middling account";
-                default: return "Carries no weight at court";
+                case CourtWeight.GreatHouse: return DiText.T("DI_INTRIGUE_AMONG_THE_GREAT_HOUSES_OF_THE_2",
+                    "Among the great houses of the realm");
+                case CourtWeight.Middling: return DiText.T("DI_INTRIGUE_OF_MIDDLING_ACCOUNT_2", "Of middling account");
+                default: return DiText.T("DI_INTRIGUE_CARRIES_NO_WEIGHT_AT_COURT_2", "Carries no weight at court");
             }
         }
     }

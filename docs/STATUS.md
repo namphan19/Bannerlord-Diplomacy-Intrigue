@@ -32,8 +32,8 @@ for any length of time**:
 **Next:** one more long run (12 years) to see the civil-war count fall from 14 to a few, with the analyser and the log counts of `claimant_arose` and "takes up arms".
 **Phase 4 (2026-10-03):** the incompatibility warning, release defaults (telemetry off), the tick-budget
 instrumentation and the Workshop update are built and shipped in 0.3.0, **not run in game** (TODO).
-**Localization has now been run in game, twice** (story 4.1 ST-7, 2026-10-04; `di_phase1_full` and
-`di_hegemony_1166`, v1.5.3, local build, 1920x1080): **771 keys**. The first session found **four
+**Localization has now been run in game, three times** (story 4.1 ST-7, 2026-10-04; `di_phase1_full`
+and `di_hegemony_1166`, v1.5.3, local build, 1920x1080): **852 keys**. The first session found **four
 defects that no check in the repo could see**, all now fixed and each re-seen on screen -
 `DiText.O` built `{DI_}KEY` instead of `{=KEY}`, so every screen drew the raw token; three labels
 carried U+00A7 where the prefab had U+00B7; the Court panel's heading had lost "The"; and enum
@@ -48,13 +48,24 @@ came out as `Clan {NAME}{TOLOWERINVARIANT}`. Two more rules joined it - a variab
 English rather than a value, and the shape rules running before the boundary rule, which had been
 counting log lines as screens. After the fixes: **90 expressions keyed into 118 keys** for 771 in
 all, AC1 re-checked on the Realm, Court and Diplomacy tabs, and the backlog honestly counted at
-**162 strings, not the 440 earlier docs claimed** (story §9a). **AC2 is
+**162 strings, not the 440 earlier docs claimed** (story §9a).
+
+**The third session found a lookup in the tool that had never matched**, so every entry in
+`text-producers.txt` was dead and the exhaustion band names and meanings, the office titles and the
+grievance titles were being reported as log text - work the story had claimed was done. Fixing it
+surfaced 69 real candidates and **a second live enum-on-the-screen defect in eight places**:
+`Treaty.Type` stringifies to its member name, and the war row's blocking reason printed
+`TributaryPact`. `Treaty.NameOf` now names the six kinds behind keys in one place. **852 keys**,
+AC1 re-checked live on all three tabs (0 ERROR / 0 WARN), the war row reading "the Vassalage with
+Northern Empire forbids it" and the grievance ledger "Their candidate for the throne passed over"
+where an enum used to be. The backlog is **166**, up four from 162 - a count that rises when a tool
+gets better at seeing is the count getting honest (story §9b). **AC2 is
 blocked on a person, not a build**: `BannerlordConfig.txt`'s `Language=` line is an output the game
 rewrites at every startup, the language lives in the official launcher's UI, and nothing else on
 this machine reaches it - story §6a has the table. The Encyclopedia court page is the one converted
 surface never seen: `test_open_encyclopedia` crashes v1.5.3 in vanilla's own
 `EncyclopediaData.OnTick`. The 12 non-English folders still ship empty and untranslated on purpose
-(lead's call, 2026-10-03), and 162 strings are still to key.
+(lead's call, 2026-10-03), and 166 strings are still to key.
 
 Also owed: a report of what looks wrong on the Members and Parties tabs (the lead raised it on
 2026-10-02; the Clan screen's code and a live look found nothing, and nothing in Phase 3 touches them).

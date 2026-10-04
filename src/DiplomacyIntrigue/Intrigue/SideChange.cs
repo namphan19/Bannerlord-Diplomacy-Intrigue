@@ -180,7 +180,11 @@ namespace DiplomacyIntrigue.Intrigue
         private static string NameOf(Hero hero) => Statecraft.StatecraftModel.NameOf(hero);
 
         public static string SideName(InternalWar war, bool rising)
-            => rising ? (war.Faction == null ? "the rising" : war.Faction.Name.ToString()) : "the crown";
+            => rising
+                ? (war.Faction == null
+                    ? DiText.T("DI_SIDE_THE_RISING", "the rising")
+                    : war.Faction.Name.ToString())
+                : DiText.T("DI_SIDE_THE_CROWN", "the crown");
 
         private static void AddLine(Quote q, string label, float gold)
             => q.Lines.Add(new KeyValuePair<string, int>(label, (int)Math.Round(gold)));

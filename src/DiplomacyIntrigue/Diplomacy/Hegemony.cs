@@ -268,7 +268,12 @@ namespace DiplomacyIntrigue.Diplomacy
             {
                 if (AnswerTo(state, war, vassal, patron) != Answer.Bound) continue;
                 var binding = TreatyEnforcement.FirstBlockingTreaty(state, patron, war.Aggressor);
-                bound.Add(war.Aggressor.Name + " (" + (binding != null ? binding.Type.ToString() : "a treaty") + ")");
+                bound.Add(DiText.T("DI_HEGEMONY_BOUND_TO",
+                        "{AGGRESSOR} ({TREATY})",
+                        ("AGGRESSOR", war.Aggressor.Name),
+                        ("TREATY", binding != null
+                            ? Models.Treaty.NameOf(binding.Type)
+                            : DiText.T("DI_HEGEMONY_A_TREATY", "a treaty"))));
             }
             if (bound.Count == 0) return null;
 

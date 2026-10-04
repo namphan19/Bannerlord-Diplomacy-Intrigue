@@ -52,3 +52,20 @@ UI/DiplomacyMenu.cs | DefectToAttacker#Cannot defect: {REASON} | {REASON} is a r
 UI/DiplomacyMenu.cs | TryPeace#Failed: {FAILED} | {FAILED} is a refusal sentence from PeaceTable.Apply, written on an earlier line
 UI/DiplomacyMenu.cs | ShowFabricationTargets#Cannot fabricate: {REASON} | {REASON} is a refusal sentence from ClaimRegistry, written on an earlier line
 UI/DiplomacyMenu.cs | OfferSubmission#We offer {NAME} our oath: tribute of {AIDEFAULTTRIBUTEPERPERIOD} per period, troops in their wars, and our foreign policy answers to them.<br><br>The oath is the peace - our war with them ends the day it is sworn.<br><br>In exchange they owe us protection; a patron that does not defend its vassals loses them. What the move is worth to a court in our position: {VALUE} ({EXPLANATION}). | {EXPLANATION} is Hegemony.SubmissionValue's own sentence, so the line would read half in one language
+# Two methods whose sentences are assembled in code, held back whole. Added 2026-10-04.
+#
+# Power.Describe builds one line as "holds {N}% of Calradia's strength" plus a band clause
+# chosen at run time, glued with "; " in C#. Keying the head and the four clauses separately
+# would hand a translator six fragments of a sentence and no sentence - the head cannot move
+# after the clause in a language that puts it there, and the clause cannot move after the
+# number it qualifies. It needs one key per band, with the number as a variable, written by
+# hand when the bands are next touched.
+Diplomacy/Power.cs | Describe | one sentence assembled in code: the share, then a band clause glued with "; ". A key per fragment is a key per word, so the whole line is written by hand.
+
+# The peace table's price rows carry their column alignment inside the string - "town" followed
+# by fourteen spaces, so the amount lines up down the column. That padding is layout, and a
+# translation cannot keep it: a German "Stadt" plus a French "ville" do not line up with
+# anything. The padding has to move out of the key and into the prefab's alignment before these
+# can be keyed at all. DescribeAllowance also holds three whole sentences (the budget line and
+# the exhaustion line) which are keyed by hand for the same reason - they are in this method.
+Diplomacy/PeaceTable.cs | DescribeAllowance | the price rows carry their column alignment inside the string; padding is layout and cannot live in a key. The three whole sentences here are keyed by hand.
