@@ -127,7 +127,7 @@ namespace DiplomacyIntrigue.UI
                 var theirExhaustion = war.ExhaustionOf(enemy);
 
                 sb.AppendLine(kingdom.Name + " against " + enemy.Name);
-                sb.AppendLine("  fought for " + war.DaysElapsed.ToString("0") + " days over " + war.Justification);
+                sb.AppendLine("  fought for " + war.DaysElapsed.ToString("0") + " days over " + CasusBelli.NameOf(war.Justification));
                 sb.AppendLine("  our exhaustion:   " + ourExhaustion.ToString("0.0") + " / 100");
 
                 // Their figure is never shown - only what it means for their behaviour.
@@ -332,7 +332,7 @@ namespace DiplomacyIntrigue.UI
 
                 var atWar = kingdom.IsAtWarWith(other);
                 var trust = TrustRegistry.Get(state, kingdom, other);
-                var label = atWar ? DiText.T("DI_MENU_AT_WAR_NAME_2", "{NAME}  (at war)", ("NAME", other.Name)) : DiText.T("DI_MENU_NAME_2", "{NAME}", ("NAME", other.Name));
+                var label = atWar ? DiText.T("DI_MENU_AT_WAR_NAME_2", "{NAME}  (at war)", ("NAME", other.Name)) : other.Name.ToString();
 
                 elements.Add(Element(other, label,
                     DiText.T("DI_MENU_TRUST_STRENGTH_TRUST_CURRENTTOTALSTRENGTH_2",
@@ -376,22 +376,17 @@ namespace DiplomacyIntrigue.UI
                     {
                         var can = AiDiplomacy.CanSubmitTo(state, us, them, out var why, out _);
                         elements.Add(new InquiryElement("submit", DiText.T("DI_MENU_KNEEL_TO_THEM_2", "Kneel to them"), null, can,
-                            DiText.T("DI_MENU_WHY_2",
-                                "{WHY}",
-                                ("WHY", can
-                                ? "The oath is the peace: the war ends and we answer to them."
-                                : why))));
+                            can ? DiText.T("DI_MENU_THE_OATH_IS_THE_PEACE", "The oath is the peace: the war ends and we answer to them.")
+                                : why));
                     }
                     else
                     {
                         var can = AiDiplomacy.CanDefectToAttacker(state, us, them, out var why, out _);
                         elements.Add(new InquiryElement("defect", DiText.T("DI_MENU_BEG_THEIR_MERCY_2", "Beg their mercy"), null, can,
-                            DiText.T("DI_MENU_WHY",
-                                "{WHY}",
-                                ("WHY", can
-                                ? "End this war as their vassal - " + ourLink.DominantParty.Name
-                                  + ", which would not defend us, is named the oathbreaker."
-                                : why))));
+                            can ? DiText.T("DI_MENU_END_THIS_WAR_AS_THEIR_VASSAL",
+                                    "End this war as their vassal - {PATRON}, which would not defend us, is named the oathbreaker.",
+                                    ("PATRON", ourLink.DominantParty.Name))
+                                : why));
                     }
                 }
                 else
@@ -399,12 +394,10 @@ namespace DiplomacyIntrigue.UI
                     var block = TreatyEnforcement.WhyWarBlocked(state, us, them);
                     elements.Add(new InquiryElement("war", DiText.T("DI_MENU_DECLARE_WAR_2", "Declare war"), null,
                         block == TreatyEnforcement.Block.None,
-                        DiText.T("DI_MENU_BLOCK_2",
-                            "{BLOCK}",
-                            ("BLOCK", block == TreatyEnforcement.Block.None
-                            ? "Puts the question to the court, which votes on it - the same"
-                              + " proposal the Decisions tab offers."
-                            : TreatyEnforcement.Explain(state, us, them, block) + "."))));
+                        block == TreatyEnforcement.Block.None
+                            ? DiText.T("DI_MENU_PUTS_THE_QUESTION_TO_THE_COURT",
+                                "Puts the question to the court, which votes on it - the same proposal the Decisions tab offers.")
+                            : TreatyEnforcement.Explain(state, us, them, block) + "."));
 
                     AddPactOption(state, us, them, TreatyType.NonAggressionPact, elements);
                     AddPactOption(state, us, them, TreatyType.DefensivePact, elements);
@@ -412,24 +405,19 @@ namespace DiplomacyIntrigue.UI
 
                     var canTribute = AiDiplomacy.CanDemandTribute(state, us, them, out var whyTribute);
                     elements.Add(new InquiryElement("tribute", DiText.T("DI_MENU_DEMAND_TRIBUTE_2", "Demand tribute"), null, canTribute,
-                        DiText.T("DI_MENU_WHYTRIBUTE_2",
-                            "{WHYTRIBUTE}",
-                            ("WHYTRIBUTE", canTribute
-                            ? DiplomacyConstants.AiDefaultTributePerPeriod
-                              + " per period. Coercion, not negotiation: the claim makes the"
-                              + " pretext and our strength makes the argument."
-                            : whyTribute))));
+                        canTribute
+                            ? DiText.T("DI_MENU_PER_PERIOD_COERCION_NOT_NEGOTIATION",
+                                "{AMOUNT} per period. Coercion, not negotiation: the claim makes the pretext and our strength makes the argument.",
+                                ("AMOUNT", DiplomacyConstants.AiDefaultTributePerPeriod))
+                            : whyTribute));
 
                     if (ourLink == null)
                     {
                         var can = AiDiplomacy.CanSubmitTo(state, us, them, out var why, out _);
                         elements.Add(new InquiryElement("submit", DiText.T("DI_MENU_KNEEL_TO_THEM", "Kneel to them"), null, can,
-                            DiText.T("DI_MENU_WHY",
-                                "{WHY}",
-                                ("WHY", can
-                                ? "Their oath for our foreign policy: tribute, troops in their"
-                                  + " wars, protection owed to us."
-                                : why))));
+                            can ? DiText.T("DI_MENU_THEIR_OATH_FOR_OUR_FOREIGN_POLICY",
+                                    "Their oath for our foreign policy: tribute, troops in their wars, protection owed to us.")
+                                : why));
                     }
 
                     // Courting somebody else's neglected vassal means war with its patron.
@@ -441,12 +429,10 @@ namespace DiplomacyIntrigue.UI
                             DiText.T("DI_MENU_COURT_THEM_AWAY_FROM_NAME_2",
                                 "Court them away from {NAME}",
                                 ("NAME", theirLink.DominantParty.Name)), null, can,
-                            DiText.T("DI_MENU_WHY",
-                                "{WHY}",
-                                ("WHY", can
-                                ? "They would kneel to us (valued at " + value.ToString("0")
-                                  + "). Taking them means war with " + theirLink.DominantParty.Name + "."
-                                : why))));
+                            can ? DiText.T("DI_MENU_THEY_WOULD_KNEEL_TO_US",
+                                    "They would kneel to us (valued at {VALUE}). Taking them means war with {PATRON}.",
+                                    ("VALUE", value.ToString("0")), ("PATRON", theirLink.DominantParty.Name))
+                                : why));
                     }
 
                     // A greedy patron may tear up a vassal's oath and take its lands.
@@ -476,7 +462,7 @@ namespace DiplomacyIntrigue.UI
                 if (breakable != null)
                     elements.Add(Element("break", DiText.T("DI_MENU_RENOUNCE_OUR_TYPE_2",
                         "Renounce our {TYPE}",
-                        ("TYPE", breakable.Type)),
+                        ("TYPE", Models.Treaty.NameInSentence(breakable.Type))),
                         DiText.T("DI_MENU_ALWAYS_POSSIBLE_NEVER_FREE_TRUST_WITH_TRUSTTREATYBROKENVICTIM_2",
                             "Always possible, never free: -{TRUSTTREATYBROKENVICTIM} trust with them, -{TRUSTTREATYBROKENOBSERVER} with every other court, and they gain a reason for war.",
                             ("TRUSTTREATYBROKENVICTIM", (-DiplomacyConstants.TrustTreatyBrokenVictim).ToString("0")),
@@ -557,7 +543,7 @@ namespace DiplomacyIntrigue.UI
             if (war != null)
             {
                 sb.AppendLine();
-                sb.AppendLine("At war for " + war.DaysElapsed.ToString("0") + " days over " + war.Justification + ".");
+                sb.AppendLine("At war for " + war.DaysElapsed.ToString("0") + " days over " + CasusBelli.NameOf(war.Justification) + ".");
                 sb.AppendLine("Our exhaustion: " + war.ExhaustionOf(us).ToString("0.0"));
                 sb.AppendLine("Their condition: " + ExhaustionBands.Describe(war.ExhaustionOf(them)));
             }
@@ -613,7 +599,7 @@ namespace DiplomacyIntrigue.UI
                     "{US} and {THEM} sign a {TREATY}.",
                     ("US", us.Name),
                     ("THEM", them.Name),
-                    ("TREATY", Models.Treaty.NameOf(type))), Colors.Green);
+                    ("TREATY", Models.Treaty.NameInSentence(type))), Colors.Green);
         }
 
         /// <summary>
@@ -1077,9 +1063,7 @@ namespace DiplomacyIntrigue.UI
                     ("AIDEFAULTTRIBUTEPERPERIOD", DiplomacyConstants.AiDefaultTributePerPeriod),
                     ("PRICED", Priced(DiplomacyConstants.PeaceCostTributaryPact, budget))),
                 null, tributeOpen,
-                DiText.T("DI_MENU_NOTRIBUTE_2",
-                    "{NOTRIBUTE}",
-                    ("NOTRIBUTE", tributeOpen ? "They pay for peace and keep everything else." : noTribute))));
+                tributeOpen ? DiText.T("DI_MENU_THEY_PAY_FOR_PEACE", "They pay for peace and keep everything else.") : noTribute));
 
             // One rung with two faces at one price: a hegemon cannot be made a vassal while it
             // still holds vassals (hegemony is flat), so against one the demand is its sphere.
@@ -1129,7 +1113,7 @@ namespace DiplomacyIntrigue.UI
                 DiText.T("DI_MENU_AT_WAR_FOR_DAYS_OVER_THEY_DAYSELAPSED_JUSTIFICATION_DESCRIBE_2",
                     "At war for {DAYSELAPSED} days over {JUSTIFICATION}. They are {DESCRIBE}. This war has earned us {BUDGET} - the most our terms may cost. Choose nothing for a white peace.",
                     ("DAYSELAPSED", war.DaysElapsed.ToString("0")),
-                    ("JUSTIFICATION", war.Justification),
+                    ("JUSTIFICATION", CasusBelli.NameOf(war.Justification)),
                     ("DESCRIBE", ExhaustionBands.Describe(war.ExhaustionOf(them))),
                     ("BUDGET", budget.ToString("0"))),
                 elements, chosen =>
@@ -1187,9 +1171,7 @@ namespace DiplomacyIntrigue.UI
                         "Agree to pay tribute   -   worth {PEACECOSTTRIBUTARYPACT}",
                         ("PEACECOSTTRIBUTARYPACT", DiplomacyConstants.PeaceCostTributaryPact.ToString("0"))),
                     null, tributeOpen,
-                    DiText.T("DI_MENU_NOTRIBUTE",
-                        "{NOTRIBUTE}",
-                        ("NOTRIBUTE", tributeOpen ? "A tributary pays for peace and keeps everything else." : noTribute)))
+                    tributeOpen ? DiText.T("DI_MENU_A_TRIBUTARY_PAYS_FOR_PEACE", "A tributary pays for peace and keeps everything else.") : noTribute)
             };
 
             var indemnity = PeaceTable.LargestIndemnity(war, them, us);
@@ -1254,7 +1236,7 @@ namespace DiplomacyIntrigue.UI
                 DiText.T("DI_MENU_AT_WAR_FOR_DAYS_OVER_THEIR_DAYSELAPSED_JUSTIFICATION_BUDGET_2",
                     "At war for {DAYSELAPSED} days over {JUSTIFICATION}. Their war score is {BUDGET}: they will not settle for less than {WANTED} and cannot take more than {BUDGET_2}. Choose nothing to offer a white peace.",
                     ("DAYSELAPSED", war.DaysElapsed.ToString("0")),
-                    ("JUSTIFICATION", war.Justification),
+                    ("JUSTIFICATION", CasusBelli.NameOf(war.Justification)),
                     ("BUDGET", budget.ToString("0")),
                     ("WANTED", wanted.ToString("0")),
                     ("BUDGET_2", budget.ToString("0"))),
@@ -1381,7 +1363,7 @@ namespace DiplomacyIntrigue.UI
             TreatyRegistry.Break(state, treaty, us);
             Notify(DiText.T("DI_MENU_WE_RENOUNCE_OUR_TREATY",
                     "We renounce our {TREATY} with {THEM}. Every court has taken note.",
-                    ("TREATY", Models.Treaty.NameOf(treaty.Type)),
+                    ("TREATY", Models.Treaty.NameInSentence(treaty.Type)),
                     ("THEM", them.Name)), Colors.Red);
         }
 

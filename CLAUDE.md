@@ -40,8 +40,12 @@ there is a ready watcher pattern in the session scratchpad, and the symptom to r
 
 **The game's language belongs to the official launcher, and `BannerlordConfig.txt` does not set it.**
 `Documents\Mount and Blade II Bannerlord\Configs\BannerlordConfig.txt` line 1 reads `Language=<id>`,
-and it looks like the setting - it is an **output**. The game rewrites it to English at every
-startup (checked 2026-10-04: the file's timestamp is the launch second). There is no Language entry
+and it looks like the setting - it is an **output**. On 2026-10-04 12:38 a launch rewrote it to
+English. **A later `games_start` at 19:43 did not touch the file at all** (timestamp still 12:38), so
+"rewritten at every startup" was too strong: it is rewritten when the game could not honour the value.
+That 12:38 launch ran with `under_development="true"` in our `language_data.xml` files, which by IL makes
+`BannerlordConfig.set_Language` fall back to English (story 4.1 review); that flag is gone, so whether
+the rewrite still happens is **not re-tested**. There is no Language entry
 in the in-game Options screen, no console command that sets one (`list_commands` on `lang` and
 `locale`: none), no registry key under `HKCU\Software`, and no attribute containing "lang" in
 `LauncherData.xml`. The language belongs to the **official launcher's UI**, and because the launcher
@@ -570,6 +574,16 @@ it meets the statecraft terms. Acts built before it are not retrofitted without 
   prefab's literal must move into a view-model property (`Text="@Property"`), which
   `tools/Localize prefabs` lists. Logs, telemetry and `diplomacy.*` output stay English and are
   never keyed. The design docs are English. `docs/localization.md` is the guide for a translator.
+  **Text for the log, the telemetry or a `diplomacy.*` command is built inside `DiText.English()`**: every
+  command starts with `using var english = DiText.English();` (a new one must), and a log line that embeds
+  a keyed producer (`CourtBands.Name`, `Treaty.NameOf`...) is built in a scope too - otherwise a Deutsch
+  game writes "Gereizt" into an English log line. Never build player-facing text inside one. **An enum is
+  never printed or passed as a variable**: its name reaches the screen (`ReclaimAncestralLand`); use the
+  type's `NameOf` (`CasusBelli.NameOf`, `Treaty.NameOf` / `NameInSentence`, `VassalTribute.NameOf`).
+  **A variable never carries a whole English sentence**: `{WHY}` as a key's whole text translates
+  nothing (rule 14) - use `why ?? DiText.T(key, "...")`, and key each literal a conditional picks from.
+  **Language files**: `ChildNodes[1]` of every `di_strings.xml` must be `<base>` (a comment before it
+  makes the file load nothing) and `language_data.xml` must not set `under_development` (rules 12-13).
 - **Reply to the user in Vietnamese.** The lead writes in Vietnamese; the codebase is not.
 - Any Vietnamese meant to be read (the Vietnamese handbook, player text, write-ups for the lead)
   goes through the `vietnamese-writing` skill (`.claude/skills/vietnamese-writing/`), with its

@@ -119,7 +119,7 @@ namespace DiplomacyIntrigue.Diplomacy
                         ? DiText.T("DI_BLOCK_A_STANDING_AGREEMENT", "a standing agreement forbids it")
                         : DiText.T("DI_BLOCK_THE_TREATY_FORBIDS_IT",
                             "the {TREATY} with {DEFENDER} forbids it",
-                            ("TREATY", Models.Treaty.NameOf(treaty.Type)),
+                            ("TREATY", Models.Treaty.NameInSentence(treaty.Type)),
                             ("DEFENDER", defender.Name));
                 case Block.ForeignPolicySubordinated:
                     var patron = TreatyRegistry.PatronOf(state, aggressor);

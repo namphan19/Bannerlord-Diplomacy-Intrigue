@@ -667,7 +667,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                     war.DaysElapsed.ToString("0") + " days"
                         + (war.Justification == CasusBelliType.None
                             ? ", no claim on record"
-                            : " over " + war.Justification)
+                            : " over " + CasusBelli.NameOf(war.Justification))
                         + (war.IsObligationWar && war.CalledBy != null
                             ? "   -   called in by " + war.CalledBy.Name : "")
                         // The rising is at war with the crown and nobody else, so a rebel's
@@ -967,9 +967,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
         private static string TermLeft(Treaty treaty)
         {
-            return DiText.T("DI_REALM_TREATY_2",
-                "{TREATY}",
-                ("TREATY", treaty.ExpiresOn == CampaignTime.Never ? "open-ended" : Duration(treaty)));
+            return treaty.ExpiresOn == CampaignTime.Never
+                ? DiText.T("DI_REALM_OPEN_ENDED", "open-ended")
+                : Duration(treaty);
         }
 
         /// <summary>Compact duration the mockup uses: "1y 40d", "6y", "45d".</summary>
@@ -981,7 +981,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             var years = (int)(days / 84f);
             var rem = (int)(days - years * 84f);
             if (years <= 0f) return DiText.T("DI_REALM_REM_2", "{REM}d", ("REM", rem));
-            return rem > 0 ? years + "y " + rem + "d" : years + "y";
+            return rem > 0
+                ? DiText.T("DI_REALM_YEARS_AND_DAYS", "{YEARS}y {REM}d", ("YEARS", years), ("REM", rem))
+                : DiText.T("DI_REALM_YEARS", "{YEARS}y", ("YEARS", years));
         }
 
         // The six kinds of agreement are named by Treaty.NameOf, in one place, because eight other

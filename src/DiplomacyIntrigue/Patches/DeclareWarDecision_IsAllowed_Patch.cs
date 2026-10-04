@@ -61,8 +61,12 @@ namespace DiplomacyIntrigue.Patches
                 {
                     __result = false;
                     if (Settings.Current.VerboseLogging)
-                        Log.Debug("Enforce", "Blocked war proposal " + proposer.Name + " -> " + target.Name
-                                             + ": " + TreatyEnforcement.Explain(state, proposer, target, block));
+                    {
+                        // The log stays English whatever language the game is in (story 4.1 §3).
+                        using (DiText.English())
+                            Log.Debug("Enforce", "Blocked war proposal " + proposer.Name + " -> " + target.Name
+                                                 + ": " + TreatyEnforcement.Explain(state, proposer, target, block));
+                    }
                     return;
                 }
 

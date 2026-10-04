@@ -31,7 +31,9 @@
          passed, because the bug is in the format the engine is handed rather than in the key or
          the English. Rule 8 is the whole reason the ninth rule exists.
       9. A duplicate id inside one strings file.
-     10. (see the prefab rule below)
+     10. A literal left in a prefab's Text attribute. A widget's Text is a plain string, so it cannot
+         be keyed where it stands and has to move into a view-model property (story 4.1 ST-4,
+         done: all 92 have). A failure, and the guard that keeps them there.
      11. A language folder that is part-filled (empty or complete, never part-way).
      12. A strings file the game would load as nothing: not well-formed XML, or whose second
          top-level node is not <base>. LocalizedTextManager.LoadLanguage reads
@@ -42,11 +44,13 @@
          "under development" language from GetLanguageIds, so one such attribute can make the
          game fall back to English for a player who chose that language (IL, 2026-10-04).
 
-    Reported, not failed: a literal left in a prefab's Text attribute (rule below). A widget's
-    Text is a plain string, so it cannot be keyed where it stands and each one has to move into a
-    view-model property first - story 4.1 ST-4, unfinished. It is listed so the gap is visible on
-    every build rather than discovered by a player in another language, and it becomes a failure
-    when the prefab work lands. Everything else above is a failure today.
+     14. An English text that is one {VARIABLE} and nothing else (`{WHY}`, `{TOSTRING}`). Such a key
+         translates nothing: the English is inside the variable's value, so every language shows
+         it. Key the literals the value is chosen from instead.
+     15. A variable not written in capitals (`{cost}`): rules 5 and 6 read only `{CAPITALS}`, so
+         a lower-case one would be invisible to them and a translator could drop it unnoticed.
+
+    Every rule is a failure; nothing here is only reported.
 
     Usage:  pwsh ./scripts/check-localization.ps1 [-Source src/DiplomacyIntrigue] [-Module module/DiplomacyIntrigue]
     Exit code 0 when every rule holds, 1 otherwise.
@@ -122,6 +126,14 @@ foreach ($file in $files) {
         }
         if ($english -match '^[a-z][a-z0-9]*(_[a-z0-9]+)+$') {
             $problems.Add("${where}: $key is keyed with `"$english`", which is an event or route id. Ids stay English: the log and analyse-log.py read them.")
+        }
+
+        # Rules 14 and 15.
+        if ($english -match '^\s*\{[A-Za-z][A-Za-z0-9_]*\}[\s.!:]*$') {
+            $problems.Add("${where}: $key is nothing but the variable in `"$english`". The English sits inside the variable's value, so no language can translate it - key the literals the value is chosen from instead.")
+        }
+        foreach ($lc in [regex]::Matches($english, '\{([A-Za-z0-9_]*[a-z][A-Za-z0-9_]*)\}')) {
+            $problems.Add("${where}: $key has the variable {$($lc.Groups[1].Value)}, which is not in capitals - the variable rules cannot see it.")
         }
 
         foreach ($v in $passed) {
@@ -305,7 +317,6 @@ if (Test-Path $langRoot) {
 # A label of punctuation alone is left alone deliberately: "-" and "+" on a button are structure,
 # the way a number's sign is, and a translator asked to render them would only be able to make
 # them worse.
-$warnings = [System.Collections.Generic.List[string]]::new()
 $prefabs = Join-Path $Module "GUI\Prefabs"
 if (Test-Path $prefabs) {
     foreach ($file in Get-ChildItem $prefabs -Recurse -Filter *.xml) {
@@ -362,9 +373,5 @@ $variableCount = ($used.Values | ForEach-Object { $_.Variables.Count } | Measure
 Write-Host ("Localization check OK: {0} keys in code, {1} of them carry {2} variables." -f `
     $used.Count, ($used.Values | Where-Object { $_.Variables.Count -gt 0 }).Count, $variableCount) -ForegroundColor Green
 
-if ($warnings.Count -gt 0) {
-    Write-Host ("Prefab text not keyed yet ({0}, story 4.1 ST-4 - artifacts/localization/prefabs.csv has the worklist):" -f $warnings.Count) -ForegroundColor Yellow
-    foreach ($w in $warnings) { Write-Host "  - $w" -ForegroundColor DarkYellow }
-}
 
 exit 0

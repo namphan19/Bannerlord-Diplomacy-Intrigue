@@ -49,12 +49,51 @@ namespace DiplomacyIntrigue.Core
         internal const string Open = "{=";
 
         /// <summary>
+        /// How many <see cref="English"/> scopes the current thread is inside. While it is above
+        /// zero <see cref="T"/> and <see cref="O"/> answer the English the call carries and never
+        /// look a key up.
+        ///
+        /// Why this exists: the same producers (<c>ExhaustionBands.Name</c>, <c>CourtBands.Name</c>,
+        /// <c>Treaty.NameOf</c>...) feed both the screens and the log, the telemetry and the
+        /// <c>diplomacy.*</c> commands. The second group is read by tools such as
+        /// <c>analyse-log.py</c> and by the lead, and story 4.1 §3 keeps it English. Without a
+        /// scope a log line written under a Deutsch game would say "Gereizt" in the middle of an
+        /// English sentence. Thread-static, because the engine's UI and the campaign tick are one
+        /// thread but a command may be called from the bridge's thread.
+        /// </summary>
+        [ThreadStatic] private static int _englishDepth;
+
+        /// <summary>
+        /// Everything built inside the returned scope is English: <c>using (DiText.English()) ...</c>
+        /// or <c>using var _ = DiText.English();</c> at the top of a <c>diplomacy.*</c> command.
+        /// Text shown to a player must never be built inside one.
+        /// </summary>
+        internal static IDisposable English()
+        {
+            _englishDepth++;
+            return new EnglishScope();
+        }
+
+        private sealed class EnglishScope : IDisposable
+        {
+            private bool _done;
+            public void Dispose()
+            {
+                if (_done) return;
+                _done = true;
+                if (_englishDepth > 0) _englishDepth--;
+            }
+        }
+
+        /// <summary>
         /// The localized text as a <see cref="TextObject"/>, for the engine's own signatures that
         /// want one (<c>InformationNotification</c>, <c>GameTexts</c>, a variable set on a prompt).
         /// </summary>
         internal static TextObject O(string key, string english, params (string Name, object Value)[] vars)
         {
-            var text = new TextObject(Open + key + "}" + english);
+            // Under an English scope the id is left out, so the engine has nothing to look up and
+            // takes the English the call carries.
+            var text = new TextObject(_englishDepth > 0 ? english : Open + key + "}" + english);
             for (var i = 0; i < vars.Length; i++)
                 text.SetTextVariable(vars[i].Name, AsText(vars[i].Value));
             return text;
@@ -66,13 +105,13 @@ namespace DiplomacyIntrigue.Core
         /// </summary>
         internal static string T(string key, string english, params (string Name, object Value)[] vars)
         {
-            var fallback = Substitute(english, vars);
             try
             {
                 return O(key, english, vars).ToString();
             }
             catch
             {
+                var fallback = Substitute(english, vars);
                 // Text lookup failing must not take a screen down with it (R6). Localization is
                 // not up during the earliest SubModule hooks, and a broken language file must
                 // read as English rather than as an empty panel.

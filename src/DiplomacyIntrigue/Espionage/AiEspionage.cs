@@ -145,6 +145,9 @@ namespace DiplomacyIntrigue.Espionage
 
         public static EspionagePlan Plan(ModState state, Kingdom realm)
         {
+            // The plan's reasons are read by the log and by diplomacy.ai_espionage, never by a
+            // player, so they are English whatever the game's language (story 4.1 §3).
+            using var english = Core.DiText.English();
             // One of the two places this class still knows the player by name, and the other is
             // <see cref="WindDownOrphans"/>. Both are about the player's *own* espionage, not about
             // who the AI may target - story 3.10 §3 puts both out of its scope, and they follow from

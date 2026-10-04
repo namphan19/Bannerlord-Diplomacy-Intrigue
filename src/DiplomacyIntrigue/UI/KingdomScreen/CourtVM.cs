@@ -663,22 +663,22 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             RealmName = kingdom.Name.ToString().ToUpperInvariant();
             // A house with the rising does not serve the ruler it is fighting: the claimant read
             // "you serve Aradwyr" over a war against Aradwyr (live 2026-09-25).
-            var rulerName = DiText.T("DI_COURT_TOSTRING_2",
-                "{TOSTRING}",
-                ("TOSTRING", kingdom.Leader == null ? "its ruler" : kingdom.Leader.Name.ToString()));
+            var rulerName = kingdom.Leader == null
+                ? DiText.T("DI_COURT_ITS_RULER", "its ruler")
+                : kingdom.Leader.Name.ToString();
             var playerRebel = war != null && war.IsRebel(Clan.PlayerClan);
-            CourtLine = DiText.T("DI_COURT_RULERNAME_2",
-                "{RULERNAME}",
-                ("RULERNAME", playerRules
-                ? "The court of Clan " + ruling.Name + " - your own clan"
+            CourtLine = playerRules
+                ? DiText.T("DI_COURT_YOUR_OWN_COURT", "The court of Clan {CLAN} - your own clan", ("CLAN", ruling.Name))
                 : playerRebel
                     // Vanilla's own tabs read the player's map faction, which is the rising, and
                     // that is kept on purpose (STATUS 2026-09-26): its clans, fiefs and armies are
                     // the host a rebel actually commands. Said here so the switch is not a surprise.
-                    ? "The court of Clan " + ruling.Name + " - you are in arms against " + rulerName
-                      + " (the vanilla tabs show " + (war.Faction == null ? "the rising" : war.Faction.Name.ToString())
-                      + ", your host)"
-                    : "The court of Clan " + ruling.Name + " - you serve " + rulerName));
+                    ? DiText.T("DI_COURT_IN_ARMS_AGAINST",
+                        "The court of Clan {CLAN} - you are in arms against {RULER} (the vanilla tabs show {HOST}, your host)",
+                        ("CLAN", ruling.Name), ("RULER", rulerName),
+                        ("HOST", war.Faction == null ? DiText.T("DI_COURT_THE_RISING", "the rising") : war.Faction.Name.ToString()))
+                    : DiText.T("DI_COURT_YOU_SERVE", "The court of Clan {CLAN} - you serve {RULER}",
+                        ("CLAN", ruling.Name), ("RULER", rulerName));
 
             // Crown legitimacy: the pool, the bar, and what last moved it.
             var legitimacy = LegitimacyRegistry.Of(state, kingdom);
@@ -760,8 +760,8 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 SuccessionDetail = LegitimacyRegistry.IsWeak(state, kingdom) ? DiText.T("DI_COURT_IS_LOW_ENOUGH_THAT_CLAIMANT_FACTION_STANDINGWORD_2",
                     "{STANDINGWORD} is low enough that a claimant's faction can gather openly.",
                     ("STANDINGWORD", standingWord)) : DiText.T("DI_COURT_WHILE_HOLDS_ABOVE_NO_FACTION_DARES_TOLOWERINVARIANT_2",
-                    "While {TOLOWERINVARIANT} holds above {LEGITIMACYPRETENDERTHRESHOLD}, no faction dares rally to a claim.",
-                    ("TOLOWERINVARIANT", standingWord.ToLowerInvariant()),
+                    "While {STANDINGWORD} holds above {LEGITIMACYPRETENDERTHRESHOLD}, no faction dares rally to a claim.",
+                    ("STANDINGWORD", standingWord.ToLowerInvariant()),
                     ("LEGITIMACYPRETENDERTHRESHOLD", IntrigueConstants.LegitimacyPretenderThreshold.ToString("0")));
 
                 // Design 08 S-8: a claimant's own Charm, in every house's choice at a succession.
@@ -778,8 +778,8 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                     }
                     if (charm.Count > 0)
                         SuccessionDetail += DiText.T("DI_COURT_CHARM_AT_COURT_IN_EVERY_HOUSE_JOIN_2",
-                            " Charm at court, in every house's choice: {JOIN}.",
-                            ("JOIN", string.Join(", ", charm)));
+                            " Charm at court, in every house's choice: {NAMES}.",
+                            ("NAMES", string.Join(", ", charm)));
                 }
             }
             else if (standing > 0)
@@ -993,7 +993,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             var loyalty = explained.Total;
             var band = LoyaltyModel.Band(loyalty);
 
-            Name = isPlayer ? DiText.T("DI_COURT_YOU_NAME_2", "{NAME} (you)", ("NAME", clan.Name.ToString())) : DiText.T("DI_COURT_NAME_2", "{NAME}", ("NAME", clan.Name.ToString()));
+            Name = isPlayer ? DiText.T("DI_COURT_YOU_NAME_2", "{NAME} (you)", ("NAME", clan.Name.ToString())) : clan.Name.ToString();
             BlocText = bloc == null ? "-" : DiCourtVM.AgendaName(bloc.Agenda)
                                             + (bloc.Leader == clan ? " (leads)" : string.Empty);
             InfluenceText = clan.Influence.ToString("N0");

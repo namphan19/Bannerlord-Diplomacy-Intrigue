@@ -279,7 +279,7 @@ namespace DiplomacyIntrigue.UI.Negotiation
             // headline words it the same way rather than printing "over None".
             var story = (war.Justification == CasusBelliType.None
                             ? "War with no claim on record"
-                            : "War over " + war.Justification)
+                            : "War over " + CasusBelli.NameOf(war.Justification))
                         + "   -   " + war.DaysElapsed.ToString("0")
                         + (war.DaysElapsed.ToString("0") == "1" ? " day" : " days")
                         + (war.IsObligationWar && war.CalledBy != null
@@ -501,8 +501,8 @@ namespace DiplomacyIntrigue.UI.Negotiation
                 _weAreWinner ? DiText.T("DI_PEACE_THEY_RELEASE_THEIR_VASSALS_2", "They release their vassals") : DiText.T("DI_PEACE_RELEASE_OUR_VASSALS_2", "Release our vassals"),
                 held.Count == 0 ? DiText.T("DI_PEACE_THERE_IS_NO_SPHERE_TO_BREAK_2",
                     "There is no sphere to break up.") : DiText.T("DI_PEACE_WALK_FREE_AND_THEIR_SPHERE_ENDS_JOIN_2",
-                    "{JOIN} walk free, and their sphere ends with them.",
-                    ("JOIN", string.Join(", ", names.ToArray()))),
+                    "{NAMES} walk free, and their sphere ends with them.",
+                    ("NAMES", string.Join(", ", names.ToArray()))),
                 winner, loser, t => t.DissolveHegemony = true);
             Add(specs, PeaceTermKind.Submission, null,
                 _weAreWinner ? DiText.T("DI_PEACE_THEIR_SUBMISSION_AS_YOUR_VASSAL_2",
@@ -570,9 +570,7 @@ namespace DiplomacyIntrigue.UI.Negotiation
                 Desc = desc,
                 Price = PeaceTable.CostOf(trial).ToString("0"),
                 Enabled = enabled,
-                DisabledReason = DiText.T("DI_PEACE_REASON_2",
-                    "{REASON}",
-                    ("REASON", reason ?? "Cannot be asked in this war.")),
+                DisabledReason = reason ?? DiText.T("DI_PEACE_CANNOT_BE_ASKED_IN_THIS_WAR", "Cannot be asked in this war."),
             });
         }
 
@@ -712,7 +710,7 @@ namespace DiplomacyIntrigue.UI.Negotiation
             {
                 VerdictText = DiText.T("DI_PEACE_THEY_REFUSE", "They refuse");
                 VerdictColor = Color.ConvertStringToColor("#E08070FF");
-                VerdictWhy = DiText.T("DI_PEACE_REASON", "{REASON}", ("REASON", reason ?? "Not now."));
+                VerdictWhy = reason ?? DiText.T("DI_PEACE_NOT_NOW", "Not now.");
                 OfferEnabled = false;
             }
         }

@@ -428,7 +428,7 @@ namespace DiplomacyIntrigue.Diplomacy
             Announce(DiText.T("DI_CALLTOARMS_ALLY_HONOURS",
                         "{ALLY} honours its {TREATY} with {CALLER} and joins the war against {ENEMY}.",
                         ("ALLY", ally.Name),
-                        ("TREATY", Models.Treaty.NameOf(treaty.Type)),
+                        ("TREATY", Models.Treaty.NameInSentence(treaty.Type)),
                         ("CALLER", caller.Name),
                         ("ENEMY", enemy.Name)),
                 Colors.Green);
@@ -491,7 +491,7 @@ namespace DiplomacyIntrigue.Diplomacy
                     : DiText.T("DI_CALLTOARMS_ALLY_REFUSES",
                         "{ALLY} refuses to honour its {TREATY} with {CALLER}.",
                         ("ALLY", ally.Name),
-                        ("TREATY", Models.Treaty.NameOf(treaty.Type)),
+                        ("TREATY", Models.Treaty.NameInSentence(treaty.Type)),
                         ("CALLER", caller.Name)),
                 Colors.Yellow);
         }
@@ -863,13 +863,13 @@ namespace DiplomacyIntrigue.Diplomacy
                         "Refusing costs {TRUST} trust with {CALLER}, and the {TREATY} will lapse.",
                         ("TRUST", refusedTrust),
                         ("CALLER", caller.Name),
-                        ("TREATY", Models.Treaty.NameOf(treaty.Type)));
+                        ("TREATY", Models.Treaty.NameInSentence(treaty.Type)));
                 body = DiText.T("DI_CALLTOARMS_INVOKES",
-                        "{CALLER} invokes its {TREATY} and calls you to war against {ENEMY}.\n\n{cost}",
+                        "{CALLER} invokes its {TREATY} and calls you to war against {ENEMY}.\n\n{COST}",
                         ("CALLER", caller.Name),
-                        ("TREATY", Models.Treaty.NameOf(treaty.Type)),
+                        ("TREATY", Models.Treaty.NameInSentence(treaty.Type)),
                         ("ENEMY", enemy.Name),
-                        ("cost", cost));
+                        ("COST", cost));
             }
 
             try

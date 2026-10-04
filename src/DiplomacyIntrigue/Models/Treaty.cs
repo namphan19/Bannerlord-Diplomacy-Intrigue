@@ -254,6 +254,31 @@ namespace DiplomacyIntrigue.Models
             }
         }
 
+        /// <summary>
+        /// The same six names for the middle of a sentence ("honours its defensive pact with").
+        /// <see cref="NameOf(TreatyType)"/> is for a label or a heading and starts with a capital;
+        /// lower-casing it in code would be an English rule (German nouns keep theirs), so a
+        /// sentence gets its own keys and a translator decides each one.
+        /// </summary>
+        public static string NameInSentence(TreatyType type)
+        {
+            switch (type)
+            {
+                case TreatyType.NonAggressionPact:
+                    return Core.DiText.T("DI_TREATY_IN_SENTENCE_NON_AGGRESSION_PACT", "non-aggression pact");
+                case TreatyType.DefensivePact:
+                    return Core.DiText.T("DI_TREATY_IN_SENTENCE_DEFENSIVE_PACT", "defensive pact");
+                case TreatyType.Alliance:
+                    return Core.DiText.T("DI_TREATY_IN_SENTENCE_ALLIANCE", "alliance");
+                case TreatyType.TributaryPact:
+                    return Core.DiText.T("DI_TREATY_IN_SENTENCE_TRIBUTARY_PACT", "tributary pact");
+                case TreatyType.Vassalage:
+                    return Core.DiText.T("DI_TREATY_IN_SENTENCE_VASSALAGE", "vassalage");
+                default:
+                    return Core.DiText.T("DI_TREATY_IN_SENTENCE_TRUCE", "truce");
+            }
+        }
+
         private static string NameOf(Kingdom k) => k == null ? "?" : k.Name.ToString();
     }
 }

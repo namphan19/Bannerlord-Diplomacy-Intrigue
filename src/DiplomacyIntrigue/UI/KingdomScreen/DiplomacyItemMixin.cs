@@ -453,16 +453,17 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             if (patron != null)
             {
                 var link = Hegemony.VassalageOf(state, them);
-                var relation = DiText.T("DI_DIPLOMACY_TOARRAY_2",
-                    "{TOARRAY}",
-                    ("TOARRAY", parts.Count == 0 ? "No agreements with you" : string.Join("   -   ", parts.ToArray())));
-                return relation + "   -   " + them.Name + " answers to " + patron.Name
-                          + " at hold " + Hegemony.HoldOf(link).ToString("0");
+                var relation = parts.Count == 0
+                    ? DiText.T("DI_DIPLOMACY_NO_AGREEMENTS_WITH_YOU_2", "No agreements with you")
+                    : string.Join("   -   ", parts.ToArray());
+                return relation + "   -   " + DiText.T("DI_DIPLOMACY_ANSWERS_TO_AT_HOLD",
+                    "{NAME} answers to {PATRON} at hold {HOLD}",
+                    ("NAME", them.Name), ("PATRON", patron.Name), ("HOLD", Hegemony.HoldOf(link).ToString("0")));
             }
 
-            return DiText.T("DI_DIPLOMACY_TOARRAY",
-                "{TOARRAY}",
-                ("TOARRAY", parts.Count == 0 ? "No agreements with you." : string.Join("   -   ", parts.ToArray())));
+            return parts.Count == 0
+                ? DiText.T("DI_DIPLOMACY_NO_AGREEMENTS_WITH_YOU", "No agreements with you.")
+                : string.Join("   -   ", parts.ToArray());
         }
 
         // ----- the note about the bars ----------------------------------------
@@ -814,7 +815,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             var text = DiText.T("DI_DIPLOMACY_BEST_AT_LEGITIMACY_NAME_TYPE_LEGITIMACY_2",
                 "{NAME}'s best: {TYPE} at legitimacy {LEGITIMACY}",
                 ("NAME", holder.Name),
-                ("TYPE", best.Type),
+                ("TYPE", CasusBelli.NameOf(best.Type)),
                 ("LEGITIMACY", CasusBelli.Legitimacy(best.Type).ToString("0.00")));
             if (best.AllowsFiefDemands)
                 text += DiText.T("DI_DIPLOMACY_IT_ENTITLES_THEM_TO_LAND_AT_2",
@@ -856,15 +857,11 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                     var can = AiDiplomacy.CanSubmitTo(state, us, them, out var why, out _);
                     into.Add(new DiplomacyActionVM(DiText.T("DI_DIPLOMACY_KNEEL_TO_THEM_2", "Kneel to them"),
                         can ? DiText.T("DI_DIPLOMACY_ENDS_THIS_WAR_AS_OUR_SUBMISSION_2",
-                            "Ends this war as our submission.") : DiText.T("DI_DIPLOMACY_WHY_2",
-                            "{WHY}",
-                            ("WHY", why ?? "Not possible now.")),
+                            "Ends this war as our submission.") : why ?? DiText.T("DI_DIPLOMACY_NOT_POSSIBLE_NOW", "Not possible now."),
                         0, can,
                         can ? DiText.T("DI_DIPLOMACY_THE_OATH_IS_THE_PEACE_THE_AIDEFAULTTRIBUTEPERPERIOD_2",
                             "The oath is the peace: the war ends, we keep our ruler and lands, and they owe us protection. Tribute {AIDEFAULTTRIBUTEPERPERIOD} per period.",
-                            ("AIDEFAULTTRIBUTEPERPERIOD", DiplomacyConstants.AiDefaultTributePerPeriod)) : DiText.T("DI_DIPLOMACY_WHY_2",
-                            "{WHY}",
-                            ("WHY", why ?? "Not possible now.")),
+                            ("AIDEFAULTTRIBUTEPERPERIOD", DiplomacyConstants.AiDefaultTributePerPeriod)) : why ?? DiText.T("DI_DIPLOMACY_NOT_POSSIBLE_NOW", "Not possible now."),
                         () => DiplomacyMenu.OfferSubmission(state, us, them),
                         DiplomacyActionVM.DangerText));
                 }
@@ -873,15 +870,11 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                     var can = AiDiplomacy.CanDefectToAttacker(state, us, them, out var why, out _);
                     into.Add(new DiplomacyActionVM(DiText.T("DI_DIPLOMACY_BEG_THEIR_MERCY_2", "Beg their mercy"),
                         can ? DiText.T("DI_DIPLOMACY_ENDS_THIS_WAR_AS_OUR_DEFECTION_2",
-                            "Ends this war as our defection.") : DiText.T("DI_DIPLOMACY_WHY_2",
-                            "{WHY}",
-                            ("WHY", why ?? "Not possible now.")),
+                            "Ends this war as our defection.") : why ?? DiText.T("DI_DIPLOMACY_NOT_POSSIBLE_NOW", "Not possible now."),
                         0, can,
                         can ? DiText.T("DI_DIPLOMACY_WE_ABANDON_WHICH_WOULD_NOT_DEFEND_NAME_2",
                             "We abandon {NAME}, which would not defend us, and kneel to our attacker - they are named the oathbreaker in every court.",
-                            ("NAME", ourLink.DominantParty.Name)) : DiText.T("DI_DIPLOMACY_WHY_2",
-                            "{WHY}",
-                            ("WHY", why ?? "Not possible now.")),
+                            ("NAME", ourLink.DominantParty.Name)) : why ?? DiText.T("DI_DIPLOMACY_NOT_POSSIBLE_NOW", "Not possible now."),
                         () => DiplomacyMenu.DefectToAttacker(state, us, them),
                         DiplomacyActionVM.DangerText));
                 }
@@ -933,21 +926,16 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 // The figure the proposal is charged: the AI's own war price (design 08 A-1).
                 var warCost = AiDiplomacy.WarDeclarationCostAgainst(state, us, them, Clan.PlayerClan?.Leader);
                 into.Add(new DiplomacyActionVM(DiText.T("DI_DIPLOMACY_DECLARE_WAR_2", "Declare war"),
-                    DiText.T("DI_DIPLOMACY_BLOCKEDBECAUSE_2",
-                        "{BLOCKEDBECAUSE}",
-                        ("BLOCKEDBECAUSE", block == TreatyEnforcement.Block.None
-                        ? "Puts it to the court's vote."
-                        : blockedBecause)),
+                    block == TreatyEnforcement.Block.None
+                        ? DiText.T("DI_DIPLOMACY_PUTS_IT_TO_THE_COURT_S_VOTE", "Puts it to the court's vote.")
+                        : blockedBecause,
                     block == TreatyEnforcement.Block.None ? warCost : 0,
                     block == TreatyEnforcement.Block.None,
-                    DiText.T("DI_DIPLOMACY_BLOCKEDBECAUSE",
-                        "{BLOCKEDBECAUSE}",
-                        ("BLOCKEDBECAUSE", block == TreatyEnforcement.Block.None
-                        ? "Proposes a war decision the realm votes on, for " + warCost + " influence:"
-                          + " what an AI ruler pays for the same war - 40 x (2 - the casus belli's"
-                          + " legitimacy) x (1 + weariness / 100), a quarter less with Firebrand."
-                          + " Our treaties are why it may be blocked."
-                        : blockedBecause)),
+                    block == TreatyEnforcement.Block.None
+                        ? DiText.T("DI_DIPLOMACY_PROPOSES_A_WAR_DECISION",
+                            "Proposes a war decision the realm votes on, for {COST} influence: what an AI ruler pays for the same war - 40 x (2 - the casus belli's legitimacy) x (1 + weariness / 100), a quarter less with Firebrand. Our treaties are why it may be blocked.",
+                            ("COST", warCost))
+                        : blockedBecause,
                     Then(() => DiplomacyMenu.DeclareWar(state, us, them)),
                     DiplomacyActionVM.DangerText));
 
@@ -955,14 +943,10 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 into.Add(new DiplomacyActionVM(DiText.T("DI_DIPLOMACY_DEMAND_TRIBUTE_2", "Demand tribute"),
                     canTribute ? DiText.T("DI_DIPLOMACY_PER_PERIOD_AIDEFAULTTRIBUTEPERPERIOD_2",
                         "{AIDEFAULTTRIBUTEPERPERIOD} per period.",
-                        ("AIDEFAULTTRIBUTEPERPERIOD", DiplomacyConstants.AiDefaultTributePerPeriod)) : DiText.T("DI_DIPLOMACY_WHYTRIBUTE_2",
-                        "{WHYTRIBUTE}",
-                        ("WHYTRIBUTE", whyTribute ?? "Not possible now.")),
+                        ("AIDEFAULTTRIBUTEPERPERIOD", DiplomacyConstants.AiDefaultTributePerPeriod)) : whyTribute ?? DiText.T("DI_DIPLOMACY_NOT_POSSIBLE_NOW", "Not possible now."),
                     0, canTribute,
                     canTribute ? DiText.T("DI_DIPLOMACY_COERCION_NOT_NEGOTIATION_OUR_CLAIM_MAKES_2",
-                        "Coercion, not negotiation: our claim makes the pretext and our strength makes the argument - the same demand the AI makes.") : DiText.T("DI_DIPLOMACY_WHYTRIBUTE_2",
-                        "{WHYTRIBUTE}",
-                        ("WHYTRIBUTE", whyTribute ?? "Not possible now.")),
+                        "Coercion, not negotiation: our claim makes the pretext and our strength makes the argument - the same demand the AI makes.") : whyTribute ?? DiText.T("DI_DIPLOMACY_NOT_POSSIBLE_NOW", "Not possible now."),
                     Then(() => DiplomacyMenu.DemandTribute(state, us, them))));
 
                 if (ourLink == null)
@@ -970,15 +954,11 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                     var can = AiDiplomacy.CanSubmitTo(state, us, them, out var why, out _);
                     into.Add(new DiplomacyActionVM(DiText.T("DI_DIPLOMACY_KNEEL_TO_THEM", "Kneel to them"),
                         can ? DiText.T("DI_DIPLOMACY_WE_BECOME_THEIR_VASSAL_2",
-                            "We become their vassal.") : DiText.T("DI_DIPLOMACY_WHY_2",
-                            "{WHY}",
-                            ("WHY", why ?? "Not possible now.")),
+                            "We become their vassal.") : why ?? DiText.T("DI_DIPLOMACY_NOT_POSSIBLE_NOW", "Not possible now."),
                         0, can,
                         can ? DiText.T("DI_DIPLOMACY_THEIR_OATH_FOR_OUR_FOREIGN_POLICY_AIDEFAULTTRIBUTEPERPERIOD_2",
                             "Their oath for our foreign policy: tribute {AIDEFAULTTRIBUTEPERPERIOD} per period, troops in their wars, protection owed to us.",
-                            ("AIDEFAULTTRIBUTEPERPERIOD", DiplomacyConstants.AiDefaultTributePerPeriod)) : DiText.T("DI_DIPLOMACY_WHY_2",
-                            "{WHY}",
-                            ("WHY", why ?? "Not possible now.")),
+                            ("AIDEFAULTTRIBUTEPERPERIOD", DiplomacyConstants.AiDefaultTributePerPeriod)) : why ?? DiText.T("DI_DIPLOMACY_NOT_POSSIBLE_NOW", "Not possible now."),
                         () => DiplomacyMenu.OfferSubmission(state, us, them),
                         DiplomacyActionVM.DangerText));
                 }
@@ -991,12 +971,12 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                     into.Add(new DiplomacyActionVM(DiText.T("DI_DIPLOMACY_COURT_THEM_2", "Court them"),
                         can ? DiText.T("DI_DIPLOMACY_VALUED_AT_VALUE_2",
                             "Valued at {VALUE}.",
-                            ("VALUE", value.ToString("0"))) : DiText.T("DI_DIPLOMACY_WHY", "{WHY}", ("WHY", why ?? "Not possible now.")),
+                            ("VALUE", value.ToString("0"))) : why ?? DiText.T("DI_DIPLOMACY_NOT_POSSIBLE_NOW", "Not possible now."),
                         0, can,
                         can ? DiText.T("DI_DIPLOMACY_THEY_LEAVE_AND_KNEEL_TO_US_NAME_NAME_2_2",
                             "They leave {NAME} and kneel to us - which means war with {NAME_2}.",
                             ("NAME", theirLink.DominantParty.Name),
-                            ("NAME_2", theirLink.DominantParty.Name)) : DiText.T("DI_DIPLOMACY_WHY", "{WHY}", ("WHY", why ?? "Not possible now.")),
+                            ("NAME_2", theirLink.DominantParty.Name)) : why ?? DiText.T("DI_DIPLOMACY_NOT_POSSIBLE_NOW", "Not possible now."),
                         () => DiplomacyMenu.CourtVassal(state, us, them),
                         DiplomacyActionVM.DangerText));
                 }
@@ -1079,7 +1059,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 into.Add(new DiplomacyActionVM(
                     ours ? DiText.T("DI_DIPLOMACY_RELEASE_NAME_2", "Release {NAME}", ("NAME", them.Name)) : DiText.T("DI_DIPLOMACY_RENOUNCE_TYPE_2",
                         "Renounce {TYPE}",
-                        ("TYPE", breakable.Type)),
+                        ("TYPE", Models.Treaty.NameInSentence(breakable.Type))),
                     ours ? DiText.T("DI_DIPLOMACY_ENDS_THE_VASSALAGE_COSTS_TRUST_WITH_2",
                         "Ends the vassalage. Costs trust with every court.") : DiText.T("DI_DIPLOMACY_BREAKS_THE_PACT_TRUST_WITH_THEM_TRUSTTREATYBROKENVICTIM_2",
                         "Breaks the pact. {TRUSTTREATYBROKENVICTIM} trust with them, {TRUSTTREATYBROKENOBSERVER} with every other court.",

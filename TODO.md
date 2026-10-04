@@ -113,9 +113,16 @@ re-rolled after a reload (now saved, `SpyMission` 12); stale figures in six desi
       `ChildNodes[1].FirstChild`, so **no non-English file would ever have loaded a string** - comments now
       sit inside `<base>`, in the emitter and the fixture too; (3) `release.ps1` drops `VI`, `deploy.ps1`
       finds the game folder through MSBuild (its VI step never ran). `check-localization.ps1` rules 12-13
-      block (1) and (2). **Still open from that review:** 28 keys whose English is one `{VARIABLE}` carrying
-      English text, the lowercase `{cost}` variable the check cannot see, and keyed producers reaching
-      log/`diplomacy.*` output. The AC2 look below now also tests (1) and (2).
+      block (1) and (2). **Second round, same review:** (4) the 28 keys whose whole English was one
+      `{VARIABLE}` are gone - literals keyed where they are chosen (874 keys now; rule 14 blocks the shape);
+      (5) `{cost}` -> `{COST}`, rule 15; (6) `DiText.English()` scope: all 94 `diplomacy.*` commands,
+      `AiEspionage.Plan`, the three war-veto log lines and the Offices appointment line build English whatever
+      the game's language; (7) the enum leaks the review's grep found beside them: `over ReclaimAncestralLand`
+      on the Realm war row, the peace table, the Diplomacy menu, `Renounce our DefensivePact`, `best:
+      <CasusBelliType>` - now `NameOf`; `Treaty.NameInSentence` for mid-sentence names; `StatecraftVM` compared
+      a translated word to "you" - now compares the hero. **Not done:** `{GETSKILLVALUE}`-style variable names
+      (ugly, harmless), `{STANDINGWORD}` lower-cased in code (English rule), `Missions` log reasons that are
+      still English literals. The AC2 look below now also tests (1) and (2).
 - [ ] **AC2: one look at the German fixture, and it is already written.** The plumbing is **proven
       live** - the lead's session on 2026-10-04 switched the game to Deutsch and the game log shows
       it opening `DiplomacyIntrigue/ModuleData/Languages/DE/di_strings.xml`, so the mod's folder is

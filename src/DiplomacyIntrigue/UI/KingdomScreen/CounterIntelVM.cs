@@ -141,12 +141,14 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 ("STEP", Step.ToString("N0")));
 
             var purse = ruler.Gold;
-            PurseLine = DiText.T("DI_COUNTERINTEL_TOSTRING_2",
-                "{TOSTRING}",
-                ("TOSTRING", order > purse
-                ? "More than your purse holds (" + purse.ToString("N0") + "): only that much would be paid, and you would be told."
-                : (purse > 0 ? (100f * order / purse).ToString("0") : "0") + "% of your purse of " + purse.ToString("N0")
-                  + " a week - the purse that also pays your troops."));
+            PurseLine = order > purse
+                ? DiText.T("DI_COUNTERINTEL_MORE_THAN_YOUR_PURSE_HOLDS",
+                    "More than your purse holds ({PURSE}): only that much would be paid, and you would be told.",
+                    ("PURSE", purse.ToString("N0")))
+                : DiText.T("DI_COUNTERINTEL_SHARE_OF_YOUR_PURSE",
+                    "{PCT}% of your purse of {PURSE} a week - the purse that also pays your troops.",
+                    ("PCT", purse > 0 ? (100f * order / purse).ToString("0") : "0"),
+                    ("PURSE", purse.ToString("N0")));
             PurseColor = order > purse || (purse > 0 && order > purse / 10) ? DiRealmVM.NegativeColor : DiRealmVM.MutedColor;
 
             var points = withOrder.Total - withNothing.Total;

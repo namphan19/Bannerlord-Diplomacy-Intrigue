@@ -15,7 +15,7 @@
     <string id="DI_CALLTOARMS_ALLY_HONOURS" text="{ALLY} honours its {TREATY} with {CALLER} and joins the war against {ENEMY}."/>
     <string id="DI_CALLTOARMS_ALLY_LEAVES_VASSAL" text="{ALLY} leaves its vassal {CALLER} to fight alone."/>
     <string id="DI_CALLTOARMS_ALLY_REFUSES" text="{ALLY} refuses to honour its {TREATY} with {CALLER}."/>
-    <string id="DI_CALLTOARMS_INVOKES" text="{CALLER} invokes its {TREATY} and calls you to war against {ENEMY}.&#10;&#10;{cost}"/>
+    <string id="DI_CALLTOARMS_INVOKES" text="{CALLER} invokes its {TREATY} and calls you to war against {ENEMY}.&#10;&#10;{COST}"/>
     <string id="DI_CALLTOARMS_REFUSING_COSTS" text="Refusing costs {TRUST} trust with {CALLER}, and the {TREATY} will lapse."/>
     <string id="DI_CALLTOARMS_REFUSING_MARKS_STANDING" text="Refusing is defiance: it costs {TRUST} trust with {CALLER}, earns a mark, and with {MARKS} mark(s) already standing, this refusal renounces the vassalage now: a broken treaty, at {VICTIM} more trust with your patron and {OBSERVER} with every other court, and a reason for war."/>
     <string id="DI_CALLTOARMS_REFUSING_SECOND_MARK" text="Refusing is defiance: it costs {TRUST} trust with {CALLER}, earns a mark, and a second mark inside a year renounces the vassalage, as a broken treaty."/>
@@ -27,6 +27,7 @@
     <string id="DI_CIVILWAR_CLAIM_IS_RETIRED_CLAIMANTNAME_2" text="{CLAIMANTNAME}'s claim is retired"/>
     <string id="DI_CIVILWAR_CLAN_FOR_NAME_CLAIMANTNAME_2" text="Clan {NAME}, for {CLAIMANTNAME}"/>
     <string id="DI_CIVILWAR_CLICK_AGAIN_TO_CONCEDE_2" text="Click again to concede"/>
+    <string id="DI_CIVILWAR_CONCEDE_THE_THRONE_TO" text="Concede the throne to {NAME}"/>
     <string id="DI_CIVILWAR_CONCEDE_THE_THRONE_TO_CLAIMANTNAME_2" text="Concede the throne to {CLAIMANTNAME}"/>
     <string id="DI_CIVILWAR_CONCEDE_THE_WAR" text="CONCEDE THE WAR"/>
     <string id="DI_CIVILWAR_DENARS" text="denars"/>
@@ -35,27 +36,35 @@
     <string id="DI_CIVILWAR_ENDS_IT_NOW_EXACTLY_AS_IF_COLLAPSE_LEGITIMACYWONJUSTWAR_2" text="Ends it now, exactly as if your side had reached {COLLAPSE}: your claim is retired and the crown's standing rises by {LEGITIMACYWONJUSTWAR}. Your house keeps its seat and what the war has left it."/>
     <string id="DI_CIVILWAR_EXHAUSTION_COLUMN" text="EXHAUSTION"/>
     <string id="DI_CIVILWAR_FIEFS_COLUMN" text="FIEFS"/>
+    <string id="DI_CIVILWAR_GIVE_UP_YOUR_CLAIM" text="Give up your claim"/>
     <string id="DI_CIVILWAR_GIVE_UP_YOUR_CLAIM_2" text="Give up your claim"/>
     <string id="DI_CIVILWAR_GO_OVER_TO_RECEIVE_SIDE_PRICE_2" text="Go over to {SIDE} - receive {PRICE}"/>
     <string id="DI_CIVILWAR_HOUSE_COLUMN" text="HOUSE"/>
+    <string id="DI_CIVILWAR_LED_BY_NAME" text="led by {NAME}"/>
+    <string id="DI_CIVILWAR_LED_BY_NOBODY" text="led by nobody"/>
+    <string id="DI_CIVILWAR_LED_BY_YOU" text="led by you"/>
     <string id="DI_CIVILWAR_LED_BY_YOU_2" text="led by you"/>
     <string id="DI_CIVILWAR_LOYALTY_COLUMN" text="LOYALTY"/>
-    <string id="DI_CIVILWAR_NAME_2" text="{NAME}"/>
+    <string id="DI_CIVILWAR_NAME_IS_A_PRISONER" text="{NAME} is a prisoner, but not of the other side - it does not count"/>
+    <string id="DI_CIVILWAR_NAME_IS_FREE" text="{NAME} is free - 0 of {LIMIT} days held"/>
+    <string id="DI_CIVILWAR_NAME_IS_HELD" text="{NAME} is held - {DAYS} of {LIMIT} days"/>
+    <string id="DI_CIVILWAR_NOBODY" text="Nobody"/>
     <string id="DI_CIVILWAR_NO_HOUSE_NAMED_IN_THE_CIVIL_NAME_2" text="No house named &quot;{NAME}&quot; in the civil war."/>
     <string id="DI_CIVILWAR_NO_HOUSE_TO_PRICE_2" text="no house to price."/>
+    <string id="DI_CIVILWAR_NO_REASON_GIVEN" text="no reason given."/>
     <string id="DI_CIVILWAR_OPINION_OF_THEIR_HEAD_FALLS_BY_TOSTRING_2" text="{TOSTRING}'s opinion of their head falls by {SIDECHANGERELATIONPENALTY}. They cannot change sides again in this war."/>
     <string id="DI_CIVILWAR_PRICE_COLUMN" text="PRICE"/>
-    <string id="DI_CIVILWAR_PRISONER_BUT_NOT_OF_THE_OTHER_WHO_VERB_2" text="{WHO}{VERB}a prisoner, but not of the other side - it does not count"/>
     <string id="DI_CIVILWAR_STALEMATE" text="Stalemate"/>
     <string id="DI_CIVILWAR_TAKES_THE_THRONE_CLAIMANTNAME_2" text="{CLAIMANTNAME} takes the throne"/>
+    <string id="DI_CIVILWAR_THE_CLAIMANT" text="The claimant"/>
     <string id="DI_CIVILWAR_THE_CLAIMANT_HOUSE_2" text="the claimant's house"/>
+    <string id="DI_CIVILWAR_THE_CLAIMANT_LOWER" text="the claimant"/>
     <string id="DI_CIVILWAR_THE_CROWN_COLUMN" text="THE CROWN"/>
     <string id="DI_CIVILWAR_THE_CROWN_OWN_HOUSE_2" text="the crown's own house"/>
     <string id="DI_CIVILWAR_THE_CROWN_SIDE_REACHES_HELD_DAYS_COLLAPSE_TOSTRING_DAYS_2" text="The crown's side reaches {COLLAPSE}, {TOSTRING} held {DAYS} days, or you concede"/>
     <string id="DI_CIVILWAR_THE_CROWN_SIDE_REACHES_HELD_DAYS_COLLAPSE_TOSTRING_DAYS_3" text="The crown's side reaches {COLLAPSE}, {TOSTRING} held {DAYS} days, or concedes"/>
+    <string id="DI_CIVILWAR_THE_LEADER_THEY_LEAVE" text="The leader they leave"/>
     <string id="DI_CIVILWAR_THE_OTHER_SIDE_CONCEDES_ON_ITS_INTERNALWARCONCEDEEXHAUSTION_2" text="The other side concedes on its own once it passes {INTERNALWARCONCEDEEXHAUSTION} while yours is under {INTERNALWARCONCEDEOTHERBELOW}."/>
-    <string id="DI_CIVILWAR_TOSTRING_2" text="{TOSTRING}"/>
-    <string id="DI_CIVILWAR_WHY_2" text="{WHY}"/>
     <string id="DI_CIVILWAR_WHY_THAT_MUCH" text="WHY THAT MUCH"/>
     <string id="DI_CIVILWAR_WIN_BACK_TOUPPERINVARIANT_2" text="WIN BACK {TOUPPERINVARIANT}"/>
     <string id="DI_CIVILWAR_WIN_OVER_TOUPPERINVARIANT_2" text="WIN OVER {TOUPPERINVARIANT}"/>
@@ -66,6 +75,9 @@
     <string id="DI_CIVILWAR_YOUR_HOUSE_2" text="YOUR HOUSE"/>
     <string id="DI_CIVILWAR_YOUR_SIDE" text="your side"/>
     <string id="DI_CIVILWAR_YOUR_SIDE_2" text="your side"/>
+    <string id="DI_CIVILWAR_YOU_ARE_A_PRISONER" text="You are a prisoner, but not of the other side - it does not count"/>
+    <string id="DI_CIVILWAR_YOU_ARE_FREE" text="You are free - 0 of {LIMIT} days held"/>
+    <string id="DI_CIVILWAR_YOU_ARE_HELD" text="You are held - {DAYS} of {LIMIT} days"/>
     <string id="DI_CIVILWAR_YOU_HOLD_ONLY_GOLD_2" text="You hold only {GOLD}."/>
     <string id="DI_CIVILWAR_YOU_NAME_2" text="{NAME} (you)"/>
     <string id="DI_CIVILWAR_YOU_TAKE_THE_THRONE_2" text="You take the throne"/>
@@ -75,11 +87,12 @@
     <string id="DI_COUNTERINTEL_EVERY_REALM_STARTS_AT" text="Every realm starts at"/>
     <string id="DI_COUNTERINTEL_FROM_NEXT_WEEK_IF_PAID_IN_TOTAL_STEP_2" text="From next week, if paid in full: {TOTAL}. Every {STEP} paid is one point."/>
     <string id="DI_COUNTERINTEL_HUNTING_FOREIGN_AGENTS_IN" text="Hunting foreign agents in our realm, paid from your own purse each week."/>
+    <string id="DI_COUNTERINTEL_MORE_THAN_YOUR_PURSE_HOLDS" text="More than your purse holds ({PURSE}): only that much would be paid, and you would be told."/>
     <string id="DI_COUNTERINTEL_NETWORKS_NOBODY_HAS_CAUGHT" text="Networks nobody has caught are not listed. You cannot see them, and neither can any AI court: an AI ruler raises its order for the wars it fights and the agents it has caught."/>
     <string id="DI_COUNTERINTEL_OF_100_THIS_WEEK" text="of 100, this week"/>
     <string id="DI_COUNTERINTEL_PAID_LAST_WEEK_WEEKLYSPENT_2" text="Paid last week, {WEEKLYSPENT}"/>
     <string id="DI_COUNTERINTEL_SECURITY_OF_OUR_TOWNS_AND_CASTLES_AVERAGESECURITY_2" text="Security of our towns and castles, average {AVERAGESECURITY}"/>
-    <string id="DI_COUNTERINTEL_TOSTRING_2" text="{TOSTRING}"/>
+    <string id="DI_COUNTERINTEL_SHARE_OF_YOUR_PURSE" text="{PCT}% of your purse of {PURSE} a week - the purse that also pays your troops."/>
     <string id="DI_COUNTERINTEL_WEEKLY_ORDER" text="Weekly order"/>
     <string id="DI_COUNTERINTEL_WHAT_IT_DOES" text="WHAT IT DOES"/>
     <string id="DI_COURT_AMENDS_CANNOT_BE_MADE_REASON_2" text="Amends cannot be made: {REASON}."/>
@@ -90,7 +103,7 @@
     <string id="DI_COURT_BLOC_COLUMN" text="BLOC"/>
     <string id="DI_COURT_CANNOT_BE_GIVEN_REASON_2" text="Cannot be given: {REASON}."/>
     <string id="DI_COURT_CENTRALISTS_2" text="Centralists"/>
-    <string id="DI_COURT_CHARM_AT_COURT_IN_EVERY_HOUSE_JOIN_2" text=" Charm at court, in every house's choice: {JOIN}."/>
+    <string id="DI_COURT_CHARM_AT_COURT_IN_EVERY_HOUSE_JOIN_2" text=" Charm at court, in every house's choice: {NAMES}."/>
     <string id="DI_COURT_CLAIMANT" text="claimant"/>
     <string id="DI_COURT_CLANS_COUNT_2" text="{COUNT} clans"/>
     <string id="DI_COURT_CLAN_COLUMN" text="CLAN"/>
@@ -132,9 +145,11 @@
     <string id="DI_COURT_INFLUENCE_DENARS_INFLUENCE_GOLD_2" text="{INFLUENCE} influence, {GOLD} denars"/>
     <string id="DI_COURT_INFLUENCE_POWER_2" text="influence {POWER}"/>
     <string id="DI_COURT_INFL_COLUMN" text="INFL."/>
+    <string id="DI_COURT_IN_ARMS_AGAINST" text="The court of Clan {CLAN} - you are in arms against {RULER} (the vanilla tabs show {HOST}, your host)"/>
     <string id="DI_COURT_IN_THE_CROWN_FAVOUR_SEAT_AT_2" text="In the crown's favour: a seat at court"/>
     <string id="DI_COURT_IN_YOUR_FAVOUR_LOYALTY_LOYALTYBEFORE_LOYALTYAFTER_BAND_2" text="In your favour: loyalty {LOYALTYBEFORE} -&gt; {LOYALTYAFTER}, {BAND}"/>
     <string id="DI_COURT_IS_LOW_ENOUGH_THAT_CLAIMANT_FACTION_STANDINGWORD_2" text="{STANDINGWORD} is low enough that a claimant's faction can gather openly."/>
+    <string id="DI_COURT_ITS_RULER" text="its ruler"/>
     <string id="DI_COURT_LAND_THEY_THINK_THEY_MERIT_2" text="Land they think they merit"/>
     <string id="DI_COURT_LAST_CHANGE_LASTREASON_2" text="last change: {LASTREASON}"/>
     <string id="DI_COURT_LAST_CHANGE_NONE_YET_2" text="last change: none yet"/>
@@ -144,7 +159,6 @@
     <string id="DI_COURT_MOSTLY_BOUGHT_RATHER_THAN_WON_2" text="Mostly bought rather than won."/>
     <string id="DI_COURT_MOST_OF_THE_COURT_IS_HERS_2" text="Most of the court is hers in earnest."/>
     <string id="DI_COURT_MOST_OF_THE_COURT_IS_HIS_2" text="Most of the court is his in earnest."/>
-    <string id="DI_COURT_NAME_2" text="{NAME}"/>
     <string id="DI_COURT_NINE_2" text="nine"/>
     <string id="DI_COURT_NOBODY_OF_THIS_HOUSE_CAN_TAKE_2" text="Nobody of this house can take the seat today. Click the seat again to see the grievances."/>
     <string id="DI_COURT_NONE_2" text="none"/>
@@ -163,7 +177,6 @@
     <string id="DI_COURT_ONLY_THE_RULER_GIVES_SEATS_CLICK_2" text="Only the ruler gives seats. Click the seat again to see the grievances."/>
     <string id="DI_COURT_PRETENDERS_2" text="Pretenders"/>
     <string id="DI_COURT_RELIABLE_2" text="RELIABLE"/>
-    <string id="DI_COURT_RULERNAME_2" text="{RULERNAME}"/>
     <string id="DI_COURT_SELECTED_TERMS_GRIEVANCE_NAME_LOYALTYTEXT_BANDTEXT_COUNT_2" text="Selected {NAME}: {LOYALTYTEXT} {BANDTEXT}, {COUNT} terms, {COUNT_2} grievance(s)."/>
     <string id="DI_COURT_SEVEN_2" text="seven"/>
     <string id="DI_COURT_SIX_2" text="six"/>
@@ -181,25 +194,27 @@
     <string id="DI_COURT_THE_CROWN_STANDING" text="The crown's standing"/>
     <string id="DI_COURT_THE_CROWN_STANDING_2" text="The crown's standing"/>
     <string id="DI_COURT_THE_REALMS_WORST_WAR" text="THE REALM'S WORST WAR"/>
+    <string id="DI_COURT_THE_RISING" text="the rising"/>
     <string id="DI_COURT_THE_THRONE_2" text="the throne"/>
     <string id="DI_COURT_THE_WAR_WEIGHING_ON_THEM_2" text="The war weighing on them"/>
     <string id="DI_COURT_THIS_IS_YOUR_OWN_COURT_EVERY_2" text="This is your own court. Every figure behind it - each house's loyalty, what it holds against the crown, the crown's standing - is on the Court tab of the Kingdom screen."/>
     <string id="DI_COURT_THREE_2" text="three"/>
     <string id="DI_COURT_TODAY_FADING_BY_DAY_FADEPERDAY_2" text="today - fading by {FADEPERDAY} a day"/>
-    <string id="DI_COURT_TOSTRING_2" text="{TOSTRING}"/>
     <string id="DI_COURT_TRANSACTIONAL_2" text="TRANSACTIONAL"/>
     <string id="DI_COURT_TWELVE_2" text="twelve"/>
     <string id="DI_COURT_TWO_2" text="two"/>
     <string id="DI_COURT_WHAT_THEY_HAVE_NOT_FORGOTTEN" text="WHAT THEY HAVE NOT FORGOTTEN"/>
     <string id="DI_COURT_WHAT_THEY_HOLD_AGAINST_THE_CROWN_2" text="What they hold against the crown"/>
-    <string id="DI_COURT_WHILE_HOLDS_ABOVE_NO_FACTION_DARES_TOLOWERINVARIANT_2" text="While {TOLOWERINVARIANT} holds above {LEGITIMACYPRETENDERTHRESHOLD}, no faction dares rally to a claim."/>
+    <string id="DI_COURT_WHILE_HOLDS_ABOVE_NO_FACTION_DARES_TOLOWERINVARIANT_2" text="While {STANDINGWORD} holds above {LEGITIMACYPRETENDERTHRESHOLD}, no faction dares rally to a claim."/>
     <string id="DI_COURT_WHY_COLUMN" text="WHY"/>
     <string id="DI_COURT_YEAR_OF_PEACE_RESTORES_PEACEDIVIDENDOF_STEWARD_2" text="A year of peace restores {PEACEDIVIDENDOF}{STEWARD}"/>
+    <string id="DI_COURT_YOUR_OWN_COURT" text="The court of Clan {CLAN} - your own clan"/>
     <string id="DI_COURT_YOUR_OWN_HOUSE_SKILLED_VOICE_NO_2" text="Your own house: a skilled voice, no favour to give"/>
     <string id="DI_COURT_YOUR_STANDING_2" text="Your standing"/>
     <string id="DI_COURT_YOUR_THRONE_2" text="your throne"/>
     <string id="DI_COURT_YOU_HOLD_NO_FEALTY_AND_KEEP_2" text="You hold no fealty and keep no court."/>
     <string id="DI_COURT_YOU_NAME_2" text="{NAME} (you)"/>
+    <string id="DI_COURT_YOU_SERVE" text="The court of Clan {CLAN} - you serve {RULER}"/>
     <string id="DI_DECISIONS_ALLIANCES_ARE_SIGNED_AT_THE_DIPLOMACY" text="Alliances are signed at the diplomacy table (Ctrl+D)."/>
     <string id="DI_DECISIONS_ALLIANCES_ARE_SIGNED_AT_THE_DIPLOMACY_2" text="Alliances are signed at the diplomacy table (Ctrl+D)."/>
     <string id="DI_DECISIONS_CIVIL_WAR_IS_NOT_ENDED_BY_2" text="A civil war is not ended by a barter."/>
@@ -219,6 +234,7 @@
     <string id="DI_DIPLOMACY_ALLIANCE_2" text="Alliance"/>
     <string id="DI_DIPLOMACY_ALLIANCE_THEY_ANSWER_YOUR_CALL_IN_2" text="Alliance - they answer your call in any war, and you answer theirs"/>
     <string id="DI_DIPLOMACY_ALLIED_2" text="ALLIED"/>
+    <string id="DI_DIPLOMACY_ANSWERS_TO_AT_HOLD" text="{NAME} answers to {PATRON} at hold {HOLD}"/>
     <string id="DI_DIPLOMACY_ANSWERS_TO_THEM_2" text="ANSWERS TO THEM"/>
     <string id="DI_DIPLOMACY_ANSWERS_TO_US_2" text="ANSWERS TO US"/>
     <string id="DI_DIPLOMACY_AN_ALLIANCE_ALREADY_STANDS_THE_TOP_2" text="An alliance already stands - the top rung."/>
@@ -230,8 +246,6 @@
     <string id="DI_DIPLOMACY_BELOW_TRUST_OF_THEY_SIGN_NO_TRUSTFLOORFORPACTS_NAME_2" text="Below a trust of {TRUSTFLOORFORPACTS} they sign no ordinary pact - but while {NAME} outweighs you both, they would stand with you in a defensive pact down to {PACTFLOOR}."/>
     <string id="DI_DIPLOMACY_BELOW_TRUST_OF_THEY_WILL_SIGN_TRUSTFLOORFORPACTS_2" text="Below a trust of {TRUSTFLOORFORPACTS} they will sign nothing but a truce or the terms that end a war."/>
     <string id="DI_DIPLOMACY_BEST_AT_LEGITIMACY_NAME_TYPE_LEGITIMACY_2" text="{NAME}'s best: {TYPE} at legitimacy {LEGITIMACY}"/>
-    <string id="DI_DIPLOMACY_BLOCKEDBECAUSE" text="{BLOCKEDBECAUSE}"/>
-    <string id="DI_DIPLOMACY_BLOCKEDBECAUSE_2" text="{BLOCKEDBECAUSE}"/>
     <string id="DI_DIPLOMACY_BREACH_THEN_CONQUEST_2" text="Breach, then conquest."/>
     <string id="DI_DIPLOMACY_BREAKS_THE_PACT_TRUST_WITH_THEM_TRUSTTREATYBROKENVICTIM_2" text="Breaks the pact. {TRUSTTREATYBROKENVICTIM} trust with them, {TRUSTTREATYBROKENOBSERVER} with every other court."/>
     <string id="DI_DIPLOMACY_CALLED_IN_BY_NAME_2" text="   called in by {NAME}"/>
@@ -280,6 +294,9 @@
     <string id="DI_DIPLOMACY_NOTHING_STANDS_ABOVE_AN_ALLIANCE_SO_2" text="Nothing stands above an alliance, so there is nothing left to propose here."/>
     <string id="DI_DIPLOMACY_NOTHING_STANDS_ABOVE_AN_ALLIANCE_THE_2" text="Nothing stands above an alliance. The chooser stays shut."/>
     <string id="DI_DIPLOMACY_NOTHING_STANDS_ABOVE_VASSALAGE_EXCEPT_ITS_2" text="Nothing stands above a vassalage except its release. The chooser stays shut."/>
+    <string id="DI_DIPLOMACY_NOT_POSSIBLE_NOW" text="Not possible now."/>
+    <string id="DI_DIPLOMACY_NO_AGREEMENTS_WITH_YOU" text="No agreements with you."/>
+    <string id="DI_DIPLOMACY_NO_AGREEMENTS_WITH_YOU_2" text="No agreements with you"/>
     <string id="DI_DIPLOMACY_OFFER_OF_SUBMISSION" text="Offer of submission"/>
     <string id="DI_DIPLOMACY_OFFER_OF_SUBMISSION_2" text="Offer of submission"/>
     <string id="DI_DIPLOMACY_ONE_VALUATION_THREE_BARS_THE" text="One valuation, three bars: the gold mark is the bar each treaty has to clear. This is the number their court uses - there is no separate figure for the player."/>
@@ -292,8 +309,10 @@
     <string id="DI_DIPLOMACY_PEACE_OFFER_FROM_NAME_2" text="Peace offer from {NAME}"/>
     <string id="DI_DIPLOMACY_PER_PERIOD_AIDEFAULTTRIBUTEPERPERIOD_2" text="{AIDEFAULTTRIBUTEPERPERIOD} per period."/>
     <string id="DI_DIPLOMACY_PROPOSE" text="Propose"/>
+    <string id="DI_DIPLOMACY_PROPOSES_A_WAR_DECISION" text="Proposes a war decision the realm votes on, for {COST} influence: what an AI ruler pays for the same war - 40 x (2 - the casus belli's legitimacy) x (1 + weariness / 100), a quarter less with Firebrand. Our treaties are why it may be blocked."/>
     <string id="DI_DIPLOMACY_PROPOSE_TREATY" text="Propose a treaty"/>
     <string id="DI_DIPLOMACY_PROPOSE_TREATY_2" text="Propose a treaty"/>
+    <string id="DI_DIPLOMACY_PUTS_IT_TO_THE_COURT_S_VOTE" text="Puts it to the court's vote."/>
     <string id="DI_DIPLOMACY_REFUSE" text="Refuse"/>
     <string id="DI_DIPLOMACY_REFUSE_2" text="Refuse"/>
     <string id="DI_DIPLOMACY_RELEASE_NAME_2" text="Release {NAME}"/>
@@ -314,8 +333,6 @@
     <string id="DI_DIPLOMACY_THE_GAMES_OWN_ROWS_STRENGTH" text="· · ·  the game's own rows (strength, fiefs, clans) continue below  · · ·"/>
     <string id="DI_DIPLOMACY_THE_OATH_IS_THE_PEACE_THE_AIDEFAULTTRIBUTEPERPERIOD_2" text="The oath is the peace: the war ends, we keep our ruler and lands, and they owe us protection. Tribute {AIDEFAULTTRIBUTEPERPERIOD} per period."/>
     <string id="DI_DIPLOMACY_THREE_RUNGS_ONE_VALUATION_SEE_WHAT_2" text="Three rungs, one valuation. See what clears their bar."/>
-    <string id="DI_DIPLOMACY_TOARRAY" text="{TOARRAY}"/>
-    <string id="DI_DIPLOMACY_TOARRAY_2" text="{TOARRAY}"/>
     <string id="DI_DIPLOMACY_TO_THEM_TRIBUTEAMOUNT_2" text="{TRIBUTEAMOUNT} to them"/>
     <string id="DI_DIPLOMACY_TO_US_TRIBUTEAMOUNT_2" text="{TRIBUTEAMOUNT} to us"/>
     <string id="DI_DIPLOMACY_TRIBUTARY" text="Tributary"/>
@@ -346,9 +363,6 @@
     <string id="DI_DIPLOMACY_WE_PAY_THEM_2" text="WE PAY THEM"/>
     <string id="DI_DIPLOMACY_WHAT_MAKES_OF_WORD_TRUST_IS_NAME_NAME_2_VALUE_2" text="What {NAME} makes of {NAME_2}'s word: {VALUE}. Trust is reputation, not feeling: it fades only if nobody tends it - goodwill within two years, a grudge far more slowly - and a war drives it down. Below {TRUSTFLOORFORPACTS} they will sign nothing but a truce or the terms that end a war - save a defensive pact, a little lower, while a greater power outweighs you both."/>
     <string id="DI_DIPLOMACY_WHAT_THEIR_COURT_WOULD_SIGN" text="What their court would sign"/>
-    <string id="DI_DIPLOMACY_WHY" text="{WHY}"/>
-    <string id="DI_DIPLOMACY_WHYTRIBUTE_2" text="{WHYTRIBUTE}"/>
-    <string id="DI_DIPLOMACY_WHY_2" text="{WHY}"/>
     <string id="DI_ENCYCLOPEDIA_HOUSE_COLUMN" text="HOUSE"/>
     <string id="DI_ENCYCLOPEDIA_HOW_THEY_ARE_SPOKEN_OF" text="HOW THEY ARE SPOKEN OF"/>
     <string id="DI_ENCYCLOPEDIA_STANDING_AT_COURT" text="STANDING AT COURT"/>
@@ -404,7 +418,6 @@
     <string id="DI_INTEL_DECAY_DAY_NETWORKDAILYDECAY_2" text="Decay, {NETWORKDAILYDECAY} a day"/>
     <string id="DI_INTEL_DENARS_PAID_NOW_DENARS_2" text="{DENARS} denars, paid now"/>
     <string id="DI_INTEL_DIES_MARK_2" text="{MARK} dies."/>
-    <string id="DI_INTEL_EMPTY_2" text="{EMPTY}"/>
     <string id="DI_INTEL_ESPIONAGE_IS_ONLY_AVAILABLE_IN_CAMPAIGN_2" text="Espionage is only available in a campaign."/>
     <string id="DI_INTEL_EVERY_OTHER_REALM_TRUSTS_US_LESS_2" text=" Every other realm trusts us {EXPOSUREASSASSINATIONOBSERVERTRUST} less as well."/>
     <string id="DI_INTEL_EXACT_LEGITIMACY_LOYALTY_GRIEVANCES_AND_COUNCIL_2" text="Exact legitimacy, loyalty, grievances and council business on their Encyclopedia page for {READCOURTREVEALDAYS} days."/>
@@ -419,7 +432,7 @@
     <string id="DI_INTEL_HALVED_AT_WAR_2" text=", halved at war"/>
     <string id="DI_INTEL_HOUSE_HOLDS_FORGED_LETTERS_AGAINST_THE_MARK_2" text="{MARK}'s house holds forged letters against the crown: a grievance of {GRIEVANCEFORGEDLETTERS}."/>
     <string id="DI_INTEL_IDLE_IT_ONLY_SHRINKS_AND_NO_IDLE_2" text="Idle ({IDLE}): it only shrinks, and no operation can be launched."/>
-    <string id="DI_INTEL_IF_CAUGHT_SUBSTRING_2" text="If caught, t{SUBSTRING}"/>
+    <string id="DI_INTEL_IF_CAUGHT_THE_NETWORK_IN_IS_LOST" text="If caught, the network in {NAME} is lost, {NAME_2} gains a casus belli against us (Espionage exposed, {LEGITIMACY}) and trusts us {EXPOSUREVICTIMTRUST} less."/>
     <string id="DI_INTEL_INTELLIGENCE_2" text="Intelligence"/>
     <string id="DI_INTEL_IN_NAME_2" text="in {NAME}"/>
     <string id="DI_INTEL_IN_RUN_BY_NETWORK_NAME_NAME_2_STRENGTH_2" text="in {NAME} · run by {NAME_2} · network {STRENGTH}"/>
@@ -435,15 +448,17 @@
     <string id="DI_INTEL_MORE_DAY_N_2" text="{N} more day"/>
     <string id="DI_INTEL_NETWORKS_TITLE" text="Our networks"/>
     <string id="DI_INTEL_NEXT_WEEK_COLUMN" text="NEXT WEEK"/>
+    <string id="DI_INTEL_NOBODY_CHOSEN" text="Nobody chosen"/>
     <string id="DI_INTEL_NOBODY_IN_THE_HOUSE_IS_FREE_2" text="Nobody in the house is free to go. The clan leader, anyone leading a party or governing a fief, and anyone already running a network elsewhere cannot."/>
     <string id="DI_INTEL_NOBODY_OR_NOWHERE_TO_AIM_AT" text="Nobody or nowhere the operation could be aimed at."/>
     <string id="DI_INTEL_NOTHING_HAPPENS_THE_IS_GONE_AND_DENARS_2" text="Nothing happens. The {DENARS} is gone and the network loses {MISSIONFAILURENETWORKCOST}."/>
     <string id="DI_INTEL_NOT_YET_BUILT_2" text="Not yet built."/>
     <string id="DI_INTEL_NOT_YET_BUILT_IT_STARTS_TO_DENARS_2" text="Not yet built. It starts to grow above about {DENARS} a week."/>
+    <string id="DI_INTEL_NO_HANDLER" text="no handler"/>
     <string id="DI_INTEL_NO_HANDLER_2" text="No handler"/>
     <string id="DI_INTEL_ODDS_ARE_THE_ONES_THE_ROLL" text="Every chance on this tab is the one the roll uses. AI houses read the same numbers."/>
     <string id="DI_INTEL_OF_ORDERED_DENARS_2" text=" of {DENARS} ordered"/>
-    <string id="DI_INTEL_OF_THEIR_RULER_PURSE_AT_MOST_CAPITALISE_DENARS_2" text="{CAPITALISE} of their ruler's purse, at most {DENARS}, comes to us."/>
+    <string id="DI_INTEL_OF_THEIR_RULER_PURSE_AT_MOST_CAPITALISE_DENARS_2" text="{SHARE} of their ruler's purse, at most {DENARS}, comes to us."/>
     <string id="DI_INTEL_OPERATIONS_IN_NAME_2" text="Operations in {NAME}"/>
     <string id="DI_INTEL_OUR_HOUSE_RUNS_NO_NETWORK_ABROAD_2" text="Our house runs no network abroad. Found one: a member or companion goes to a foreign realm and builds it week by week."/>
     <string id="DI_INTEL_PLAN_THIS_OPERATION" text="Plan this operation"/>
@@ -482,8 +497,7 @@
     <string id="DI_INTEL_THE_LORD_KEEPS_THE_GOLD_THE_BRIBELOYALTYLOSS_2" text="The lord keeps the gold; the house loses {BRIBELOYALTYLOSS} loyalty and joins any rising in the next two years."/>
     <string id="DI_INTEL_THE_NETWORK_IN_IS_LOST_GAINS_NAME_NAME_2_LEGITIMACY_2" text="The network in {NAME} is lost, {NAME_2} gains a casus belli against us (Espionage exposed, {LEGITIMACY}) and trusts us {EXPOSUREVICTIMTRUST} less."/>
     <string id="DI_INTEL_THE_NETWORK_SPENDS_SUCCESSTEXT_MISSIONSUCCESSNETWORKCOST_2" text="{SUCCESSTEXT} The network spends {MISSIONSUCCESSNETWORKCOST}."/>
-    <string id="DI_INTEL_TOSTRING" text="{TOSTRING}"/>
-    <string id="DI_INTEL_TOSTRING_2" text="{TOSTRING}"/>
+    <string id="DI_INTEL_TO_SUCCEED_IF_IT_FAILS_THAT_WE_ARE_CAUGHT" text="{SUCCESS} to succeed. If it fails, {ONFAILURE} that we are caught: {OVERALL} overall."/>
     <string id="DI_INTEL_UNDER_WAY" text="Under way"/>
     <string id="DI_INTEL_WEEKLY_BUDGET" text="Weekly budget"/>
     <string id="DI_INTEL_WEEK_SIGNED_2" text="{SIGNED} / week"/>
@@ -538,10 +552,10 @@
     <string id="DI_MENU_AT_WAR_FOR_DAYS_OVER_THEIR_DAYSELAPSED_JUSTIFICATION_BUDGET_2" text="At war for {DAYSELAPSED} days over {JUSTIFICATION}. Their war score is {BUDGET}: they will not settle for less than {WANTED} and cannot take more than {BUDGET_2}. Choose nothing to offer a white peace."/>
     <string id="DI_MENU_AT_WAR_FOR_DAYS_OVER_THEY_DAYSELAPSED_JUSTIFICATION_DESCRIBE_2" text="At war for {DAYSELAPSED} days over {JUSTIFICATION}. They are {DESCRIBE}. This war has earned us {BUDGET} - the most our terms may cost. Choose nothing for a white peace."/>
     <string id="DI_MENU_AT_WAR_NAME_2" text="{NAME}  (at war)"/>
+    <string id="DI_MENU_A_TRIBUTARY_PAYS_FOR_PEACE" text="A tributary pays for peace and keeps everything else."/>
     <string id="DI_MENU_BACK" text="Back"/>
     <string id="DI_MENU_BACK_2" text="Back"/>
     <string id="DI_MENU_BEG_THEIR_MERCY_2" text="Beg their mercy"/>
-    <string id="DI_MENU_BLOCK_2" text="{BLOCK}"/>
     <string id="DI_MENU_BUDGET_SEE_HINT_FOR_THE_PRICE_OURBUDGET_2" text="Budget {OURBUDGET} - see hint for the price list."/>
     <string id="DI_MENU_CANNOT_COURT_THEM_REASON_2" text="Cannot court them: {REASON}"/>
     <string id="DI_MENU_CANNOT_DECLARE_WAR_EXPLAIN_2" text="Cannot declare war: {EXPLAIN}."/>
@@ -573,6 +587,7 @@
     <string id="DI_MENU_DEMAND_TRIBUTE_2" text="Demand tribute"/>
     <string id="DI_MENU_DIPLOMACY_2" text="Diplomacy"/>
     <string id="DI_MENU_DIPLOMACY_IS_ONLY_AVAILABLE_IN_CAMPAIGN_2" text="Diplomacy is only available in a campaign."/>
+    <string id="DI_MENU_END_THIS_WAR_AS_THEIR_VASSAL" text="End this war as their vassal - {PATRON}, which would not defend us, is named the oathbreaker."/>
     <string id="DI_MENU_EVERY_TREATY_WE_HOLD_AND_WHAT_2" text="Every treaty we hold, and what it obliges."/>
     <string id="DI_MENU_EXHAUSTION_WAR_SCORE_AND_WHAT_EACH_2" text="Exhaustion, war score, and what each war has earned."/>
     <string id="DI_MENU_FABRICATE_CLAIM" text="Fabricate a claim"/>
@@ -589,13 +604,10 @@
     <string id="DI_MENU_KNEEL_TO_THEM" text="Kneel to them"/>
     <string id="DI_MENU_KNEEL_TO_THEM_2" text="Kneel to them"/>
     <string id="DI_MENU_LOYAL_WILL_RENEW_WHEN_THE_TERM_2" text="loyal; will renew when the term ends"/>
-    <string id="DI_MENU_NAME_2" text="{NAME}"/>
     <string id="DI_MENU_NEGOTIATE_PEACE" text="Negotiate peace"/>
     <string id="DI_MENU_NEGOTIATE_PEACE_2" text="Negotiate peace"/>
     <string id="DI_MENU_NEITHER_SIDE_HAS_EARNED_ENOUGH_TO" text="Neither side has earned enough to ask for anything - a white peace is all this war can produce. Propose it and they sign if the war has worn them too."/>
     <string id="DI_MENU_NEITHER_SIDE_HAS_EARNED_ENOUGH_TO_2" text="Neither side has earned enough to ask for anything - a white peace is all this war can produce. Propose it and they sign if the war has worn them too."/>
-    <string id="DI_MENU_NOTRIBUTE" text="{NOTRIBUTE}"/>
-    <string id="DI_MENU_NOTRIBUTE_2" text="{NOTRIBUTE}"/>
     <string id="DI_MENU_NOT_ENOUGH_INFLUENCE_COSTS_TYPE_COST_2" text="Not enough influence: {TYPE} costs {COST}."/>
     <string id="DI_MENU_NOT_ENOUGH_INFLUENCE_PROPOSING_THIS_WAR_COST_2" text="Not enough influence: proposing this war costs {COST}."/>
     <string id="DI_MENU_OFFER_THESE_TERMS_2" text="Offer these terms"/>
@@ -610,9 +622,11 @@
     <string id="DI_MENU_PAY_AN_INDEMNITY_OF_DENARS_WORTH_INDEMNITY_INDEMNITYPOINTS_2" text="Pay an indemnity of {INDEMNITY} denars   -   worth {INDEMNITYPOINTS}"/>
     <string id="DI_MENU_PEACE_WITH_NAME" text="Peace with {NAME}"/>
     <string id="DI_MENU_PEACE_WITH_NAME_2" text="Peace with {NAME}"/>
+    <string id="DI_MENU_PER_PERIOD_COERCION_NOT_NEGOTIATION" text="{AMOUNT} per period. Coercion, not negotiation: the claim makes the pretext and our strength makes the argument."/>
     <string id="DI_MENU_PROPOSE_TYPE_2" text="Propose {TYPE}"/>
     <string id="DI_MENU_PROPOSE_WHITE_PEACE" text="Propose white peace"/>
     <string id="DI_MENU_PROPOSE_WHITE_PEACE_2" text="Propose white peace"/>
+    <string id="DI_MENU_PUTS_THE_QUESTION_TO_THE_COURT" text="Puts the question to the court, which votes on it - the same proposal the Decisions tab offers."/>
     <string id="DI_MENU_RELATIONS_TRUST_AND_STANDING_AGREEMENTS_2" text="Relations, trust and standing agreements."/>
     <string id="DI_MENU_RELATIONS_TRUST_AND_WHAT_WE_CAN_2" text="Relations, trust, and what we can propose."/>
     <string id="DI_MENU_RELEASE_OUR_VASSALS_WORTH_PEACECOSTSUBJUGATION_2" text="Release our vassals   -   worth {PEACECOSTSUBJUGATION}"/>
@@ -636,16 +650,20 @@
     <string id="DI_MENU_SUE_FOR_PEACE_2" text="Sue for peace"/>
     <string id="DI_MENU_SUE_FOR_PEACE_WITH_NAME_2" text="Sue for peace with {NAME}"/>
     <string id="DI_MENU_TEAR_UP_THEIR_OATH_AND_MAKE_2" text="Tear up their oath and make war"/>
+    <string id="DI_MENU_THEIR_OATH_FOR_OUR_FOREIGN_POLICY" text="Their oath for our foreign policy: tribute, troops in their wars, protection owed to us."/>
     <string id="DI_MENU_THERE_ARE_NO_OTHER_KINGDOMS_LEFT_2" text="There are no other kingdoms left."/>
     <string id="DI_MENU_THEY_FREE_EVERY_HERO_OF_OURS_2" text="They free every hero of ours they hold."/>
     <string id="DI_MENU_THEY_KEEP_THEIR_RULER_AND_THEIR_2" text="They keep their ruler and their lands, and owe us troops, tribute and their foreign policy - and we owe them protection."/>
     <string id="DI_MENU_THEY_KEEP_THEIR_THRONE_EVERY_KINGDOM_2" text="They keep their throne; every kingdom sworn to them goes free. We inherit none of them, and they stay in their own wars."/>
+    <string id="DI_MENU_THEY_PAY_FOR_PEACE" text="They pay for peace and keep everything else."/>
+    <string id="DI_MENU_THEY_WOULD_KNEEL_TO_US" text="They would kneel to us (valued at {VALUE}). Taking them means war with {PATRON}."/>
     <string id="DI_MENU_THE_COURTSHIP_FAILED_SEE_THE_DIPLOMACY_2" text="The courtship failed - see the Diplomacy &amp; Intrigue log."/>
     <string id="DI_MENU_THE_COURT_WILL_NOT_ENTERTAIN_WAR_NAME_2" text="The court will not entertain a war against {NAME} right now."/>
     <string id="DI_MENU_THE_FULL_PRICE_OF_BREACH_THEN_2" text="The full price of a breach, then conquest - the same move a greedy AI patron makes."/>
     <string id="DI_MENU_THE_MOMENT_HAS_PASSED_LAPSED_2" text="The moment has passed: {LAPSED}"/>
     <string id="DI_MENU_THE_MOMENT_HAS_PASSED_THE_BOND_2" text="The moment has passed - the bond no longer stands as it did."/>
     <string id="DI_MENU_THE_MOMENT_HAS_PASSED_THE_OATH_2" text="The moment has passed - the oath no longer stands between us."/>
+    <string id="DI_MENU_THE_OATH_IS_THE_PEACE" text="The oath is the peace: the war ends and we answer to them."/>
     <string id="DI_MENU_THE_OFFER_HAS_LAPSED_LAPSED_2" text="The offer has lapsed: {LAPSED}"/>
     <string id="DI_MENU_THE_REALM_IS_NOT_BREAKING_HOLD_HOLDOF_SECESSIONTHRESHOLD_2" text="The realm is not breaking - hold {HOLDOF} against a secession line of {SECESSIONTHRESHOLD}. Renouncing the oath is always possible; rebellion is not."/>
     <string id="DI_MENU_THE_WAR_HAS_EARNED_OFFER_WHAT_NAME_THEIRBUDGET_2" text="The war has earned {NAME} {THEIRBUDGET}. Offer what it takes."/>
@@ -668,9 +686,6 @@
     <string id="DI_MENU_WHITE_PEACE_ONLY_2" text="White peace only"/>
     <string id="DI_MENU_WHITE_PEACE_ONLY_THIS_WAR_HAS_2" text="White peace only - this war has earned nothing yet."/>
     <string id="DI_MENU_WHO_ANSWERS_TO_WHOM_KINGDOM_HOLDING_2" text="Who answers to whom. A kingdom holding one vassal is a hegemon."/>
-    <string id="DI_MENU_WHY" text="{WHY}"/>
-    <string id="DI_MENU_WHYTRIBUTE_2" text="{WHYTRIBUTE}"/>
-    <string id="DI_MENU_WHY_2" text="{WHY}"/>
     <string id="DI_MENU_WRITE_REPORT_TO_FILE_2" text="Write a report to file"/>
     <string id="DI_MENU_YOU_ARE_VASSAL_HERE_SO_THIS_NAME_2" text="{NAME} - you are a vassal here, so this is a view only."/>
     <string id="DI_MENU_YOU_BELONG_TO_NO_KINGDOM_SO_2" text="You belong to no kingdom, so you have no foreign policy."/>
@@ -692,12 +707,14 @@
     <string id="DI_PEACE_AN_UNSTATED_CLAIM" text="unstated claim"/>
     <string id="DI_PEACE_ASKS_FOR_PEACE_NAME_2" text="{NAME} asks for peace"/>
     <string id="DI_PEACE_CANCEL" text="Cancel"/>
+    <string id="DI_PEACE_CANNOT_BE_ASKED_IN_THIS_WAR" text="Cannot be asked in this war."/>
     <string id="DI_PEACE_EVERY_LORD_OF_YOURS_THEY_HOLD_2" text="Every lord of yours they hold walks free."/>
     <string id="DI_PEACE_EVERY_TERM_HERE_IS_INSIDE_WHAT_LEFT_2" text="Every term here is inside what the war has earned. {LEFT} left unspent."/>
     <string id="DI_PEACE_MAKE_PEACE_2" text="Make peace"/>
     <string id="DI_PEACE_NAMES_ITS_PRICE_FOR_PEACE_NAME_2" text="{NAME} names its price for peace"/>
     <string id="DI_PEACE_NOT_IN_THEIR_DEMAND_2" text="Not in their demand."/>
     <string id="DI_PEACE_NOT_IN_THEIR_OFFER_2" text="Not in their offer."/>
+    <string id="DI_PEACE_NOT_NOW" text="Not now."/>
     <string id="DI_PEACE_OFFER_THESE_TERMS_2" text="Offer these terms"/>
     <string id="DI_PEACE_OF_WAR_THEY_ARE_LOSING_AT_THEIRSCORE_THEIRSCORE_2_2" text="of a war they are losing at score {THEIRSCORE}{THEIRSCORE_2}"/>
     <string id="DI_PEACE_OF_WAR_THEY_ARE_WINNING_AT_THEIRSCORE_THEIRSCORE_2_2" text="of a war they are winning at score {THEIRSCORE}{THEIRSCORE_2}"/>
@@ -705,8 +722,6 @@
     <string id="DI_PEACE_PEACE_WITH_NAME_2" text="Peace with {NAME}"/>
     <string id="DI_PEACE_PRICE" text="price"/>
     <string id="DI_PEACE_PRICE_2" text="price"/>
-    <string id="DI_PEACE_REASON" text="{REASON}"/>
-    <string id="DI_PEACE_REASON_2" text="{REASON}"/>
     <string id="DI_PEACE_REFUSE" text="Refuse"/>
     <string id="DI_PEACE_RELEASE_OUR_VASSALS_2" text="Release our vassals"/>
     <string id="DI_PEACE_RELEASE_THEIR_CAPTIVES_2" text="Release their captives"/>
@@ -731,7 +746,7 @@
     <string id="DI_PEACE_THIS_IS_THEIR_TABLE_NOT_YOURS_2" text="This is their table, not yours   -   nothing here is editable. What you can change is only whether you sign."/>
     <string id="DI_PEACE_TRIBUTARY_PAYS_FOR_PEACE_AND_KEEPS_2" text="A tributary pays for peace and keeps everything else."/>
     <string id="DI_PEACE_TRIBUTE_PER_PERIOD_AIDEFAULTTRIBUTEPERPERIOD_2" text="Tribute, {AIDEFAULTTRIBUTEPERPERIOD} per period"/>
-    <string id="DI_PEACE_WALK_FREE_AND_THEIR_SPHERE_ENDS_JOIN_2" text="{JOIN} walk free, and their sphere ends with them."/>
+    <string id="DI_PEACE_WALK_FREE_AND_THEIR_SPHERE_ENDS_JOIN_2" text="{NAMES} walk free, and their sphere ends with them."/>
     <string id="DI_PEACE_WE_FREE_EVERY_HERO_OF_THEIRS_2" text="We free every hero of theirs we hold."/>
     <string id="DI_PEACE_WE_KEEP_OUR_RULER_AND_LANDS_2" text="We keep our ruler and lands, and owe troops, tribute and foreign policy."/>
     <string id="DI_PEACE_WHAT_ASKS_OF_YOU_NAME_2" text="What {NAME} asks of you"/>
@@ -790,6 +805,7 @@
     <string id="DI_REALM_ONE_KINGDOM_ANSWERS_TO_NAME_2" text="one kingdom answers to {NAME}"/>
     <string id="DI_REALM_ONE_KINGDOM_ANSWERS_TO_YOU_2" text="one kingdom answers to you"/>
     <string id="DI_REALM_OPENS_THE_PEACE_TABLE_WHAT_THIS_ALLOWANCE_2" text="Opens the peace table: what this war has earned, and what they will sign. {ALLOWANCE}"/>
+    <string id="DI_REALM_OPEN_ENDED" text="open-ended"/>
     <string id="DI_REALM_OPEN_THE_COURT_2" text="Open the court"/>
     <string id="DI_REALM_OUR_AGREEMENTS_TITLE" text="Our agreements"/>
     <string id="DI_REALM_OUR_CLAIMS_TITLE" text="Our claims"/>
@@ -814,7 +830,6 @@
     <string id="DI_REALM_THEY_TORE_UP_PACT_IN_WAR_GETYEAR_2" text="They tore up a pact in {GETYEAR}. A war on this needs no excuse."/>
     <string id="DI_REALM_THE_CIVIL_WAR_IS_SHOWN_ON_2" text="The civil war is shown on the Court tab: both sides, what each house would cost to change sides, and how it ends."/>
     <string id="DI_REALM_THE_HOUSES_OF_THE_RISING_KEEP_2" text="The houses of the rising keep their seats and votes while they fight."/>
-    <string id="DI_REALM_TREATY_2" text="{TREATY}"/>
     <string id="DI_REALM_TRIBUTE_2" text="tribute"/>
     <string id="DI_REALM_TRIBUTE_PER_PERIOD" text="Tribute, per period"/>
     <string id="DI_REALM_TRUST_2" text="trust"/>
@@ -823,12 +838,13 @@
     <string id="DI_REALM_WE_ANSWER_TO_HOLD_TRIBUTE_PER_NAME_HOLDOF_HOLDMEANING_2" text="We answer to {NAME}   -   hold {HOLDOF} ({HOLDMEANING})   -   tribute {TRIBUTEAMOUNT} per period   -   {TERMLEFT}"/>
     <string id="DI_REALM_WE_HAVE_DEFIED_THEM_TIME_DEFIANCEMARKS_2" text="   -   we have defied them {DEFIANCEMARKS} time(s)"/>
     <string id="DI_REALM_WRITE_A_REPORT_TO_FILE" text="Write a report to file"/>
+    <string id="DI_REALM_YEARS" text="{YEARS}y"/>
+    <string id="DI_REALM_YEARS_AND_DAYS" text="{YEARS}y {REM}d"/>
     <string id="DI_REALM_YOUR_SPHERE_OUTWEIGHS_BY_EVERY_COURT_HEADTEXT_GAP_2" text="Your sphere outweighs {HEADTEXT} by {GAP}. Every court that belongs to neither reads that gap when it decides whom to pact with."/>
     <string id="DI_REALM_YOU_FIGHT_UNDER_THE_REALM_FOREIGN_SIDENAME_2" text="You fight under {SIDENAME}: the realm's foreign wars are the crown's, not yours."/>
     <string id="DI_REALM_YOU_PAY_THEM_AND_ANSWER_THEIR_NAME_2" text="{NAME} - you pay them, and answer their call"/>
     <string id="DI_SIDE_THE_CROWN" text="the crown"/>
     <string id="DI_SIDE_THE_RISING" text="the rising"/>
-    <string id="DI_STATECRAFT_ACTOR_2" text="{ACTOR}"/>
     <string id="DI_STATECRAFT_CLAIM_WE_FABRICATE_IS_CAUGHT_OF_PCT_2" text="A claim we fabricate is caught {PCT} of the time against a median watch"/>
     <string id="DI_STATECRAFT_EACH_SKILL_IS_MEASURED_AGAINST_THE_2" text="Each skill is measured against the median of the same office across every realm, so a ruler as good as their peers moves nothing. You hold Leadership in person; the other five go to the best hero of the ruling house, family or companion. A captured hero hands the office to the next best. Doing the work trains the skill."/>
     <string id="DI_STATECRAFT_EACH_SKILL_IS_MEASURED_AGAINST_THE_3" text="Each skill is measured against the median of the same office across every realm, so a ruler as good as their peers moves nothing. The ruler holds Leadership in person; the other five go to the best hero of the ruling house, family or companion. A captured hero hands the office to the next best. Doing the work trains the skill."/>
@@ -854,6 +870,12 @@
     <string id="DI_SUMMONS_REFUSING_SECOND_MARK" text="Refuse: defiance. It costs {TRUST} trust with {PATRON}, earns a mark, and a second mark inside a year renounces the vassalage, as a broken treaty."/>
     <string id="DI_TREATY_ALLIANCE" text="Alliance"/>
     <string id="DI_TREATY_DEFENSIVE_PACT" text="Defensive pact"/>
+    <string id="DI_TREATY_IN_SENTENCE_ALLIANCE" text="alliance"/>
+    <string id="DI_TREATY_IN_SENTENCE_DEFENSIVE_PACT" text="defensive pact"/>
+    <string id="DI_TREATY_IN_SENTENCE_NON_AGGRESSION_PACT" text="non-aggression pact"/>
+    <string id="DI_TREATY_IN_SENTENCE_TRIBUTARY_PACT" text="tributary pact"/>
+    <string id="DI_TREATY_IN_SENTENCE_TRUCE" text="truce"/>
+    <string id="DI_TREATY_IN_SENTENCE_VASSALAGE" text="vassalage"/>
     <string id="DI_TREATY_NON_AGGRESSION_PACT" text="Non-aggression pact"/>
     <string id="DI_TREATY_TRIBUTARY_PACT" text="Tributary pact"/>
     <string id="DI_TREATY_TRUCE" text="Truce"/>

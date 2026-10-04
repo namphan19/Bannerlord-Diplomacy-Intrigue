@@ -493,9 +493,7 @@ namespace DiplomacyIntrigue.UI.ClanScreen
                         "{SIGNED} / week",
                         ("SIGNED", Signed(t.NetOverAWeek))),
                     t.NetOverAWeek >= 0f ? PositiveColor : NegativeColor,
-                    DiText.T("DI_INTEL_TOSTRING_2",
-                        "{TOSTRING}",
-                        ("TOSTRING", n.Handler?.Name?.ToString() ?? "no handler")),
+                    n.Handler?.Name?.ToString() ?? DiText.T("DI_INTEL_NO_HANDLER", "no handler"),
                     (int)Math.Round(n.Strength),
                     n.Handler != null ? (int)Math.Round(t.Ceiling) : 0,
                     n.Handler != null && t.Ceiling < EspionageConstants.NetworkMaxStrength,
@@ -739,15 +737,14 @@ namespace DiplomacyIntrigue.UI.ClanScreen
                 "target: {MARKNEED}",
                 ("MARKNEED", MarkNeed(selectedSpec)));
             MEffect = EffectOf(selectedSpec.Type);
-            MRisk = DiText.T("DI_INTEL_IF_CAUGHT_SUBSTRING_2",
-                "If caught, t{SUBSTRING}",
-                ("SUBSTRING", CaughtText(selectedSpec.Type, target).Substring(1)));
-            MWhy = DiText.T("DI_INTEL_EMPTY_2",
-                "{EMPTY}",
-                ("EMPTY", selectedOpen
-                ? Espionage.Missions.Pct(selectedOdds.Success) + " to succeed. If it fails, " + Espionage.Missions.Pct(selectedOdds.ExposureOnFailure)
-                  + " that we are caught: " + Espionage.Missions.Pct(selectedOdds.Exposure) + " overall."
-                : selectedWhy ?? string.Empty));
+            MRisk = CaughtText(selectedSpec.Type, target, ifCaught: true);
+            MWhy = selectedOpen
+                ? DiText.T("DI_INTEL_TO_SUCCEED_IF_IT_FAILS_THAT_WE_ARE_CAUGHT",
+                    "{SUCCESS} to succeed. If it fails, {ONFAILURE} that we are caught: {OVERALL} overall.",
+                    ("SUCCESS", Espionage.Missions.Pct(selectedOdds.Success)),
+                    ("ONFAILURE", Espionage.Missions.Pct(selectedOdds.ExposureOnFailure)),
+                    ("OVERALL", Espionage.Missions.Pct(selectedOdds.Exposure)))
+                : selectedWhy ?? string.Empty;
             CanPlan = selectedOpen;
         }
 
@@ -938,9 +935,7 @@ namespace DiplomacyIntrigue.UI.ClanScreen
             }
             PickMembers = members;
 
-            PickName = DiText.T("DI_INTEL_TOSTRING",
-                "{TOSTRING}",
-                ("TOSTRING", _pickHero?.Name?.ToString() ?? "Nobody chosen"));
+            PickName = _pickHero?.Name?.ToString() ?? DiText.T("DI_INTEL_NOBODY_CHOSEN", "Nobody chosen");
             if (_pickRealm == null || _pickHero == null)
             {
                 CanPostHandler = false;
@@ -1056,8 +1051,8 @@ namespace DiplomacyIntrigue.UI.ClanScreen
                         ("DISSENTLOYALTYLOSS", EspionageConstants.DissentLoyaltyLoss.ToString("0")));
                 case SpyMissionType.StealTreasury:
                     return DiText.T("DI_INTEL_OF_THEIR_RULER_PURSE_AT_MOST_CAPITALISE_DENARS_2",
-                        "{CAPITALISE} of their ruler's purse, at most {DENARS}, comes to us.",
-                        ("CAPITALISE", Capitalise(Percent(EspionageConstants.StealTreasuryShare))),
+                        "{SHARE} of their ruler's purse, at most {DENARS}, comes to us.",
+                        ("SHARE", Capitalise(Percent(EspionageConstants.StealTreasuryShare))),
                         ("DENARS", Denars(EspionageConstants.StealTreasuryCap)));
                 case SpyMissionType.BribeLord:
                     return DiText.T("DI_INTEL_THE_LORD_KEEPS_THE_GOLD_THE_BRIBELOYALTYLOSS_2",
@@ -1106,9 +1101,22 @@ namespace DiplomacyIntrigue.UI.ClanScreen
         }
 
         /// <summary>What being caught costs (design 03 §5), from the constants exposure applies.</summary>
-        private static string CaughtText(SpyMissionType type, Kingdom target)
+        /// <summary>
+        /// What exposure costs. <paramref name="ifCaught"/> asks for the same sentence led by "If
+        /// caught," as one string of its own: it used to be cut out of this one with
+        /// <c>Substring(1)</c> and glued behind an English prefix, which no other language's word
+        /// order survives.
+        /// </summary>
+        private static string CaughtText(SpyMissionType type, Kingdom target, bool ifCaught = false)
         {
-            var text = DiText.T("DI_INTEL_THE_NETWORK_IN_IS_LOST_GAINS_NAME_NAME_2_LEGITIMACY_2",
+            var text = ifCaught
+                ? DiText.T("DI_INTEL_IF_CAUGHT_THE_NETWORK_IN_IS_LOST",
+                    "If caught, the network in {NAME} is lost, {NAME_2} gains a casus belli against us (Espionage exposed, {LEGITIMACY}) and trusts us {EXPOSUREVICTIMTRUST} less.",
+                    ("NAME", target.Name),
+                    ("NAME_2", target.Name),
+                    ("LEGITIMACY", DiplomacyIntrigue.Diplomacy.CasusBelli.Legitimacy(CasusBelliType.EspionageExposed).ToString("0.00")),
+                    ("EXPOSUREVICTIMTRUST", (-EspionageConstants.ExposureVictimTrust).ToString("0")))
+                : DiText.T("DI_INTEL_THE_NETWORK_IN_IS_LOST_GAINS_NAME_NAME_2_LEGITIMACY_2",
                 "The network in {NAME} is lost, {NAME_2} gains a casus belli against us (Espionage exposed, {LEGITIMACY}) and trusts us {EXPOSUREVICTIMTRUST} less.",
                 ("NAME", target.Name),
                 ("NAME_2", target.Name),

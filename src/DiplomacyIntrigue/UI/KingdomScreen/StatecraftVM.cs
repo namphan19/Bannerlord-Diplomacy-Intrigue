@@ -123,10 +123,11 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                         ("NAME", absent.Name));
             }
 
-            var who = DiText.T("DI_STATECRAFT_ACTOR_2",
-                "{ACTOR}",
-                ("ACTOR", actor == null ? "nobody" : StatecraftModel.NameOf(actor)));
-            if (who == "you") who = DiText.T("DI_STATECRAFT_YOU_2", "You");
+            // Compared as a hero, not as the word "you": the word is behind a key now, and a
+            // translation of it would never equal the English.
+            var who = actor == Hero.MainHero ? DiText.T("DI_STATECRAFT_YOU_2", "You")
+                : actor == null ? DiText.T("DI_STATECRAFT_HERO_NOBODY", "nobody")
+                : StatecraftModel.NameOf(actor);
             return new DiStatecraftRowVM(
                 StatecraftModel.TitleOf(portfolio),
                 who,

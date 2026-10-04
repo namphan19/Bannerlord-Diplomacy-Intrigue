@@ -282,9 +282,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             var playerRebel = _war.IsRebel(Clan.PlayerClan);
             var playerLeadsCrown = ruler != null && ruler == Hero.MainHero;
             var playerLeadsRising = claimant != null && claimant == Hero.MainHero;
-            var claimantName = DiText.T("DI_CIVILWAR_TOSTRING_2",
-                "{TOSTRING}",
-                ("TOSTRING", claimant == null ? "The claimant" : claimant.Name.ToString()));
+            var claimantName = claimant == null
+                ? DiText.T("DI_CIVILWAR_THE_CLAIMANT", "The claimant")
+                : claimant.Name.ToString();
 
             DayText = DiText.T("DI_CIVILWAR_CIVIL_WAR_DAY_ELAPSEDDAYSUNTILNOW_2",
                 "CIVIL WAR, DAY {ELAPSEDDAYSUNTILNOW}",
@@ -300,9 +300,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
             var crownShare = (int)Math.Round(_war.CrownShareAtStart * 100f);
             CrownSideNote = playerRebel ? "" : DiText.T("DI_CIVILWAR_YOUR_SIDE_2", "your side");
-            CrownLedBy = DiText.T("DI_CIVILWAR_TOSTRING_2",
-                "{TOSTRING}",
-                ("TOSTRING", playerLeadsCrown ? "led by you" : "led by " + (ruler == null ? "nobody" : ruler.Name.ToString())));
+            CrownLedBy = playerLeadsCrown ? DiText.T("DI_CIVILWAR_LED_BY_YOU", "led by you")
+                : ruler == null ? DiText.T("DI_CIVILWAR_LED_BY_NOBODY", "led by nobody")
+                : DiText.T("DI_CIVILWAR_LED_BY_NAME", "led by {NAME}", ("NAME", ruler.Name));
             CrownCounts = Counts(crown, crownShare);
             CrownExhaustionText = _war.CrownExhaustion.ToString("0.0");
             CrownExhaustionAmount = (int)Math.Round(_war.CrownExhaustion);
@@ -431,9 +431,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             return new DiCivilHouseVM(this, clan, clan == Clan.PlayerClan,
                 clan.Fiefs.Count.ToString(),
                 loyalty.ToString("0.0"), DiCourtVM.BandColor(LoyaltyModel.Band(loyalty)),
-                DiText.T("DI_CIVILWAR_TOSTRING_2",
-                    "{TOSTRING}",
-                    ("TOSTRING", q != null && q.Eligible ? q.Price.ToString("N0") : "-")),
+                q != null && q.Eligible ? q.Price.ToString("N0") : "-",
                 note, noteColor);
         }
 
@@ -441,11 +439,10 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         {
             _concedeArmed = false;
             if (CanConcede)
-                ConcedeButtonText = DiText.T("DI_CIVILWAR_TOSTRING_2",
-                    "{TOSTRING}",
-                    ("TOSTRING", InternalWars.LeaderOf(_war, false) == Hero.MainHero
-                    ? "Concede the throne to " + (_war.Claimant == null ? "the claimant" : _war.Claimant.Name.ToString())
-                    : "Give up your claim"));
+                ConcedeButtonText = InternalWars.LeaderOf(_war, false) != Hero.MainHero
+                    ? DiText.T("DI_CIVILWAR_GIVE_UP_YOUR_CLAIM", "Give up your claim")
+                    : DiText.T("DI_CIVILWAR_CONCEDE_THE_THRONE_TO", "Concede the throne to {NAME}",
+                        ("NAME", _war.Claimant == null ? DiText.T("DI_CIVILWAR_THE_CLAIMANT_LOWER", "the claimant") : _war.Claimant.Name.ToString()));
 
             var lines = new MBBindingList<DiCivilPriceLineVM>();
             var clan = _selected?.Clan;
@@ -543,7 +540,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             var left = InternalWars.LeaderOf(_war, !q.ToRising);
             return DiText.T("DI_CIVILWAR_OPINION_OF_THEIR_HEAD_FALLS_BY_TOSTRING_2",
                 "{TOSTRING}'s opinion of their head falls by {SIDECHANGERELATIONPENALTY}. They cannot change sides again in this war.",
-                ("TOSTRING", left == null ? "The leader they leave" : left.Name.ToString()),
+                ("TOSTRING", left == null ? DiText.T("DI_CIVILWAR_THE_LEADER_THEY_LEAVE", "The leader they leave") : left.Name.ToString()),
                 ("SIDECHANGERELATIONPENALTY", -IntrigueConstants.SideChangeRelationPenalty));
         }
 
@@ -551,7 +548,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         {
             if (q == null) return DiText.T("DI_CIVILWAR_NO_HOUSE_TO_PRICE_2", "no house to price.");
             SideChange.AiWouldPay(q, out var why);
-            return DiText.T("DI_CIVILWAR_WHY_2", "{WHY}", ("WHY", why ?? "no reason given."));
+            return why ?? DiText.T("DI_CIVILWAR_NO_REASON_GIVEN", "no reason given.");
         }
 
         private static string Counts(List<Clan> clans, int sharePercent)
@@ -564,20 +561,24 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
         private static string HeldText(Hero leader, int daysHeld)
         {
-            var who = DiText.T("DI_CIVILWAR_TOSTRING_2",
-                "{TOSTRING}",
-                ("TOSTRING", leader == null ? "Nobody" : leader == Hero.MainHero ? "You" : leader.Name.ToString()));
-            var verb = leader == Hero.MainHero ? " are " : " is ";
+            // One whole sentence per case, not a name and a verb joined: "You are" and "X is" do
+            // not agree the same way in every language (story 4.1 R3).
+            var you = leader == Hero.MainHero;
+            var name = leader == null ? DiText.T("DI_CIVILWAR_NOBODY", "Nobody") : leader.Name.ToString();
             var limit = IntrigueConstants.InternalWarCaptiveDays;
-            if (daysHeld > 0) return who + verb + "held - " + daysHeld + " of " + limit + " days";
+            if (daysHeld > 0)
+                return you
+                    ? DiText.T("DI_CIVILWAR_YOU_ARE_HELD", "You are held - {DAYS} of {LIMIT} days", ("DAYS", daysHeld), ("LIMIT", limit))
+                    : DiText.T("DI_CIVILWAR_NAME_IS_HELD", "{NAME} is held - {DAYS} of {LIMIT} days", ("NAME", name), ("DAYS", daysHeld), ("LIMIT", limit));
             // Only captivity at the other side's hands counts toward the 30 days
             // (InternalWars.HeldBy); a leader taken by a foreign enemy is not free either.
             if (leader != null && leader.IsPrisoner)
-                return DiText.T("DI_CIVILWAR_PRISONER_BUT_NOT_OF_THE_OTHER_WHO_VERB_2",
-                    "{WHO}{VERB}a prisoner, but not of the other side - it does not count",
-                    ("WHO", who),
-                    ("VERB", verb));
-            return who + verb + "free - 0 of " + limit + " days held";
+                return you
+                    ? DiText.T("DI_CIVILWAR_YOU_ARE_A_PRISONER", "You are a prisoner, but not of the other side - it does not count")
+                    : DiText.T("DI_CIVILWAR_NAME_IS_A_PRISONER", "{NAME} is a prisoner, but not of the other side - it does not count", ("NAME", name));
+            return you
+                ? DiText.T("DI_CIVILWAR_YOU_ARE_FREE", "You are free - 0 of {LIMIT} days held", ("LIMIT", limit))
+                : DiText.T("DI_CIVILWAR_NAME_IS_FREE", "{NAME} is free - 0 of {LIMIT} days held", ("NAME", name), ("LIMIT", limit));
         }
 
         /// <summary>Gold under the stalemate line, orange past it, red once a concession is in reach.</summary>
@@ -600,7 +601,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         {
             _owner = owner;
             Clan = clan;
-            Name = isPlayer ? DiText.T("DI_CIVILWAR_YOU_NAME_2", "{NAME} (you)", ("NAME", clan.Name.ToString())) : DiText.T("DI_CIVILWAR_NAME_2", "{NAME}", ("NAME", clan.Name.ToString()));
+            Name = isPlayer ? DiText.T("DI_CIVILWAR_YOU_NAME_2", "{NAME} (you)", ("NAME", clan.Name.ToString())) : clan.Name.ToString();
             FiefsText = fiefsText;
             LoyaltyText = loyaltyText;
             LoyaltyColor = loyaltyColor;
@@ -646,9 +647,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         public DiCivilPriceLineVM(string label, int gold, bool isBase)
         {
             Label = label;
-            ValueText = DiText.T("DI_CIVILWAR_TOSTRING_2",
-                "{TOSTRING}",
-                ("TOSTRING", isBase ? gold.ToString("N0") : gold.ToString("+#,0;-#,0;0")));
+            ValueText = isBase ? gold.ToString("N0") : gold.ToString("+#,0;-#,0;0");
             // A base part is just what the house is. A factor that raises the price is against
             // whoever pays, one that lowers it is for them.
             ValueColor = isBase || gold == 0 ? DiCourtVM.TextColor
