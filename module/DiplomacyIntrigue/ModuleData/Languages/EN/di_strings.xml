@@ -141,6 +141,7 @@
     <string id="DI_COURT_TEN_2" text="ten"/>
     <string id="DI_COURT_THERE_IS_NO_COURT_BEYOND_HER_2" text="There is no court beyond her own house."/>
     <string id="DI_COURT_THERE_IS_NO_COURT_BEYOND_HIS_2" text="There is no court beyond his own house."/>
+    <string id="DI_COURT_THE_COURT" text="The court"/>
     <string id="DI_COURT_THE_COURT_IS_TURNING_AGAINST_HIM_2" text="The court is turning against {HIM}."/>
     <string id="DI_COURT_THE_COURT_OF_CLAN_WHAT_YOUR_NAME_2" text="The court of Clan {NAME} - what your envoys can tell you, and what your agents read inside it."/>
     <string id="DI_COURT_THE_COURT_OF_CLAN_WHAT_YOUR_NAME_3" text="The court of Clan {NAME} - what your envoys can tell you."/>
@@ -255,7 +256,7 @@
     <string id="DI_DIPLOMACY_THEIR_OATH_FOR_OUR_FOREIGN_POLICY_AIDEFAULTTRIBUTEPERPERIOD_2" text="Their oath for our foreign policy: tribute {AIDEFAULTTRIBUTEPERPERIOD} per period, troops in their wars, protection owed to us."/>
     <string id="DI_DIPLOMACY_THEIR_TERMS_FOR_PEACE_2" text="Their terms for peace"/>
     <string id="DI_DIPLOMACY_THEY_TRUST_YOU_ENOUGH_TO_TALK_2" text="They trust you enough to talk. Whether they sign is their own valuation, shown below."/>
-    <string id="DI_DIPLOMACY_THE_GAMES_OWN_ROWS_STRENGTH" text="§ § §  the game's own rows (strength, fiefs, clans) continue below  § § §"/>
+    <string id="DI_DIPLOMACY_THE_GAMES_OWN_ROWS_STRENGTH" text="· · ·  the game's own rows (strength, fiefs, clans) continue below  · · ·"/>
     <string id="DI_DIPLOMACY_THE_OATH_IS_THE_PEACE_THE_AIDEFAULTTRIBUTEPERPERIOD_2" text="The oath is the peace: the war ends, we keep our ruler and lands, and they owe us protection. Tribute {AIDEFAULTTRIBUTEPERPERIOD} per period."/>
     <string id="DI_DIPLOMACY_THREE_RUNGS_ONE_VALUATION_SEE_WHAT_2" text="Three rungs, one valuation. See what clears their bar."/>
     <string id="DI_DIPLOMACY_TOARRAY" text="{TOARRAY}"/>
@@ -343,7 +344,7 @@
     <string id="DI_INTEL_RECALL" text="Recall"/>
     <string id="DI_INTEL_REPORTS_IN_HAND" text="Reports in hand"/>
     <string id="DI_INTEL_ROB_THE_TREASURY_2" text="Rob the treasury"/>
-    <string id="DI_INTEL_ROGUERY_CHARM_CAN_BUILD_TO" text="roguery  §  charm  §  can build to"/>
+    <string id="DI_INTEL_ROGUERY_CHARM_CAN_BUILD_TO" text="roguery  ·  charm  ·  can build to"/>
     <string id="DI_INTEL_SABOTAGE_GARRISON_2" text="Sabotage a garrison"/>
     <string id="DI_INTEL_SCOUT_THEIR_ARMIES_2" text="Scout their armies"/>
     <string id="DI_INTEL_SEND_2" text="Send"/>
@@ -351,7 +352,7 @@
     <string id="DI_INTEL_SPREAD_DISSENT_2" text="Spread dissent"/>
     <string id="DI_INTEL_STRENGTH_COLUMN" text="STRENGTH"/>
     <string id="DI_INTEL_SUCCESS" text="Success"/>
-    <string id="DI_INTEL_SUCCESS_CAUGHT_OVERALL" text="success  §  caught, overall"/>
+    <string id="DI_INTEL_SUCCESS_CAUGHT_OVERALL" text="success  ·  caught, overall"/>
     <string id="DI_INTEL_THEIR_COUNTER_INTELLIGENCE_COUNTERINTELLIGENCE_2" text="Their counter-intelligence, {COUNTERINTELLIGENCE}"/>
     <string id="DI_INTEL_THEIR_RULER_LEARNS_WHOSE_AGENTS_THEY_CAUGHTTEXT_2" text="{CAUGHTTEXT} Their ruler learns whose agents they were."/>
     <string id="DI_INTEL_THERE_IS_NO_FOREIGN_REALM_WITH_2" text="There is no foreign realm with a town to send anyone to."/>

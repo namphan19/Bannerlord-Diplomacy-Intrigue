@@ -85,7 +85,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         [DataSourceProperty] public string PactChooserTitleText => DiText.T("DI_DIPLOMACY_WHAT_THEIR_COURT_WOULD_SIGN", "What their court would sign");
         [DataSourceProperty] public string ProposeText => DiText.T("DI_DIPLOMACY_PROPOSE", "Propose");
         [DataSourceProperty] public string ValuationExplainsText => DiText.T("DI_DIPLOMACY_ONE_VALUATION_THREE_BARS_THE", "One valuation, three bars: the gold mark is the bar each treaty has to clear. This is the number their court uses - there is no separate figure for the player.");
-        [DataSourceProperty] public string VanillaRowsNoteText => DiText.T("DI_DIPLOMACY_THE_GAMES_OWN_ROWS_STRENGTH", "§ § §  the game's own rows (strength, fiefs, clans) continue below  § § §");
+        [DataSourceProperty] public string VanillaRowsNoteText => DiText.T("DI_DIPLOMACY_THE_GAMES_OWN_ROWS_STRENGTH", "· · ·  the game's own rows (strength, fiefs, clans) continue below  · · ·");
 
         [DataSourceProperty]
         public string DiHeaderWord

@@ -89,7 +89,7 @@ namespace DiplomacyIntrigue.UI.ClanScreen
         [DataSourceProperty] public string WeeklyBudgetLabelText => DiText.T("DI_INTEL_WEEKLY_BUDGET", "Weekly budget");
         [DataSourceProperty] public string RecallText => DiText.T("DI_INTEL_RECALL", "Recall");
         [DataSourceProperty] public string PostHandlerText => DiText.T("DI_INTEL_POST_A_HANDLER", "Post a handler");
-        [DataSourceProperty] public string OddsLegendText => DiText.T("DI_INTEL_SUCCESS_CAUGHT_OVERALL", "success  §  caught, overall");
+        [DataSourceProperty] public string OddsLegendText => DiText.T("DI_INTEL_SUCCESS_CAUGHT_OVERALL", "success  ·  caught, overall");
         [DataSourceProperty] public string PlanOperationText => DiText.T("DI_INTEL_PLAN_THIS_OPERATION", "Plan this operation");
         [DataSourceProperty] public string OperationsTitleText => DiText.T("DI_INTEL_UNDER_WAY", "Under way");
         [DataSourceProperty] public string NoMarksWarningText => DiText.T("DI_INTEL_NOBODY_OR_NOWHERE_TO_AIM_AT", "Nobody or nowhere the operation could be aimed at.");
@@ -100,7 +100,7 @@ namespace DiplomacyIntrigue.UI.ClanScreen
         [DataSourceProperty] public string BackText => DiText.T("DI_INTEL_BACK", "Back");
         [DataSourceProperty] public string WhereLabelText => DiText.T("DI_INTEL_WHERE", "Where");
         [DataSourceProperty] public string WhoLabelText => DiText.T("DI_INTEL_WHO", "Who");
-        [DataSourceProperty] public string SkillsCanBuildToText => DiText.T("DI_INTEL_ROGUERY_CHARM_CAN_BUILD_TO", "roguery  §  charm  §  can build to");
+        [DataSourceProperty] public string SkillsCanBuildToText => DiText.T("DI_INTEL_ROGUERY_CHARM_CAN_BUILD_TO", "roguery  ·  charm  ·  can build to");
         [DataSourceProperty] public string HandlerRecallNoteText => DiText.T("DI_INTEL_A_HANDLER_GIVEN_A_PARTY_MADE_A", "A handler who is given a party, made a governor or taken prisoner is recalled, and the network sits idle until another goes.");
         [DataSourceProperty] public string CancelText => DiText.T("DI_INTEL_CANCEL", "Cancel");
 

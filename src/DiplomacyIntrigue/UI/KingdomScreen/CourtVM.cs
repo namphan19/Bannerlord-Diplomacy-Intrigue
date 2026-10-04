@@ -104,7 +104,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         [DataSourceProperty] public string NoBlocsText => DiText.T("DI_COURT_NO_FRACTION_HAS_FORMED_NO_CAUSE", "No faction has formed. No cause is pulling hard enough on any clan to organise it.");
         [DataSourceProperty] public string BlocExplainsText => DiText.T("DI_COURT_A_BLOC_VOTES_AS_ONE_ITS_MEMBERS", "A bloc votes as one: its members back whatever its leader wants. A clan at loyalty 70 or above ignores its bloc and votes with the crown.");
         [DataSourceProperty] public string OfficesTitleText => DiText.T("DI_COURT_OFFICES_CHOOSE_A_SEAT_THEN_A", "OFFICES - CHOOSE A SEAT, THEN A HOUSE");
-        [DataSourceProperty] public string CourtTitleText => DiText.T("DI_COURT_COURT", "Court");
+        [DataSourceProperty] public string CourtTitleText => DiText.T("DI_COURT_THE_COURT", "The court");
         [DataSourceProperty] public string ClanColumnText => DiText.T("DI_COURT_CLAN_COLUMN", "CLAN");
         [DataSourceProperty] public string BlocColumnText => DiText.T("DI_COURT_BLOC_COLUMN", "BLOC");
         [DataSourceProperty] public string InfluenceColumnText => DiText.T("DI_COURT_INFL_COLUMN", "INFL.");

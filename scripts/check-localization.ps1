@@ -24,6 +24,12 @@
       6. A translation whose {VARIABLES} are not exactly the English's (AC4). A language that
          drops {KINGDOM} shows a blank where a name belongs.
       7. A key without the DI_ prefix, so one of ours can never shadow a vanilla string id.
+      8. A source file that spells the engine's id form wrong. The only place that builds it is
+         Core/DiText.cs, and on 2026-10-04 it built `{DI_}DI_REALM_REALM_2` instead of
+         `{=DI_REALM_REALM_2}` - the prefix inside the braces instead of in front of the key. Every
+         one of the 641 keys was broken and every screen drew the raw token, while rules 1-7 all
+         passed, because the bug is in the format the engine is handed rather than in the key or
+         the English. Rule 8 is the whole reason the ninth rule exists.
       9. A duplicate id inside one strings file.
 
     Reported, not failed: a literal left in a prefab's Text attribute (rule below). A widget's
@@ -136,6 +142,43 @@ foreach ($file in $files) {
 foreach ($key in ($used.Keys | Sort-Object)) {
     if ($key -notlike "DI_*") {
         $problems.Add("$key ($($used[$key].Sites[0])): a key without the DI_ prefix, so it could shadow a vanilla string id.")
+    }
+}
+
+# ----- How the id is spelled -------------------------------------------------------------------
+
+# The one thing no other rule here can see: the shape of the string handed to the engine. Rules 1-7
+# all read the key and the English as two literals, and they are right about both, while the code
+# built `{DI_}DI_REALM_REALM_2` - the prefix inside the braces rather than in front of the key -
+# and the engine drew that token verbatim on every screen (2026-10-04, live, all 641 keys).
+#
+# The rule is deliberately narrow, because it is the only shape rule here that is not about a key:
+# Core/DiText.cs is the one place in the mod that spells an id, it has to spell the sigil `{=` as a
+# literal, and no file may contain the string the mistake produces. An earlier draft refused any
+# `"{"` concatenated with anything, which also refuses the legitimate `{VARIABLE}` placeholder in
+# DiText.Substitute - a rule that cannot tell an id from a placeholder is a rule that cries wolf,
+# and a rule people learn to skip is worse than no rule.
+$diText = Join-Path $Source "Core\DiText.cs"
+if (Test-Path $diText) {
+    $diTextSource = [regex]::Replace((Get-Content $diText -Raw), '(?m)//.*$', '')
+    # A string literal that opens with `{=` - a brace, an equals sign. Two fixed characters, never
+    # assembled: the one thing about the engine's id form that can be read off the source.
+    $sigil = [regex]::Match($diTextSource, '"\{=[^"]*"')
+    if ($sigil.Success) {
+        Write-Host "Core\DiText.cs spells the engine's id sigil as a literal ($($sigil.Value) + key + `"}`" + english). Rule 8 satisfied." -ForegroundColor DarkGray
+    }
+    else {
+        $problems.Add("Core\DiText.cs does not spell the engine's id sigil as a literal. It must build `{=KEY}English`: a brace, an equals sign, the key, then the brace. This is the bug of 2026-10-04, where `{DI_}KEY` left every screen drawing a raw token.")
+    }
+}
+
+foreach ($file in $files) {
+    $shape = [regex]::Replace((Get-Content $file.FullName -Raw), '(?m)//.*$', '')
+    foreach ($m in [regex]::Matches($shape, '\$"[^"\r\n]*\{DI_\}')) {
+        $problems.Add("$($file.Name): `$`"$($m.Value)`" puts DI_ inside the braces. The engine's id form is `{=DI_...}`.")
+    }
+    foreach ($m in [regex]::Matches($shape, '"\{DI_\}"')) {
+        $problems.Add("$($file.Name): `"$($m.Value)`" is not the engine's id form. It is `{=DI_...}` - the sigil is `{=`, and it is what the resolver reads.")
     }
 }
 

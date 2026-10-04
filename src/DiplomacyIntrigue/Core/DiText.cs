@@ -32,10 +32,21 @@ namespace DiplomacyIntrigue.Core
     internal static class DiText
     {
         /// <summary>
-        /// Every key starts with this. <c>scripts/check-localization.ps1</c> refuses a key without
-        /// it, so a vanilla id can never be shadowed by one of ours.
+        /// The two characters that open a localization id in the engine's own format: a brace and
+        /// an equals sign, then the key, then the brace that closes it - <c>{=DI_REALM_REALM}Realm</c>.
+        ///
+        /// This was <c>"{" + KeyPrefix + "}" + key</c>, which builds <c>{DI_}DI_REALM_REALM</c>:
+        /// the prefix sat inside the braces instead of in front of the key, so the engine read a
+        /// token with no sigil and no id at all. Nothing local noticed: the English file held the
+        /// key, the check read key and English and passed, and every screen drew
+        /// <c>{DI_}DI_REALM_REALM_2}Realm</c> where it should have drawn "Realm". Found in game on
+        /// 2026-10-04, the first session after the conversion - which is the argument for ST-7.
+        ///
+        /// Every key starts with <c>DI_</c>, so one of ours can never shadow a vanilla string id.
+        /// <c>scripts/check-localization.ps1</c> refuses a key without it, rule 7; this class does
+        /// not repeat the rule, it only builds the string.
         /// </summary>
-        internal const string KeyPrefix = "DI_";
+        internal const string Open = "{=";
 
         /// <summary>
         /// The localized text as a <see cref="TextObject"/>, for the engine's own signatures that
@@ -43,7 +54,7 @@ namespace DiplomacyIntrigue.Core
         /// </summary>
         internal static TextObject O(string key, string english, params (string Name, object Value)[] vars)
         {
-            var text = new TextObject("{" + KeyPrefix + "}" + key + "}" + english);
+            var text = new TextObject(Open + key + "}" + english);
             for (var i = 0; i < vars.Length; i++)
                 text.SetTextVariable(vars[i].Name, AsText(vars[i].Value));
             return text;
