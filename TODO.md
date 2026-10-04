@@ -140,7 +140,16 @@ re-rolled after a reload (now saved, `SpyMission` 12); stale figures in six desi
       left column (a long sphere explanation runs into the block below it) and the Court tab's
       right column (the "Make amends" button over the loyalty line). They belong with the
       Kingdom-UI loose ends above.
-- [ ] **Vietnamese** - separate, [story 4.2](docs/stories/4.2-vietnamese.md), after 4.1 ships.
+- [ ] **Vietnamese** - separate, [story 4.2](docs/stories/4.2-vietnamese.md). **Started 2026-10-04 on
+      `feature/4.1-localization`**, because 4.1's ST-4 and ST-6 exist. ST-1 (on disk) and ST-2 (the
+      patch's terms, read from 23,808 of its strings) are **done**; D3 settled by the lead's decision
+      to follow the patch (town *thị trấn*, fief *lãnh thổ*, ruler *người cai trị*, realm tab *vương
+      quốc*, court tab *triều đình*). **AC2 is true by construction**: `deploy.ps1` removes the `VI`
+      folder when the community patch is absent, so no patch means no folder. **ST-3 is not started -
+      852 keys** - and rule 11 of `check-localization.ps1` now fails the build on a part-filled folder,
+      so it is all-or-nothing. Two things are not ours: ST-5's AC1 needs the launcher set to
+      Vietnamese, and ST-6 is the lead's review. `Hold` is a trap: the patch translates it "Giữ",
+      which is the verb "to hold", not our concept.
 
 ## Pending work
 

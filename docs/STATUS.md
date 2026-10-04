@@ -32,6 +32,34 @@ for any length of time**:
 **Next:** one more long run (12 years) to see the civil-war count fall from 14 to a few, with the analyser and the log counts of `claimant_arose` and "takes up arms".
 **Phase 4 (2026-10-03):** the incompatibility warning, release defaults (telemetry off), the tick-budget
 instrumentation and the Workshop update are built and shipped in 0.3.0, **not run in game** (TODO).
+
+**Story 4.2 (Vietnamese) started 2026-10-04, on `feature/4.1-localization`.** The lead's language,
+and the one translation a native reader can check. **ST-1 and ST-2 are done**; ST-3 (852 keys) is not
+started. What ST-2 produced, from the community patch's own files joined to English through their
+hashed ids: **Kingdom → Vương quốc, Clan → Gia tộc, Influence → Ảnh hưởng, Army → Quân đội, Party →
+Đội quân, Siege → Vây hãm, Town → Thị trấn, Diplomacy → Ngoại giao, Ruler → Người cai trị, Tribute →
+Cống nạp, Vassal → Chư hầu, Loyalty → Lòng trung thành, Renown → Danh tiếng, Denars → Denars.**
+D3 settled by the lead's decision to follow the patch, which also fixed fief (*lãnh thổ*), the realm
+tab (*vương quốc*) and the court tab (*triều đình*). `Hold` is the trap in it: the patch translates it
+**"Giữ"**, because in the game `hold` is the verb "to hold", and our `Hold` is a different concept.
+Eight terms the patch does not have at all are ours to choose.
+
+**AC2 is now true by construction rather than by argument.** `deploy.ps1` removes our `VI` folder from
+the deployed module when `Modules/Native/ModuleData/Languages/VI/language_data.xml` is absent, so a
+player without the patch gets no folder and the language list cannot gain an entry. The finding that
+would have tested it is **still not verified** - it needs a second install, and this machine has the
+patch. Our `VI/language_data.xml` carries the patch's exact `id="Vietnamese"`; a different id would
+define a second Vietnamese rather than join theirs.
+
+**Rule 11 was missing from 4.1 and is now added:** a language folder is empty or complete, never
+part-way. Every rule the script already had would have passed a file holding 400 of 852 keys, and a
+missing key falls back to English *silently*, so the result reads as a broken mod rather than an
+unfinished one. It makes ST-3 all-or-nothing.
+
+**Two parts of 4.2 are not the tech lead's.** ST-5's AC1 needs the game set to Vietnamese, and the
+language lives in the official launcher's UI (4.1 §6a); ST-6 is explicitly the lead's review. Both will
+be handed over marked *not verified*.
+
 **Localization has now been run in game, three times** (story 4.1 ST-7, 2026-10-04; `di_phase1_full`
 and `di_hegemony_1166`, v1.5.3, local build, 1920x1080): **852 keys**. The first session found **four
 defects that no check in the repo could see**, all now fixed and each re-seen on screen -
