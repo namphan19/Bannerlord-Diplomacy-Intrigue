@@ -44,22 +44,24 @@ sẵn, nên ta theo bản vá (4.2 R3):
 `Hold` của ta là khái niệm riêng (độ ràng buộc giữa chư hầu và bá chủ), và **không được theo bản
 vá ở chỗ này**. Giữ "Hold" như bảng dưới.
 
-## Chỗ xung đột, chờ anh quyết (4.2 D3)
+## Chỗ xung đột - **đã quyết 2026-10-04**, theo bản vá
 
-Bản vá và bảng thuật ngữ cũ không khớp. Mặc định theo bản vá, nhưng năm chỗ này là khái niệm
-chính trị nên anh chọn:
+Bản vá và bảng thuật ngữ cũ không khớp ở năm chỗ. Mặc định của 4.2 R3 là theo bản vá, và lead đã
+giao quyết định. Chốt như sau:
 
-| Thuật ngữ | Bản vá | Bảng cũ của ta | Ghi chú |
-|---|---|---|---|
-| town | Thị trấn | thành phố | "thị trấn" đúng nghĩa game; "thành phố" rộng hơn |
-| fief | lãnh thổ / lãnh địa (tab) | thái ấp | ba cách, và bản vá tự dùng ba từ khác nhau |
-| ruler | Người cai trị | vua | "vua" là danh xưng, "người cai trị" là chức vụ |
-| realm (tab) | không có | — | của riêng ta |
-| court (tab) | không có | — | của riêng ta |
+| Thuật ngữ | Quyết | Lý do |
+|---|---|---|
+| town | **thị trấn** | bản vá dùng; "thành phố" rộng hơn nghĩa game. castle và village khớp bản vá sẵn |
+| fief | **lãnh thổ** | bản vá dùng "lãnh thổ" trong văn xuôi; "lãnh địa" chỉ là nhãn tab Fiefs của vanilla, ta không có tab đó. Bỏ "thái ấp" |
+| ruler | **người cai trị** | bản vá dùng; "cai trị" là chức vụ, "vua" là danh xưng, và mod nói về chức vụ |
+| realm (tab) | **vương quốc** | bản vá không có. Tiếng Anh tách "realm" (của mình) khỏi "kingdom" (nước khác) để tránh lẫn; tiếng Việt không cần tách, và một từ cho cả hai đọc tự nhiên hơn |
+| court (tab) | **triều đình** | bản vá dùng đúng từ này trong văn xuôi |
+
+**Hệ quả cần nhớ khi dịch:** `realm` và `kingdom` cùng dịch là **vương quốc**. Đừng sửa lại thành hai
+từ cho khác nhau. Câu nào cần phân biệt thì dùng cấu trúc câu, không dùng từ.
 
 Bản vá **không có** cho: hegemon, grievance, casus belli, handler, counter-intelligence,
-treasurer, manor, settler, hold (khái niệm của ta), realm, court (tab). Mười từ này hoàn toàn
-do ta chọn.
+treasurer, manor, settler, hold (khái niệm của ta). Tám từ này do ta chọn, theo bảng dưới.
 
 ## Chiến tranh và hòa bình
 

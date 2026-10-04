@@ -62,5 +62,31 @@ $deployArgs = $buildArgs + "-p:DeployToGame=true"
 dotnet @deployArgs
 if ($LASTEXITCODE -ne 0) { throw "Deploy failed with exit code $LASTEXITCODE." }
 
+# 3b. The Vietnamese folder only ships where the community patch is.
+#
+# Vietnamese is not a vanilla language: its id, its name and its strings come from the
+# community patch, and so does the font that draws the accents (4.2 R2, R5). Without the
+# patch there is no Vietnamese language for our strings to join, and AC2 wants the language
+# list to look exactly as it did. Whether the launcher would actually gain an entry is 4.2
+# ST-1(b) and it is NOT verified - it needs a second install, and this machine has the patch.
+#
+# So rather than ship it and hope, the folder is removed from the deployed module when the
+# patch is absent. That makes AC2 true by construction instead of by argument, and it cannot
+# be got wrong by a player: no patch, no folder. Nothing of the patch's is touched or read
+# apart from one file's existence.
+if ($GameFolder) {
+    $patch = Join-Path $GameFolder "Modules\Native\ModuleData\Languages\VI\language_data.xml"
+    $ours = Join-Path $GameFolder "Modules\DiplomacyIntrigue\ModuleData\Languages\VI"
+    if (-not (Test-Path $patch) -and (Test-Path $ours)) {
+        Remove-Item $ours -Recurse -Force
+        Write-Host ""
+        Write-Host "VI removed from the deployed module: no Vietnamese community patch on this" -ForegroundColor Yellow
+        Write-Host "install, so the folder would join a language that does not exist (story 4.2 AC2)." -ForegroundColor Yellow
+    } elseif (Test-Path $patch) {
+        Write-Host ""
+        Write-Host "VI kept: the community patch is present, so the folder joins its language." -ForegroundColor Green
+    }
+}
+
 Write-Host ""
 Write-Host "Deployed. Enable 'Diplomacy & Intrigue' in the launcher." -ForegroundColor Green

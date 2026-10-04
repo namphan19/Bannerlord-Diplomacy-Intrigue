@@ -219,7 +219,22 @@ if (Test-Path $languagesRoot) {
         $stringsPath = Join-Path $dir.FullName "di_strings.xml"
         if (-not (Test-Path $stringsPath)) { continue }
 
-        foreach ($m in [regex]::Matches((Get-Content $stringsPath -Raw), '<string\s+id="(?<id>[^"]*)"\s+text="(?<text>[^"]*)"\s*/>')) {
+        $raw = Get-Content $stringsPath -Raw
+        $entries = [regex]::Matches($raw, '<string\s+id="(?<id>[^"]*)"\s+text="(?<text>[^"]*)"\s*/>')
+
+        # Rule 11: a language folder is empty or complete, never part-way.
+        #
+        # A missing key falls back to the English the DiText call carries in the code, and a
+        # fallback is invisible - it looks exactly like the mod ignoring the language (4.1 AC2).
+        # So a folder with 400 of 852 entries passes every other rule in this script and ships a
+        # screen that is half one language and half another, and nothing in a session in English
+        # would catch it. This is the one shape where "some is better than none" is false: a
+        # half-translated screen reads as broken, not as unfinished.
+        if ($entries.Count -gt 0 -and $entries.Count -lt $used.Count) {
+            $problems.Add("$($dir.Name)/di_strings.xml has $($entries.Count) of $($used.Count) keys. A language folder is empty or complete: every missing key falls back to English silently, and a half-translated screen reads as broken rather than unfinished.")
+        }
+
+        foreach ($m in $entries) {
             $id = $m.Groups['id'].Value
             if (-not $used.ContainsKey($id)) {
                 $problems.Add("$($dir.Name)/di_strings.xml: $id is translated but no DiText call asks for it.")

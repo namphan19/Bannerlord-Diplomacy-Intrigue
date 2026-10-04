@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Vietnamese. Not a vanilla language: the id, the name and the strings come from the community
+  patch, and so does the font that draws the accents (story 4.2 R2). The id has to match the
+  patch's exactly or this defines a second Vietnamese instead of joining theirs.
+
+  Shipped only where the patch is: deploy.ps1 removes this folder from the deployed module when
+  Native/ModuleData/Languages/VI/language_data.xml is absent, so a player without the patch gets
+  no folder at all (story 4.2 AC2). In the repository it is always present, so the key set is
+  reviewable and check-localization.ps1 can compare it with EN.
+
+  Until someone fills it in this changes nothing: every key falls back to the English the DiText
+  call carries in the code. See docs/localization.md for how, and docs/stories/4.2-vietnamese.md
+  §9 for the terms the patch and the lead settled.
+-->
+<LanguageData id="Vietnamese" name="Tiếng Việt" subtitle_extension="vi"
+              supported_iso="vi,vie,vi-VN"
+              text_processor="TaleWorlds.Localization.TextProcessor.LanguageProcessors.VietnameseTextProcessor"
+              under_development="true">
+  <LanguageFile xml_path="VI/di_strings.xml" />
+</LanguageData>
