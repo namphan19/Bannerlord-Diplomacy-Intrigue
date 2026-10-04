@@ -390,7 +390,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             // a bug, so the honest phrasing is that no claim was ever pressed.
             var text = war.Justification == CasusBelliType.None ? DiText.T("DI_DIPLOMACY_WAR_WITH_NO_CLAIM_ON_RECORD_2", "War with no claim on record") : DiText.T("DI_DIPLOMACY_WAR_OVER_LEGITIMACY_JUSTIFICATION_LEGITIMACY_2",
                 "War over {JUSTIFICATION}   legitimacy {LEGITIMACY}",
-                ("JUSTIFICATION", war.Justification),
+                ("JUSTIFICATION", CasusBelli.NameOf(war.Justification)),
                 ("LEGITIMACY", CasusBelli.Legitimacy(war.Justification).ToString("0.00")));
 
             if (war.IsObligationWar && war.CalledBy != null)
@@ -417,18 +417,18 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                         break;
                     case TreatyType.DefensivePact:
                         parts.Add(DiText.T("DI_DIPLOMACY_DEFENSIVEPACT_EACH_OF_YOU_JOINS_WHEN_2",
-                            "DefensivePact - each of you joins when the other is attacked"));
+                            "Defensive pact - each of you joins when the other is attacked"));
                         break;
                     case TreatyType.NonAggressionPact:
                         parts.Add(DiText.T("DI_DIPLOMACY_NONAGGRESSIONPACT_NEITHER_OF_YOU_MAY_DECLARE_2",
-                            "NonAggressionPact - neither of you may declare war while it stands"));
+                            "Non-aggression pact - neither of you may declare war while it stands"));
                         break;
                     case TreatyType.TributaryPact:
                         parts.Add(treaty.TributePayer == them ? DiText.T("DI_DIPLOMACY_TRIBUTARYPACT_FROM_THEY_BUY_THE_PEACE_TRIBUTEAMOUNT_NAME_2",
-                            "TributaryPact ({TRIBUTEAMOUNT} from {NAME}) - they buy the peace, they owe you no army",
+                            "Tributary pact ({TRIBUTEAMOUNT} from {NAME}) - they buy the peace, they owe you no army",
                             ("TRIBUTEAMOUNT", treaty.TributeAmount),
                             ("NAME", them.Name)) : DiText.T("DI_DIPLOMACY_TRIBUTARYPACT_TO_YOU_BUY_THE_PEACE_TRIBUTEAMOUNT_NAME_2",
-                            "TributaryPact ({TRIBUTEAMOUNT} to {NAME}) - you buy the peace, they owe you no army",
+                            "Tributary pact ({TRIBUTEAMOUNT} to {NAME}) - you buy the peace, they owe you no army",
                             ("TRIBUTEAMOUNT", treaty.TributeAmount),
                             ("NAME", them.Name)));
                         break;

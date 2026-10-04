@@ -475,8 +475,10 @@ namespace DiplomacyIntrigue.UI.Negotiation
                 Add(land, PeaceTermKind.Land, fief,
                     fief.Name.ToString(),
                     _weAreWinner
-                        ? "Your " + (claim != null ? claim.Type.ToString() : "claim")
-                          + " is what entitles you to ask for land at all."
+                        ? DiText.T("DI_PEACE_YOUR_CLAUSE_IS_WHAT_ENTITLES_YOU_TO",
+                            "Your {CLAUSE} is what entitles you to ask for land at all.",
+                            ("CLAUSE", claim != null ? CasusBelli.NameOf(claim.Type) : DiText.T("DI_PEACE_AN_UNSTATED_CLAIM", "unstated claim")))
+                          + "."
                         : "Cede it and it changes hands on signing.",
                     winner, loser, t => t.FiefsCeded.Add(captured));
             }

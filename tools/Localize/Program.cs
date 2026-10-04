@@ -347,7 +347,7 @@ namespace Localize
                 foreach (var call in tree.GetRoot().DescendantNodes().OfType<InvocationExpressionSyntax>())
                 {
                     var callee = Calls.Name(call);
-                    if (callee != "DiText.T" && callee != "DiText.O") continue;
+                    if (!Calls.IsDiText(callee)) continue;
 
                     var args = call.ArgumentList.Arguments;
                     if (args.Count < 2) continue;

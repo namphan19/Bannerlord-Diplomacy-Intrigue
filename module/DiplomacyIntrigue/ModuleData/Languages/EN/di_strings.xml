@@ -203,11 +203,20 @@
     <string id="DI_DIPLOMACY_BREAKS_THE_PACT_TRUST_WITH_THEM_TRUSTTREATYBROKENVICTIM_2" text="Breaks the pact. {TRUSTTREATYBROKENVICTIM} trust with them, {TRUSTTREATYBROKENOBSERVER} with every other court."/>
     <string id="DI_DIPLOMACY_CALLED_IN_BY_NAME_2" text="   called in by {NAME}"/>
     <string id="DI_DIPLOMACY_CALL_TO_ARMS_2" text="Call to Arms"/>
+    <string id="DI_DIPLOMACY_CASUS_AN_EXPOSED_NETWORK" text="an exposed network"/>
+    <string id="DI_DIPLOMACY_CASUS_AVENGE_A_RAID" text="avenge a raid"/>
+    <string id="DI_DIPLOMACY_CASUS_A_BROKEN_TREATY" text="a broken treaty"/>
+    <string id="DI_DIPLOMACY_CASUS_A_CLAIMANT" text="a claimant"/>
+    <string id="DI_DIPLOMACY_CASUS_A_TRADE_DISPUTE" text="a trade dispute"/>
+    <string id="DI_DIPLOMACY_CASUS_CONQUEST" text="conquest"/>
+    <string id="DI_DIPLOMACY_CASUS_HONOURING_AN_ALLIANCE" text="honouring an alliance"/>
+    <string id="DI_DIPLOMACY_CASUS_NO_CLAIM_ON_RECORD" text="no claim on record"/>
+    <string id="DI_DIPLOMACY_CASUS_RECLAIM_ANCESTRAL_LAND" text="reclaim ancestral land"/>
     <string id="DI_DIPLOMACY_COERCION_NOT_NEGOTIATION_OUR_CLAIM_MAKES_2" text="Coercion, not negotiation: our claim makes the pretext and our strength makes the argument - the same demand the AI makes."/>
     <string id="DI_DIPLOMACY_COURT_THEM_2" text="Court them"/>
     <string id="DI_DIPLOMACY_DECLARE_INDEPENDENCE_2" text="Declare independence"/>
     <string id="DI_DIPLOMACY_DECLARE_WAR_2" text="Declare war"/>
-    <string id="DI_DIPLOMACY_DEFENSIVEPACT_EACH_OF_YOU_JOINS_WHEN_2" text="DefensivePact - each of you joins when the other is attacked"/>
+    <string id="DI_DIPLOMACY_DEFENSIVEPACT_EACH_OF_YOU_JOINS_WHEN_2" text="Defensive pact - each of you joins when the other is attacked"/>
     <string id="DI_DIPLOMACY_DEFENSIVE_PACT" text="Defensive pact"/>
     <string id="DI_DIPLOMACY_DEFENSIVE_PACT_2" text="Defensive pact"/>
     <string id="DI_DIPLOMACY_DEMAND_TRIBUTE_2" text="Demand tribute"/>
@@ -225,7 +234,7 @@
     <string id="DI_DIPLOMACY_KNEEL_TO_THEM" text="Kneel to them"/>
     <string id="DI_DIPLOMACY_KNEEL_TO_THEM_2" text="Kneel to them"/>
     <string id="DI_DIPLOMACY_MAKE_PEACE_2" text="Make peace"/>
-    <string id="DI_DIPLOMACY_NONAGGRESSIONPACT_NEITHER_OF_YOU_MAY_DECLARE_2" text="NonAggressionPact - neither of you may declare war while it stands"/>
+    <string id="DI_DIPLOMACY_NONAGGRESSIONPACT_NEITHER_OF_YOU_MAY_DECLARE_2" text="Non-aggression pact - neither of you may declare war while it stands"/>
     <string id="DI_DIPLOMACY_NON_AGGRESSION_PACT" text="Non-aggression pact"/>
     <string id="DI_DIPLOMACY_NON_AGGRESSION_PACT_2" text="Non-aggression pact"/>
     <string id="DI_DIPLOMACY_NOTHING_STANDS_ABOVE_AN_ALLIANCE_SO_2" text="Nothing stands above an alliance, so there is nothing left to propose here."/>
@@ -262,8 +271,8 @@
     <string id="DI_DIPLOMACY_TOARRAY" text="{TOARRAY}"/>
     <string id="DI_DIPLOMACY_TOARRAY_2" text="{TOARRAY}"/>
     <string id="DI_DIPLOMACY_TRIBUTARY" text="Tributary"/>
-    <string id="DI_DIPLOMACY_TRIBUTARYPACT_FROM_THEY_BUY_THE_PEACE_TRIBUTEAMOUNT_NAME_2" text="TributaryPact ({TRIBUTEAMOUNT} from {NAME}) - they buy the peace, they owe you no army"/>
-    <string id="DI_DIPLOMACY_TRIBUTARYPACT_TO_YOU_BUY_THE_PEACE_TRIBUTEAMOUNT_NAME_2" text="TributaryPact ({TRIBUTEAMOUNT} to {NAME}) - you buy the peace, they owe you no army"/>
+    <string id="DI_DIPLOMACY_TRIBUTARYPACT_FROM_THEY_BUY_THE_PEACE_TRIBUTEAMOUNT_NAME_2" text="Tributary pact ({TRIBUTEAMOUNT} from {NAME}) - they buy the peace, they owe you no army"/>
+    <string id="DI_DIPLOMACY_TRIBUTARYPACT_TO_YOU_BUY_THE_PEACE_TRIBUTEAMOUNT_NAME_2" text="Tributary pact ({TRIBUTEAMOUNT} to {NAME}) - you buy the peace, they owe you no army"/>
     <string id="DI_DIPLOMACY_TRIBUTARY_2" text="Tributary"/>
     <string id="DI_DIPLOMACY_TRIBUTARY_PAYS_AND_NOTHING_MORE_VASSAL_2" text="A tributary pays and nothing more. A vassal pays and fights - that is a peace-table demand, not a proposal."/>
     <string id="DI_DIPLOMACY_TRUCE_2" text="Truce"/>
@@ -515,6 +524,7 @@
     <string id="DI_PEACE_ABOVE_THE_CLIFF_WINNER_ASKS_FOR_NEGOTIATIONLINE_FOR_2" text="Above the cliff a winner asks for standing, not coin. Below it, only for what coin can buy. {NEGOTIATIONLINE} (war score {FOR})."/>
     <string id="DI_PEACE_ACCEPT_THESE_TERMS_2" text="Accept these terms"/>
     <string id="DI_PEACE_AN_INDEMNITY_OF_DENARS_GOLD_2" text="An indemnity of {GOLD} denars"/>
+    <string id="DI_PEACE_AN_UNSTATED_CLAIM" text="unstated claim"/>
     <string id="DI_PEACE_ASKS_FOR_PEACE_NAME_2" text="{NAME} asks for peace"/>
     <string id="DI_PEACE_CANCEL" text="Cancel"/>
     <string id="DI_PEACE_EVERY_LORD_OF_YOURS_THEY_HOLD_2" text="Every lord of yours they hold walks free."/>
@@ -566,6 +576,7 @@
     <string id="DI_PEACE_WORTH_2" text="worth"/>
     <string id="DI_PEACE_WORTH_REFUSING_2" text="Worth refusing"/>
     <string id="DI_PEACE_WORTH_TAKING_2" text="Worth taking"/>
+    <string id="DI_PEACE_YOUR_CLAUSE_IS_WHAT_ENTITLES_YOU_TO" text="Your {CLAUSE} is what entitles you to ask for land at all."/>
     <string id="DI_PEACE_YOUR_OWN_CONDITION_STORY_CONDITION_2" text="{STORY}   -   your own condition: {CONDITION}"/>
     <string id="DI_PEACE_YOU_ARE_ASKING_MORE_THAN_THIS_LEFT_2" text="You are asking {LEFT} more than this war has earned. Drop a term, or fight on."/>
     <string id="DI_REALM_AGES_OUT_IN_DAYS_MAX_2" text="ages out in {MAX} days"/>

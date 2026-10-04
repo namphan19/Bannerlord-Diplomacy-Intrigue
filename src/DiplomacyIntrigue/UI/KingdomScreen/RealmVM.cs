@@ -875,7 +875,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                         "They tore up a pact in {GETYEAR}. A war on this needs no excuse.",
                         ("GETYEAR", claim.AcquiredOn.GetYear)) : "";
                     rows.Add(new DiRealmClaimVM(
-                        claim.Type.ToString(),
+                        CasusBelli.NameOf(claim.Type),
                         claim.Legitimacy.ToString("0.00"),
                         claim.Legitimacy >= 0.5f ? PositiveColor : NegativeColor,
                         claim.AllowsFiefDemands,

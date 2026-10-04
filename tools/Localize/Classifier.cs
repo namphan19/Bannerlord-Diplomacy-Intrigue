@@ -284,11 +284,9 @@ private string ReasonNotPlayerFacing(Candidate c, ExpressionSyntax expr, SyntaxN
             // been converted too - `cond ? T(..) : T(..)` is itself a string expression, and
             // without this every pass would wrap the last one again. Together they are what makes
             // the tool idempotent.
-            if (expr.Ancestors().OfType<InvocationExpressionSyntax>()
-                .Any(i => Calls.Name(i) == "DiText.T" || Calls.Name(i) == "DiText.O"))
+            if (expr.Ancestors().OfType<InvocationExpressionSyntax>().Any(Calls.IsDiText))
                 return "already keyed: an argument of DiText";
-            if (expr.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>()
-                .Any(i => Calls.Name(i) == "DiText.T" || Calls.Name(i) == "DiText.O"))
+            if (expr.DescendantNodesAndSelf().OfType<InvocationExpressionSyntax>().Any(Calls.IsDiText))
                 return "already keyed: it holds a DiText call";
 
 if (IsCaseLabel(expr)) return "switch label: an id the code compares, not a word";
@@ -1267,6 +1265,24 @@ private string PlayerFacingSink(ExpressionSyntax expr)
     /// <summary>How a call is named, so a rule can say <c>Log.Notify</c> and not a local <c>Show</c>.</summary>
     internal static class Calls
     {
+        /// <summary>
+        /// Whether a named call is <c>DiText.T</c> or <c>DiText.O</c>, however it was written.
+        ///
+        /// The name comes back fully qualified from a member access, so a file that says
+        /// <c>Core.DiText.T</c> - which <c>CasusBelli.cs</c> does, the way it already writes
+        /// <c>Core.ModState</c> - reads as "Core.DiText.T" and matched nothing. That is not a
+        /// cosmetic miss: <c>emit</c> left the key out of the English file and the check's
+        /// idempotence guard would not have recognised the call as already keyed, so the next
+        /// <c>rewrite</c> would have keyed it a second time. Two readers of the same call must
+        /// agree, so the test is on the tail of the name, not on a using directive.
+        /// </summary>
+        public static bool IsDiText(string name) =>
+            name != null
+            && (name.EndsWith("DiText.T", StringComparison.Ordinal)
+                || name.EndsWith("DiText.O", StringComparison.Ordinal));
+
+        public static bool IsDiText(InvocationExpressionSyntax call) => IsDiText(Name(call));
+
         public static string Name(InvocationExpressionSyntax call)
         {
             switch (call.Expression)
