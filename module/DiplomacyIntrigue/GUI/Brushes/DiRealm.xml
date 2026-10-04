@@ -78,12 +78,10 @@
 
   <!-- Card backgrounds (story 4.3). These are the five colours DiRealmPanel.xml already
        carried as Color= on a plain backdrop Widget; nothing visual is new. They exist as
-       brushes because a card's background has to follow the height of its own text:
-       a plain Widget with HeightSizePolicy="CoverChildren" measures to zero, and its
-       backdrop therefore has to be a StretchToParent child - which, per 0b.1, then makes
-       the card claim its parent's whole height. A ListPanel is the container that does
-       measure its children, and a ListPanel paints its own Brush. Same pixel, one less
-       guess about how tall the text will be. -->
+       brushes because a card's background has to follow the height of its own text: a
+       StretchToParent backdrop child makes a CoverChildren card claim its parent's whole
+       height (UI-INTEGRATION 0b.1), so the card paints its own Brush instead. Only a
+       BrushListPanel does that - a plain ListPanel has no Brush property at all. -->
   <Brush Name="DiRealm.Card">
     <Layers>
       <BrushLayer Name="Default" Sprite="BlankWhiteSquare_9" Color="#201A1388" />

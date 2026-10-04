@@ -203,7 +203,7 @@
                           <Children>
                             <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent">
                               <Children>
-                                <TextWidget WidthSizePolicy="Fixed" SuggestedWidth="70" HeightSizePolicy="StretchToParent"
+                                <TextWidget WidthSizePolicy="Fixed" SuggestedWidth="88" HeightSizePolicy="StretchToParent"
                                     MarginLeft="8" Brush="DiRealm.Body" Text="@Title" />
                                 <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
                                     Brush="DiRealm.Small" Text="@HolderText" />
@@ -314,8 +314,22 @@
                      only the header card narrows to {Selected}. Narrowing the whole column
                      would make {Terms} resolve against the clan row, find nothing, and render
                      an empty column with no error: the data-context trap in UI-INTEGRATION.md 1. -->
-                <ListPanel WidthSizePolicy="Fixed" SuggestedWidth="310" HeightSizePolicy="StretchToParent"
-                    IsVisible="@HasSelection" StackLayout.LayoutMethod="VerticalTopToBottom">
+                <!-- Story 4.3 ST-6: this column was a bare vertical list. With two grievances at
+                     a price each it ran past the frame and over the bottom bar (seen live,
+                     di_offices_test, Koltit). It scrolls like the civil-war band below: a Widget
+                     holding the ScrollablePanel and its scrollbar. -->
+                <Widget WidthSizePolicy="Fixed" SuggestedWidth="310" HeightSizePolicy="StretchToParent"
+                    IsVisible="@HasSelection">
+                  <Children>
+                <ScrollablePanel WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                    AutoHideScrollBars="true" ClipRect="SelClipRect"
+                    InnerPanel="SelClipRect\SelList" VerticalScrollbar="..\SelScrollbar\Scrollbar">
+                  <Children>
+                <Widget Id="SelClipRect" WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                    ClipContents="true">
+                  <Children>
+                <ListPanel Id="SelList" WidthSizePolicy="Fixed" SuggestedWidth="272" HeightSizePolicy="CoverChildren"
+                    StackLayout.LayoutMethod="VerticalTopToBottom">
                   <Children>
 
                     <ListPanel DataSource="{Selected}" WidthSizePolicy="StretchToParent"
@@ -324,10 +338,13 @@
                         <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
                             HeightSizePolicy="CoverChildren" MarginBottom="6" Brush="DiRealm.Title"
                             Text="@Name" />
-                        <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="96">
+                        <!-- Story 4.3 ST-6: was Fixed at 96px. @BandDescription is a sentence and wraps to
+                             as many lines as the language needs, so the 76px left inside the margins
+                             was only ever enough for English; the card now measures its content and
+                             paints its own Brush (ListPanel has no Brush: BrushListPanel does). -->
+                        <BrushListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                            Brush="DiRealm.Card">
                           <Children>
-                            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
-                                Sprite="BlankWhiteSquare_9" Color="#201A1388" />
                             <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
                                 MarginLeft="14" MarginRight="14" MarginTop="10" MarginBottom="10"
                                 StackLayout.LayoutMethod="VerticalTopToBottom">
@@ -353,7 +370,7 @@
                               </Children>
                             </ListPanel>
                           </Children>
-                        </Widget>
+                        </BrushListPanel>
                       </Children>
                     </ListPanel>
 
@@ -445,15 +462,15 @@
                                             Text="@OutcomeText" />
                                         <!-- 56 high: at 310 wide the price always takes two lines of the button
                                              font, and 40 let the second line spill over the frame (live 2026-09-26). -->
-                                        <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="56"
+                                        <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
                                             MarginTop="5">
                                           <Children>
                                             <ButtonWidget DoNotPassEventsToChildren="true" WidthSizePolicy="StretchToParent"
-                                                HeightSizePolicy="StretchToParent" Brush="ButtonBrush2" UpdateChildrenStates="true"
+                                                HeightSizePolicy="CoverChildren" Brush="ButtonBrush2" UpdateChildrenStates="true"
                                                 IsEnabled="@AmendEnabled" Command.Click="ExecuteAmend">
                                               <Children>
-                                                <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
-                                                    MarginLeft="6" MarginRight="6" Brush="Kingdom.GeneralButtons.Text"
+                                                <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                                    MarginLeft="6" MarginRight="6" MarginTop="9" MarginBottom="9" Brush="Kingdom.GeneralButtons.Text"
                                                     Text="@AmendText" />
                                               </Children>
                                             </ButtonWidget>
@@ -517,14 +534,14 @@
                           <Children>
                             <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
                                 HeightSizePolicy="CoverChildren" MarginTop="4" Brush="DiRealm.Body" Text="@AppointOutcome" />
-                            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="56" MarginTop="5">
+                            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginTop="5">
                               <Children>
                                 <ButtonWidget DoNotPassEventsToChildren="true" WidthSizePolicy="StretchToParent"
-                                    HeightSizePolicy="StretchToParent" Brush="ButtonBrush2" UpdateChildrenStates="true"
+                                    HeightSizePolicy="CoverChildren" Brush="ButtonBrush2" UpdateChildrenStates="true"
                                     IsEnabled="@AppointEnabled" Command.Click="ExecuteAppoint">
                                   <Children>
-                                    <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
-                                        MarginLeft="6" MarginRight="6" Brush="Kingdom.GeneralButtons.Text" Text="@AppointText" />
+                                    <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                        MarginLeft="6" MarginRight="6" MarginTop="9" MarginBottom="9" Brush="Kingdom.GeneralButtons.Text" Text="@AppointText" />
                                   </Children>
                                 </ButtonWidget>
                               </Children>
@@ -537,6 +554,14 @@
                     </ListPanel>
                   </Children>
                 </ListPanel>
+                  </Children>
+                </Widget>
+                  </Children>
+                </ScrollablePanel>
+                <Standard.VerticalScrollbar Id="SelScrollbar" HeightSizePolicy="StretchToParent"
+                    HorizontalAlignment="Right" MarginLeft="2" MarginRight="2" />
+                  </Children>
+                </Widget>
               </Children>
             </ListPanel>
 

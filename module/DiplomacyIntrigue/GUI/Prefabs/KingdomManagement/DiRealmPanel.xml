@@ -21,16 +21,16 @@
           <Children>
 
             <!-- Standing strip -->
-            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="84"
-                MarginTop="14" MarginLeft="24" MarginRight="24">
+            <!-- Story 4.3: was Fixed at 84px over a StretchToParent backdrop. The standing line,
+                 the four-figure line and the patron line each wrap in a longer language, so the
+                 strip takes its height from them and paints its own Brush. -->
+            <BrushListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                MarginTop="14" MarginLeft="24" MarginRight="24" Brush="DiRealm.CardStrip">
               <Children>
-                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
-                    Sprite="BlankWhiteSquare_9" Color="#24201888" />
-
-                <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
                     MarginLeft="16" MarginRight="16" MarginTop="8" MarginBottom="8">
                   <Children>
-                    <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                    <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
                         StackLayout.LayoutMethod="VerticalTopToBottom">
                       <Children>
                         <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren">
@@ -72,7 +72,7 @@
                   </Children>
                 </ListPanel>
               </Children>
-            </Widget>
+            </BrushListPanel>
 
             <!-- Scrollable body: wars strip, then the three columns -->
             <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
@@ -105,18 +105,20 @@
                                 HeightSizePolicy="CoverChildren"
                                 StackLayout.LayoutMethod="VerticalTopToBottom">
                               <ItemTemplate>
-                                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed"
-                                    SuggestedHeight="74" MarginBottom="6">
+                                <!-- Story 4.3: was Fixed at 74px; @Detail and @ConditionText are
+                                     sentences and wrap in a longer language. Same card shape as
+                                     the claims column: the accent is the outer widget's own
+                                     sprite and the card sits 4px in from it. -->
+                                <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                    MarginBottom="6" Sprite="BlankWhiteSquare_9" Color="@AccentColor">
                                   <Children>
-                                    <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
-                                        Sprite="BlankWhiteSquare_9" Color="#201A1388" />
-                                    <Widget WidthSizePolicy="Fixed" SuggestedWidth="4" HeightSizePolicy="StretchToParent"
-                                        Sprite="BlankWhiteSquare_9" Color="@AccentColor" />
-
-                                    <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
-                                        MarginLeft="16" MarginRight="14" MarginTop="7" MarginBottom="7">
+                                   <BrushListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                       MarginLeft="4" Brush="DiRealm.CardSolid">
+                                    <Children>
+                                    <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                        MarginLeft="12" MarginRight="14" MarginTop="7" MarginBottom="7">
                                       <Children>
-                                        <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
+                                        <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
                                             StackLayout.LayoutMethod="VerticalTopToBottom">
                                           <Children>
                                             <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
@@ -132,7 +134,7 @@
                                         </ListPanel>
 
                                         <Widget WidthSizePolicy="Fixed" SuggestedWidth="92"
-                                            HeightSizePolicy="StretchToParent" VerticalAlignment="Center">
+                                            HeightSizePolicy="CoverChildren" VerticalAlignment="Center">
                                           <Children>
                                             <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
                                                 VerticalAlignment="Center" StackLayout.LayoutMethod="VerticalTopToBottom">
@@ -166,6 +168,8 @@
                                         </Widget>
                                       </Children>
                                     </ListPanel>
+                                    </Children>
+                                   </BrushListPanel>
                                   </Children>
                                 </Widget>
                               </ItemTemplate>
@@ -450,30 +454,20 @@
                                     <ListPanel DataSource="{ClaimGroups}" WidthSizePolicy="StretchToParent"
                                         HeightSizePolicy="CoverChildren" StackLayout.LayoutMethod="VerticalTopToBottom">
                                       <ItemTemplate>
-                                        <!-- F2, story 4.3. The backdrop used to be a
-                                             StretchToParent child of this CoverChildren card,
-                                             which per UI-INTEGRATION 0b.1 makes a card claim
-                                             its parent's whole height: measured live, 538px of
-                                             card for 79px of text. F3 - the scroll length and
-                                             the blank space beside this column - was that
-                                             same card, not the three-column arrangement.
+                                        <!-- F2, story 4.3. The backdrop used to be a StretchToParent child of this
+                                             CoverChildren card, which per UI-INTEGRATION 0b.1 makes a card
+                                             claim its parent's whole height: measured live, 538px of card
+                                             for 79px of text. F3 - the scroll length and the blank space
+                                             beside this column - was that same card.
 
-                                             The card is a ListPanel because that is the only
-                                             Gauntlet container whose CoverChildren height
-                                             measures its children, so its background is the
-                                             ListPanel's own Brush, not a stretching child.
-
-                                             The accent stripe is the one thing still wrong
-                                             here and is left alone on purpose: a
-                                             StretchToParent child of a CoverChildren parent
-                                             is given the available height rather than the
-                                             measured one (it painted about 350px down a
-                                             100px card), VerticalAlignment has only
-                                             Top/Center/Bottom (ApiDump, v1.5.3), and
-                                             ClipContents trimmed neither a ListPanel nor a
-                                             plain Widget wrapper. A full-height stripe in a
-                                             bound colour cannot be sized to its card in
-                                             Gauntlet. Story 4.3 ST-3, and D4. -->
+                                             The card shape every striped card in this file now has: the
+                                             OUTER Widget is the accent (its own Sprite, Color=@AccentColor,
+                                             CoverChildren), and a BrushListPanel inset by the stripe's
+                                             width paints the card and holds the text. Nothing stretches,
+                                             so the stripe is exactly as tall as the card. (ListPanel has no
+                                             Brush property at all - ApiDump - so a card that paints a
+                                             background must be a BrushListPanel.) The inner brush is a
+                                             Solid one so the realm colour does not show through it. -->
                                         <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginBottom="6"
                                             Sprite="BlankWhiteSquare_9" Color="@AccentColor">
                                           <Children>

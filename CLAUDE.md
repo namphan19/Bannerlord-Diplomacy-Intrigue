@@ -102,6 +102,14 @@ whose branches are not both plain text. Story 4.1 §9a has the rest. Two more ru
 same reading, and one of them (`ShapeVerdict` must run *after* the boundary rule, never before) is
 why a shape check that relabels rows must come last in `Describe`.
 
+**`ListPanel` has no `Brush`; a prefab that gives it one paints nothing and logs nothing.** Story 4.3's first
+pass built eight card backgrounds on `<ListPanel Brush=...>` and the cards lost their backgrounds - faint ones,
+so two screenshots checked for height did not show it. It is `BrushListPanel` (ApiDump on
+`BaseTypes.ListPanel`: no Brush member). The same pass concluded a full-height accent stripe "cannot exist
+on a content-sized card" and put that to the lead as a design decision; it can, by making the stripe the
+*outer* widget (UI-INTEGRATION §0b.5-0b.7). **When a tool or a dev says Gauntlet cannot do something, read the
+screenshot for what *else* is missing before taking it to the lead as a trade-off.**
+
 **A lookup that silently never matches is worse than a wrong rule.** `TextProducers.IsTextProducer`
 compared `src/<module>/Diplomacy/ExhaustionBands.cs|Name` against a set built by stripping the module
 directory, so **not one entry in `text-producers.txt` had ever matched**. The five exhaustion band

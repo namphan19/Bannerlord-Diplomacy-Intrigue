@@ -14,50 +14,23 @@ Last completed measurement: **balance run 08** (statecraft on/off) — [balance/
 Branch `development`. `main` sits well behind on purpose: cutting a release is Phase 4's job.
 opencode was removed from the project on 2026-09-27 (CLAUDE.md §7).
 
-## Start here — 2026-10-04: story 4.3 (the Realm tab) — D4 and D5 answered, one defect left open
+## Start here — 2026-10-04: story 4.3 (Realm and Court layout) — built, verified live, awaiting the lead's look
 
-**D4 — answered yes (lead, 2026-10-04).** Five card brushes are in: `DiRealm.Card`, `CardDark`,
-`CardFaint`, `CardStrip`, `CardRow`. A card whose background follows wrapped, translated text cannot
-keep its background as a `StretchToParent` child (§0b.1) and a plain `Widget` has no background of
-its own, so the card must be a `ListPanel`, and a `ListPanel` paints a `Brush`. The colours are
-byte-identical to the ones already in `DiRealmPanel.xml`; nothing visual changes.
+Branch `feature/4.3-realm-tab-layout` (the dev's five commits plus the review's). **What the review
+changed, because it matters to anyone who read the dev's notes:** the dev's D4 premise was wrong -
+`ListPanel` has no `Brush` property, so the five card brushes painted nothing and the cards had lost
+their backgrounds (invisible at a glance: they are faint). They are `BrushListPanel` now. And D5, "a
+full-height accent stripe cannot exist on a content-sized card", was wrong too: the stripe is the card's
+**outer** widget and the card sits inside it (UI-INTEGRATION §0b.6), so it needs no decision from the
+lead and nothing about how a card looks changed.
 
-**D5 — answered (a), leave the stripe, but the reason is stronger than first recorded.** A
-full-height accent stripe in a bound colour cannot exist on a content-sized card in Gauntlet; five
-approaches were measured and all five fail (story §9c, §9h). D5 (b) drop the stripe, or D5 (c) draw
-it into the card's `Brush` and lose the per-realm colour, are the only fixes. **Both are D1 — how a
-card looks — and neither is the dev's to take. Still open.**
-
-**What is fixed and verified live**, on `di_phase1_full` and `di_offices_test`, 1280x720, v1.5.3,
-mod log clean:
-
-- **F1** — the `{Spheres}` card was `Fixed` at 40px and held **120px** of text; 79px of it printed
-  over the "Spheres on the map" heading and over the gap note.
-- **F2** — the `{ClaimGroups}` card was a `CoverChildren` card with a stretching backdrop: **538px
-  of card for 79px of text**.
-- **F3 was F2**, not the three-column arrangement.
-- **The Statecraft rows** — the same §0b.1 shape, so each of the six office rows claimed a viewport.
-  Now **24-25px a row, all six inside 130px**. This was the lead's question on 2026-10-04.
-- **`{Agreements}`** — was `Fixed` at 64px and **already overrunning in English**; `@DetailText`'s
-  two wrapped lines now sit inside a card that ends with them.
-
-**Open defect, and it is the one the lead is looking at.** The accent stripe measures **369px on a
-card whose content is 57px**, and it crosses the Statecraft and counter-intelligence blocks. An
-earlier note in this file called that cosmetic; **it is not** (story §9h). A four-pixel line painting
-over two unrelated sections is a breach of R1's spirit.
-
-**Still not done.** `{Vassals}` is converted but **has never been seen on screen** — it only draws
-for a player with vassals, and `load_save` will not switch a running campaign. `{Wars}` (74) and the
-standing strip (84) stay `Fixed` on purpose: with D5 (a) their stripe has no ceiling, and converting
-them is the regression recorded in story §9f. ST-5 (DE/RU/CNs) and ST-6 (the Court tab's "Make
-amends") are untouched. R3's 47-57px of blank in columns 2 and 3 needs D1's shape change to clear.
-Every measured number: [stories/4.3-realm-tab-layout.md](stories/4.3-realm-tab-layout.md) §9.
-
-**A Gauntlet fact worth keeping** (not in CLAUDE.md §1 yet): a `StretchToParent` child of a
-`CoverChildren` parent is given the **available** height, not the measured one; `VerticalAlignment`
-has no `Stretch`; and `ClipContents` only clips when a `ScrollablePanel` drives it, so on a card it
-does nothing. Together those are why a card can only be content-sized if its background is its own
-`Brush`.
+**Verified live** (v1.5.3, 2560x1440, German fixture, mod log clean each time): every card on the Realm
+tab is content-sized with its stripe exactly its height - wars, vassals (first time seen), spheres, claims,
+agreements, the tribute block, the standing strip, the Statecraft rows - and the Court tab's selected-house
+card, "Make amends" button and column 3 (now scrolls, was running over the bottom bar) are right.
+**Not verified:** Russian and Simplified Chinese (the fixture is German, 14 keys); a real 1920x1080
+session; scrolling (the bridge cannot scroll); the Fabrications and Caught cards (no data on the saves).
+Story §9i has the numbers and what was left.
 
 ## Start here — 2026-10-03: run 11 answered and built; a long run to check it
 
