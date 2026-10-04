@@ -32,6 +32,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("statecraft", "diplomacy")]
         public static string StatecraftReport(List<string> args)
         {
+            using var english = DiText.English();
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;
 
@@ -112,6 +113,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_set_skill", "diplomacy")]
         public static string TestSetSkill(List<string> args)
         {
+            using var english = DiText.English();
             if (!CheatsAllowed("test_set_skill", out var cheatRefusal)) return cheatRefusal;
             if (CoreBehavior.State == null) return NoCampaign;
             var parts = SplitOnPipe(args);
@@ -175,6 +177,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_add_perk", "diplomacy")]
         public static string TestAddPerk(List<string> args)
         {
+            using var english = DiText.English();
             if (!CheatsAllowed("test_add_perk", out var cheatRefusal)) return cheatRefusal;
             if (CoreBehavior.State == null) return NoCampaign;
             var parts = SplitOnPipe(args);
@@ -212,6 +215,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_statecraft", "diplomacy")]
         public static string TestStatecraft(List<string> args)
         {
+            using var english = DiText.English();
             if (!CheatsAllowed("test_statecraft", out var cheatRefusal)) return cheatRefusal;
             var settings = Settings.Current;
             var arg = args == null || args.Count == 0 ? "" : args[0].Trim().ToLowerInvariant();
@@ -231,6 +235,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_player_join", "diplomacy")]
         public static string TestPlayerJoin(List<string> args)
         {
+            using var english = DiText.English();
             if (!CheatsAllowed("test_player_join", out var cheatRefusal)) return cheatRefusal;
             if (CoreBehavior.State == null) return NoCampaign;
             if (args == null || args.Count == 0) return "Usage: diplomacy.test_player_join <kingdom>";
@@ -261,6 +266,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_imprison", "diplomacy")]
         public static string TestImprison(List<string> args)
         {
+            using var english = DiText.English();
             if (!CheatsAllowed("test_imprison", out var cheatRefusal)) return cheatRefusal;
             if (CoreBehavior.State == null) return NoCampaign;
             var parts = SplitOnPipe(args);
@@ -287,6 +293,7 @@ namespace DiplomacyIntrigue.Core
         [CommandLineFunctionality.CommandLineArgumentFunction("test_set_legitimacy", "diplomacy")]
         public static string TestSetLegitimacy(List<string> args)
         {
+            using var english = DiText.English();
             if (!CheatsAllowed("test_set_legitimacy", out var cheatRefusal)) return cheatRefusal;
             var state = CoreBehavior.State;
             if (state == null) return NoCampaign;

@@ -62,12 +62,12 @@ namespace DiplomacyIntrigue.Statecraft
         {
             switch (portfolio)
             {
-                case Portfolio.Ruler: return "Ruler";
-                case Portfolio.Envoy: return "Envoy";
-                case Portfolio.Steward: return "Steward";
-                case Portfolio.Treasurer: return "Treasurer";
-                case Portfolio.Spymaster: return "Spymaster";
-                default: return "Watch";
+                case Portfolio.Ruler: return DiText.T("DI_STATECRAFT_TITLE_RULER", "Ruler");
+                case Portfolio.Envoy: return DiText.T("DI_STATECRAFT_TITLE_ENVOY", "Envoy");
+                case Portfolio.Steward: return DiText.T("DI_STATECRAFT_TITLE_STEWARD", "Steward");
+                case Portfolio.Treasurer: return DiText.T("DI_STATECRAFT_TITLE_TREASURER", "Treasurer");
+                case Portfolio.Spymaster: return DiText.T("DI_STATECRAFT_TITLE_SPYMASTER", "Spymaster");
+                default: return DiText.T("DI_STATECRAFT_TITLE_WATCH", "Watch");
             }
         }
 
@@ -177,9 +177,21 @@ namespace DiplomacyIntrigue.Statecraft
 
         // ----- Words -----------------------------------------------------------------
 
-        /// <summary>A hero's name, or "you" for the player's own hero - the way every panel speaks to the player.</summary>
+        /// <summary>
+        /// A hero's name, or "you" for the player's own hero - the way every panel speaks to the
+        /// player.
+        ///
+        /// Two words, and they are keys rather than literals. This one method feeds half the mod's
+        /// sentences - Amends, Offices, SideChange, the statecraft terms - so an untranslated "you"
+        /// or "nobody" here puts English inside a translated sentence in a dozen places, and the
+        /// sentence reads as though it were translated. A word is a word in any language, which is
+        /// why this can be keyed while a clause cannot: nothing here has to move relative to the
+        /// words around it beyond second person.
+        /// </summary>
         public static string NameOf(Hero hero)
-            => hero == null ? "nobody" : hero == Hero.MainHero ? "you" : hero.Name.ToString();
+            => hero == null ? DiText.T("DI_STATECRAFT_HERO_NOBODY", "nobody")
+                : hero == Hero.MainHero ? DiText.T("DI_STATECRAFT_HERO_YOU", "you")
+                : hero.Name.ToString();
 
         public static string SkillName(SkillObject skill) => skill?.Name?.ToString() ?? "?";
 

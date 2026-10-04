@@ -116,16 +116,25 @@ namespace DiplomacyIntrigue.Diplomacy
                 case Block.TreatyForbidsIt:
                     var treaty = FirstBlockingTreaty(state, aggressor, defender);
                     return treaty == null
-                        ? "a standing agreement forbids it"
-                        : "the " + treaty.Type + " with " + defender.Name + " forbids it";
+                        ? DiText.T("DI_BLOCK_A_STANDING_AGREEMENT", "a standing agreement forbids it")
+                        : DiText.T("DI_BLOCK_THE_TREATY_FORBIDS_IT",
+                            "the {TREATY} with {DEFENDER} forbids it",
+                            ("TREATY", Models.Treaty.NameInSentence(treaty.Type)),
+                            ("DEFENDER", defender.Name));
                 case Block.ForeignPolicySubordinated:
                     var patron = TreatyRegistry.PatronOf(state, aggressor);
-                    return aggressor.Name + " answers to " + (patron == null ? "a patron" : patron.Name.ToString())
-                           + " and cannot declare war on its own account";
+                    return DiText.T("DI_BLOCK_ANSWERS_TO_A_PATRON",
+                            "{AGGRESSOR} answers to {PATRON} and cannot declare war on its own account",
+                            ("AGGRESSOR", aggressor.Name),
+                            ("PATRON", patron == null
+                                ? DiText.T("DI_BLOCK_A_PATRON", "a patron")
+                                : patron.Name.ToString()));
                 case Block.TargetIsOurPatron:
-                    return defender.Name + " is our patron; defying them is not a routine decision";
+                    return DiText.T("DI_BLOCK_TARGET_IS_OUR_PATRON",
+                        "{DEFENDER} is our patron; defying them is not a routine decision",
+                        ("DEFENDER", defender.Name));
                 default:
-                    return "allowed";
+                    return DiText.T("DI_BLOCK_ALLOWED", "allowed");
             }
         }
 

@@ -38,6 +38,86 @@ stalls with no error anywhere. It has to be dismissed by sending Enter to that w
 there is a ready watcher pattern in the session scratchpad, and the symptom to recognise is
 `games_connect` timing out while the process is alive with that window title.
 
+**The game's language belongs to the official launcher, and `BannerlordConfig.txt` does not set it.**
+`Documents\Mount and Blade II Bannerlord\Configs\BannerlordConfig.txt` line 1 reads `Language=<id>`,
+and it looks like the setting - it is an **output**. On 2026-10-04 12:38 a launch rewrote it to
+English. **A later `games_start` at 19:43 did not touch the file at all** (timestamp still 12:38), so
+"rewritten at every startup" was too strong: it is rewritten when the game could not honour the value.
+That 12:38 launch ran with `under_development="true"` in our `language_data.xml` files, which by IL makes
+`BannerlordConfig.set_Language` fall back to English (story 4.1 review); that flag is gone, so whether
+the rewrite still happens is **not re-tested**. There is no Language entry
+in the in-game Options screen, no console command that sets one (`list_commands` on `lang` and
+`locale`: none), no registry key under `HKCU\Software`, and no attribute containing "lang" in
+`LauncherData.xml`. The language belongs to the **official launcher's UI**, and because the launcher
+hosts the game in its own process (§1), a `games_start` / BLSE Standalone launch bypasses that UI
+and comes up English.
+
+**A language change takes effect without restarting the game** (the lead's session, 2026-10-04), and
+**the game's own log is where you prove any of this**: `C:\ProgramData\Mount and Blade II Bannerlord\logs\rgl_log_<pid>.txt`
+names **every language file it opens, per module**. That log is how AC2 was answered - it shows
+`Native/.../Languages/DE/de_functions.xml` at 11:15:45 and then
+`DiplomacyIntrigue/.../Languages/DE/di_strings.xml` at 11:15:46, so the mod's folder is found and
+read. It also shows a `Languages/VI/` load, because the Vietnamese community patch is installed in
+`Native` on this machine (story 4.2).
+
+**An empty language folder proves nothing.** The 12 non-English folders ship empty on purpose (lead,
+2026-10-03), so with an empty `DE` folder every key falls back to the English the code carries -
+which is R1 working - and a screen full of English is indistinguishable from the mod ignoring the
+language. That is exactly what the lead's first test showed.
+`scripts/localization-fixture.ps1 -Action Write` writes fourteen German keys into the **deployed**
+folder for a look, `-Action Remove` puts the repo's empty file back, and it refuses to write a key
+that is not in `EN` or whose `{VARIABLES}` differ. `deploy.ps1` overwrites the deployed folder, so
+re-run it after a deploy. It is a fixture, not a translation: machine-written and unreviewed, which
+is the same argument the lead accepted for shipping the folders empty.
+
+**`bannerlord.diplomacy.declare_war` reports success when the war was refused.** It answers
+`"Khuzait declared war on Battania"` and nothing happens - the mod refuses a vassal declaring a war
+on its own account, and the refusal is not surfaced. Check with `diplomacy.wars`, which reads our
+own state, not with `kingdom.list_wars`. `campaign.declare_war` behaves the same way, and it says
+`"Faction 2 is eliminated"` for a kingdom that is not in the save.
+
+**Vanilla's Encyclopedia layer crashes v1.5.3 when `diplomacy.test_open_encyclopedia` pushes it.**
+A `NullReferenceException` in `GauntletLayer.IsFocusedOnInput` from
+`SandBox.EncyclopediaData.OnTick`, with the mod log clean and no frames of ours - read live with
+`tools/DumpProbe -- --pid`. The Encyclopedia court page is the one converted screen never seen for
+that reason. Close the dialog with **No** (§1) and the process exits and writes its dump.
+
+**A golden file generated from the code cannot see what the conversion changed.** Story 4.1's
+`artifacts/localization/golden-EN.json` records the English *after* the conversion, so it agrees
+with whatever the conversion produced. What found three damaged strings was reading every literal
+that moved out of a prefab back out of the previous commit (`git show <base>:<prefab>`), matching it
+to the property that replaced it by line number, and comparing that property's English with it:
+88 moved, 4 left as punctuation on purpose, 3 different - a U+00A7 where a U+00B7 had been, and a
+heading that had lost its first word. **Compare against the base commit when a pass rewrites text
+in bulk, not against a file the same pass generated.**
+
+**A tool's own list is a list of things it wants to do, not evidence.** `tools/Localize`'s dry run
+offered 122 strings to key on 2026-10-04 and 32 of them were wrong, three losing English outright: a
+conditional the rewriter would not rewrite was turned into an opaque `{VARIABLE}`, so
+`Clan {NAME}, the crown` came out as `Clan {NAME}{TOLOWERINVARIANT}` and the word left the screen.
+**Read the dry-run list against the source before applying it**, and check the three shapes that are
+wrong for a translation rather than for C#: a template that is nothing but one `{VARIABLE}`, a
+variable whose value is a word or a sentence rather than a number or a name, and a conditional
+whose branches are not both plain text. Story 4.1 §9a has the rest. Two more rules followed from the
+same reading, and one of them (`ShapeVerdict` must run *after* the boundary rule, never before) is
+why a shape check that relabels rows must come last in `Describe`.
+
+**A lookup that silently never matches is worse than a wrong rule.** `TextProducers.IsTextProducer`
+compared `src/<module>/Diplomacy/ExhaustionBands.cs|Name` against a set built by stripping the module
+directory, so **not one entry in `text-producers.txt` had ever matched**. The five exhaustion band
+names and the five band meanings - the most visible words the war rows carry - were reported "not a
+screen", and the story said they were converted. They were not. A wrong rule shouts; a lookup that
+never matches is silent and *hides* work, which is why it survived a day of reading the report.
+**When a report says "not a screen", check that the lookup that decided it can actually return
+true** - print the key it built and the set it searched, once, before believing the verdict.
+
+**Never type a module directory's name.** `DiplomacyIntrigue` is not `DiplomacyIntrague`, and the
+console renders both the same way. A string constant with the wrong spelling produced a second silent
+lookup failure with an identical symptom, which is what made the first one hard to find. Take such
+paths from disk (`Get-ChildItem src -Directory`) or, better, key the logic on the shape of the path -
+`Tail()` reduces any source path to what `text-producers.txt` writes by cutting at the last `src/`
+and dropping the module directory, so no spelling is involved.
+
 **Never force-kill Bannerlord.** `deploy.ps1` refuses to run while the game is open, and
 that guard is the point - the lead may be playing, and a balance run can be hours long. Use
 `mcp__gabs__games_stop`, and only for a session you started. If the game is running and you
@@ -229,6 +309,11 @@ pwsh ./scripts/play.ps1 -Without DiplomacyIntrigue   # same, minus a mod: bisect
 dotnet run --project tools/LoadProbe   # would the game load this assembly?
 dotnet run --project tools/ApiDump -- "TypeNameOrFilter"   # real v1.4.8 API surface
 pwsh ./scripts/check-save-ids.ps1   # the save-data rules of §3, read from source; build and deploy run it first
+pwsh ./scripts/check-localization.ps1   # the key rules of §4, read from source; build and deploy run it too
+dotnet run --project tools/Localize -- report    # every string literal, and whether a player reads it
+dotnet run --project tools/Localize -- rewrite --apply   # key the approved ones; dry run without --apply
+dotnet run --project tools/Localize -- emit --apply      # write Languages/EN from the DiText calls
+dotnet run --project tools/Localize -- prefabs          # the prefab labels that cannot be keyed in place
 scripts/compile-check.sh     # no game on this box (Linux, cloud): compile against NuGet reference assemblies
 pwsh ./scripts/release.ps1   # Nexus zip from the committed tree, DLL built against v1.4.8 refs
 pwsh ./scripts/workshop.ps1 -ChangeNotes <file>   # Steam Workshop update from release.ps1's folder; -Upload publishes
@@ -477,11 +562,28 @@ it meets the statecraft terms. Acts built before it are not retrofitted without 
   alternative, the comment says which alternative and why it lost.
 - Constants live in one file per pillar (`Diplomacy/DiplomacyConstants.cs`) so a balance pass
   edits one file. An un-tuned constant says so in its own doc comment.
-- Player-facing text is written in English as the source. Story 4.1 puts it behind
-  `{=DI_<area>_<slug>}English` keys so the mod follows the game's language setting; **until its
-  ST-6 check exists, new text is still a plain literal, and from the day it exists a new
-  player-facing string without a key fails the build.** Logs, telemetry and `diplomacy.*` output stay
-  English and are never keyed. The design docs are English.
+- Player-facing text is written **through `DiText.T`**, never as a bare literal:
+  `DiText.T("DI_REALM_VASSAL_OF_NAME", "Vassal of {NAME}", ("NAME", patron.Name))`. The English
+  stays in the source as the fallback; `ModuleData/Languages/EN/di_strings.xml` is generated from
+  those calls by `tools/Localize emit`, and **`scripts/check-localization.ps1` fails the build on a
+  key with no entry, an entry nobody uses, a key used for two English texts, and a variable passed
+  and unused or used and unpassed.** Two rules the call sites must keep: a sentence with a number
+  or a name in it is **one call with named variables**, never a concatenation, so word order can
+  change per language; and a value travels as a variable, never typed into the English, because a
+  number on screen is the number the AI used (§3). **A widget's `Text` cannot be keyed**: a
+  prefab's literal must move into a view-model property (`Text="@Property"`), which
+  `tools/Localize prefabs` lists. Logs, telemetry and `diplomacy.*` output stay English and are
+  never keyed. The design docs are English. `docs/localization.md` is the guide for a translator.
+  **Text for the log, the telemetry or a `diplomacy.*` command is built inside `DiText.English()`**: every
+  command starts with `using var english = DiText.English();` (a new one must), and a log line that embeds
+  a keyed producer (`CourtBands.Name`, `Treaty.NameOf`...) is built in a scope too - otherwise a Deutsch
+  game writes "Gereizt" into an English log line. Never build player-facing text inside one. **An enum is
+  never printed or passed as a variable**: its name reaches the screen (`ReclaimAncestralLand`); use the
+  type's `NameOf` (`CasusBelli.NameOf`, `Treaty.NameOf` / `NameInSentence`, `VassalTribute.NameOf`).
+  **A variable never carries a whole English sentence**: `{WHY}` as a key's whole text translates
+  nothing (rule 14) - use `why ?? DiText.T(key, "...")`, and key each literal a conditional picks from.
+  **Language files**: `ChildNodes[1]` of every `di_strings.xml` must be `<base>` (a comment before it
+  makes the file load nothing) and `language_data.xml` must not set `under_development` (rules 12-13).
 - **Reply to the user in Vietnamese.** The lead writes in Vietnamese; the codebase is not.
 - Any Vietnamese meant to be read (the Vietnamese handbook, player text, write-ups for the lead)
   goes through the `vietnamese-writing` skill (`.claude/skills/vietnamese-writing/`), with its

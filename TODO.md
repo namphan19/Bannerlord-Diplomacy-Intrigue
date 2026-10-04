@@ -83,11 +83,95 @@ re-rolled after a reload (now saved, `SpyMission` 12); stale figures in six desi
       Show those as bands, or accept. Found by package A; left as it was.
 - [ ] **The Kingdom-UI loose ends** - the Realm tab widening the tab strip, `ConcessionLadder`'s
       `townsFirst` flag. Out of this pass by the lead's call.
-- [ ] **Localization (Phase 4)** - about 1,300 player-facing literals, none behind a `TextObject` key.
-      **Decided 2026-10-03:** its own story, [4.1](docs/stories/4.1-localization.md), 10 sub-tasks,
-      starting with the ST-1 spike. Vietnamese is separate, [story 4.2](docs/stories/4.2-vietnamese.md),
-      blocked on 4.1. Until it ships the pages say "English only" (the Nexus page's
-      "ready for translation" was untrue and is gone).
+- [ ] **Realm tab layout** - [story 4.3](docs/stories/4.3-realm-tab-layout.md), drafted 2026-10-04 on the
+      lead's report (text overlapping, long scrolls past empty space). Three faults seen, causes **not yet
+      found** (ST-1). **D1 and D2 decided 2026-10-04** (tech lead, delegated): the layout may leave the
+      mockup's three equal columns but not its information order or look; the Court tab's "Make amends"
+      overlap is ST-6 of the same story. Ready for a dev.
+- [x] **Localization (Phase 4)** - built 2026-10-03, [story 4.1](docs/stories/4.1-localization.md):
+      852 keys behind `DiText.T` (including all 92 prefab labels, moved into view models), English generated into `Languages/EN/di_strings.xml`, 13 language
+      folders ready to drop a translation into, `scripts/check-localization.ps1` in
+      `build.ps1`/`deploy.ps1`, guide in [docs/localization.md](docs/localization.md).
+      **First live pass 2026-10-04** (story ST-7, §9): six surfaces seen on two saves, and it
+      found **four defects no check could see** - all 653 keys were drawing `{DI_}KEY` because
+      `DiText.O` built the wrong id form; three labels had come out of the conversion with U+00A7
+      where the prefab had U+00B7; the Court panel's heading had lost "The"; and enum names
+      (`ReclaimAncestralLand`, `DefensivePact`) were reaching the screen as text. All four fixed,
+      each re-seen on screen, and rule 8 of the check now blocks the first of them.
+      **Second pass, same day** (story §9a): the tool's remaining 122 candidates were read by eye
+      for the first time and **32 were wrong, three of them losing English outright** - a conditional
+      the tool would not rewrite was being turned into a `{VARIABLE}` with its text deleted. Three
+      rules fixed, then 90 expressions keyed into **118 keys**, for **771** in all, screenshot-checked
+      on the Realm, Court and Diplomacy tabs. A fourth fix - the shape rules used to run before the
+      boundary rule, which mislabelled log lines as "a human has to write this" - is why the
+      backlog below is not 440.
+      **Third pass, same day** (story §9b): a lookup in the tool had **never matched**, so the whole
+      producer list was dead and the exhaustion bands, office titles and grievance titles were being
+      called log text - work this file had claimed was done. Fixing it surfaced 69 real candidates
+      and a **second live enum-on-the-screen defect in eight places** (`Treaty.Type` printed
+      `TributaryPact` on the war row). `Treaty.NameOf` names the six kinds behind keys in one place;
+      **852 keys** now, AC1 re-checked live on all three tabs, 0 ERROR / 0 WARN.
+- [ ] **Language-folder fixes from the 2026-10-04 review of this branch** (done on the branch, none seen in game):
+      (1) `under_development` removed from all 13 `language_data.xml` - by IL it overwrote vanilla's flag
+      and the retail game hides such a language, which could turn a player's own language into English;
+      (2) every `di_strings.xml` had a comment before `<base>`, and `LoadLanguage` reads
+      `ChildNodes[1].FirstChild`, so **no non-English file would ever have loaded a string** - comments now
+      sit inside `<base>`, in the emitter and the fixture too; (3) `release.ps1` drops `VI`, `deploy.ps1`
+      finds the game folder through MSBuild (its VI step never ran). `check-localization.ps1` rules 12-13
+      block (1) and (2). **Second round, same review:** (4) the 28 keys whose whole English was one
+      `{VARIABLE}` are gone - literals keyed where they are chosen (874 keys now; rule 14 blocks the shape);
+      (5) `{cost}` -> `{COST}`, rule 15; (6) `DiText.English()` scope: all 94 `diplomacy.*` commands,
+      `AiEspionage.Plan`, the three war-veto log lines and the Offices appointment line build English whatever
+      the game's language; (7) the enum leaks the review's grep found beside them: `over ReclaimAncestralLand`
+      on the Realm war row, the peace table, the Diplomacy menu, `Renounce our DefensivePact`, `best:
+      <CasusBelliType>` - now `NameOf`; `Treaty.NameInSentence` for mid-sentence names; `StatecraftVM` compared
+      a translated word to "you" - now compares the hero. **Not done:** `{GETSKILLVALUE}`-style variable names
+      (ugly, harmless), `{STANDINGWORD}` lower-cased in code (English rule), `Missions` log reasons that are
+      still English literals. The AC2 look below now also tests (1) and (2).
+- [ ] **AC2: one look at the German fixture, and it is already written.** The plumbing is **proven
+      live** - the lead's session on 2026-10-04 switched the game to Deutsch and the game log shows
+      it opening `DiplomacyIntrigue/ModuleData/Languages/DE/di_strings.xml`, so the mod's folder is
+      found and read. Every screen read English because that file holds no entries: the 12 folders
+      ship empty on purpose, so all 653 keys then took the English fallback (852 now), which is R1 working and
+      looks exactly like the mod ignoring the language. `scripts/localization-fixture.ps1 -Action Write`
+      has put fourteen German keys into the deployed folder; switch the language in the launcher
+      (**no restart needed** - the game reloads every module's strings at runtime), open the Realm
+      and Court tabs, then `-Action Remove`. What to expect is in story §6a. `deploy.ps1` overwrites
+      that folder, so re-run the fixture after a deploy. It is a fixture, not a translation.
+- [ ] **`diplomacy.test_open_encyclopedia` crashes the game on v1.5.3** - a vanilla
+      `NullReferenceException` in `GauntletLayer.IsFocusedOnInput` from
+      `SandBox.EncyclopediaData.OnTick`, mod log clean, no frames of ours (story §9). The
+      Encyclopedia court page is therefore the one converted surface never seen. Worth deciding
+      whether it is our push or vanilla's before anyone runs it again.
+- [ ] **Localization, what is left** (story 4.1, in order of risk):
+      (1) **166 strings**, a human has to write: 78 sentences spread over several statements, 34 with
+      a conditional inside a clause, 31 fragments of a longer sentence, 23 whose `{VARIABLE}` would
+      carry English rather than a value. Plus 18 that cannot be keyed at all (MCM's setting names
+      and hints), and two whole methods held in `exceptions.txt` with their reason:
+      `Power.Describe` (a line assembled in code from a share plus a band clause) and
+      `PeaceTable.DescribeAllowance` (price rows carry their column alignment inside the string, so
+      the padding has to move into the prefab first). Listed as `manual` with a reason in
+      artifacts/localization/inventory.csv; until they are done those particular sentences stay
+      English in every language. The worst files are `UI/DiplomacyMenu.cs`,
+      `UI/EncyclopediaPages/EncyclopediaCourtVM.cs` and `UI/KingdomScreen/RealmVM.cs`.
+      **The figure moved 440 -> 318 -> 162 -> 166.** The first was inflated by the tool counting log
+      lines as screens (§9a); the last rose because a lookup in the tool had never matched and was
+      hiding real work (§9b). **Do not treat any older number here as current.**
+      (2) Then AC6 - fit in the longest language and a CJK one - which needs the launcher session.
+      Two layout overlaps seen in English are pre-existing and not localization: the Realm tab's
+      left column (a long sphere explanation runs into the block below it) and the Court tab's
+      right column (the "Make amends" button over the loyalty line). They belong with the
+      Kingdom-UI loose ends above.
+- [ ] **Vietnamese** - separate, [story 4.2](docs/stories/4.2-vietnamese.md). **Started 2026-10-04 on
+      `feature/4.1-localization`**, because 4.1's ST-4 and ST-6 exist. ST-1 (on disk) and ST-2 (the
+      patch's terms, read from 23,808 of its strings) are **done**; D3 settled by the lead's decision
+      to follow the patch (town *thị trấn*, fief *lãnh thổ*, ruler *người cai trị*, realm tab *vương
+      quốc*, court tab *triều đình*). **AC2 is true by construction**: `deploy.ps1` removes the `VI`
+      folder when the community patch is absent, so no patch means no folder. **ST-3 is not started -
+      852 keys** - and rule 11 of `check-localization.ps1` now fails the build on a part-filled folder,
+      so it is all-or-nothing. Two things are not ours: ST-5's AC1 needs the launcher set to
+      Vietnamese, and ST-6 is the lead's review. `Hold` is a trap: the patch translates it "Giữ",
+      which is the verb "to hold", not our concept.
 
 ## Pending work
 

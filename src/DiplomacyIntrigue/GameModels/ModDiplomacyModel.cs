@@ -121,7 +121,8 @@ namespace DiplomacyIntrigue.GameModels
             {
                 if (Intrigue.InternalWars.IsInternalWarPair(factionDeclaresPeace, factionDeclaredPeace))
                 {
-                    reason = includeReason ? new TextObject("A civil war is not ended by a barter.") : null;
+                    reason = includeReason ? new TextObject(DiText.T("DI_DECISIONS_CIVIL_WAR_IS_NOT_ENDED_BY_2",
+                        "A civil war is not ended by a barter.")) : null;
                     return Forbidden;
                 }
 
@@ -129,7 +130,8 @@ namespace DiplomacyIntrigue.GameModels
                     && VanillaDiplomacy.BothKingdoms(factionDeclaresPeace, factionDeclaredPeace))
                 {
                     reason = includeReason
-                        ? new TextObject("Peace is negotiated at the diplomacy table.")
+                        ? new TextObject(DiText.T("DI_DECISIONS_PEACE_IS_NEGOTIATED_AT_THE_DIPLOMACY_2",
+                            "Peace is negotiated at the diplomacy table."))
                         : null;
                     return Forbidden;
                 }

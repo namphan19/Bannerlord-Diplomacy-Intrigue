@@ -1,0 +1,49 @@
+# tools/Localize - the methods outside UI/ whose return value a player reads.
+#
+# One rule per line:  <file> | <method> | <why a player reads it>
+#
+# Most player-facing text lives under src/DiplomacyIntrigue/UI/, because that is where the mod
+# draws. What is left belongs to the system that computes it: a band's name, a hold term's chip,
+# the meaning of a peace term. Those values reach no engine sink of their own - a view model
+# binds them straight into a property - so nothing but this list can say they are text.
+#
+# That is why the list is written out rather than guessed from method names. A name heuristic
+# ("anything called Describe") swept in AI reasoning strings that only ever reach the log
+# (Missions.ApplyEffect's "why", AiEspionage.BestInBand's out parameter), and a wrong conversion
+# is a wrong English string on a player's screen. The list was built by asking the other way:
+# every Type.Method call made from UI/ whose return type is string or TextObject.
+#
+# A text-producing method that is missing here shows up in the report as "not a screen", which is
+# the AC3 audit's worklist (story 4.1 §5 AC3): an English sentence a player can see.
+
+Diplomacy/ExhaustionBands.cs | Condition | the war row's condition line
+Diplomacy/ExhaustionBands.cs | Describe | the diplomacy screen's exhaustion band
+Diplomacy/ExhaustionBands.cs | Meaning | what a band means in a sentence
+Diplomacy/ExhaustionBands.cs | Name | the band's own name
+Diplomacy/WarScore.cs | Describe | the war row's score line
+Diplomacy/Power.cs | Describe | the Realm tab's strength line
+Diplomacy/PeaceTable.cs | DescribeAllowance | the peace table's allowance line
+Diplomacy/PeaceTable.cs | DescribeIndemnity | the peace table's indemnity line
+Diplomacy/TreatyEnforcement.cs | Explain | why a war action is refused, shown to the player
+Intrigue/CourtBands.cs | Meaning | what a loyalty band means
+Intrigue/CourtBands.cs | MoodName | the band's own name
+Intrigue/CourtBands.cs | Name | the band's own name
+Intrigue/GrievanceRegistry.cs | TitleOf | the grievance's title in the Court tab
+Intrigue/LoyaltyModel.cs | Describe | the court's loyalty line
+Intrigue/SideChange.cs | SideName | which side a house is on
+Statecraft/StatecraftModel.cs | NameOf | an office's name
+Statecraft/StatecraftModel.cs | SkillName | a political skill's name
+Statecraft/StatecraftModel.cs | TitleOf | the office holder's title
+Statecraft/StatecraftModel.cs | ExposureLine | the Intelligence tab's exposure line
+Espionage/Missions.cs | Describe | the mission's type, shown in the Intelligence tab
+Espionage/Missions.cs | Pct | a chance, formatted for a screen
+Espionage/SpyNetworks.cs | Name | the network's own name
+Diplomacy/Summons.cs | Name | the summons' own name
+
+# Added 2026-10-04. The dry run offered keys whose {VARIABLE} carried one of these, which is the
+# hole rule 3 of story 4.1 R3 is about: a value may travel as a variable, a word may not.
+Diplomacy/CasusBelli.cs | NameOf | a war justification as the player reads it
+UI/KingdomScreen/RealmVM.cs | DriftWord | the Hold row's direction, a word spliced into a sentence
+UI/KingdomScreen/RealmVM.cs | Plain | a summons refusal with its marker stripped: a whole sentence
+UI/KingdomScreen/CourtVM.cs | AgendaName | a bloc's name, shown next to its share
+Diplomacy/VassalTribute.cs | NameOf | a tribute level as the player reads it

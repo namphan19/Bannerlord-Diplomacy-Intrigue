@@ -839,15 +839,27 @@ namespace DiplomacyIntrigue.Espionage
         {
             switch (type)
             {
-                case SpyMissionType.ScoutArmies: return "scouting the armies";
-                case SpyMissionType.ReadCourt: return "reading the court";
-                case SpyMissionType.SabotageGarrison: return "sabotaging a garrison";
-                case SpyMissionType.SpreadDissent: return "spreading dissent";
-                case SpyMissionType.BribeLord: return "bribing a lord";
-                case SpyMissionType.ForgeLetters: return "forging letters";
-                case SpyMissionType.StealTreasury: return "robbing the treasury";
-                case SpyMissionType.Assassinate: return "an assassination";
-                default: return type.ToString();
+                case SpyMissionType.ScoutArmies:
+                    return DiText.T("DI_MISSION_SCOUT_ARMIES", "scouting the armies");
+                case SpyMissionType.ReadCourt:
+                    return DiText.T("DI_MISSION_READ_COURT", "reading the court");
+                case SpyMissionType.SabotageGarrison:
+                    return DiText.T("DI_MISSION_SABOTAGE_GARRISON", "sabotaging a garrison");
+                case SpyMissionType.SpreadDissent:
+                    return DiText.T("DI_MISSION_SPREAD_DISSENT", "spreading dissent");
+                case SpyMissionType.BribeLord:
+                    return DiText.T("DI_MISSION_BRIBE_LORD", "bribing a lord");
+                case SpyMissionType.ForgeLetters:
+                    return DiText.T("DI_MISSION_FORGE_LETTERS", "forging letters");
+                case SpyMissionType.StealTreasury:
+                    return DiText.T("DI_MISSION_STEAL_TREASURY", "robbing the treasury");
+                case SpyMissionType.Assassinate:
+                    return DiText.T("DI_MISSION_ASSASSINATE", "an assassination");
+                // Not type.ToString(): that is the enum member name, which cannot be translated and
+                // reads as a bug. A new mission kind shows its identifier until someone gives it a
+                // word, which is the honest failure and not a silent one.
+                default:
+                    return DiText.T("DI_MISSION_OTHER", "another scheme") + " (" + type + ")";
             }
         }
 

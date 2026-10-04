@@ -35,40 +35,53 @@ namespace DiplomacyIntrigue.UI
             var state = CoreBehavior.State;
             if (state == null)
             {
-                Notify("Diplomacy is only available in a campaign.");
+                Notify(DiText.T("DI_MENU_DIPLOMACY_IS_ONLY_AVAILABLE_IN_CAMPAIGN_2",
+                    "Diplomacy is only available in a campaign."));
                 return;
             }
 
             var kingdom = Clan.PlayerClan?.Kingdom;
             if (kingdom == null)
             {
-                Notify("You belong to no kingdom, so you have no foreign policy.");
+                Notify(DiText.T("DI_MENU_YOU_BELONG_TO_NO_KINGDOM_SO_2",
+                    "You belong to no kingdom, so you have no foreign policy."));
                 return;
             }
 
             var isRuler = kingdom.Leader == Hero.MainHero;
             var elements = new List<InquiryElement>
             {
-                Element("wars", "Our wars (" + CountWars(state, kingdom) + ")",
-                    "Exhaustion, war score, and what each war has earned."),
-                Element("treaties", "Our agreements (" + CountTreaties(state, kingdom) + ")",
-                    "Every treaty we hold, and what it obliges."),
-                Element("claims", "Our claims",
-                    "Standing justifications for war, and what they allow."),
-                Element("kingdoms", "Other kingdoms",
-                    "Relations, trust, and what we can propose."),
+                Element("wars", DiText.T("DI_MENU_OUR_WARS_COUNTWARS_2",
+                    "Our wars ({COUNTWARS})",
+                    ("COUNTWARS", CountWars(state, kingdom))),
+                    DiText.T("DI_MENU_EXHAUSTION_WAR_SCORE_AND_WHAT_EACH_2",
+                        "Exhaustion, war score, and what each war has earned.")),
+                Element("treaties", DiText.T("DI_MENU_OUR_AGREEMENTS_COUNTTREATIES_2",
+                    "Our agreements ({COUNTTREATIES})",
+                    ("COUNTTREATIES", CountTreaties(state, kingdom))),
+                    DiText.T("DI_MENU_EVERY_TREATY_WE_HOLD_AND_WHAT_2",
+                        "Every treaty we hold, and what it obliges.")),
+                Element("claims", DiText.T("DI_MENU_OUR_CLAIMS_2", "Our claims"),
+                    DiText.T("DI_MENU_STANDING_JUSTIFICATIONS_FOR_WAR_AND_WHAT_2",
+                        "Standing justifications for war, and what they allow.")),
+                Element("kingdoms", DiText.T("DI_MENU_OTHER_KINGDOMS_2", "Other kingdoms"),
+                    DiText.T("DI_MENU_RELATIONS_TRUST_AND_WHAT_WE_CAN_2",
+                        "Relations, trust, and what we can propose.")),
                 Element("hegemony", DescribeOurStanding(state, kingdom),
-                    "Who answers to whom. A kingdom holding one vassal is a hegemon."),
-                Element("report", "Write a report to file",
-                    "Saves the whole world state to Documents/Mount and Blade II Bannerlord/"
-                    + "DiplomacyIntrigue/Reports, for sharing or for balance work."),
+                    DiText.T("DI_MENU_WHO_ANSWERS_TO_WHOM_KINGDOM_HOLDING_2",
+                        "Who answers to whom. A kingdom holding one vassal is a hegemon.")),
+                Element("report", DiText.T("DI_MENU_WRITE_REPORT_TO_FILE_2", "Write a report to file"),
+                    DiText.T("DI_MENU_SAVES_THE_WHOLE_WORLD_STATE_TO_2",
+                        "Saves the whole world state to Documents/Mount and Blade II Bannerlord/DiplomacyIntrigue/Reports, for sharing or for balance work.")),
             };
 
-            var header = kingdom.Name + (isRuler
-                ? " - you rule here."
-                : " - you are a vassal here, so this is a view only.");
+            var header = isRuler ? DiText.T("DI_MENU_YOU_RULE_HERE_NAME_2",
+                "{NAME} - you rule here.",
+                ("NAME", kingdom.Name)) : DiText.T("DI_MENU_YOU_ARE_VASSAL_HERE_SO_THIS_NAME_2",
+                "{NAME} - you are a vassal here, so this is a view only.",
+                ("NAME", kingdom.Name));
 
-            Show("Diplomacy", header, elements, selected =>
+            Show(DiText.T("DI_MENU_DIPLOMACY_2", "Diplomacy"), header, elements, selected =>
             {
                 switch ((string)selected)
                 {
@@ -87,14 +100,15 @@ namespace DiplomacyIntrigue.UI
             try
             {
                 var path = Core.Telemetry.WriteReport(state);
-                ShowText("Report written", "Saved to:" + Environment.NewLine + path
-                                           + Environment.NewLine + Environment.NewLine
-                                           + "The weekly telemetry lines are in the log beside it.");
+                ShowText(DiText.T("DI_MENU_REPORT_WRITTEN_2", "Report written"), DiText.T("DI_MENU_SAVED_TO_THE_WEEKLY_TELEMETRY_LINES_PATH_2",
+                    "Saved to:\n{PATH}\n\nThe weekly telemetry lines are in the log beside it.",
+                    ("PATH", path)));
             }
             catch (Exception ex)
             {
                 Log.Error("UI", "Writing the report failed.", ex);
-                Notify("Could not write the report - see the log.");
+                Notify(DiText.T("DI_MENU_COULD_NOT_WRITE_THE_REPORT_SEE_2",
+                    "Could not write the report - see the log."));
             }
         }
 
@@ -113,7 +127,7 @@ namespace DiplomacyIntrigue.UI
                 var theirExhaustion = war.ExhaustionOf(enemy);
 
                 sb.AppendLine(kingdom.Name + " against " + enemy.Name);
-                sb.AppendLine("  fought for " + war.DaysElapsed.ToString("0") + " days over " + war.Justification);
+                sb.AppendLine("  fought for " + war.DaysElapsed.ToString("0") + " days over " + CasusBelli.NameOf(war.Justification));
                 sb.AppendLine("  our exhaustion:   " + ourExhaustion.ToString("0.0") + " / 100");
 
                 // Their figure is never shown - only what it means for their behaviour.
@@ -139,12 +153,16 @@ namespace DiplomacyIntrigue.UI
         private static string DescribeOurStanding(ModState state, Kingdom kingdom)
         {
             var patron = Hegemony.PatronOf(state, kingdom);
-            if (patron != null) return "Our standing - vassal of " + patron.Name;
+            if (patron != null) return DiText.T("DI_MENU_OUR_STANDING_VASSAL_OF_NAME_2",
+                "Our standing - vassal of {NAME}",
+                ("NAME", patron.Name));
 
             var vassals = Hegemony.VassalCount(state, kingdom);
-            if (vassals > 0) return "Our standing - hegemon over " + vassals + " kingdom(s)";
+            if (vassals > 0) return DiText.T("DI_MENU_OUR_STANDING_HEGEMON_OVER_KINGDOM_VASSALS_2",
+                "Our standing - hegemon over {VASSALS} kingdom(s)",
+                ("VASSALS", vassals));
 
-            return "Our standing - independent";
+            return DiText.T("DI_MENU_OUR_STANDING_INDEPENDENT_2", "Our standing - independent");
         }
 
         /// <summary>
@@ -235,12 +253,16 @@ namespace DiplomacyIntrigue.UI
         internal static string HoldMeaning(ModState state, Treaty link)
         {
             var hold = Hegemony.HoldOf(link);
-            if (hold >= DiplomacyConstants.HoldRenewThreshold) return "loyal; will renew when the term ends";
-            if (hold >= DiplomacyConstants.HoldPassiveResistanceThreshold) return "serving, but will let the term lapse";
-            if (hold >= DiplomacyConstants.HoldDefianceThreshold) return "resisting; refuses summons and withholds tribute";
+            if (hold >= DiplomacyConstants.HoldRenewThreshold) return DiText.T("DI_MENU_LOYAL_WILL_RENEW_WHEN_THE_TERM_2",
+                "loyal; will renew when the term ends");
+            if (hold >= DiplomacyConstants.HoldPassiveResistanceThreshold) return DiText.T("DI_MENU_SERVING_BUT_WILL_LET_THE_TERM_2",
+                "serving, but will let the term lapse");
+            if (hold >= DiplomacyConstants.HoldDefianceThreshold) return DiText.T("DI_MENU_RESISTING_REFUSES_SUMMONS_AND_WITHHOLDS_TRIBUTE_2",
+                "resisting; refuses summons and withholds tribute");
             // The revolt line moves with the balance of strength, so it is read per link.
-            if (!Hegemony.IsAtBreakingPoint(state, link)) return "defiant; treats with outsiders";
-            return "at breaking point; counting down to revolt";
+            if (!Hegemony.IsAtBreakingPoint(state, link)) return DiText.T("DI_MENU_DEFIANT_TREATS_WITH_OUTSIDERS_2", "defiant; treats with outsiders");
+            return DiText.T("DI_MENU_AT_BREAKING_POINT_COUNTING_DOWN_TO_2",
+                "at breaking point; counting down to revolt");
         }
 
         private static void ShowTreaties(ModState state, Kingdom kingdom)
@@ -310,19 +332,23 @@ namespace DiplomacyIntrigue.UI
 
                 var atWar = kingdom.IsAtWarWith(other);
                 var trust = TrustRegistry.Get(state, kingdom, other);
-                var label = other.Name + (atWar ? "  (at war)" : "");
+                var label = atWar ? DiText.T("DI_MENU_AT_WAR_NAME_2", "{NAME}  (at war)", ("NAME", other.Name)) : other.Name.ToString();
 
                 elements.Add(Element(other, label,
-                    "Trust " + trust.ToString("0") + ". Strength " + other.CurrentTotalStrength.ToString("0") + "."));
+                    DiText.T("DI_MENU_TRUST_STRENGTH_TRUST_CURRENTTOTALSTRENGTH_2",
+                        "Trust {TRUST}. Strength {CURRENTTOTALSTRENGTH}.",
+                        ("TRUST", trust.ToString("0")),
+                        ("CURRENTTOTALSTRENGTH", other.CurrentTotalStrength.ToString("0")))));
             }
 
             if (elements.Count == 0)
             {
-                Notify("There are no other kingdoms left.");
+                Notify(DiText.T("DI_MENU_THERE_ARE_NO_OTHER_KINGDOMS_LEFT_2",
+                    "There are no other kingdoms left."));
                 return;
             }
 
-            Show("Other kingdoms", "Choose a kingdom.", elements,
+            Show(DiText.T("DI_MENU_OTHER_KINGDOMS", "Other kingdoms"), DiText.T("DI_MENU_CHOOSE_KINGDOM_2", "Choose a kingdom."), elements,
                 selected => ShowKingdom(state, kingdom, (Kingdom)selected, isRuler));
         }
 
@@ -331,7 +357,8 @@ namespace DiplomacyIntrigue.UI
             var atWar = us.IsAtWarWith(them);
             var elements = new List<InquiryElement>
             {
-                Element("report", "What we know", "Relations, trust and standing agreements."),
+                Element("report", DiText.T("DI_MENU_WHAT_WE_KNOW_2", "What we know"), DiText.T("DI_MENU_RELATIONS_TRUST_AND_STANDING_AGREEMENTS_2",
+                    "Relations, trust and standing agreements.")),
             };
 
             if (isRuler)
@@ -339,37 +366,37 @@ namespace DiplomacyIntrigue.UI
                 var ourLink = Hegemony.VassalageOf(state, us);
                 if (atWar)
                 {
-                    elements.Add(Element("peace", "Negotiate peace",
-                        "See what this war has earned and offer terms."));
+                    elements.Add(Element("peace", DiText.T("DI_MENU_NEGOTIATE_PEACE_2", "Negotiate peace"),
+                        DiText.T("DI_MENU_SEE_WHAT_THIS_WAR_HAS_EARNED_2",
+                            "See what this war has earned and offer terms.")));
 
                     // Kneeling is the other way out: a free kingdom submits outright, a
                     // vassal's version is a defection (design/04 §12.4.4 and F3).
                     if (ourLink == null)
                     {
                         var can = AiDiplomacy.CanSubmitTo(state, us, them, out var why, out _);
-                        elements.Add(new InquiryElement("submit", "Kneel to them", null, can,
-                            can
-                                ? "The oath is the peace: the war ends and we answer to them."
+                        elements.Add(new InquiryElement("submit", DiText.T("DI_MENU_KNEEL_TO_THEM_2", "Kneel to them"), null, can,
+                            can ? DiText.T("DI_MENU_THE_OATH_IS_THE_PEACE", "The oath is the peace: the war ends and we answer to them.")
                                 : why));
                     }
                     else
                     {
                         var can = AiDiplomacy.CanDefectToAttacker(state, us, them, out var why, out _);
-                        elements.Add(new InquiryElement("defect", "Beg their mercy", null, can,
-                            can
-                                ? "End this war as their vassal - " + ourLink.DominantParty.Name
-                                  + ", which would not defend us, is named the oathbreaker."
+                        elements.Add(new InquiryElement("defect", DiText.T("DI_MENU_BEG_THEIR_MERCY_2", "Beg their mercy"), null, can,
+                            can ? DiText.T("DI_MENU_END_THIS_WAR_AS_THEIR_VASSAL",
+                                    "End this war as their vassal - {PATRON}, which would not defend us, is named the oathbreaker.",
+                                    ("PATRON", ourLink.DominantParty.Name))
                                 : why));
                     }
                 }
                 else
                 {
                     var block = TreatyEnforcement.WhyWarBlocked(state, us, them);
-                    elements.Add(new InquiryElement("war", "Declare war", null,
+                    elements.Add(new InquiryElement("war", DiText.T("DI_MENU_DECLARE_WAR_2", "Declare war"), null,
                         block == TreatyEnforcement.Block.None,
                         block == TreatyEnforcement.Block.None
-                            ? "Puts the question to the court, which votes on it - the same"
-                              + " proposal the Decisions tab offers."
+                            ? DiText.T("DI_MENU_PUTS_THE_QUESTION_TO_THE_COURT",
+                                "Puts the question to the court, which votes on it - the same proposal the Decisions tab offers.")
                             : TreatyEnforcement.Explain(state, us, them, block) + "."));
 
                     AddPactOption(state, us, them, TreatyType.NonAggressionPact, elements);
@@ -377,20 +404,19 @@ namespace DiplomacyIntrigue.UI
                     AddPactOption(state, us, them, TreatyType.Alliance, elements);
 
                     var canTribute = AiDiplomacy.CanDemandTribute(state, us, them, out var whyTribute);
-                    elements.Add(new InquiryElement("tribute", "Demand tribute", null, canTribute,
+                    elements.Add(new InquiryElement("tribute", DiText.T("DI_MENU_DEMAND_TRIBUTE_2", "Demand tribute"), null, canTribute,
                         canTribute
-                            ? DiplomacyConstants.AiDefaultTributePerPeriod
-                              + " per period. Coercion, not negotiation: the claim makes the"
-                              + " pretext and our strength makes the argument."
+                            ? DiText.T("DI_MENU_PER_PERIOD_COERCION_NOT_NEGOTIATION",
+                                "{AMOUNT} per period. Coercion, not negotiation: the claim makes the pretext and our strength makes the argument.",
+                                ("AMOUNT", DiplomacyConstants.AiDefaultTributePerPeriod))
                             : whyTribute));
 
                     if (ourLink == null)
                     {
                         var can = AiDiplomacy.CanSubmitTo(state, us, them, out var why, out _);
-                        elements.Add(new InquiryElement("submit", "Kneel to them", null, can,
-                            can
-                                ? "Their oath for our foreign policy: tribute, troops in their"
-                                  + " wars, protection owed to us."
+                        elements.Add(new InquiryElement("submit", DiText.T("DI_MENU_KNEEL_TO_THEM", "Kneel to them"), null, can,
+                            can ? DiText.T("DI_MENU_THEIR_OATH_FOR_OUR_FOREIGN_POLICY",
+                                    "Their oath for our foreign policy: tribute, troops in their wars, protection owed to us.")
                                 : why));
                     }
 
@@ -400,18 +426,21 @@ namespace DiplomacyIntrigue.UI
                     {
                         var can = Hegemony.CanPoach(state, us, theirLink, out var value, out var why);
                         elements.Add(new InquiryElement("court",
-                            "Court them away from " + theirLink.DominantParty.Name, null, can,
-                            can
-                                ? "They would kneel to us (valued at " + value.ToString("0")
-                                  + "). Taking them means war with " + theirLink.DominantParty.Name + "."
+                            DiText.T("DI_MENU_COURT_THEM_AWAY_FROM_NAME_2",
+                                "Court them away from {NAME}",
+                                ("NAME", theirLink.DominantParty.Name)), null, can,
+                            can ? DiText.T("DI_MENU_THEY_WOULD_KNEEL_TO_US",
+                                    "They would kneel to us (valued at {VALUE}). Taking them means war with {PATRON}.",
+                                    ("VALUE", value.ToString("0")), ("PATRON", theirLink.DominantParty.Name))
                                 : why));
                     }
 
                     // A greedy patron may tear up a vassal's oath and take its lands.
                     if (Hegemony.CouldAnnex(state, us, them))
-                        elements.Add(Element("annex", "Tear up their oath and make war",
-                            "The full price of a breach, then conquest - the same move a greedy"
-                            + " AI patron makes."));
+                        elements.Add(Element("annex", DiText.T("DI_MENU_TEAR_UP_THEIR_OATH_AND_MAKE_2",
+                            "Tear up their oath and make war"),
+                            DiText.T("DI_MENU_THE_FULL_PRICE_OF_BREACH_THEN_2",
+                                "The full price of a breach, then conquest - the same move a greedy AI patron makes.")));
                 }
 
                 // Independence is the one foreign-policy act a vassal keeps for itself,
@@ -419,28 +448,27 @@ namespace DiplomacyIntrigue.UI
                 if (ourLink != null && ourLink.DominantParty == them)
                 {
                     var breaking = Hegemony.IsAtBreakingPoint(state, ourLink);
-                    elements.Add(new InquiryElement("secede", "Declare independence", null, breaking,
-                        breaking
-                            ? "Hold " + Hegemony.HoldOf(ourLink).ToString("0") + ", below the"
-                              + " breaking point of "
-                              + Hegemony.SecessionThreshold(state, ourLink).ToString("0")
-                              + " - a war of independence, and their other resentful vassals"
-                              + " may rise with us."
-                            : "Hold " + Hegemony.HoldOf(ourLink).ToString("0")
-                              + " - above the breaking point of "
-                              + Hegemony.SecessionThreshold(state, ourLink).ToString("0")
-                              + ". Renouncing the oath is always possible; rebellion needs a"
-                              + " realm already breaking."));
+                    elements.Add(new InquiryElement("secede", DiText.T("DI_MENU_DECLARE_INDEPENDENCE_2", "Declare independence"), null, breaking,
+                        breaking ? DiText.T("DI_MENU_HOLD_BELOW_THE_BREAKING_POINT_OF_HOLDOF_SECESSIONTHRESHOLD_2",
+                            "Hold {HOLDOF}, below the breaking point of {SECESSIONTHRESHOLD} - a war of independence, and their other resentful vassals may rise with us.",
+                            ("HOLDOF", Hegemony.HoldOf(ourLink).ToString("0")),
+                            ("SECESSIONTHRESHOLD", Hegemony.SecessionThreshold(state, ourLink).ToString("0"))) : DiText.T("DI_MENU_HOLD_ABOVE_THE_BREAKING_POINT_OF_HOLDOF_SECESSIONTHRESHOLD_2",
+                            "Hold {HOLDOF} - above the breaking point of {SECESSIONTHRESHOLD}. Renouncing the oath is always possible; rebellion needs a realm already breaking.",
+                            ("HOLDOF", Hegemony.HoldOf(ourLink).ToString("0")),
+                            ("SECESSIONTHRESHOLD", Hegemony.SecessionThreshold(state, ourLink).ToString("0")))));
                 }
 
                 var breakable = FirstBreakableTreaty(state, us, them);
                 if (breakable != null)
-                    elements.Add(Element("break", "Renounce our " + breakable.Type,
-                        "Always possible, never free: -" + (-DiplomacyConstants.TrustTreatyBrokenVictim).ToString("0")
-                        + " trust with them, -" + (-DiplomacyConstants.TrustTreatyBrokenObserver).ToString("0")
-                        + " with every other court, and they gain a reason for war."));
+                    elements.Add(Element("break", DiText.T("DI_MENU_RENOUNCE_OUR_TYPE_2",
+                        "Renounce our {TYPE}",
+                        ("TYPE", Models.Treaty.NameInSentence(breakable.Type))),
+                        DiText.T("DI_MENU_ALWAYS_POSSIBLE_NEVER_FREE_TRUST_WITH_TRUSTTREATYBROKENVICTIM_2",
+                            "Always possible, never free: -{TRUSTTREATYBROKENVICTIM} trust with them, -{TRUSTTREATYBROKENOBSERVER} with every other court, and they gain a reason for war.",
+                            ("TRUSTTREATYBROKENVICTIM", (-DiplomacyConstants.TrustTreatyBrokenVictim).ToString("0")),
+                            ("TRUSTTREATYBROKENOBSERVER", (-DiplomacyConstants.TrustTreatyBrokenObserver).ToString("0")))));
 
-                elements.Add(Element("fabricate", "Fabricate a claim",
+                elements.Add(Element("fabricate", DiText.T("DI_MENU_FABRICATE_CLAIM_2", "Fabricate a claim"),
                     DiplomacyConstants.FabricateClaimInfluenceCost + " influence and "
                     + DiplomacyConstants.FabricateClaimGoldCost + " denars, "
                     + DiplomacyConstants.FabricateClaimDurationDays + " days, and a "
@@ -483,7 +511,7 @@ namespace DiplomacyIntrigue.UI
                   + " (they need " + ThresholdFor(type).ToString("0") + ")."
                 : reason;
 
-            into.Add(new InquiryElement(type, "Propose " + type, null, allowed, hint));
+            into.Add(new InquiryElement(type, DiText.T("DI_MENU_PROPOSE_TYPE_2", "Propose {TYPE}", ("TYPE", type)), null, allowed, hint));
         }
 
         internal static float ThresholdFor(TreatyType type)
@@ -515,7 +543,7 @@ namespace DiplomacyIntrigue.UI
             if (war != null)
             {
                 sb.AppendLine();
-                sb.AppendLine("At war for " + war.DaysElapsed.ToString("0") + " days over " + war.Justification + ".");
+                sb.AppendLine("At war for " + war.DaysElapsed.ToString("0") + " days over " + CasusBelli.NameOf(war.Justification) + ".");
                 sb.AppendLine("Our exhaustion: " + war.ExhaustionOf(us).ToString("0.0"));
                 sb.AppendLine("Their condition: " + ExhaustionBands.Describe(war.ExhaustionOf(them)));
             }
@@ -540,15 +568,21 @@ namespace DiplomacyIntrigue.UI
             var theirValue = AiDiplomacy.PactValueWhenAsked(state, them, us);
             if (theirValue < ThresholdFor(type))
             {
-                Notify(them.Name + " declines: they value a " + type + " at only "
-                       + ((int)theirValue) + ".");
+                Notify(DiText.T("DI_MENU_DECLINES_THEY_VALUE_AT_ONLY_NAME_TYPE_THEIRVALUE_2",
+                    "{NAME} declines: they value a {TYPE} at only {THEIRVALUE}.",
+                    ("NAME", them.Name),
+                    ("TYPE", type),
+                    ("THEIRVALUE", (int)theirValue)));
                 return;
             }
 
             var cost = StatecraftTerms.TreatyInfluenceCost(us, type);
             if (us.RulingClan == null || us.RulingClan.Influence < cost)
             {
-                Notify("Not enough influence: " + type + " costs " + cost + ".");
+                Notify(DiText.T("DI_MENU_NOT_ENOUGH_INFLUENCE_COSTS_TYPE_COST_2",
+                    "Not enough influence: {TYPE} costs {COST}.",
+                    ("TYPE", type),
+                    ("COST", cost)));
                 return;
             }
 
@@ -561,7 +595,11 @@ namespace DiplomacyIntrigue.UI
 
             TaleWorlds.CampaignSystem.Actions.ChangeClanInfluenceAction.Apply(us.RulingClan, -cost);
             SkillXp.PactSigned(us, type);
-            Notify(us.Name + " and " + them.Name + " sign a " + type + ".", Colors.Green);
+            Notify(DiText.T("DI_MENU_SIGN_A_TREATY",
+                    "{US} and {THEM} sign a {TREATY}.",
+                    ("US", us.Name),
+                    ("THEM", them.Name),
+                    ("TREATY", Models.Treaty.NameInSentence(type))), Colors.Green);
         }
 
         /// <summary>
@@ -581,7 +619,9 @@ namespace DiplomacyIntrigue.UI
             var block = TreatyEnforcement.WhyWarBlocked(state, us, them);
             if (block != TreatyEnforcement.Block.None)
             {
-                Notify("Cannot declare war: " + TreatyEnforcement.Explain(state, us, them, block) + ".");
+                Notify(DiText.T("DI_MENU_CANNOT_DECLARE_WAR_EXPLAIN_2",
+                    "Cannot declare war: {EXPLAIN}.",
+                    ("EXPLAIN", TreatyEnforcement.Explain(state, us, them, block))));
                 return;
             }
 
@@ -589,14 +629,18 @@ namespace DiplomacyIntrigue.UI
             var decision = new DeclareWarDecision(proposer, them);
             if (!decision.IsAllowed())
             {
-                Notify("The court will not entertain a war against " + them.Name + " right now.");
+                Notify(DiText.T("DI_MENU_THE_COURT_WILL_NOT_ENTERTAIN_WAR_NAME_2",
+                    "The court will not entertain a war against {NAME} right now.",
+                    ("NAME", them.Name)));
                 return;
             }
 
             var cost = AiDiplomacy.WarDeclarationCostAgainst(state, us, them, proposer.Leader);
             if (proposer.Influence < cost)
             {
-                Notify("Not enough influence: proposing this war costs " + cost + ".");
+                Notify(DiText.T("DI_MENU_NOT_ENOUGH_INFLUENCE_PROPOSING_THIS_WAR_COST_2",
+                    "Not enough influence: proposing this war costs {COST}.",
+                    ("COST", cost)));
                 return;
             }
 
@@ -615,7 +659,10 @@ namespace DiplomacyIntrigue.UI
         {
             if (!AiDiplomacy.CanSubmitTo(state, us, them, out var reason, out var settlesWar))
             {
-                Notify("We cannot kneel to " + them.Name + ": " + reason);
+                Notify(DiText.T("DI_MENU_WE_CANNOT_KNEEL_TO_NAME_REASON_2",
+                    "We cannot kneel to {NAME}: {REASON}",
+                    ("NAME", them.Name),
+                    ("REASON", reason)));
                 return;
             }
 
@@ -632,14 +679,16 @@ namespace DiplomacyIntrigue.UI
                        + " vassals loses them. What the move is worth to a court in our position: "
                        + value.ToString("0") + " (" + explanation + ").";
 
-            Confirm("Submission to " + them.Name, body, "Kneel", () =>
+            Confirm(DiText.T("DI_MENU_SUBMISSION_TO_NAME_2", "Submission to {NAME}", ("NAME", them.Name)), body, DiText.T("DI_MENU_KNEEL_2", "Kneel"), () =>
             {
                 // Re-asked rather than trusted: the inquiry can sit open through a whole
                 // day of drift, so the world may have moved since the button was clicked.
                 if (!AiDiplomacy.CanSubmitTo(state, us, them, out var blocked,
                         out var stillSettlesWar))
                 {
-                    Notify("Could not submit: " + blocked);
+                    Notify(DiText.T("DI_MENU_COULD_NOT_SUBMIT_BLOCKED_2",
+                        "Could not submit: {BLOCKED}",
+                        ("BLOCKED", blocked)));
                     return;
                 }
 
@@ -655,7 +704,9 @@ namespace DiplomacyIntrigue.UI
 
                 if (treaty == null)
                 {
-                    Notify("Could not submit: " + failed);
+                    Notify(DiText.T("DI_MENU_COULD_NOT_SUBMIT_FAILED_2",
+                        "Could not submit: {FAILED}",
+                        ("FAILED", failed)));
                     return;
                 }
 
@@ -680,7 +731,9 @@ namespace DiplomacyIntrigue.UI
                 // only when the target's court, the cap or the cooldown answered it.
                 var gate = AiDiplomacy.AnsweringGate(terms);
                 if (gate != null) AiDiplomacy.NoteTributeAnswer(terms, gate);
-                Notify("Cannot demand tribute: " + terms.Blocked);
+                Notify(DiText.T("DI_MENU_CANNOT_DEMAND_TRIBUTE_BLOCKED_2",
+                    "Cannot demand tribute: {BLOCKED}",
+                    ("BLOCKED", terms.Blocked)));
                 return;
             }
 
@@ -713,19 +766,21 @@ namespace DiplomacyIntrigue.UI
             }
 
             var patron = link.DominantParty;
-            Confirm("Kneel to " + them.Name,
-                "We abandon " + patron.Name + ", which will not defend us, and submit to our"
-                + " attacker: the war ends as our submission, and " + patron.Name
-                + " is named the oathbreaker in every court for failing its duty."
-                + Environment.NewLine + Environment.NewLine
-                + "Tribute of " + DiplomacyConstants.AiDefaultTributePerPeriod
-                + " per period, and our foreign policy answers to " + them.Name + ".",
-                "Kneel", () =>
+            Confirm(DiText.T("DI_MENU_KNEEL_TO_NAME_2", "Kneel to {NAME}", ("NAME", them.Name)),
+                DiText.T("DI_MENU_WE_ABANDON_WHICH_WILL_NOT_DEFEND_NAME_NAME_2_2",
+                    "We abandon {NAME}, which will not defend us, and submit to our attacker: the war ends as our submission, and {NAME_2} is named the oathbreaker in every court for failing its duty.\n\nTribute of {AIDEFAULTTRIBUTEPERPERIOD} per period, and our foreign policy answers to {NAME_3}.",
+                    ("NAME", patron.Name),
+                    ("NAME_2", patron.Name),
+                    ("AIDEFAULTTRIBUTEPERPERIOD", DiplomacyConstants.AiDefaultTributePerPeriod),
+                    ("NAME_3", them.Name)),
+                DiText.T("DI_MENU_KNEEL", "Kneel"), () =>
                 {
                     if (!AiDiplomacy.CanDefectToAttacker(state, us, them, out var lapsed,
                             out var current))
                     {
-                        Notify("The offer has lapsed: " + lapsed);
+                        Notify(DiText.T("DI_MENU_THE_OFFER_HAS_LAPSED_LAPSED_2",
+                            "The offer has lapsed: {LAPSED}",
+                            ("LAPSED", lapsed)));
                         return;
                     }
 
@@ -746,33 +801,44 @@ namespace DiplomacyIntrigue.UI
             var link = Hegemony.VassalageOf(state, them);
             if (!Hegemony.CanPoach(state, us, link, out var value, out var reason))
             {
-                Notify("Cannot court them: " + reason);
+                Notify(DiText.T("DI_MENU_CANNOT_COURT_THEM_REASON_2",
+                    "Cannot court them: {REASON}",
+                    ("REASON", reason)));
                 return;
             }
 
             var patron = link.DominantParty;
-            var body = them.Name + " answers to " + patron.Name + " at hold "
-                       + Hegemony.HoldOf(link).ToString("0")
-                       + ", and would kneel to us (valued at " + value.ToString("0") + ")."
-                       + Environment.NewLine + Environment.NewLine
-                       + "Taking them repudiates their oath at no charge to them - the blame is"
-                       + " ours: " + (-DiplomacyConstants.PoachingTrustCost).ToString("0")
-                       + " trust with " + patron.Name + ", a broken-treaty claim against us, and"
-                       + (us.IsAtWarWith(patron)
-                           ? " we are already at war with them."
-                           : " war with " + patron.Name + " the moment the oath moves.");
+            var body = us.IsAtWarWith(patron) ? DiText.T("DI_MENU_ANSWERS_TO_AT_HOLD_AND_WOULD_NAME_NAME_2_HOLDOF_VALUE_2",
+                "{NAME} answers to {NAME_2} at hold {HOLDOF}, and would kneel to us (valued at {VALUE}).\n\nTaking them repudiates their oath at no charge to them - the blame is ours: {POACHINGTRUSTCOST} trust with {NAME_3}, a broken-treaty claim against us, and we are already at war with them.",
+                ("NAME", them.Name),
+                ("NAME_2", patron.Name),
+                ("HOLDOF", Hegemony.HoldOf(link).ToString("0")),
+                ("VALUE", value.ToString("0")),
+                ("POACHINGTRUSTCOST", (-DiplomacyConstants.PoachingTrustCost).ToString("0")),
+                ("NAME_3", patron.Name)) : DiText.T("DI_MENU_ANSWERS_TO_AT_HOLD_AND_WOULD_NAME_NAME_2_HOLDOF_VALUE_3",
+                "{NAME} answers to {NAME_2} at hold {HOLDOF}, and would kneel to us (valued at {VALUE}).\n\nTaking them repudiates their oath at no charge to them - the blame is ours: {POACHINGTRUSTCOST} trust with {NAME_3}, a broken-treaty claim against us, and war with {NAME_4} the moment the oath moves.",
+                ("NAME", them.Name),
+                ("NAME_2", patron.Name),
+                ("HOLDOF", Hegemony.HoldOf(link).ToString("0")),
+                ("VALUE", value.ToString("0")),
+                ("POACHINGTRUSTCOST", (-DiplomacyConstants.PoachingTrustCost).ToString("0")),
+                ("NAME_3", patron.Name),
+                ("NAME_4", patron.Name));
 
-            Confirm("Court " + them.Name, body, "Court them", () =>
+            Confirm(DiText.T("DI_MENU_COURT_NAME_2", "Court {NAME}", ("NAME", them.Name)), body, DiText.T("DI_MENU_COURT_THEM_2", "Court them"), () =>
             {
                 if (!Hegemony.CanPoach(state, us, link, out var currentValue, out var lapsed))
                 {
-                    Notify("The moment has passed: " + lapsed);
+                    Notify(DiText.T("DI_MENU_THE_MOMENT_HAS_PASSED_LAPSED_2",
+                        "The moment has passed: {LAPSED}",
+                        ("LAPSED", lapsed)));
                     return;
                 }
 
                 // ExecutePoach announces a success itself; only a failure needs telling.
                 if (!Hegemony.ExecutePoach(state, us, link, currentValue))
-                    Notify("The courtship failed - see the Diplomacy & Intrigue log.");
+                    Notify(DiText.T("DI_MENU_THE_COURTSHIP_FAILED_SEE_THE_DIPLOMACY_2",
+                        "The courtship failed - see the Diplomacy & Intrigue log."));
             });
         }
 
@@ -786,7 +852,9 @@ namespace DiplomacyIntrigue.UI
         {
             if (!Hegemony.CouldAnnex(state, us, them))
             {
-                Notify("Cannot turn on " + them.Name + ".");
+                Notify(DiText.T("DI_MENU_CANNOT_TURN_ON_NAME_2",
+                    "Cannot turn on {NAME}.",
+                    ("NAME", them.Name)));
                 return;
             }
 
@@ -794,17 +862,17 @@ namespace DiplomacyIntrigue.UI
             var cost = AiDiplomacy.WarDeclarationCost(state, us,
                 CasusBelli.Legitimacy(terms.Casus));
 
-            Confirm("Turn on " + them.Name,
-                "We tear up " + them.Name + "'s oath and take their lands ourselves: the full"
-                + " price of a breach in every court, every vassal we hold takes the lesson"
-                + " in hold, and war opens at once."
-                + Environment.NewLine + Environment.NewLine
-                + "Declaring costs " + cost + " influence.",
-                "To war", () =>
+            Confirm(DiText.T("DI_MENU_TURN_ON_NAME_2", "Turn on {NAME}", ("NAME", them.Name)),
+                DiText.T("DI_MENU_WE_TEAR_UP_OATH_AND_TAKE_NAME_COST_2",
+                    "We tear up {NAME}'s oath and take their lands ourselves: the full price of a breach in every court, every vassal we hold takes the lesson in hold, and war opens at once.\n\nDeclaring costs {COST} influence.",
+                    ("NAME", them.Name),
+                    ("COST", cost)),
+                DiText.T("DI_MENU_TO_WAR_2", "To war"), () =>
                 {
                     if (!Hegemony.CouldAnnex(state, us, them))
                     {
-                        Notify("The moment has passed - the oath no longer stands between us.");
+                        Notify(DiText.T("DI_MENU_THE_MOMENT_HAS_PASSED_THE_OATH_2",
+                            "The moment has passed - the oath no longer stands between us."));
                         return;
                     }
 
@@ -827,26 +895,26 @@ namespace DiplomacyIntrigue.UI
             var link = Hegemony.VassalageOf(state, us);
             if (link == null || link.DominantParty != them)
             {
-                Notify("We do not answer to " + them.Name + ".");
+                Notify(DiText.T("DI_MENU_WE_DO_NOT_ANSWER_TO_NAME_2",
+                    "We do not answer to {NAME}.",
+                    ("NAME", them.Name)));
                 return;
             }
 
             if (!Hegemony.IsAtBreakingPoint(state, link))
             {
-                Notify("The realm is not breaking - hold " + Hegemony.HoldOf(link).ToString("0")
-                       + " against a secession line of "
-                       + Hegemony.SecessionThreshold(state, link).ToString("0")
-                       + ". Renouncing the oath is always possible; rebellion is not.");
+                Notify(DiText.T("DI_MENU_THE_REALM_IS_NOT_BREAKING_HOLD_HOLDOF_SECESSIONTHRESHOLD_2",
+                    "The realm is not breaking - hold {HOLDOF} against a secession line of {SECESSIONTHRESHOLD}. Renouncing the oath is always possible; rebellion is not.",
+                    ("HOLDOF", Hegemony.HoldOf(link).ToString("0")),
+                    ("SECESSIONTHRESHOLD", Hegemony.SecessionThreshold(state, link).ToString("0"))));
                 return;
             }
 
-            Confirm("Secede from " + them.Name,
-                "We renounce our oath to " + them.Name + " and fight for our independence:"
-                + " every court counts the breach, their loyal vassals answer their call to"
-                + " arms, and their resentful ones may rise with us."
-                + Environment.NewLine + Environment.NewLine
-                + "The war of independence opens at once.",
-                "Secede", () =>
+            Confirm(DiText.T("DI_MENU_SECEDE_FROM_NAME_2", "Secede from {NAME}", ("NAME", them.Name)),
+                DiText.T("DI_MENU_WE_RENOUNCE_OUR_OATH_TO_AND_NAME_2",
+                    "We renounce our oath to {NAME} and fight for our independence: every court counts the breach, their loyal vassals answer their call to arms, and their resentful ones may rise with us.\n\nThe war of independence opens at once.",
+                    ("NAME", them.Name)),
+                DiText.T("DI_MENU_SECEDE_2", "Secede"), () =>
                 {
                     // Re-asked rather than trusted: the bond may have moved while the
                     // inquiry sat open.
@@ -854,7 +922,8 @@ namespace DiplomacyIntrigue.UI
                     if (current == null || current.DominantParty != them
                         || !Hegemony.IsAtBreakingPoint(state, current))
                     {
-                        Notify("The moment has passed - the bond no longer stands as it did.");
+                        Notify(DiText.T("DI_MENU_THE_MOMENT_HAS_PASSED_THE_BOND_2",
+                            "The moment has passed - the bond no longer stands as it did."));
                         return;
                     }
 
@@ -869,20 +938,25 @@ namespace DiplomacyIntrigue.UI
         /// </summary>
         internal static string PeaceButtonLabel(float ourBudget, float theirBudget)
         {
-            if (ourBudget > 0f) return "Negotiate peace";
-            if (theirBudget > 0f) return "Sue for peace";
-            return "White peace only";
+            if (ourBudget > 0f) return DiText.T("DI_MENU_NEGOTIATE_PEACE", "Negotiate peace");
+            if (theirBudget > 0f) return DiText.T("DI_MENU_SUE_FOR_PEACE_2", "Sue for peace");
+            return DiText.T("DI_MENU_WHITE_PEACE_ONLY_2", "White peace only");
         }
 
         /// <summary>The line under that button, on the same branch.</summary>
         internal static string PeaceButtonSub(float ourBudget, float theirBudget, Kingdom them)
         {
             if (ourBudget > 0f)
-                return "Budget " + ourBudget.ToString("0") + " - see hint for the price list.";
+                return DiText.T("DI_MENU_BUDGET_SEE_HINT_FOR_THE_PRICE_OURBUDGET_2",
+                    "Budget {OURBUDGET} - see hint for the price list.",
+                    ("OURBUDGET", ourBudget.ToString("0")));
             if (theirBudget > 0f)
-                return "The war has earned " + them.Name + " " + theirBudget.ToString("0")
-                       + ". Offer what it takes.";
-            return "White peace only - this war has earned nothing yet.";
+                return DiText.T("DI_MENU_THE_WAR_HAS_EARNED_OFFER_WHAT_NAME_THEIRBUDGET_2",
+                    "The war has earned {NAME} {THEIRBUDGET}. Offer what it takes.",
+                    ("NAME", them.Name),
+                    ("THEIRBUDGET", theirBudget.ToString("0")));
+            return DiText.T("DI_MENU_WHITE_PEACE_ONLY_THIS_WAR_HAS_2",
+                "White peace only - this war has earned nothing yet.");
         }
 
         /// <summary>
@@ -896,7 +970,9 @@ namespace DiplomacyIntrigue.UI
         internal static void ShowPeace(ModState state, Kingdom us, Kingdom them)
         {
             var war = state.OngoingWarBetween(us, them);
-            if (war == null) { Notify("We are not at war with " + them.Name + "."); return; }
+            if (war == null) { Notify(DiText.T("DI_MENU_WE_ARE_NOT_AT_WAR_WITH_NAME_2",
+                "We are not at war with {NAME}.",
+                ("NAME", them.Name))); return; }
 
             var ourBudget = PeaceTable.BudgetFor(war, us);
             var theirBudget = PeaceTable.BudgetFor(war, them);
@@ -920,10 +996,10 @@ namespace DiplomacyIntrigue.UI
                     return;
                 }
 
-                Confirm("Peace with " + them.Name,
-                    "Neither side has earned enough to ask for anything - a white peace is all this"
-                    + " war can produce. Propose it and they sign if the war has worn them too.",
-                    "Propose white peace",
+                Confirm(DiText.T("DI_MENU_PEACE_WITH_NAME_2", "Peace with {NAME}", ("NAME", them.Name)),
+                    DiText.T("DI_MENU_NEITHER_SIDE_HAS_EARNED_ENOUGH_TO_2",
+                        "Neither side has earned enough to ask for anything - a white peace is all this war can produce. Propose it and they sign if the war has worn them too."),
+                    DiText.T("DI_MENU_PROPOSE_WHITE_PEACE_2", "Propose white peace"),
                     () => TryPeace(state, war, new PeaceTerms(us, them), us));
             }
             catch (Exception ex)
@@ -935,10 +1011,10 @@ namespace DiplomacyIntrigue.UI
                 Log.Error("UI", "The peace table could not open; falling back to the checklist.", ex);
                 if (ourBudget > 0f) ShowDemandTable(state, war, us, them, ourBudget);
                 else if (theirBudget > 0f) ShowOfferTable(state, war, us, them, theirBudget);
-                else Confirm("Peace with " + them.Name,
-                    "Neither side has earned enough to ask for anything - a white peace is all this"
-                    + " war can produce. Propose it and they sign if the war has worn them too.",
-                    "Propose white peace",
+                else Confirm(DiText.T("DI_MENU_PEACE_WITH_NAME", "Peace with {NAME}", ("NAME", them.Name)),
+                    DiText.T("DI_MENU_NEITHER_SIDE_HAS_EARNED_ENOUGH_TO",
+                        "Neither side has earned enough to ask for anything - a white peace is all this war can produce. Propose it and they sign if the war has worn them too."),
+                    DiText.T("DI_MENU_PROPOSE_WHITE_PEACE", "Propose white peace"),
                     () => TryPeace(state, war, new PeaceTerms(us, them), us));
             }
         }
@@ -955,8 +1031,11 @@ namespace DiplomacyIntrigue.UI
             var elements = new List<InquiryElement>
             {
                 Element("prisoners",
-                    "Demand our captives back   -   " + Priced(DiplomacyConstants.PeaceCostPrisoners, budget),
-                    "They free every hero of ours they hold.")
+                    DiText.T("DI_MENU_DEMAND_OUR_CAPTIVES_BACK_PRICED_2",
+                        "Demand our captives back   -   {PRICED}",
+                        ("PRICED", Priced(DiplomacyConstants.PeaceCostPrisoners, budget))),
+                    DiText.T("DI_MENU_THEY_FREE_EVERY_HERO_OF_OURS_2",
+                        "They free every hero of ours they hold."))
             };
 
             // Sized by what the war earned, the same way the AI ladder sizes it, so a small
@@ -964,9 +1043,13 @@ namespace DiplomacyIntrigue.UI
             var indemnity = PeaceTable.LargestIndemnity(war, us, them);
             if (indemnity >= 1000)
                 elements.Add(Element("indemnity",
-                    "Demand an indemnity of " + indemnity + " denars   -   "
-                    + Priced(PeaceTable.IndemnityPoints(indemnity, them), budget),
-                    "Gold now rather than land later: " + PeaceTable.DescribeIndemnity(indemnity, them) + "."));
+                    DiText.T("DI_MENU_DEMAND_AN_INDEMNITY_OF_DENARS_INDEMNITY_PRICED_2",
+                        "Demand an indemnity of {INDEMNITY} denars   -   {PRICED}",
+                        ("INDEMNITY", indemnity),
+                        ("PRICED", Priced(PeaceTable.IndemnityPoints(indemnity, them), budget))),
+                    DiText.T("DI_MENU_GOLD_NOW_RATHER_THAN_LAND_LATER_DESCRIBEINDEMNITY_2",
+                        "Gold now rather than land later: {DESCRIBEINDEMNITY}.",
+                        ("DESCRIBEINDEMNITY", PeaceTable.DescribeIndemnity(indemnity, them)))));
 
             // Asked of the CanSign that PeaceTable.IsDemandable asks at signing, so a loser that
             // cannot be made a tributary - already paying the most tributes a realm can
@@ -975,24 +1058,29 @@ namespace DiplomacyIntrigue.UI
             var tributeOpen = TreatyRegistry.CanSign(state, us, them, TreatyType.TributaryPact,
                 out var noTribute, settlesWar: true);
             elements.Add(new InquiryElement("tribute",
-                "Impose tribute of " + DiplomacyConstants.AiDefaultTributePerPeriod
-                + " per period   -   " + Priced(DiplomacyConstants.PeaceCostTributaryPact, budget),
+                DiText.T("DI_MENU_IMPOSE_TRIBUTE_OF_PER_PERIOD_AIDEFAULTTRIBUTEPERPERIOD_PRICED_2",
+                    "Impose tribute of {AIDEFAULTTRIBUTEPERPERIOD} per period   -   {PRICED}",
+                    ("AIDEFAULTTRIBUTEPERPERIOD", DiplomacyConstants.AiDefaultTributePerPeriod),
+                    ("PRICED", Priced(DiplomacyConstants.PeaceCostTributaryPact, budget))),
                 null, tributeOpen,
-                tributeOpen ? "They pay for peace and keep everything else." : noTribute));
+                tributeOpen ? DiText.T("DI_MENU_THEY_PAY_FOR_PEACE", "They pay for peace and keep everything else.") : noTribute));
 
             // One rung with two faces at one price: a hegemon cannot be made a vassal while it
             // still holds vassals (hegemony is flat), so against one the demand is its sphere.
             if (Hegemony.IsHegemon(state, them))
                 elements.Add(Element("subjugation",
-                    "Demand they release their vassals   -   "
-                    + Priced(DiplomacyConstants.PeaceCostSubjugation, budget),
-                    "They keep their throne; every kingdom sworn to them goes free."
-                    + " We inherit none of them, and they stay in their own wars."));
+                    DiText.T("DI_MENU_DEMAND_THEY_RELEASE_THEIR_VASSALS_PRICED_2",
+                        "Demand they release their vassals   -   {PRICED}",
+                        ("PRICED", Priced(DiplomacyConstants.PeaceCostSubjugation, budget))),
+                    DiText.T("DI_MENU_THEY_KEEP_THEIR_THRONE_EVERY_KINGDOM_2",
+                        "They keep their throne; every kingdom sworn to them goes free. We inherit none of them, and they stay in their own wars.")));
             else
                 elements.Add(Element("subjugation",
-                    "Demand their submission   -   " + Priced(DiplomacyConstants.PeaceCostSubjugation, budget),
-                    "They keep their ruler and their lands, and owe us troops, tribute and their"
-                    + " foreign policy - and we owe them protection."));
+                    DiText.T("DI_MENU_DEMAND_THEIR_SUBMISSION_PRICED_2",
+                        "Demand their submission   -   {PRICED}",
+                        ("PRICED", Priced(DiplomacyConstants.PeaceCostSubjugation, budget))),
+                    DiText.T("DI_MENU_THEY_KEEP_THEIR_RULER_AND_THEIR_2",
+                        "They keep their ruler and their lands, and owe us troops, tribute and their foreign policy - and we owe them protection.")));
 
             var hasClaim = ClaimRegistry.HasTerritorialClaim(state, us, them);
             var settlements = them.Settlements;
@@ -1003,8 +1091,13 @@ namespace DiplomacyIntrigue.UI
                 var price = fief.IsTown ? DiplomacyConstants.PeaceCostTown : DiplomacyConstants.PeaceCostCastle;
                 var affordable = price <= budget;
                 elements.Add(new InquiryElement(fief,
-                    "Annex " + fief.Name + (fief.IsTown ? " (town)" : " (castle)")
-                    + "   -   " + Priced(price, budget),
+                    fief.IsTown ? DiText.T("DI_MENU_ANNEX_TOWN_NAME_PRICED_2",
+                        "Annex {NAME} (town)   -   {PRICED}",
+                        ("NAME", fief.Name),
+                        ("PRICED", Priced(price, budget))) : DiText.T("DI_MENU_ANNEX_CASTLE_NAME_PRICED_2",
+                        "Annex {NAME} (castle)   -   {PRICED}",
+                        ("NAME", fief.Name),
+                        ("PRICED", Priced(price, budget))),
                     null,
                     hasClaim && affordable,
                     !hasClaim
@@ -1016,11 +1109,13 @@ namespace DiplomacyIntrigue.UI
                               + " this war has earned."));
             }
 
-            ShowTerms("Peace with " + them.Name,
-                "At war for " + war.DaysElapsed.ToString("0") + " days over " + war.Justification
-                + ". They are " + ExhaustionBands.Describe(war.ExhaustionOf(them))
-                + ". This war has earned us " + budget.ToString("0")
-                + " - the most our terms may cost. Choose nothing for a white peace.",
+            ShowTerms(DiText.T("DI_MENU_PEACE_WITH_NAME", "Peace with {NAME}", ("NAME", them.Name)),
+                DiText.T("DI_MENU_AT_WAR_FOR_DAYS_OVER_THEY_DAYSELAPSED_JUSTIFICATION_DESCRIBE_2",
+                    "At war for {DAYSELAPSED} days over {JUSTIFICATION}. They are {DESCRIBE}. This war has earned us {BUDGET} - the most our terms may cost. Choose nothing for a white peace.",
+                    ("DAYSELAPSED", war.DaysElapsed.ToString("0")),
+                    ("JUSTIFICATION", CasusBelli.NameOf(war.Justification)),
+                    ("DESCRIBE", ExhaustionBands.Describe(war.ExhaustionOf(them))),
+                    ("BUDGET", budget.ToString("0"))),
                 elements, chosen =>
                 {
                     var terms = new PeaceTerms(us, them);
@@ -1066,33 +1161,47 @@ namespace DiplomacyIntrigue.UI
             var elements = new List<InquiryElement>
             {
                 Element("prisoners",
-                    "Release their captives   -   worth " + DiplomacyConstants.PeaceCostPrisoners.ToString("0"),
-                    "We free every hero of theirs we hold."),
+                    DiText.T("DI_MENU_RELEASE_THEIR_CAPTIVES_WORTH_PEACECOSTPRISONERS_2",
+                        "Release their captives   -   worth {PEACECOSTPRISONERS}",
+                        ("PEACECOSTPRISONERS", DiplomacyConstants.PeaceCostPrisoners.ToString("0"))),
+                    DiText.T("DI_MENU_WE_FREE_EVERY_HERO_OF_THEIRS_2",
+                        "We free every hero of theirs we hold.")),
                 new InquiryElement("tribute",
-                    "Agree to pay tribute   -   worth " + DiplomacyConstants.PeaceCostTributaryPact.ToString("0"),
+                    DiText.T("DI_MENU_AGREE_TO_PAY_TRIBUTE_WORTH_PEACECOSTTRIBUTARYPACT_2",
+                        "Agree to pay tribute   -   worth {PEACECOSTTRIBUTARYPACT}",
+                        ("PEACECOSTTRIBUTARYPACT", DiplomacyConstants.PeaceCostTributaryPact.ToString("0"))),
                     null, tributeOpen,
-                    tributeOpen ? "A tributary pays for peace and keeps everything else." : noTribute)
+                    tributeOpen ? DiText.T("DI_MENU_A_TRIBUTARY_PAYS_FOR_PEACE", "A tributary pays for peace and keeps everything else.") : noTribute)
             };
 
             var indemnity = PeaceTable.LargestIndemnity(war, them, us);
             if (indemnity >= 1000)
                 elements.Add(Element("indemnity",
-                    "Pay an indemnity of " + indemnity + " denars   -   worth "
-                    + PeaceTable.IndemnityPoints(indemnity, us).ToString("0"),
-                    "Sized by what this war earned them: " + PeaceTable.DescribeIndemnity(indemnity, us) + "."));
+                    DiText.T("DI_MENU_PAY_AN_INDEMNITY_OF_DENARS_WORTH_INDEMNITY_INDEMNITYPOINTS_2",
+                        "Pay an indemnity of {INDEMNITY} denars   -   worth {INDEMNITYPOINTS}",
+                        ("INDEMNITY", indemnity),
+                        ("INDEMNITYPOINTS", PeaceTable.IndemnityPoints(indemnity, us).ToString("0"))),
+                    DiText.T("DI_MENU_SIZED_BY_WHAT_THIS_WAR_EARNED_DESCRIBEINDEMNITY_2",
+                        "Sized by what this war earned them: {DESCRIBEINDEMNITY}.",
+                        ("DESCRIBEINDEMNITY", PeaceTable.DescribeIndemnity(indemnity, us)))));
 
             // The top rung, in whichever form we still have to give: while we hold vassals we
             // cannot submit at all, so for a hegemon the sphere is the offer.
             if (Hegemony.IsHegemon(state, us))
                 elements.Add(Element("subjugation",
-                    "Release our vassals   -   worth " + DiplomacyConstants.PeaceCostSubjugation.ToString("0"),
-                    "We keep our throne, our lands and our court; every kingdom sworn to us"
-                    + " becomes independent. They do not pass to " + them.Name + "."));
+                    DiText.T("DI_MENU_RELEASE_OUR_VASSALS_WORTH_PEACECOSTSUBJUGATION_2",
+                        "Release our vassals   -   worth {PEACECOSTSUBJUGATION}",
+                        ("PEACECOSTSUBJUGATION", DiplomacyConstants.PeaceCostSubjugation.ToString("0"))),
+                    DiText.T("DI_MENU_WE_KEEP_OUR_THRONE_OUR_LANDS_NAME_2",
+                        "We keep our throne, our lands and our court; every kingdom sworn to us becomes independent. They do not pass to {NAME}.",
+                        ("NAME", them.Name))));
             else
                 elements.Add(Element("subjugation",
-                    "Submit as their vassal   -   worth " + DiplomacyConstants.PeaceCostSubjugation.ToString("0"),
-                    "We keep our ruler, our lands and our court, and owe troops, tribute and our"
-                    + " foreign policy - and they owe us protection."));
+                    DiText.T("DI_MENU_SUBMIT_AS_THEIR_VASSAL_WORTH_PEACECOSTSUBJUGATION_2",
+                        "Submit as their vassal   -   worth {PEACECOSTSUBJUGATION}",
+                        ("PEACECOSTSUBJUGATION", DiplomacyConstants.PeaceCostSubjugation.ToString("0"))),
+                    DiText.T("DI_MENU_WE_KEEP_OUR_RULER_OUR_LANDS_2",
+                        "We keep our ruler, our lands and our court, and owe troops, tribute and our foreign policy - and they owe us protection.")));
 
             var hasClaim = ClaimRegistry.HasTerritorialClaim(state, them, us);
             var settlements = us.Settlements;
@@ -1103,8 +1212,13 @@ namespace DiplomacyIntrigue.UI
                 var price = fief.IsTown ? DiplomacyConstants.PeaceCostTown : DiplomacyConstants.PeaceCostCastle;
                 var affordable = price <= budget;
                 elements.Add(new InquiryElement(fief,
-                    "Cede " + fief.Name + (fief.IsTown ? " (town)" : " (castle)")
-                    + "   -   worth " + price.ToString("0"),
+                    fief.IsTown ? DiText.T("DI_MENU_CEDE_TOWN_WORTH_NAME_PRICE_2",
+                        "Cede {NAME} (town)   -   worth {PRICE}",
+                        ("NAME", fief.Name),
+                        ("PRICE", price.ToString("0"))) : DiText.T("DI_MENU_CEDE_CASTLE_WORTH_NAME_PRICE_2",
+                        "Cede {NAME} (castle)   -   worth {PRICE}",
+                        ("NAME", fief.Name),
+                        ("PRICE", price.ToString("0"))),
                     null,
                     hasClaim && affordable,
                     !hasClaim
@@ -1116,11 +1230,16 @@ namespace DiplomacyIntrigue.UI
                               + " this war has earned them."));
             }
 
-            ShowTerms("Sue for peace with " + them.Name,
-                "At war for " + war.DaysElapsed.ToString("0") + " days over " + war.Justification
-                + ". Their war score is " + budget.ToString("0") + ": they will not settle for"
-                + " less than " + wanted.ToString("0") + " and cannot take more than "
-                + budget.ToString("0") + ". Choose nothing to offer a white peace.",
+            ShowTerms(DiText.T("DI_MENU_SUE_FOR_PEACE_WITH_NAME_2",
+                "Sue for peace with {NAME}",
+                ("NAME", them.Name)),
+                DiText.T("DI_MENU_AT_WAR_FOR_DAYS_OVER_THEIR_DAYSELAPSED_JUSTIFICATION_BUDGET_2",
+                    "At war for {DAYSELAPSED} days over {JUSTIFICATION}. Their war score is {BUDGET}: they will not settle for less than {WANTED} and cannot take more than {BUDGET_2}. Choose nothing to offer a white peace.",
+                    ("DAYSELAPSED", war.DaysElapsed.ToString("0")),
+                    ("JUSTIFICATION", CasusBelli.NameOf(war.Justification)),
+                    ("BUDGET", budget.ToString("0")),
+                    ("WANTED", wanted.ToString("0")),
+                    ("BUDGET_2", budget.ToString("0"))),
                 elements, chosen =>
                 {
                     var terms = new PeaceTerms(them, us);
@@ -1151,7 +1270,10 @@ namespace DiplomacyIntrigue.UI
 
         /// <summary>"costs 12 of 122" - a term's price against what the war earned.</summary>
         private static string Priced(float cost, float budget)
-            => "costs " + cost.ToString("0") + " of " + budget.ToString("0");
+            => DiText.T("DI_MENU_COSTS_OF_COST_BUDGET_2",
+                "costs {COST} of {BUDGET}",
+                ("COST", cost.ToString("0")),
+                ("BUDGET", budget.ToString("0")));
 
         /// <summary>
         /// The multi-select wrapper both tables share. Ticking nothing is legal - that is the
@@ -1166,7 +1288,7 @@ namespace DiplomacyIntrigue.UI
             {
                 MBInformationManager.ShowMultiSelectionInquiry(new MultiSelectionInquiryData(
                     title, description, elements, true, 0, elements.Count,
-                    "Offer these terms", "Back",
+                    DiText.T("DI_MENU_OFFER_THESE_TERMS_2", "Offer these terms"), DiText.T("DI_MENU_BACK_2", "Back"),
                     chosen =>
                     {
                         try
@@ -1176,7 +1298,8 @@ namespace DiplomacyIntrigue.UI
                         catch (Exception ex)
                         {
                             Log.Error("UI", "Peace-table action failed.", ex);
-                            Notify("Something went wrong - see the Diplomacy & Intrigue log.");
+                            Notify(DiText.T("DI_MENU_SOMETHING_WENT_WRONG_SEE_THE_DIPLOMACY_2",
+                                "Something went wrong - see the Diplomacy & Intrigue log."));
                         }
                     },
                     _ => { }, "", false), true, false);
@@ -1204,7 +1327,11 @@ namespace DiplomacyIntrigue.UI
         {
             if (!PeaceTable.IsDemandable(state, war, terms, out var notAllowed))
             {
-                Notify((terms.Winner == us ? "Cannot demand that: " : "Cannot offer that: ") + notAllowed);
+                Notify(terms.Winner == us ? DiText.T("DI_MENU_CANNOT_DEMAND_THAT_NOTALLOWED_2",
+                    "Cannot demand that: {NOTALLOWED}",
+                    ("NOTALLOWED", notAllowed)) : DiText.T("DI_MENU_CANNOT_OFFER_THAT_NOTALLOWED_2",
+                    "Cannot offer that: {NOTALLOWED}",
+                    ("NOTALLOWED", notAllowed)));
                 return;
             }
 
@@ -1229,11 +1356,15 @@ namespace DiplomacyIntrigue.UI
         internal static void BreakTreaty(ModState state, Kingdom us, Kingdom them)
         {
             var treaty = FirstBreakableTreaty(state, us, them);
-            if (treaty == null) { Notify("We hold nothing with " + them.Name + " to renounce."); return; }
+            if (treaty == null) { Notify(DiText.T("DI_MENU_WE_HOLD_NOTHING_WITH_TO_RENOUNCE_NAME_2",
+                "We hold nothing with {NAME} to renounce.",
+                ("NAME", them.Name))); return; }
 
             TreatyRegistry.Break(state, treaty, us);
-            Notify("We renounce our " + treaty.Type + " with " + them.Name
-                   + ". Every court has taken note.", Colors.Red);
+            Notify(DiText.T("DI_MENU_WE_RENOUNCE_OUR_TREATY",
+                    "We renounce our {TREATY} with {THEM}. Every court has taken note.",
+                    ("TREATY", Models.Treaty.NameInSentence(treaty.Type)),
+                    ("THEM", them.Name)), Colors.Red);
         }
 
         internal static void ShowFabricationTargets(ModState state, Kingdom us, Kingdom them)
@@ -1246,14 +1377,17 @@ namespace DiplomacyIntrigue.UI
                 var settlement = settlements[i];
                 if (!settlement.IsFortification) continue;
                 elements.Add(Element(settlement, settlement.Name.ToString(),
-                    settlement.IsTown ? "A town." : "A castle."));
+                    settlement.IsTown ? DiText.T("DI_MENU_TOWN_2", "A town.") : DiText.T("DI_MENU_CASTLE_2", "A castle.")));
             }
 
-            if (elements.Count == 0) { Notify(them.Name + " holds nothing to claim."); return; }
+            if (elements.Count == 0) { Notify(DiText.T("DI_MENU_HOLDS_NOTHING_TO_CLAIM_NAME_2",
+                "{NAME} holds nothing to claim.",
+                ("NAME", them.Name))); return; }
 
-            Show("Fabricate a claim",
-                "Heralds will produce a genealogy. It takes "
-                + DiplomacyConstants.FabricateClaimDurationDays + " days and can be exposed.",
+            Show(DiText.T("DI_MENU_FABRICATE_CLAIM", "Fabricate a claim"),
+                DiText.T("DI_MENU_HERALDS_WILL_PRODUCE_GENEALOGY_IT_TAKES_2",
+                    "Heralds will produce a genealogy. It takes {FABRICATECLAIMDURATIONDAYS} days and can be exposed.",
+                    ("FABRICATECLAIMDURATIONDAYS", DiplomacyConstants.FabricateClaimDurationDays)),
                 elements, selected =>
                 {
                     var attempt = ClaimRegistry.StartFabrication(state, us, (Settlement)selected, out var reason);
@@ -1274,7 +1408,7 @@ namespace DiplomacyIntrigue.UI
             try
             {
                 MBInformationManager.ShowMultiSelectionInquiry(new MultiSelectionInquiryData(
-                    title, description, elements, true, 1, 1, "Choose", "Back",
+                    title, description, elements, true, 1, 1, DiText.T("DI_MENU_CHOOSE_2", "Choose"), DiText.T("DI_MENU_BACK", "Back"),
                     chosen =>
                     {
                         if (chosen == null || chosen.Count == 0) return;
@@ -1285,7 +1419,8 @@ namespace DiplomacyIntrigue.UI
                         catch (Exception ex)
                         {
                             Log.Error("UI", "Diplomacy menu action failed.", ex);
-                            Notify("Something went wrong - see the Diplomacy & Intrigue log.");
+                            Notify(DiText.T("DI_MENU_SOMETHING_WENT_WRONG_SEE_THE_DIPLOMACY",
+                                "Something went wrong - see the Diplomacy & Intrigue log."));
                         }
                     },
                     _ => { }, "", false), true, false);
@@ -1301,7 +1436,7 @@ namespace DiplomacyIntrigue.UI
             try
             {
                 InformationManager.ShowInquiry(new InquiryData(
-                    title, body, true, false, "Close", "", () => { }, () => { },
+                    title, body, true, false, DiText.T("DI_MENU_CLOSE_2", "Close"), "", () => { }, () => { },
                     "", 0f, null, null, null), true, false);
             }
             catch (Exception ex)
@@ -1321,7 +1456,7 @@ namespace DiplomacyIntrigue.UI
             try
             {
                 InformationManager.ShowInquiry(new InquiryData(
-                    title, body, true, true, yesText, "Back",
+                    title, body, true, true, yesText, DiText.T("DI_MENU_BACK", "Back"),
                     () =>
                     {
                         try
@@ -1331,7 +1466,8 @@ namespace DiplomacyIntrigue.UI
                         catch (Exception ex)
                         {
                             Log.Error("UI", "Diplomacy action failed.", ex);
-                            Notify("Something went wrong - see the Diplomacy & Intrigue log.");
+                            Notify(DiText.T("DI_MENU_SOMETHING_WENT_WRONG_SEE_THE_DIPLOMACY",
+                                "Something went wrong - see the Diplomacy & Intrigue log."));
                         }
                     },
                     () => { }), true);

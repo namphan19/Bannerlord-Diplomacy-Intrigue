@@ -697,8 +697,7 @@ namespace DiplomacyIntrigue.Diplomacy
                        + "Send: they march until the war ends or "
                        + DiplomacyConstants.SummonsDurationDays.ToString("0") + " days pass. Your ruler's "
                        + "own party is never taken." + Environment.NewLine
-                       + "Refuse: defiance. It costs " + refusedTrust + " trust with " + q.Patron.Name
-                       + ", earns a mark, and " + CallToArms.RenounceClause(q.Link)
+                        + CallToArms.SummonsRenounceLine(q.Link, q.Patron.Name.ToString(), refusedTrust)
                        + Environment.NewLine + Environment.NewLine
                        + q.Patron.Name + " has already paid " + q.Influence + " influence and "
                        + q.Gold.ToString("N0") + " denars for the order. Neither answer refunds it.";
@@ -706,10 +705,14 @@ namespace DiplomacyIntrigue.Diplomacy
             try
             {
                 InformationManager.ShowInquiry(new InquiryData(
-                    "A summons from " + q.Patron.Name,
+                    DiText.T("DI_DIPLOMACY_SUMMONS_FROM_NAME_2",
+                        "A summons from {NAME}",
+                        ("NAME", q.Patron.Name)),
                     body,
                     true, true,
-                    "Send " + parties + " parties", "Refuse",
+                    DiText.T("DI_DIPLOMACY_SEND_PARTIES_PARTIES_2",
+                        "Send {PARTIES} parties",
+                        ("PARTIES", parties)), DiText.T("DI_DIPLOMACY_REFUSE", "Refuse"),
                     () => { try { Serve(state, q); } catch (Exception ex) { Log.Error("Summons", "Answering a summons failed.", ex); } },
                     () => { try { Refuse(state, q, "declined by the ruler"); } catch (Exception ex) { Log.Error("Summons", "Refusing a summons failed.", ex); } },
                     ""), true);

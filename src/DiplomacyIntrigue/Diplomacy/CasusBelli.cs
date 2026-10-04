@@ -76,6 +76,34 @@ namespace DiplomacyIntrigue.Diplomacy
             => Legitimacy(Resolve(state, aggressor, defender, detail));
 
         /// <summary>
+        /// A war justification as a player reads it, behind a key.
+        ///
+        /// The enum's own name is not a sentence and must never reach a screen: it is an
+        /// identifier the save system and the analysis script key on, it cannot be translated
+        /// (a translator is handed a word, not a value), and it reads as a bug on a screen.
+        /// The Realm tab's claim list and the war headline are where it showed up - live,
+        /// 2026-10-04, "Sturgia / ReclaimAncestralLand".
+        ///
+        /// The log and the telemetry keep the enum names on purpose (story 4.1 §3 Out): they are
+        /// what <c>analyse-log.py</c> reads.
+        /// </summary>
+        public static string NameOf(CasusBelliType type)
+        {
+            switch (type)
+            {
+                case CasusBelliType.Conquest: return Core.DiText.T("DI_DIPLOMACY_CASUS_CONQUEST", "conquest");
+                case CasusBelliType.ReclaimAncestralLand: return Core.DiText.T("DI_DIPLOMACY_CASUS_RECLAIM_ANCESTRAL_LAND", "reclaim ancestral land");
+                case CasusBelliType.AvengeRaid: return Core.DiText.T("DI_DIPLOMACY_CASUS_AVENGE_A_RAID", "avenge a raid");
+                case CasusBelliType.BrokenTreaty: return Core.DiText.T("DI_DIPLOMACY_CASUS_A_BROKEN_TREATY", "a broken treaty");
+                case CasusBelliType.EspionageExposed: return Core.DiText.T("DI_DIPLOMACY_CASUS_AN_EXPOSED_NETWORK", "an exposed network");
+                case CasusBelliType.DefendAlly: return Core.DiText.T("DI_DIPLOMACY_CASUS_HONOURING_AN_ALLIANCE", "honouring an alliance");
+                case CasusBelliType.SupportClaimant: return Core.DiText.T("DI_DIPLOMACY_CASUS_A_CLAIMANT", "a claimant");
+                case CasusBelliType.TradeDispute: return Core.DiText.T("DI_DIPLOMACY_CASUS_A_TRADE_DISPUTE", "a trade dispute");
+                default: return Core.DiText.T("DI_DIPLOMACY_CASUS_NO_CLAIM_ON_RECORD", "no claim on record");
+            }
+        }
+
+        /// <summary>
         /// Range 0..1. Zero means the war reads as naked aggression; one means it is
         /// broadly accepted as just.
         /// </summary>

@@ -282,14 +282,16 @@ namespace DiplomacyIntrigue.Intrigue
             BlocModel.Invalidate();
             SkillXp.AppointmentMade(q);
 
-            Log.Info("Offices", kingdom.Name + " (" + ruler.Name + ") appointed " + candidate.Name + " of " + candidate.Clan?.Name
-                                + " " + StatecraftModel.TitleOf(seat) + ": " + q.Influence + " influence, " + q.Gold
-                                + " denars (Leadership x" + q.LeadershipFactor.ToString("0.00") + ", Trade x"
-                                + q.TradeFactor.ToString("0.00") + "). " + StatecraftModel.SkillName(StatecraftModel.SkillOf(seat))
-                                + " " + q.SkillNow + " -> " + q.SkillAfter
-                                + (q.FavouredHouse == null ? "" : "; " + q.FavouredHouse.Name + " loyalty "
-                                   + q.LoyaltyBefore.ToString("0.0") + " -> " + LoyaltyModel.Of(state, q.FavouredHouse).ToString("0.0"))
-                                + ".");
+            // The log line is English whatever the game's language (story 4.1 §3).
+            using (Core.DiText.English())
+                Log.Info("Offices", kingdom.Name + " (" + ruler.Name + ") appointed " + candidate.Name + " of " + candidate.Clan?.Name
+                                    + " " + StatecraftModel.TitleOf(seat) + ": " + q.Influence + " influence, " + q.Gold
+                                    + " denars (Leadership x" + q.LeadershipFactor.ToString("0.00") + ", Trade x"
+                                    + q.TradeFactor.ToString("0.00") + "). " + StatecraftModel.SkillName(StatecraftModel.SkillOf(seat))
+                                    + " " + q.SkillNow + " -> " + q.SkillAfter
+                                    + (q.FavouredHouse == null ? "" : "; " + q.FavouredHouse.Name + " loyalty "
+                                       + q.LoyaltyBefore.ToString("0.0") + " -> " + LoyaltyModel.Of(state, q.FavouredHouse).ToString("0.0"))
+                                    + ".");
             Telemetry.Event("office_appointed", "kingdom", kingdom, "seat", seat.ToString(), "holder", candidate,
                 "house", candidate.Clan, "influence", q.Influence, "gold", q.Gold, "skillBefore", q.SkillNow,
                 "skillAfter", q.SkillAfter, "loyaltyBefore", q.LoyaltyBefore,
@@ -493,8 +495,10 @@ namespace DiplomacyIntrigue.Intrigue
             try
             {
                 InformationManager.ShowInquiry(new InquiryData(
-                    "A seat at " + q.Ruler.Name + "'s table", body, true, true,
-                    "Accept the seat", "Decline",
+                    DiText.T("DI_INTRIGUE_SEAT_AT_TABLE_NAME_2",
+                        "A seat at {NAME}'s table",
+                        ("NAME", q.Ruler.Name)), body, true, true,
+                    DiText.T("DI_INTRIGUE_ACCEPT_THE_SEAT_2", "Accept the seat"), DiText.T("DI_INTRIGUE_DECLINE_2", "Decline"),
                     () =>
                     {
                         // Runs from the UI, outside any campaign handler's try.

@@ -72,6 +72,11 @@ finally {
 
 $mod = Join-Path $stage "DiplomacyIntrigue"
 Copy-Item (Join-Path $repo "module/DiplomacyIntrigue") $mod -Recurse
+# VI joins the community patch's Vietnamese; for everyone else it would define a second, broken
+# language, and what the launcher does then was never verified (story 4.2 AC2). It is never in a
+# release - a player who has the patch gets it from a separate download, once the strings exist.
+$vi = Join-Path $mod "ModuleData/Languages/VI"
+if (Test-Path $vi) { Remove-Item $vi -Recurse -Force }
 $bin = Join-Path $mod "bin/Win64_Shipping_Client"
 if (Test-Path $bin) { Remove-Item $bin -Recurse -Force }
 New-Item -ItemType Directory -Force $bin | Out-Null

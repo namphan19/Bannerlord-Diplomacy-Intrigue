@@ -114,22 +114,34 @@ namespace DiplomacyIntrigue.Intrigue
             // So it reads as the words on the paper, which is what that court can justify. An
             // exposure is what names a forger to anyone (design 03 §5).
             if (type == GrievanceType.ForgedLetters)
-                return holder != Clan.PlayerClan ? "Letters in the crown's hand - forged"
-                                                : "Letters in the crown's hand";
+                return holder != Clan.PlayerClan
+                    ? DiText.T("DI_GRIEVANCE_FORGED_LETTERS_RIVAL", "Letters in the crown's hand - forged")
+                    : DiText.T("DI_GRIEVANCE_FORGED_LETTERS_OWN", "Letters in the crown's hand");
 
             switch (type)
             {
-                case GrievanceType.FiefToRival: return "A fief given to another";
-                case GrievanceType.UnjustWar: return "An unjust war";
-                case GrievanceType.HumiliatingTribute: return "Tribute paid to a foreign crown";
-                case GrievanceType.RelativeInCaptivity: return "Kin left in an enemy cell";
-                case GrievanceType.FiefLostToEnemy: return "A fief the crown failed to defend";
-                case GrievanceType.PolicyAgainstAgenda: return "A policy against their interest";
-                case GrievanceType.PeaceWhileWinning: return "Peace made while they were winning";
-                case GrievanceType.RequestRefused: return "A request refused";
-                case GrievanceType.SuccessionPassedOver: return "Their candidate for the throne passed over";
-                case GrievanceType.DismissedFromOffice: return "A seat at court taken back";
-                default: return "An old slight";
+                case GrievanceType.FiefToRival:
+                    return DiText.T("DI_GRIEVANCE_FIEF_TO_RIVAL", "A fief given to another");
+                case GrievanceType.UnjustWar:
+                    return DiText.T("DI_GRIEVANCE_UNJUST_WAR", "An unjust war");
+                case GrievanceType.HumiliatingTribute:
+                    return DiText.T("DI_GRIEVANCE_HUMILIATING_TRIBUTE", "Tribute paid to a foreign crown");
+                case GrievanceType.RelativeInCaptivity:
+                    return DiText.T("DI_GRIEVANCE_RELATIVE_IN_CAPTIVITY", "Kin left in an enemy cell");
+                case GrievanceType.FiefLostToEnemy:
+                    return DiText.T("DI_GRIEVANCE_FIEF_LOST_TO_ENEMY", "A fief the crown failed to defend");
+                case GrievanceType.PolicyAgainstAgenda:
+                    return DiText.T("DI_GRIEVANCE_POLICY_AGAINST_AGENDA", "A policy against their interest");
+                case GrievanceType.PeaceWhileWinning:
+                    return DiText.T("DI_GRIEVANCE_PEACE_WHILE_WINNING", "Peace made while they were winning");
+                case GrievanceType.RequestRefused:
+                    return DiText.T("DI_GRIEVANCE_REQUEST_REFUSED", "A request refused");
+                case GrievanceType.SuccessionPassedOver:
+                    return DiText.T("DI_GRIEVANCE_SUCCESSION_PASSED_OVER", "Their candidate for the throne passed over");
+                case GrievanceType.DismissedFromOffice:
+                    return DiText.T("DI_GRIEVANCE_DISMISSED_FROM_OFFICE", "A seat at court taken back");
+                default:
+                    return DiText.T("DI_GRIEVANCE_OLD_SLIGHT", "An old slight");
             }
         }
 

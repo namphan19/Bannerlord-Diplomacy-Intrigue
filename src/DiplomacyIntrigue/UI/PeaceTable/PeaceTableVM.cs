@@ -73,6 +73,12 @@ namespace DiplomacyIntrigue.UI.Negotiation
 
         // ----- header ----------------------------------------------------------
 
+        // ----- static labels, moved out of the prefab (story 4.1 §9) ---------------------
+
+        [DataSourceProperty] public string WhitePeaceText => DiText.T("DI_PEACE_WHITE_PEACE", "White peace");
+        [DataSourceProperty] public string CancelText => DiText.T("DI_PEACE_CANCEL", "Cancel");
+        [DataSourceProperty] public string RefuseText => DiText.T("DI_PEACE_REFUSE", "Refuse");
+
         [DataSourceProperty] public string Title { get; private set; } = string.Empty;
         [DataSourceProperty] public string Subtitle { get; private set; } = string.Empty;
         [DataSourceProperty] public Color OurColor { get; private set; }
@@ -273,7 +279,7 @@ namespace DiplomacyIntrigue.UI.Negotiation
             // headline words it the same way rather than printing "over None".
             var story = (war.Justification == CasusBelliType.None
                             ? "War with no claim on record"
-                            : "War over " + war.Justification)
+                            : "War over " + CasusBelli.NameOf(war.Justification))
                         + "   -   " + war.DaysElapsed.ToString("0")
                         + (war.DaysElapsed.ToString("0") == "1" ? " day" : " days")
                         + (war.IsObligationWar && war.CalledBy != null
@@ -284,16 +290,22 @@ namespace DiplomacyIntrigue.UI.Negotiation
                 // Two different offers arrive through this face: a losing court buying
                 // its peace with concessions, and a winning court naming the price of
                 // one. The title says which, because every line below reads differently.
-                Title = _weAreWinner
-                    ? _them.Name + " asks for peace"
-                    : _them.Name + " names its price for peace";
-                Subtitle = story + "   -   your own condition: "
-                           + ExhaustionBands.Condition(war.ExhaustionOf(_us));
+                Title = _weAreWinner ? DiText.T("DI_PEACE_ASKS_FOR_PEACE_NAME_2",
+                    "{NAME} asks for peace",
+                    ("NAME", _them.Name)) : DiText.T("DI_PEACE_NAMES_ITS_PRICE_FOR_PEACE_NAME_2",
+                    "{NAME} names its price for peace",
+                    ("NAME", _them.Name));
+                Subtitle = DiText.T("DI_PEACE_YOUR_OWN_CONDITION_STORY_CONDITION_2",
+                    "{STORY}   -   your own condition: {CONDITION}",
+                    ("STORY", story),
+                    ("CONDITION", ExhaustionBands.Condition(war.ExhaustionOf(_us))));
                 BuildIncoming();
             }
             else
             {
-                Title = (_weAreWinner ? "Peace with " : "Sue for peace with ") + _them.Name;
+                Title = _weAreWinner ? DiText.T("DI_PEACE_PEACE_WITH_NAME_2", "Peace with {NAME}", ("NAME", _them.Name)) : DiText.T("DI_PEACE_SUE_FOR_PEACE_WITH_NAME_2",
+                    "Sue for peace with {NAME}",
+                    ("NAME", _them.Name));
                 Subtitle = story + "   -   their condition: "
                            + ExhaustionBands.Condition(war.ExhaustionOf(_them));
                 BuildEditable();
@@ -304,29 +316,29 @@ namespace DiplomacyIntrigue.UI.Negotiation
         {
             ShowOfferButtons = true;
             ShowAnswerButtons = false;
-            OfferText = "Offer these terms";
+            OfferText = DiText.T("DI_PEACE_OFFER_THESE_TERMS_2", "Offer these terms");
             OfferColor = PeaceTermRowVM.OnNameColor;
 
             var winner = _weAreWinner ? _us : _them;
             var loser = _weAreWinner ? _them : _us;
             var budget = PeaceTable.BudgetFor(_war, winner);
 
-            BudgetLabel = _weAreWinner ? "What this war has earned" : "What this war has earned them";
+            BudgetLabel = _weAreWinner ? DiText.T("DI_PEACE_WHAT_THIS_WAR_HAS_EARNED_2", "What this war has earned") : DiText.T("DI_PEACE_WHAT_THIS_WAR_HAS_EARNED_THEM_2", "What this war has earned them");
             BudgetText = budget.ToString("0");
-            TermsHeader = _weAreWinner ? "What you demand" : "What you offer";
-            PriceHeader = _weAreWinner ? "price" : "worth";
-            BudgetNote = "Above the cliff a winner asks for standing, not coin. Below it,"
-                         + " only for what coin can buy."
-                         // Design 08 S-2: the budget is the score as the envoys argued it.
-                         + (budget > 0f && Statecraft.StatecraftModel.Enabled
-                             ? " " + Statecraft.StatecraftTerms.NegotiationLine(winner, loser)
-                               + " (war score " + WarScore.For(_war, winner).ToString("0") + ")."
-                             : "");
+            TermsHeader = _weAreWinner ? DiText.T("DI_PEACE_WHAT_YOU_DEMAND_2", "What you demand") : DiText.T("DI_PEACE_WHAT_YOU_OFFER_2", "What you offer");
+            PriceHeader = _weAreWinner ? DiText.T("DI_PEACE_PRICE_2", "price") : DiText.T("DI_PEACE_WORTH_2", "worth");
+            BudgetNote = budget > 0f && Statecraft.StatecraftModel.Enabled ? DiText.T("DI_PEACE_ABOVE_THE_CLIFF_WINNER_ASKS_FOR_NEGOTIATIONLINE_FOR_2",
+                "Above the cliff a winner asks for standing, not coin. Below it, only for what coin can buy. {NEGOTIATIONLINE} (war score {FOR}).",
+                ("NEGOTIATIONLINE", Statecraft.StatecraftTerms.NegotiationLine(winner, loser)),
+                ("FOR", WarScore.For(_war, winner).ToString("0"))) : DiText.T("DI_PEACE_ABOVE_THE_CLIFF_WINNER_ASKS_FOR_2",
+                "Above the cliff a winner asks for standing, not coin. Below it, only for what coin can buy.");
 
             var cliff = PeaceTable.SubjugationCost;
             ShowCliff = budget >= cliff;
             CliffPercent = budget <= 0f ? 0 : (int)Math.Min(100f, cliff / budget * 100f);
-            CliffText = "the cliff   -   " + cliff.ToString("0");
+            CliffText = DiText.T("DI_PEACE_THE_CLIFF_CLIFF_2",
+                "the cliff   -   {CLIFF}",
+                ("CLIFF", cliff.ToString("0")));
 
             _specs.Clear();
             foreach (var spec in Catalogue(winner, loser)) _specs.Add(spec);
@@ -348,7 +360,7 @@ namespace DiplomacyIntrigue.UI.Negotiation
         {
             ShowOfferButtons = false;
             ShowAnswerButtons = true;
-            AcceptText = _incoming.IsWhitePeace ? "Make peace" : "Accept these terms";
+            AcceptText = _incoming.IsWhitePeace ? DiText.T("DI_PEACE_MAKE_PEACE_2", "Make peace") : DiText.T("DI_PEACE_ACCEPT_THESE_TERMS_2", "Accept these terms");
             OfferColor = PeaceTermRowVM.OnNameColor;
 
             // _weAreWinner here means the offer is a loser's concession to us (the
@@ -359,32 +371,37 @@ namespace DiplomacyIntrigue.UI.Negotiation
             var winner = _incoming.Winner;
             var cost = PeaceTable.CostOf(_incoming);
             var theirScore = WarScore.For(_war, _them);
-            BudgetLabel = conceding
-                ? "What " + _them.Name + "'s offer costs them"
-                : "What " + _them.Name + " asks of you";
+            BudgetLabel = conceding ? DiText.T("DI_PEACE_WHAT_OFFER_COSTS_THEM_NAME_2",
+                "What {NAME}'s offer costs them",
+                ("NAME", _them.Name)) : DiText.T("DI_PEACE_WHAT_ASKS_OF_YOU_NAME_2",
+                "What {NAME} asks of you",
+                ("NAME", _them.Name));
             BudgetText = cost.ToString("0");
-            SpentText = "of a war they are " + (theirScore < 0f ? "losing" : "winning")
-                        + " at score " + (theirScore >= 0f ? "+" : "") + theirScore.ToString("0");
+            SpentText = theirScore < 0f ? DiText.T("DI_PEACE_OF_WAR_THEY_ARE_LOSING_AT_THEIRSCORE_THEIRSCORE_2_2",
+                "of a war they are losing at score {THEIRSCORE}{THEIRSCORE_2}",
+                ("THEIRSCORE", theirScore >= 0f ? "+" : ""),
+                ("THEIRSCORE_2", theirScore.ToString("0"))) : DiText.T("DI_PEACE_OF_WAR_THEY_ARE_WINNING_AT_THEIRSCORE_THEIRSCORE_2_2",
+                "of a war they are winning at score {THEIRSCORE}{THEIRSCORE_2}",
+                ("THEIRSCORE", theirScore >= 0f ? "+" : ""),
+                ("THEIRSCORE_2", theirScore.ToString("0")));
             SpentColor = PeaceTermRowVM.MutedColor;
             var budget = PeaceTable.BudgetFor(_war, winner);
             FillPercent = budget <= 0f ? (cost > 0f ? 100 : 0)
                 : (int)Math.Min(100f, cost / budget * 100f);
             FillColor = "#4D7F52FF";
             ShowCliff = false;
-            BudgetNote = conceding
-                ? "The same formula either side of the table reads: this is what their"
-                  + " own court judged affordable, not a gift."
-                : "The same formula either side of the table reads: this is priced against what"
-                  + " the war has earned them, the figure your own table would show them.";
-            TermsHeader = conceding ? "What they offer" : "What they demand";
-            PriceHeader = conceding ? "worth" : "price";
-            TableNote = "This is their table, not yours   -   nothing here is editable. What you"
-                        + " can change is only whether you sign.";
+            BudgetNote = conceding ? DiText.T("DI_PEACE_THE_SAME_FORMULA_EITHER_SIDE_OF_2",
+                "The same formula either side of the table reads: this is what their own court judged affordable, not a gift.") : DiText.T("DI_PEACE_THE_SAME_FORMULA_EITHER_SIDE_OF_3",
+                "The same formula either side of the table reads: this is priced against what the war has earned them, the figure your own table would show them.");
+            TermsHeader = conceding ? DiText.T("DI_PEACE_WHAT_THEY_OFFER_2", "What they offer") : DiText.T("DI_PEACE_WHAT_THEY_DEMAND_2", "What they demand");
+            PriceHeader = conceding ? DiText.T("DI_PEACE_WORTH", "worth") : DiText.T("DI_PEACE_PRICE", "price");
+            TableNote = DiText.T("DI_PEACE_THIS_IS_THEIR_TABLE_NOT_YOURS_2",
+                "This is their table, not yours   -   nothing here is editable. What you can change is only whether you sign.");
 
             // Read only: the rows are the standard catalogue with their package ticked.
             // A line left out says so; a line the model would not allow at all keeps the
             // model's own reason, so a blank never pretends to be a choice.
-            var notIncluded = conceding ? "Not in their offer." : "Not in their demand.";
+            var notIncluded = conceding ? DiText.T("DI_PEACE_NOT_IN_THEIR_OFFER_2", "Not in their offer.") : DiText.T("DI_PEACE_NOT_IN_THEIR_DEMAND_2", "Not in their demand.");
             var rows = new MBBindingList<PeaceTermRowVM>();
             foreach (var spec in Catalogue(_incoming.Winner, _incoming.Loser))
             {
@@ -413,9 +430,10 @@ namespace DiplomacyIntrigue.UI.Negotiation
 
             // Captives.
             Add(specs, PeaceTermKind.Captives, null,
-                _weAreWinner ? "Their captives returned" : "Release their captives",
-                _weAreWinner ? "Every lord of yours they hold walks free."
-                    : "We free every hero of theirs we hold.",
+                _weAreWinner ? DiText.T("DI_PEACE_THEIR_CAPTIVES_RETURNED_2", "Their captives returned") : DiText.T("DI_PEACE_RELEASE_THEIR_CAPTIVES_2", "Release their captives"),
+                _weAreWinner ? DiText.T("DI_PEACE_EVERY_LORD_OF_YOURS_THEY_HOLD_2",
+                    "Every lord of yours they hold walks free.") : DiText.T("DI_PEACE_WE_FREE_EVERY_HERO_OF_THEIRS_2",
+                    "We free every hero of theirs we hold."),
                 winner, loser, t => t.ReleasePrisoners = true);
 
             // Indemnity, sized by the same resolver the AI ladders use: the war score says how
@@ -427,20 +445,24 @@ namespace DiplomacyIntrigue.UI.Negotiation
                 : PeaceTable.LargestIndemnity(_war, winner, loser);
             if (gold >= 1000)
                 Add(specs, PeaceTermKind.Indemnity, null,
-                    "An indemnity of " + gold + " denars",
-                    (_weAreWinner
-                        ? "Sized by what the war earned you, against their treasury: "
-                        : "Sized by what this war earned them, against our treasury: ")
-                    + PeaceTable.DescribeIndemnity(gold, loser) + ".",
+                    DiText.T("DI_PEACE_AN_INDEMNITY_OF_DENARS_GOLD_2",
+                        "An indemnity of {GOLD} denars",
+                        ("GOLD", gold)),
+                    _weAreWinner ? DiText.T("DI_PEACE_SIZED_BY_WHAT_THE_WAR_EARNED_DESCRIBEINDEMNITY_2",
+                        "Sized by what the war earned you, against their treasury: {DESCRIBEINDEMNITY}.",
+                        ("DESCRIBEINDEMNITY", PeaceTable.DescribeIndemnity(gold, loser))) : DiText.T("DI_PEACE_SIZED_BY_WHAT_THIS_WAR_EARNED_DESCRIBEINDEMNITY_2",
+                        "Sized by what this war earned them, against our treasury: {DESCRIBEINDEMNITY}.",
+                        ("DESCRIBEINDEMNITY", PeaceTable.DescribeIndemnity(gold, loser))),
                     winner, loser, t => t.IndemnityGold = gold);
 
             // Tribute.
             Add(specs, PeaceTermKind.Tribute, null,
-                _weAreWinner
-                    ? "Tribute, " + DiplomacyConstants.AiDefaultTributePerPeriod + " per period"
-                    : "Agree to pay tribute",
-                _weAreWinner ? "They buy the peace. They owe you no army."
-                    : "A tributary pays for peace and keeps everything else.",
+                _weAreWinner ? DiText.T("DI_PEACE_TRIBUTE_PER_PERIOD_AIDEFAULTTRIBUTEPERPERIOD_2",
+                    "Tribute, {AIDEFAULTTRIBUTEPERPERIOD} per period",
+                    ("AIDEFAULTTRIBUTEPERPERIOD", DiplomacyConstants.AiDefaultTributePerPeriod)) : DiText.T("DI_PEACE_AGREE_TO_PAY_TRIBUTE_2", "Agree to pay tribute"),
+                _weAreWinner ? DiText.T("DI_PEACE_THEY_BUY_THE_PEACE_THEY_OWE_2",
+                    "They buy the peace. They owe you no army.") : DiText.T("DI_PEACE_TRIBUTARY_PAYS_FOR_PEACE_AND_KEEPS_2",
+                    "A tributary pays for peace and keeps everything else."),
                 winner, loser, t =>
                 {
                     t.ImposeTributaryPact = true;
@@ -459,8 +481,10 @@ namespace DiplomacyIntrigue.UI.Negotiation
                 Add(land, PeaceTermKind.Land, fief,
                     fief.Name.ToString(),
                     _weAreWinner
-                        ? "Your " + (claim != null ? claim.Type.ToString() : "claim")
-                          + " is what entitles you to ask for land at all."
+                        ? DiText.T("DI_PEACE_YOUR_CLAUSE_IS_WHAT_ENTITLES_YOU_TO",
+                            "Your {CLAUSE} is what entitles you to ask for land at all.",
+                            ("CLAUSE", claim != null ? CasusBelli.NameOf(claim.Type) : DiText.T("DI_PEACE_AN_UNSTATED_CLAIM", "unstated claim")))
+                          + "."
                         : "Cede it and it changes hands on signing.",
                     winner, loser, t => t.FiefsCeded.Add(captured));
             }
@@ -474,16 +498,18 @@ namespace DiplomacyIntrigue.UI.Negotiation
             var names = new List<string>(held.Count);
             for (var i = 0; i < held.Count; i++) names.Add(held[i].SubordinateParty.Name.ToString());
             Add(specs, PeaceTermKind.Dissolution, null,
-                _weAreWinner ? "They release their vassals" : "Release our vassals",
-                held.Count == 0
-                    ? "There is no sphere to break up."
-                    : string.Join(", ", names.ToArray()) + " walk free, and their sphere ends with them.",
+                _weAreWinner ? DiText.T("DI_PEACE_THEY_RELEASE_THEIR_VASSALS_2", "They release their vassals") : DiText.T("DI_PEACE_RELEASE_OUR_VASSALS_2", "Release our vassals"),
+                held.Count == 0 ? DiText.T("DI_PEACE_THERE_IS_NO_SPHERE_TO_BREAK_2",
+                    "There is no sphere to break up.") : DiText.T("DI_PEACE_WALK_FREE_AND_THEIR_SPHERE_ENDS_JOIN_2",
+                    "{NAMES} walk free, and their sphere ends with them.",
+                    ("NAMES", string.Join(", ", names.ToArray()))),
                 winner, loser, t => t.DissolveHegemony = true);
             Add(specs, PeaceTermKind.Submission, null,
-                _weAreWinner ? "Their submission as your vassal" : "Submit as their vassal",
-                _weAreWinner
-                    ? "They kneel: tribute, and their army answers your call. Only above the cliff."
-                    : "We keep our ruler and lands, and owe troops, tribute and foreign policy.",
+                _weAreWinner ? DiText.T("DI_PEACE_THEIR_SUBMISSION_AS_YOUR_VASSAL_2",
+                    "Their submission as your vassal") : DiText.T("DI_PEACE_SUBMIT_AS_THEIR_VASSAL_2", "Submit as their vassal"),
+                _weAreWinner ? DiText.T("DI_PEACE_THEY_KNEEL_TRIBUTE_AND_THEIR_ARMY_2",
+                    "They kneel: tribute, and their army answers your call. Only above the cliff.") : DiText.T("DI_PEACE_WE_KEEP_OUR_RULER_AND_LANDS_2",
+                    "We keep our ruler and lands, and owe troops, tribute and foreign policy."),
                 winner, loser, t =>
                 {
                     t.ImposeVassalage = true;
@@ -515,8 +541,11 @@ namespace DiplomacyIntrigue.UI.Negotiation
                     Kind = PeaceTermKind.Land,
                     Fief = null,
                     Apply = t => { },
-                    Name = (_weAreWinner ? "Their land" : "Our land")
-                           + " (" + land.Count + " fiefs)",
+                    Name = _weAreWinner ? DiText.T("DI_PEACE_THEIR_LAND_FIEFS_COUNT_2",
+                        "Their land ({COUNT} fiefs)",
+                        ("COUNT", land.Count)) : DiText.T("DI_PEACE_OUR_LAND_FIEFS_COUNT_2",
+                        "Our land ({COUNT} fiefs)",
+                        ("COUNT", land.Count)),
                     Desc = reason,
                     Price = "-",
                     Enabled = false,
@@ -541,7 +570,7 @@ namespace DiplomacyIntrigue.UI.Negotiation
                 Desc = desc,
                 Price = PeaceTable.CostOf(trial).ToString("0"),
                 Enabled = enabled,
-                DisabledReason = reason ?? "Cannot be asked in this war.",
+                DisabledReason = reason ?? DiText.T("DI_PEACE_CANNOT_BE_ASKED_IN_THIS_WAR", "Cannot be asked in this war."),
             });
         }
 
@@ -636,10 +665,11 @@ namespace DiplomacyIntrigue.UI.Negotiation
 
             if (over)
             {
-                VerdictText = "They refuse";
+                VerdictText = DiText.T("DI_PEACE_THEY_REFUSE_2", "They refuse");
                 VerdictColor = Color.ConvertStringToColor("#E08070FF");
-                VerdictWhy = "You are asking " + (-left).ToString("0")
-                             + " more than this war has earned. Drop a term, or fight on.";
+                VerdictWhy = DiText.T("DI_PEACE_YOU_ARE_ASKING_MORE_THAN_THIS_LEFT_2",
+                    "You are asking {LEFT} more than this war has earned. Drop a term, or fight on.",
+                    ("LEFT", (-left).ToString("0")));
                 if (OfferEnabled) OfferEnabled = false;
                 return;
             }
@@ -651,7 +681,7 @@ namespace DiplomacyIntrigue.UI.Negotiation
                 var ours = _incoming.Loser == _us
                     ? PeaceTable.WouldAccept(_state, _war, _incoming, out var why)
                     : PeaceTable.WinnerWouldAccept(_state, _war, _incoming, out why);
-                VerdictText = ours ? "Worth taking" : "Worth refusing";
+                VerdictText = ours ? DiText.T("DI_PEACE_WORTH_TAKING_2", "Worth taking") : DiText.T("DI_PEACE_WORTH_REFUSING_2", "Worth refusing");
                 VerdictColor = ours
                     ? Color.ConvertStringToColor("#9AC26AFF")
                     : Color.ConvertStringToColor("#E08070FF");
@@ -669,17 +699,18 @@ namespace DiplomacyIntrigue.UI.Negotiation
                 : PeaceTable.WinnerWouldAccept(_state, _war, terms, out reason);
             if (accepted)
             {
-                VerdictText = "They will sign";
+                VerdictText = DiText.T("DI_PEACE_THEY_WILL_SIGN_2", "They will sign");
                 VerdictColor = Color.ConvertStringToColor("#9AC26AFF");
-                VerdictWhy = "Every term here is inside what the war has earned. "
-                             + left.ToString("0") + " left unspent.";
+                VerdictWhy = DiText.T("DI_PEACE_EVERY_TERM_HERE_IS_INSIDE_WHAT_LEFT_2",
+                    "Every term here is inside what the war has earned. {LEFT} left unspent.",
+                    ("LEFT", left.ToString("0")));
                 OfferEnabled = true;
             }
             else
             {
-                VerdictText = "They refuse";
+                VerdictText = DiText.T("DI_PEACE_THEY_REFUSE", "They refuse");
                 VerdictColor = Color.ConvertStringToColor("#E08070FF");
-                VerdictWhy = reason ?? "Not now.";
+                VerdictWhy = reason ?? DiText.T("DI_PEACE_NOT_NOW", "Not now.");
                 OfferEnabled = false;
             }
         }

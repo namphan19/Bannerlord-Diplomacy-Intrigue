@@ -43,7 +43,10 @@ namespace DiplomacyIntrigue.Patches
                 var state = CoreBehavior.State;
                 if (state == null) return true;
 
-                var refusal = TreatyEnforcement.WhyWarActionRefused(state, faction1, faction2);
+                // The refusal is only ever logged, so it is built in English whatever the game's
+                // language (story 4.1 §3).
+                string refusal;
+                using (DiText.English()) refusal = TreatyEnforcement.WhyWarActionRefused(state, faction1, faction2);
                 if (refusal == null) return true;
 
                 Log.Info("Enforce", "Refused war via default: " + faction1.Name + " -> " + faction2.Name

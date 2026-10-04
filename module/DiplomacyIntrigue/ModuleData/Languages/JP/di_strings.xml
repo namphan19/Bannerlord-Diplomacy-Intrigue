@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<base xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" type="string">
+    <!-- JP - not translated yet. Copy the keys from EN/di_strings.xml and translate the text
+      column; keep every {VARIABLE}. docs/localization.md has the whole procedure. -->
+  <tags>
+    <tag language="日本語" />
+  </tags>
+  <strings>
+  </strings>
+</base>

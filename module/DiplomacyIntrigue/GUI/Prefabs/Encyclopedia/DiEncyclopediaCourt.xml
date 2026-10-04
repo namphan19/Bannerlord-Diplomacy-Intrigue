@@ -46,7 +46,7 @@
                           <Children>
                             <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
                                 HeightSizePolicy="CoverChildren" VerticalAlignment="Center" Brush="DiRealm.Small" Brush.FontSize="16"
-                                Text="THE CROWN'S STANDING" />
+                                Text="@StandingTitleText" />
                             <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
                                 HeightSizePolicy="CoverChildren" MarginLeft="12" VerticalAlignment="Center"
                                 Brush="DiRealm.Title" Brush.FontColor="@StandingColor" Text="@StandingText" />
@@ -79,7 +79,7 @@
                         StackLayout.LayoutMethod="VerticalTopToBottom">
                       <Children>
                         <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
-                            HeightSizePolicy="CoverChildren" Brush="DiRealm.Small" Brush.FontSize="16" Text="THE MOOD OF THE COURT" />
+                            HeightSizePolicy="CoverChildren" Brush="DiRealm.Small" Brush.FontSize="16" Text="@MoodTitleText" />
                         <!-- One segment per mood present, worst first, each as wide as its share of the houses -->
                         <ListPanel DataSource="{MoodSegments}" WidthSizePolicy="CoverChildren" HeightSizePolicy="Fixed"
                             SuggestedHeight="18" MarginTop="10">
@@ -98,7 +98,7 @@
 
                 <!-- What your envoys report -->
                 <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
-                    MarginTop="22" Brush="DiRealm.Small" Brush.FontSize="16" Text="WHAT YOUR ENVOYS REPORT" />
+                    MarginTop="22" Brush="DiRealm.Small" Brush.FontSize="16" Text="@EnvoysTitleText" />
                 <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
                     MarginTop="6" Brush="Encyclopedia.SubPage.Info.Text" Brush.FontSize="18" Text="@FactionReport" />
                 <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
@@ -108,7 +108,7 @@
                 <ListPanel WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren" MarginTop="22">
                   <Children>
                     <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
-                        Brush="DiRealm.Small" Brush.FontSize="16" Text="THEIR HOUSES" />
+                        Brush="DiRealm.Small" Brush.FontSize="16" Text="@HousesTitleText" />
                     <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
                         MarginLeft="10" Brush="DiRealm.Small" Brush.FontSize="16" Brush.FontColor="#A89878FF" Text="@HouseCountText" />
                   </Children>
@@ -121,11 +121,11 @@
                     <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent">
                       <Children>
                         <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="200"
-                            HeightSizePolicy="StretchToParent" MarginLeft="10" Brush="DiRealm.Small" Brush.FontSize="16" Text="HOUSE" />
+                            HeightSizePolicy="StretchToParent" MarginLeft="10" Brush="DiRealm.Small" Brush.FontSize="16" Text="@HouseColumnText" />
                         <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="180"
-                            HeightSizePolicy="StretchToParent" Brush="DiRealm.Small" Brush.FontSize="16" Text="HOW THEY ARE SPOKEN OF" />
+                            HeightSizePolicy="StretchToParent" Brush="DiRealm.Small" Brush.FontSize="16" Text="@SpokenOfColumnText" />
                         <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
-                            HeightSizePolicy="StretchToParent" Brush="DiRealm.Small" Brush.FontSize="16" Text="STANDING AT COURT" />
+                            HeightSizePolicy="StretchToParent" Brush="DiRealm.Small" Brush.FontSize="16" Text="@StandingAtCourtColumnText" />
                       </Children>
                     </ListPanel>
                   </Children>
@@ -169,7 +169,7 @@
 
                 <!-- Their ledger: what only an agent inside could read (Phase 3, ReadCourt) -->
                 <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
-                    MarginTop="22" Brush="DiRealm.Small" Brush.FontSize="16" Text="THEIR LEDGER" />
+                    MarginTop="22" Brush="DiRealm.Small" Brush.FontSize="16" Text="@LedgerTitleText" />
                 <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
                     MarginTop="6" Brush="DiRealm.Label" Brush.FontSize="17" Text="@LedgerNote" />
 

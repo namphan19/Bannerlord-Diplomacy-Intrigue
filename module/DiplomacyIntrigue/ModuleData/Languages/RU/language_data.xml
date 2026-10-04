@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Untranslated: the game shows the English that each DiText call carries in the code, so this
+     folder changes nothing until someone fills it in. See docs/localization.md for how. -->
+<LanguageData id="Русский" name="Русский" subtitle_extension="ru"
+              supported_iso="ru,rus,ru-ru,ru-md"
+              text_processor="TaleWorlds.Localization.TextProcessor.LanguageProcessors.RussianTextProcessor">
+  <LanguageFile xml_path="RU/di_strings.xml" />
+</LanguageData>

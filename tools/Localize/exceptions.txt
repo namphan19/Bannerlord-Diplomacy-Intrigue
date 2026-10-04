@@ -1,0 +1,71 @@
+# tools/Localize exceptions - the judgements a shape cannot make.
+#
+# One rule per line:  <file> | <method or *> | <reason>
+#
+# The file is matched on the tail of its path, so src/DiplomacyIntrigue/UI/... matches
+# "UI/ClanScreen/IntelligenceVM.cs". The method is the enclosing method's name; "*" is every
+# method in the file. The reason is copied into artifacts/localization/inventory.csv, so the
+# report says why a string was left English rather than leaving it to be guessed at later.
+#
+# Both directions live here: a diagnostic that lives in a view model (left English) and a
+# text-producing method outside UI/ with an ordinary name (keyed).
+
+# The Intelligence tab's own Describe(): a dump the lead reads from the console, binding by
+# binding. Its *values* come from properties that are keyed; its labels are for a tool.
+UI/ClanScreen/IntelligenceVM.cs | Describe | diagnostic dump read from the console, not from a screen
+
+# Mod Configuration Menu's setting names and hints are attribute arguments:
+# [SettingPropertyBool("Diplomacy", HintText = "...")]. An attribute argument has to be a
+# compile-time constant, so a DiText call cannot go there and these stay English in every
+# language. Translating them means adding entries to *MCM's* own
+# ModuleData/Languages/<code>/sta_strings.xml, which is another module's folder - whether MCM
+# looks a mod's setting up by its display text is unverified. 18 strings.
+Core/ModSettings.cs | * | MCM setting text: an attribute argument, so it cannot hold a key
+
+# DiplomacyMenu.DescribeOurStanding is a menu row a player clicks, so it is keyed - it is
+# listed here only to say the file's other Describe* helpers are not.
+
+# One sentence the shapes cannot judge, named by method AND wording. Added 2026-10-04.
+#
+# The method field may be "Name#English as the tool reports it" - "Name:123" for a line number also
+# works. Prefer the wording: a line number is moved by this tool's own rewriter, and six rules
+# written that way stopped firing the same day they were added, because applying the rewrite
+# inserted lines above them and put every site back into the convert list with nothing to say why.
+# The wording does not move. If the wording does change, the rule stops matching and the site comes
+# back into the report for a person - the direction that costs nothing.
+#
+# A rule is one line, so a sentence that breaks across lines writes its breaks as <br>. Braces are
+# what a variable looks like here, so the marker is not {NL}.
+#
+# Each has to name one expression rather than its whole method: DefectToAttacker holds "Kneel to
+# {NAME}" and a long defection line that the tool keys correctly, right beside "Cannot defect:
+# {REASON}", and a whole-method rule would take those too.
+#
+# What these six have in common: a {VARIABLE} holding a refusal sentence the callee wrote and the
+# method only receives - `TreatyRegistry.Sign(..., out var reason)` and its five relatives. The
+# tool's own out-parameter rule catches an `out var` written *inside* the expression; one written
+# on an earlier line of the same method is a hop it does not take, and one more hop would be
+# dataflow analysis. A key here would read "Refused: {REASON}" with English inside the braces.
+UI/DiplomacyMenu.cs | ProposePact#Refused: {REASON} | {REASON} is a refusal sentence from TreatyRegistry.Sign, written on an earlier line
+UI/DiplomacyMenu.cs | DemandTribute#Refused: {FAILED} | {FAILED} is a refusal sentence from TreatyRegistry.Sign, written on an earlier line
+UI/DiplomacyMenu.cs | DefectToAttacker#Cannot defect: {REASON} | {REASON} is a refusal sentence from AiDiplomacy.CanDefectToAttacker, written on an earlier line
+UI/DiplomacyMenu.cs | TryPeace#Failed: {FAILED} | {FAILED} is a refusal sentence from PeaceTable.Apply, written on an earlier line
+UI/DiplomacyMenu.cs | ShowFabricationTargets#Cannot fabricate: {REASON} | {REASON} is a refusal sentence from ClaimRegistry, written on an earlier line
+UI/DiplomacyMenu.cs | OfferSubmission#We offer {NAME} our oath: tribute of {AIDEFAULTTRIBUTEPERPERIOD} per period, troops in their wars, and our foreign policy answers to them.<br><br>The oath is the peace - our war with them ends the day it is sworn.<br><br>In exchange they owe us protection; a patron that does not defend its vassals loses them. What the move is worth to a court in our position: {VALUE} ({EXPLANATION}). | {EXPLANATION} is Hegemony.SubmissionValue's own sentence, so the line would read half in one language
+# Two methods whose sentences are assembled in code, held back whole. Added 2026-10-04.
+#
+# Power.Describe builds one line as "holds {N}% of Calradia's strength" plus a band clause
+# chosen at run time, glued with "; " in C#. Keying the head and the four clauses separately
+# would hand a translator six fragments of a sentence and no sentence - the head cannot move
+# after the clause in a language that puts it there, and the clause cannot move after the
+# number it qualifies. It needs one key per band, with the number as a variable, written by
+# hand when the bands are next touched.
+Diplomacy/Power.cs | Describe | one sentence assembled in code: the share, then a band clause glued with "; ". A key per fragment is a key per word, so the whole line is written by hand.
+
+# The peace table's price rows carry their column alignment inside the string - "town" followed
+# by fourteen spaces, so the amount lines up down the column. That padding is layout, and a
+# translation cannot keep it: a German "Stadt" plus a French "ville" do not line up with
+# anything. The padding has to move out of the key and into the prefab's alignment before these
+# can be keyed at all. DescribeAllowance also holds three whole sentences (the budget line and
+# the exhaustion line) which are keyed by hand for the same reason - they are in this method.
+Diplomacy/PeaceTable.cs | DescribeAllowance | the price rows carry their column alignment inside the string; padding is layout and cannot live in a key. The three whole sentences here are keyed by hand.

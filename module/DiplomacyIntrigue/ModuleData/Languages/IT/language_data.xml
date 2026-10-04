@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Untranslated: the game shows the English that each DiText call carries in the code, so this
+     folder changes nothing until someone fills it in. See docs/localization.md for how. -->
+<LanguageData id="Italiano" name="Italiano" subtitle_extension="it"
+              supported_iso="it,ita,it-it,it-ch"
+              text_processor="TaleWorlds.Localization.TextProcessor.LanguageProcessors.ItalianTextProcessor">
+  <LanguageFile xml_path="IT/di_strings.xml" />
+</LanguageData>

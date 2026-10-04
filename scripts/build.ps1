@@ -17,6 +17,11 @@ $repo = Split-Path -Parent $PSScriptRoot
 & (Join-Path $PSScriptRoot "check-save-ids.ps1")
 if ($LASTEXITCODE -ne 0) { throw "Save-data check failed - see above." }
 
+# Then the strings: a key with no entry renders as a raw "{=DI_...}" in every language except
+# English, which no test session here would ever see (story 4.1 AC5).
+& (Join-Path $PSScriptRoot "check-localization.ps1")
+if ($LASTEXITCODE -ne 0) { throw "Localization check failed - see above." }
+
 dotnet build (Join-Path $repo "DiplomacyIntrigue.sln") -c $Configuration --nologo
 if ($LASTEXITCODE -ne 0) { throw "Build failed with exit code $LASTEXITCODE." }
 

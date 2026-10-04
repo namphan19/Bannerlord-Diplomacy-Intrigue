@@ -86,13 +86,38 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             {
                 if (_clans[i].Clan.Name.ToString() != name) continue;
                 Select(_clans[i]);
-                return "Selected " + name + ": " + _clans[i].LoyaltyText + " " + _clans[i].BandText
-                       + ", " + _terms.Count + " terms, " + _grievances.Count + " grievance(s).";
+                return DiText.T("DI_COURT_SELECTED_TERMS_GRIEVANCE_NAME_LOYALTYTEXT_BANDTEXT_COUNT_2",
+                    "Selected {NAME}: {LOYALTYTEXT} {BANDTEXT}, {COUNT} terms, {COUNT_2} grievance(s).",
+                    ("NAME", name),
+                    ("LOYALTYTEXT", _clans[i].LoyaltyText),
+                    ("BANDTEXT", _clans[i].BandText),
+                    ("COUNT", _terms.Count),
+                    ("COUNT_2", _grievances.Count));
             }
-            return "No clan named \"" + name + "\" in the court list.";
+            return DiText.T("DI_COURT_NO_CLAN_NAMED_IN_THE_COURT_NAME_2",
+                "No clan named \"{NAME}\" in the court list.",
+                ("NAME", name));
         }
 
         // ----- bound surface ---------------------------------------------------
+
+        // ----- static labels, moved out of the prefab (story 4.1 §9) ---------------------
+
+        [DataSourceProperty] public string WorstWarTitleText => DiText.T("DI_COURT_THE_REALMS_WORST_WAR", "THE REALM'S WORST WAR");
+        [DataSourceProperty] public string LegitimacyTitleText => DiText.T("DI_COURT_CROWN_LEGITIMACY", "CROWN LEGITIMACY");
+        [DataSourceProperty] public string BlocsTitleText => DiText.T("DI_COURT_COURT_BLOCS", "Court blocs");
+        [DataSourceProperty] public string NoBlocsText => DiText.T("DI_COURT_NO_FRACTION_HAS_FORMED_NO_CAUSE", "No faction has formed. No cause is pulling hard enough on any clan to organise it.");
+        [DataSourceProperty] public string BlocExplainsText => DiText.T("DI_COURT_A_BLOC_VOTES_AS_ONE_ITS_MEMBERS", "A bloc votes as one: its members back whatever its leader wants. A clan at loyalty 70 or above ignores its bloc and votes with the crown.");
+        [DataSourceProperty] public string OfficesTitleText => DiText.T("DI_COURT_OFFICES_CHOOSE_A_SEAT_THEN_A", "OFFICES - CHOOSE A SEAT, THEN A HOUSE");
+        [DataSourceProperty] public string CourtTitleText => DiText.T("DI_COURT_THE_COURT", "The court");
+        [DataSourceProperty] public string ClanColumnText => DiText.T("DI_COURT_CLAN_COLUMN", "CLAN");
+        [DataSourceProperty] public string BlocColumnText => DiText.T("DI_COURT_BLOC_COLUMN", "BLOC");
+        [DataSourceProperty] public string InfluenceColumnText => DiText.T("DI_COURT_INFL_COLUMN", "INFL.");
+        [DataSourceProperty] public string LoyaltyColumnText => DiText.T("DI_COURT_LOYALTY_COLUMN", "LOYALTY");
+        [DataSourceProperty] public string StandingColumnText => DiText.T("DI_COURT_STANDING_COLUMN", "STANDING");
+        [DataSourceProperty] public string WhyColumnText => DiText.T("DI_COURT_WHY_COLUMN", "WHY");
+        [DataSourceProperty] public string NotForgottenTitleText => DiText.T("DI_COURT_WHAT_THEY_HAVE_NOT_FORGOTTEN", "WHAT THEY HAVE NOT FORGOTTEN");
+        [DataSourceProperty] public string NoGrievanceText => DiText.T("DI_COURT_NOTHING_IS_HELD_AGAINST_THE_CROWN", "Nothing is held against the crown by this clan.");
 
         [DataSourceProperty]
         public bool Show
@@ -108,7 +133,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             set { if (value == _tabVisible) return; _tabVisible = value; OnPropertyChangedWithValue(value, nameof(TabVisible)); }
         }
 
-        [DataSourceProperty] public string TabText => "Court";
+        [DataSourceProperty] public string TabText => DiText.T("DI_COURT_COURT", "Court");
 
         [DataSourceProperty]
         public string RealmName
@@ -355,7 +380,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 return SeatMode ? "Selected the " + _seats[i].Seat + "'s seat. " + (HasAppoint ? AppointText : AppointNote)
                                 : "Back to the grievances.";
             }
-            return "No seat named \"" + name + "\".";
+            return DiText.T("DI_COURT_NO_SEAT_NAMED_NAME_2", "No seat named \"{NAME}\".", ("NAME", name));
         }
 
         /// <summary>Two clicks: the first names what taking the seat back costs, the second does it.</summary>
@@ -443,13 +468,18 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             var name = Statecraft.StatecraftModel.NameOf(record.Holder);
             var title = Statecraft.StatecraftModel.TitleOf(record.Seat);
             CanDismiss = true;
-            DismissText = _dismissArmed ? "Confirm: take the seat from " + name : "Take the " + title + "'s seat back";
+            DismissText = _dismissArmed ? DiText.T("DI_COURT_CONFIRM_TAKE_THE_SEAT_FROM_NAME_2",
+                "Confirm: take the seat from {NAME}",
+                ("NAME", name)) : DiText.T("DI_COURT_TAKE_THE_SEAT_BACK_TITLE_2",
+                "Take the {TITLE}'s seat back",
+                ("TITLE", title));
             var house = record.Holder?.Clan;
-            DismissNote = house != null && house != kingdom.RulingClan
-                ? "Free, but " + house.Name + " takes a grievance (" + IntrigueConstants.GrievanceDismissedFromOffice.ToString("0")
-                  + "): loyalty -" + (IntrigueConstants.GrievanceDismissedFromOffice * IntrigueConstants.LoyaltyGrievanceFactor).ToString("0.0")
-                  + " and the favour gone."
-                : "Free; your own house takes no grievance.";
+            DismissNote = house != null && house != kingdom.RulingClan ? DiText.T("DI_COURT_FREE_BUT_TAKES_GRIEVANCE_LOYALTY_AND_NAME_2",
+                "Free, but {NAME} takes a grievance ({GRIEVANCEDISMISSEDFROMOFFICE}): loyalty -{LOYALTYGRIEVANCEFACTOR} and the favour gone.",
+                ("NAME", house.Name),
+                ("GRIEVANCEDISMISSEDFROMOFFICE", IntrigueConstants.GrievanceDismissedFromOffice.ToString("0")),
+                ("LOYALTYGRIEVANCEFACTOR", (IntrigueConstants.GrievanceDismissedFromOffice * IntrigueConstants.LoyaltyGrievanceFactor).ToString("0.0"))) : DiText.T("DI_COURT_FREE_YOUR_OWN_HOUSE_TAKES_NO_2",
+                "Free; your own house takes no grievance.");
         }
 
         /// <summary>Giving the selected seat to the selected house: the price, term by term, and the button.</summary>
@@ -480,7 +510,8 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
             if (!_mayAct)
             {
-                AppointNote = "Only the ruler gives seats. Click the seat again to see the grievances.";
+                AppointNote = DiText.T("DI_COURT_ONLY_THE_RULER_GIVES_SEATS_CLICK_2",
+                    "Only the ruler gives seats. Click the seat again to see the grievances.");
                 AppointLines = lines;
                 return;
             }
@@ -488,7 +519,8 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             var candidate = Offices.CandidateFrom(state, house, seat);
             if (candidate == null)
             {
-                AppointNote = "Nobody of this house can take the seat today. Click the seat again to see the grievances.";
+                AppointNote = DiText.T("DI_COURT_NOBODY_OF_THIS_HOUSE_CAN_TAKE_2",
+                    "Nobody of this house can take the seat today. Click the seat again to see the grievances.");
                 AppointLines = lines;
                 return;
             }
@@ -496,7 +528,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             var q = Offices.QuoteAppointment(state, kingdom, seat, candidate);
             if (!q.Eligible)
             {
-                AppointNote = "Cannot be given: " + q.Reason + ".";
+                AppointNote = DiText.T("DI_COURT_CANNOT_BE_GIVEN_REASON_2",
+                    "Cannot be given: {REASON}.",
+                    ("REASON", q.Reason));
                 AppointLines = lines;
                 return;
             }
@@ -506,11 +540,16 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             AppointLines = lines;
             HasAppoint = true;
             AppointEnabled = q.Affordable;
-            AppointOutcome = q.FavouredHouse == null
-                ? "Your own house: a skilled voice, no favour to give"
-                : "In your favour: loyalty " + q.LoyaltyBefore.ToString("0.0") + " -> " + q.LoyaltyAfter.ToString("0.0")
-                  + ", " + LoyaltyModel.Band(q.LoyaltyAfter);
-            var price = q.Influence.ToString("N0") + " influence, " + q.Gold.ToString("N0") + " denars";
+            AppointOutcome = q.FavouredHouse == null ? DiText.T("DI_COURT_YOUR_OWN_HOUSE_SKILLED_VOICE_NO_2",
+                "Your own house: a skilled voice, no favour to give") : DiText.T("DI_COURT_IN_YOUR_FAVOUR_LOYALTY_LOYALTYBEFORE_LOYALTYAFTER_BAND_2",
+                "In your favour: loyalty {LOYALTYBEFORE} -> {LOYALTYAFTER}, {BAND}",
+                ("LOYALTYBEFORE", q.LoyaltyBefore.ToString("0.0")),
+                ("LOYALTYAFTER", q.LoyaltyAfter.ToString("0.0")),
+                ("BAND", LoyaltyModel.Band(q.LoyaltyAfter)));
+            var price = DiText.T("DI_COURT_INFLUENCE_DENARS_INFLUENCE_GOLD_2",
+                "{INFLUENCE} influence, {GOLD} denars",
+                ("INFLUENCE", q.Influence.ToString("N0")),
+                ("GOLD", q.Gold.ToString("N0")));
             var who = Statecraft.StatecraftModel.NameOf(candidate);
             AppointText = _appointArmed ? "Confirm: pay " + price : "Appoint " + who + " - " + price;
             AppointNote = !q.Affordable ? "Cannot pay: " + q.Short + "."
@@ -586,8 +625,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
             if (state == null || kingdom == null || kingdom.RulingClan == null)
             {
-                RealmName = "No realm";
-                CourtLine = "You hold no fealty and keep no court.";
+                RealmName = DiText.T("DI_COURT_NO_REALM_2", "No realm");
+                CourtLine = DiText.T("DI_COURT_YOU_HOLD_NO_FEALTY_AND_KEEP_2",
+                    "You hold no fealty and keep no court.");
                 LegitimacyText = string.Empty;
                 LegitimacyNote = string.Empty;
                 LegitimacyAmount = 0;
@@ -623,18 +663,22 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             RealmName = kingdom.Name.ToString().ToUpperInvariant();
             // A house with the rising does not serve the ruler it is fighting: the claimant read
             // "you serve Aradwyr" over a war against Aradwyr (live 2026-09-25).
-            var rulerName = kingdom.Leader == null ? "its ruler" : kingdom.Leader.Name.ToString();
+            var rulerName = kingdom.Leader == null
+                ? DiText.T("DI_COURT_ITS_RULER", "its ruler")
+                : kingdom.Leader.Name.ToString();
             var playerRebel = war != null && war.IsRebel(Clan.PlayerClan);
             CourtLine = playerRules
-                ? "The court of Clan " + ruling.Name + " - your own clan"
+                ? DiText.T("DI_COURT_YOUR_OWN_COURT", "The court of Clan {CLAN} - your own clan", ("CLAN", ruling.Name))
                 : playerRebel
                     // Vanilla's own tabs read the player's map faction, which is the rising, and
                     // that is kept on purpose (STATUS 2026-09-26): its clans, fiefs and armies are
                     // the host a rebel actually commands. Said here so the switch is not a surprise.
-                    ? "The court of Clan " + ruling.Name + " - you are in arms against " + rulerName
-                      + " (the vanilla tabs show " + (war.Faction == null ? "the rising" : war.Faction.Name.ToString())
-                      + ", your host)"
-                    : "The court of Clan " + ruling.Name + " - you serve " + rulerName;
+                    ? DiText.T("DI_COURT_IN_ARMS_AGAINST",
+                        "The court of Clan {CLAN} - you are in arms against {RULER} (the vanilla tabs show {HOST}, your host)",
+                        ("CLAN", ruling.Name), ("RULER", rulerName),
+                        ("HOST", war.Faction == null ? DiText.T("DI_COURT_THE_RISING", "the rising") : war.Faction.Name.ToString()))
+                    : DiText.T("DI_COURT_YOU_SERVE", "The court of Clan {CLAN} - you serve {RULER}",
+                        ("CLAN", ruling.Name), ("RULER", rulerName));
 
             // Crown legitimacy: the pool, the bar, and what last moved it.
             var legitimacy = LegitimacyRegistry.Of(state, kingdom);
@@ -646,8 +690,10 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             {
                 // Design 08 S-6: what the steward makes of a year of peace.
                 var steward = Statecraft.StatecraftModel.Actor(kingdom, Portfolio.Steward);
-                var dividend = "A year of peace restores " + LegitimacyRegistry.PeaceDividendOf(kingdom).ToString("0.0")
-                               + (steward == null ? "." : ", at the pace of " + Statecraft.StatecraftModel.Who(steward, TaleWorlds.Core.DefaultSkills.Steward) + ".");
+                var dividend = DiText.T("DI_COURT_YEAR_OF_PEACE_RESTORES_PEACEDIVIDENDOF_STEWARD_2",
+                    "A year of peace restores {PEACEDIVIDENDOF}{STEWARD}",
+                    ("PEACEDIVIDENDOF", LegitimacyRegistry.PeaceDividendOf(kingdom).ToString("0.0")),
+                    ("STEWARD", steward == null ? "." : ", at the pace of " + Statecraft.StatecraftModel.Who(steward, TaleWorlds.Core.DefaultSkills.Steward) + "."));
                 LegitimacyNote = string.IsNullOrEmpty(LegitimacyNote) ? dividend : LegitimacyNote + " " + dividend;
             }
 
@@ -662,9 +708,10 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
             var worst = WarExhaustion.Worst(state, kingdom);
             WorstWarText = worst.ToString("0.0");
-            WorstWarNote = worst >= DiplomacyConstants.ExhaustionCourtPressure
-                ? "exhaustion - the doves have found their voice"
-                : "exhaustion - doves gather at " + DiplomacyConstants.ExhaustionCourtPressure.ToString("0");
+            WorstWarNote = worst >= DiplomacyConstants.ExhaustionCourtPressure ? DiText.T("DI_COURT_EXHAUSTION_THE_DOVES_HAVE_FOUND_THEIR_2",
+                "exhaustion - the doves have found their voice") : DiText.T("DI_COURT_EXHAUSTION_DOVES_GATHER_AT_EXHAUSTIONCOURTPRESSURE_2",
+                "exhaustion - doves gather at {EXHAUSTIONCOURTPRESSURE}",
+                ("EXHAUSTIONCOURTPRESSURE", DiplomacyConstants.ExhaustionCourtPressure.ToString("0")));
 
             // The court: every sworn clan but the crown's own, most influential first.
             var standing = 0;
@@ -702,18 +749,20 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 // Worded for whoever is reading: the ruler, a vassal, or the claimant. The
                 // second-person version was the only one until a live test on 2026-09-24 put the
                 // player among the claimants and the footer told them they claimed their own throne.
-                var throne = playerRules ? "your throne" : "the throne";
+                var throne = playerRules ? DiText.T("DI_COURT_YOUR_THRONE_2", "your throne") : DiText.T("DI_COURT_THE_THRONE_2", "the throne");
                 var playerClaims = false;
                 for (var i = 0; i < claims.Count; i++)
                     if (claims[i].Claimant == Hero.MainHero) playerClaims = true;
                 SuccessionTitle = claims.Count == 1
                     ? (playerClaims ? "You claim the throne." : claims[0].Claimant.Name + " claims " + throne + ".")
                     : claims.Count + " houses claim " + throne + (playerClaims ? ", yours among them." : ".");
-                var standingWord = playerRules ? "Your standing" : "The crown's standing";
-                SuccessionDetail = LegitimacyRegistry.IsWeak(state, kingdom)
-                    ? standingWord + " is low enough that a claimant's faction can gather openly."
-                    : "While " + standingWord.ToLowerInvariant() + " holds above " + IntrigueConstants.LegitimacyPretenderThreshold.ToString("0")
-                      + ", no faction dares rally to a claim.";
+                var standingWord = playerRules ? DiText.T("DI_COURT_YOUR_STANDING_2", "Your standing") : DiText.T("DI_COURT_THE_CROWN_STANDING_2", "The crown's standing");
+                SuccessionDetail = LegitimacyRegistry.IsWeak(state, kingdom) ? DiText.T("DI_COURT_IS_LOW_ENOUGH_THAT_CLAIMANT_FACTION_STANDINGWORD_2",
+                    "{STANDINGWORD} is low enough that a claimant's faction can gather openly.",
+                    ("STANDINGWORD", standingWord)) : DiText.T("DI_COURT_WHILE_HOLDS_ABOVE_NO_FACTION_DARES_TOLOWERINVARIANT_2",
+                    "While {STANDINGWORD} holds above {LEGITIMACYPRETENDERTHRESHOLD}, no faction dares rally to a claim.",
+                    ("STANDINGWORD", standingWord.ToLowerInvariant()),
+                    ("LEGITIMACYPRETENDERTHRESHOLD", IntrigueConstants.LegitimacyPretenderThreshold.ToString("0")));
 
                 // Design 08 S-8: a claimant's own Charm, in every house's choice at a succession.
                 if (Statecraft.StatecraftModel.Enabled)
@@ -728,19 +777,27 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                                   + Statecraft.StatecraftModel.Signed(Statecraft.StatecraftTerms.Backing(claimant)));
                     }
                     if (charm.Count > 0)
-                        SuccessionDetail += " Charm at court, in every house's choice: " + string.Join(", ", charm) + ".";
+                        SuccessionDetail += DiText.T("DI_COURT_CHARM_AT_COURT_IN_EVERY_HOUSE_JOIN_2",
+                            " Charm at court, in every house's choice: {NAMES}.",
+                            ("NAMES", string.Join(", ", charm)));
                 }
             }
             else if (standing > 0)
             {
-                SuccessionTitle = "If the throne fell vacant today, " + standing
-                                  + (standing == 1 ? " house would" : " houses would") + " press a claim.";
-                SuccessionDetail = "Each is strong enough at court and disaffected enough to want it.";
+                SuccessionTitle = standing == 1 ? DiText.T("DI_COURT_IF_THE_THRONE_FELL_VACANT_TODAY_STANDING_2",
+                    "If the throne fell vacant today, {STANDING} house would press a claim.",
+                    ("STANDING", standing)) : DiText.T("DI_COURT_IF_THE_THRONE_FELL_VACANT_TODAY_STANDING_3",
+                    "If the throne fell vacant today, {STANDING} houses would press a claim.",
+                    ("STANDING", standing));
+                SuccessionDetail = DiText.T("DI_COURT_EACH_IS_STRONG_ENOUGH_AT_COURT_2",
+                    "Each is strong enough at court and disaffected enough to want it.");
             }
             else
             {
-                SuccessionTitle = "No house would contest a succession today.";
-                SuccessionDetail = "None is both strong enough at court and disaffected enough to try.";
+                SuccessionTitle = DiText.T("DI_COURT_NO_HOUSE_WOULD_CONTEST_SUCCESSION_TODAY_2",
+                    "No house would contest a succession today.");
+                SuccessionDetail = DiText.T("DI_COURT_NONE_IS_BOTH_STRONG_ENOUGH_AT_2",
+                    "None is both strong enough at court and disaffected enough to try.");
             }
 
             // Keep the selection across rebuilds when that clan is still at court.
@@ -769,24 +826,29 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             if (_selected != null && state != null)
             {
                 var e = _selected.Explained;
-                terms.Add(new DiCourtTermVM("A court starts here", e.Base, neutral: true));
-                terms.Add(new DiCourtTermVM("How they feel about their ruler", e.Relation));
-                terms.Add(new DiCourtTermVM("What they hold against the crown", e.Grievances));
-                terms.Add(new DiCourtTermVM("Land they think they merit", e.Fiefs));
-                terms.Add(new DiCourtTermVM("The war weighing on them", e.WarExhaustion));
-                terms.Add(new DiCourtTermVM("The crown's standing", e.Legitimacy));
+                terms.Add(new DiCourtTermVM(DiText.T("DI_COURT_COURT_STARTS_HERE_2", "A court starts here"), e.Base, neutral: true));
+                terms.Add(new DiCourtTermVM(DiText.T("DI_COURT_HOW_THEY_FEEL_ABOUT_THEIR_RULER_2",
+                    "How they feel about their ruler"), e.Relation));
+                terms.Add(new DiCourtTermVM(DiText.T("DI_COURT_WHAT_THEY_HOLD_AGAINST_THE_CROWN_2",
+                    "What they hold against the crown"), e.Grievances));
+                terms.Add(new DiCourtTermVM(DiText.T("DI_COURT_LAND_THEY_THINK_THEY_MERIT_2", "Land they think they merit"), e.Fiefs));
+                terms.Add(new DiCourtTermVM(DiText.T("DI_COURT_THE_WAR_WEIGHING_ON_THEM_2", "The war weighing on them"), e.WarExhaustion));
+                terms.Add(new DiCourtTermVM(DiText.T("DI_COURT_THE_CROWN_STANDING", "The crown's standing"), e.Legitimacy));
                 if (Statecraft.StatecraftModel.Enabled)
                 {
                     var ruler = _selected.Clan.Kingdom?.Leader;
-                    terms.Add(new DiCourtTermVM("The crown's presence"
-                        + (ruler == null ? "" : " (" + ruler.Name + ", Leadership "
-                           + ruler.GetSkillValue(TaleWorlds.Core.DefaultSkills.Leadership) + ")"),
+                    terms.Add(new DiCourtTermVM(ruler == null ? DiText.T("DI_COURT_THE_CROWN_PRESENCE_2", "The crown's presence") : DiText.T("DI_COURT_THE_CROWN_PRESENCE_LEADERSHIP_NAME_GETSKILLVALUE_2",
+                        "The crown's presence ({NAME}, Leadership {GETSKILLVALUE})",
+                        ("NAME", ruler.Name),
+                        ("GETSKILLVALUE", ruler.GetSkillValue(TaleWorlds.Core.DefaultSkills.Leadership))),
                         e.Presence));
                 }
                 if (e.ForeignGold != 0f)
-                    terms.Add(new DiCourtTermVM("Foreign gold - nobody knows whose", e.ForeignGold));
+                    terms.Add(new DiCourtTermVM(DiText.T("DI_COURT_FOREIGN_GOLD_NOBODY_KNOWS_WHOSE_2",
+                        "Foreign gold - nobody knows whose"), e.ForeignGold));
                 if (e.Office != 0f)
-                    terms.Add(new DiCourtTermVM("In the crown's favour: a seat at court", e.Office));
+                    terms.Add(new DiCourtTermVM(DiText.T("DI_COURT_IN_THE_CROWN_FAVOUR_SEAT_AT_2",
+                        "In the crown's favour: a seat at court"), e.Office));
 
                 // Design 09 C1: only the ruler makes amends, so only the ruler's view carries the
                 // price and the button. A vassal reads the same ledger, and no civil war is running.
@@ -811,9 +873,11 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 var record = state.Legitimacy[i];
                 if (record.Kingdom != kingdom) continue;
                 if (string.IsNullOrEmpty(record.LastReason) || record.LastReason == "founded") break;
-                return "last change: " + record.LastReason;
+                return DiText.T("DI_COURT_LAST_CHANGE_LASTREASON_2",
+                    "last change: {LASTREASON}",
+                    ("LASTREASON", record.LastReason));
             }
-            return "last change: none yet";
+            return DiText.T("DI_COURT_LAST_CHANGE_NONE_YET_2", "last change: none yet");
         }
 
         // ----- shared helpers for the row VMs ------------------------------------
@@ -844,10 +908,10 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         {
             switch (band)
             {
-                case LoyaltyBand.Reliable: return "RELIABLE";
-                case LoyaltyBand.Transactional: return "TRANSACTIONAL";
-                case LoyaltyBand.Disaffected: return "DISAFFECTED";
-                default: return "DEFECTION RISK";
+                case LoyaltyBand.Reliable: return DiText.T("DI_COURT_RELIABLE_2", "RELIABLE");
+                case LoyaltyBand.Transactional: return DiText.T("DI_COURT_TRANSACTIONAL_2", "TRANSACTIONAL");
+                case LoyaltyBand.Disaffected: return DiText.T("DI_COURT_DISAFFECTED_2", "DISAFFECTED");
+                default: return DiText.T("DI_COURT_DEFECTION_RISK_2", "DEFECTION RISK");
             }
         }
 
@@ -855,11 +919,11 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         {
             switch (agenda)
             {
-                case CourtAgenda.Doves: return "Doves";
-                case CourtAgenda.Hawks: return "Hawks";
-                case CourtAgenda.Autonomists: return "Autonomists";
-                case CourtAgenda.Centralists: return "Centralists";
-                case CourtAgenda.Pretenders: return "Pretenders";
+                case CourtAgenda.Doves: return DiText.T("DI_COURT_DOVES_2", "Doves");
+                case CourtAgenda.Hawks: return DiText.T("DI_COURT_HAWKS_2", "Hawks");
+                case CourtAgenda.Autonomists: return DiText.T("DI_COURT_AUTONOMISTS_2", "Autonomists");
+                case CourtAgenda.Centralists: return DiText.T("DI_COURT_CENTRALISTS_2", "Centralists");
+                case CourtAgenda.Pretenders: return DiText.T("DI_COURT_PRETENDERS_2", "Pretenders");
                 default: return "-";
             }
         }
@@ -889,13 +953,15 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             ShareAmount = (int)Math.Round(share * 100f);
             ShareText = ShareAmount + "%";
             LeaderText = "Speaks through " + (bloc.Leader == null ? "nobody" : bloc.Leader.Name.ToString());
-            CountText = bloc.Members.Count + (bloc.Members.Count == 1 ? " clan" : " clans");
-            PowerText = "influence " + bloc.Power.ToString("N0");
+            CountText = bloc.Members.Count == 1 ? DiText.T("DI_COURT_CLAN_COUNT_2", "{COUNT} clan", ("COUNT", bloc.Members.Count)) : DiText.T("DI_COURT_CLANS_COUNT_2", "{COUNT} clans", ("COUNT", bloc.Members.Count));
+            PowerText = DiText.T("DI_COURT_INFLUENCE_POWER_2",
+                "influence {POWER}",
+                ("POWER", bloc.Power.ToString("N0")));
             // Loyalty beats agenda (design 02 §3): members at 70+ vote with the ruler anyway,
             // so a bloc's real weight can be less than its size suggests.
-            LoyalNote = bloc.LoyalMembers > 0
-                ? bloc.LoyalMembers + " of them will vote with the crown regardless"
-                : string.Empty;
+            LoyalNote = bloc.LoyalMembers > 0 ? DiText.T("DI_COURT_OF_THEM_WILL_VOTE_WITH_THE_LOYALMEMBERS_2",
+                "{LOYALMEMBERS} of them will vote with the crown regardless",
+                ("LOYALMEMBERS", bloc.LoyalMembers)) : "";
         }
 
         [DataSourceProperty] public string Name { get; }
@@ -912,6 +978,8 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
     /// <summary>One clan row in the court list.</summary>
     internal sealed class DiCourtClanVM : ViewModel
     {
+        /// <summary>The row's own label for a clan that is the rising's claimant (story 4.1 §9).</summary>
+        [DataSourceProperty] public string ClaimantLabelText => DiText.T("DI_COURT_CLAIMANT", "claimant");
         private readonly DiCourtVM _owner;
         private bool _isSelected;
 
@@ -925,7 +993,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             var loyalty = explained.Total;
             var band = LoyaltyModel.Band(loyalty);
 
-            Name = clan.Name.ToString() + (isPlayer ? " (you)" : string.Empty);
+            Name = isPlayer ? DiText.T("DI_COURT_YOU_NAME_2", "{NAME} (you)", ("NAME", clan.Name.ToString())) : clan.Name.ToString();
             BlocText = bloc == null ? "-" : DiCourtVM.AgendaName(bloc.Agenda)
                                             + (bloc.Leader == clan ? " (leads)" : string.Empty);
             InfluenceText = clan.Influence.ToString("N0");
@@ -1061,8 +1129,12 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             Title = TitleOf(g.Type, g.Holder);
             WeightText = g.Weight.ToString("0.0");
             var days = g.Created.ElapsedDaysUntilNow;
-            AgeText = (days < 1f ? "today" : days.ToString("0") + " days ago")
-                      + " - fading by " + GrievanceRegistry.FadePerDay(g.Target).ToString("0.000") + " a day";
+            AgeText = days < 1f ? DiText.T("DI_COURT_TODAY_FADING_BY_DAY_FADEPERDAY_2",
+                "today - fading by {FADEPERDAY} a day",
+                ("FADEPERDAY", GrievanceRegistry.FadePerDay(g.Target).ToString("0.000"))) : DiText.T("DI_COURT_DAYS_AGO_FADING_BY_DAY_DAYS_FADEPERDAY_2",
+                "{DAYS} days ago - fading by {FADEPERDAY} a day",
+                ("DAYS", days.ToString("0")),
+                ("FADEPERDAY", GrievanceRegistry.FadePerDay(g.Target).ToString("0.000")));
             AccentColor = DiCourtVM.DisaffectedColor;
             PriceLines = new MBBindingList<DiCourtTermVM>();
 
@@ -1072,7 +1144,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             {
                 // Shown rather than hidden: a ruler who cannot answer a grievance should see why.
                 HasAmendNote = true;
-                _amendNote = "Amends cannot be made: " + _quote.Reason + ".";
+                _amendNote = DiText.T("DI_COURT_AMENDS_CANNOT_BE_MADE_REASON_2",
+                    "Amends cannot be made: {REASON}.",
+                    ("REASON", _quote.Reason));
                 return;
             }
 
@@ -1080,20 +1154,27 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             HasAmendNote = true;
             foreach (var term in Amends.PriceTerms(_quote))
                 PriceLines.Add(new DiCourtTermVM(term.Key, term.Value));
-            OutcomeText = "Loyalty " + _quote.LoyaltyBefore.ToString("0.0") + " -> " + _quote.LoyaltyAfter.ToString("0.0")
-                          + ", " + LoyaltyModel.Band(_quote.LoyaltyAfter);
+            OutcomeText = DiText.T("DI_COURT_LOYALTY_LOYALTYBEFORE_LOYALTYAFTER_BAND_2",
+                "Loyalty {LOYALTYBEFORE} -> {LOYALTYAFTER}, {BAND}",
+                ("LOYALTYBEFORE", _quote.LoyaltyBefore.ToString("0.0")),
+                ("LOYALTYAFTER", _quote.LoyaltyAfter.ToString("0.0")),
+                ("BAND", LoyaltyModel.Band(_quote.LoyaltyAfter)));
             AmendEnabled = _quote.Affordable;
             ComposeButton();
         }
 
         private DiCourtGrievanceVM(Grievance g)
         {
-            Title = TitleOf(g.Type, g.Holder) + " - answered";
+            Title = DiText.T("DI_COURT_ANSWERED_TITLEOF_2",
+                "{TITLEOF} - answered",
+                ("TITLEOF", TitleOf(g.Type, g.Holder)));
             WeightText = "0.0";
-            AgeText = "Answered " + g.AnsweredOn.ElapsedDaysUntilNow.ToString("0") + " days ago. Remembered for "
-                      + IntrigueConstants.AmendsMemoryYears.ToString("0") + " years: the same wrong again weighs x"
-                      + IntrigueConstants.AmendsRepeatWrongFactor.ToString("0.#") + ", and amends to this house cost x"
-                      + IntrigueConstants.AmendsRepeatPriceFactor.ToString("0.#") + ".";
+            AgeText = DiText.T("DI_COURT_ANSWERED_DAYS_AGO_REMEMBERED_FOR_YEARS_ELAPSEDDAYSUNTILNOW_2",
+                "Answered {ELAPSEDDAYSUNTILNOW} days ago. Remembered for {AMENDSMEMORYYEARS} years: the same wrong again weighs x{AMENDSREPEATWRONGFACTOR}, and amends to this house cost x{AMENDSREPEATPRICEFACTOR}.",
+                ("ELAPSEDDAYSUNTILNOW", g.AnsweredOn.ElapsedDaysUntilNow.ToString("0")),
+                ("AMENDSMEMORYYEARS", IntrigueConstants.AmendsMemoryYears.ToString("0")),
+                ("AMENDSREPEATWRONGFACTOR", IntrigueConstants.AmendsRepeatWrongFactor.ToString("0.#")),
+                ("AMENDSREPEATPRICEFACTOR", IntrigueConstants.AmendsRepeatPriceFactor.ToString("0.#")));
             AccentColor = DiCourtVM.ReliableColor;
             PriceLines = new MBBindingList<DiCourtTermVM>();
         }
@@ -1104,8 +1185,11 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         private void ComposeButton()
         {
             if (_quote == null) return;
-            var price = _quote.Influence.ToString("N0") + " influence, " + _quote.Gold.ToString("N0") + " denars";
-            AmendText = _armed ? "Confirm: pay " + price : "Make amends - " + price;
+            var price = DiText.T("DI_COURT_INFLUENCE_DENARS_INFLUENCE_GOLD",
+                "{INFLUENCE} influence, {GOLD} denars",
+                ("INFLUENCE", _quote.Influence.ToString("N0")),
+                ("GOLD", _quote.Gold.ToString("N0")));
+            AmendText = _armed ? DiText.T("DI_COURT_CONFIRM_PAY_PRICE_2", "Confirm: pay {PRICE}", ("PRICE", price)) : DiText.T("DI_COURT_MAKE_AMENDS_PRICE_2", "Make amends - {PRICE}", ("PRICE", price));
             AmendNote = !_quote.Affordable ? "Cannot pay: " + _quote.Short + "."
                 : _armed ? "Click again to pay. Anything else leaves it unpaid."
                 : "Paid to the house's head; the influence is spent.";

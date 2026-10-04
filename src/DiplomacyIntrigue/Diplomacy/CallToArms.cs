@@ -425,8 +425,13 @@ namespace DiplomacyIntrigue.Diplomacy
 
             Log.Info("CallToArms", ally.Name + " answered " + caller.Name
                                    + " and declared war on " + enemy.Name + ".");
-            Announce(ally.Name + " honours its " + treaty.Type + " with " + caller.Name
-                     + " and joins the war against " + enemy.Name + ".", Colors.Green);
+            Announce(DiText.T("DI_CALLTOARMS_ALLY_HONOURS",
+                        "{ALLY} honours its {TREATY} with {CALLER} and joins the war against {ENEMY}.",
+                        ("ALLY", ally.Name),
+                        ("TREATY", Models.Treaty.NameInSentence(treaty.Type)),
+                        ("CALLER", caller.Name),
+                        ("ENEMY", enemy.Name)),
+                Colors.Green);
         }
 
         /// <summary>Marker on a refusal reason: not defiance, just a realm with nothing left.</summary>
@@ -479,8 +484,15 @@ namespace DiplomacyIntrigue.Diplomacy
             // price is already paid where it belongs: the vassal's trust just fell, and Hold
             // reads both that and the unanswered war every day it stays unanswered.
             Announce(IsProtectingPatron(treaty, ally)
-                    ? ally.Name + " leaves its vassal " + caller.Name + " to fight alone."
-                    : ally.Name + " refuses to honour its " + treaty.Type + " with " + caller.Name + ".",
+                    ? DiText.T("DI_CALLTOARMS_ALLY_LEAVES_VASSAL",
+                        "{ALLY} leaves its vassal {CALLER} to fight alone.",
+                        ("ALLY", ally.Name),
+                        ("CALLER", caller.Name))
+                    : DiText.T("DI_CALLTOARMS_ALLY_REFUSES",
+                        "{ALLY} refuses to honour its {TREATY} with {CALLER}.",
+                        ("ALLY", ally.Name),
+                        ("TREATY", Models.Treaty.NameInSentence(treaty.Type)),
+                        ("CALLER", caller.Name)),
                 Colors.Yellow);
         }
 
@@ -734,21 +746,58 @@ namespace DiplomacyIntrigue.Diplomacy
         }
 
         /// <summary>
-        /// What a refused call does to the bond, said for this refusal rather than in general: the
-        /// refusal that brings the marks to two renounces it on the spot and is charged as a broken
-        /// treaty, which a player asked with one mark already standing was never told - the text
-        /// said "a second mark inside a year renounces" whether or not this was the second (live,
-        /// 2026-10-01: trust with the patron fell 50.1 on such a refusal, not 15).
+        /// The whole refusal sentence for a vassal who is already carrying marks, said for this
+        /// refusal rather than in general: the refusal that brings the marks to two renounces it on
+        /// the spot and is charged as a broken treaty, which a player asked with one mark already
+        /// standing was never told - the text said "a second mark inside a year renounces" whether
+        /// or not this was the second (live, 2026-10-01: trust with the patron fell 50.1 on such a
+        /// refusal, not 15).
+        ///
+        /// Whole sentences behind keys, one per outcome, rather than a clause spliced after "and ".
+        /// It was a clause first: <c>RenounceClause</c> returned English and the caller wrote it into
+        /// <c>"{CLAUSE}"</c>, which is the half-in-one-language hole - a translator cannot move a
+        /// clause that arrives already glued to an "and" they cannot see.
         /// </summary>
-        internal static string RenounceClause(Treaty vassalage)
+        internal static string RenounceCost(Treaty vassalage, Kingdom caller, string refusedTrust)
         {
             var marks = vassalage == null ? 0 : vassalage.DefianceMarks;
             if (marks + 1 >= DiplomacyConstants.DefianceMarksToLapse)
-                return "with " + marks + " mark(s) already standing, this refusal renounces the vassalage now: "
-                       + "a broken treaty, at " + (-DiplomacyConstants.TrustTreatyBrokenVictim).ToString("0")
-                       + " more trust with your patron and " + (-DiplomacyConstants.TrustTreatyBrokenObserver).ToString("0")
-                       + " with every other court, and a reason for war.";
-            return "a second mark inside a year renounces the vassalage, as a broken treaty.";
+                return DiText.T("DI_CALLTOARMS_REFUSING_MARKS_STANDING",
+                        "Refusing is defiance: it costs {TRUST} trust with {CALLER}, earns a mark, and with {MARKS} mark(s) already standing, this refusal renounces the vassalage now: a broken treaty, at {VICTIM} more trust with your patron and {OBSERVER} with every other court, and a reason for war.",
+                        ("TRUST", refusedTrust),
+                        ("CALLER", caller.Name),
+                        ("MARKS", marks),
+                        ("VICTIM", (-DiplomacyConstants.TrustTreatyBrokenVictim).ToString("0")),
+                        ("OBSERVER", (-DiplomacyConstants.TrustTreatyBrokenObserver).ToString("0")));
+            return DiText.T("DI_CALLTOARMS_REFUSING_SECOND_MARK",
+                    "Refusing is defiance: it costs {TRUST} trust with {CALLER}, earns a mark, and a second mark inside a year renounces the vassalage, as a broken treaty.",
+                    ("TRUST", refusedTrust),
+                    ("CALLER", caller.Name));
+        }
+
+        /// <summary>
+        /// The summons' refusal line, whole and keyed, for a vassal already carrying marks.
+        ///
+        /// The summons and the call to arms say the same thing in different words - "Refuse:
+        /// defiance" against "Refusing is defiance" - so they need their own keys rather than one
+        /// clause shared between them. Both used to splice that clause in behind an "and", which no
+        /// translation can move.
+        /// </summary>
+        internal static string SummonsRenounceLine(Treaty vassalage, string patron, string refusedTrust)
+        {
+            var marks = vassalage == null ? 0 : vassalage.DefianceMarks;
+            if (marks + 1 >= DiplomacyConstants.DefianceMarksToLapse)
+                return DiText.T("DI_SUMMONS_REFUSING_MARKS_STANDING",
+                        "Refuse: defiance. It costs {TRUST} trust with {PATRON}, earns a mark, and with {MARKS} mark(s) already standing, this refusal renounces the vassalage now: a broken treaty, at {VICTIM} more trust with your patron and {OBSERVER} with every other court, and a reason for war.",
+                        ("TRUST", refusedTrust),
+                        ("PATRON", patron),
+                        ("MARKS", marks),
+                        ("VICTIM", (-DiplomacyConstants.TrustTreatyBrokenVictim).ToString("0")),
+                        ("OBSERVER", (-DiplomacyConstants.TrustTreatyBrokenObserver).ToString("0")));
+            return DiText.T("DI_SUMMONS_REFUSING_SECOND_MARK",
+                    "Refuse: defiance. It costs {TRUST} trust with {PATRON}, earns a mark, and a second mark inside a year renounces the vassalage, as a broken treaty.",
+                    ("TRUST", refusedTrust),
+                    ("PATRON", patron));
         }
 
         /// <summary>
@@ -809,21 +858,27 @@ namespace DiplomacyIntrigue.Diplomacy
                 // vassalage. The old text said the first refusal renounced it, which stopped
                 // being true when marks were introduced.
                 cost = IsServingVassal(treaty, ally)
-                    ? "Refusing is defiance: it costs " + refusedTrust + " trust with " + caller.Name
-                      + ", earns a mark, and " + RenounceClause(treaty)
-                    : "Refusing costs " + refusedTrust + " trust with " + caller.Name
-                      + ", and the " + treaty.Type + " will lapse.";
-                body = caller.Name + " invokes its " + treaty.Type + " and calls you to war against "
-                       + enemy.Name + "." + "\n\n" + cost;
+                    ? RenounceCost(treaty, caller, refusedTrust)
+                    : DiText.T("DI_CALLTOARMS_REFUSING_COSTS",
+                        "Refusing costs {TRUST} trust with {CALLER}, and the {TREATY} will lapse.",
+                        ("TRUST", refusedTrust),
+                        ("CALLER", caller.Name),
+                        ("TREATY", Models.Treaty.NameInSentence(treaty.Type)));
+                body = DiText.T("DI_CALLTOARMS_INVOKES",
+                        "{CALLER} invokes its {TREATY} and calls you to war against {ENEMY}.\n\n{COST}",
+                        ("CALLER", caller.Name),
+                        ("TREATY", Models.Treaty.NameInSentence(treaty.Type)),
+                        ("ENEMY", enemy.Name),
+                        ("COST", cost));
             }
 
             try
             {
                 InformationManager.ShowInquiry(new InquiryData(
-                    "Call to Arms",
+                    DiText.T("DI_DIPLOMACY_CALL_TO_ARMS_2", "Call to Arms"),
                     body,
                     true, true,
-                    "Honour it", "Refuse",
+                    DiText.T("DI_DIPLOMACY_HONOUR_IT_2", "Honour it"), DiText.T("DI_DIPLOMACY_REFUSE", "Refuse"),
                     () => Answer(state, treaty, caller, ally, enemy),
                     () => Refuse(state, treaty, caller, ally, "declined by the ruler"),
                     "", DiplomacyConstants.CallToArmsPlayerResponseSeconds,

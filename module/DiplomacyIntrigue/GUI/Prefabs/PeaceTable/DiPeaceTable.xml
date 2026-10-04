@@ -288,7 +288,7 @@
                                 UpdateChildrenStates="true" Command.Click="ExecuteWhitePeace">
                               <Children>
                                 <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
-                                    Brush="Kingdom.GeneralButtons.Text" Text="White peace" />
+                                    Brush="Kingdom.GeneralButtons.Text" Text="@WhitePeaceText" />
                               </Children>
                             </ButtonWidget>
                           </Children>
@@ -316,7 +316,7 @@
                                 UpdateChildrenStates="true" Command.Click="ExecuteCancel">
                               <Children>
                                 <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
-                                    Brush="Kingdom.GeneralButtons.Text" Text="Cancel" />
+                                    Brush="Kingdom.GeneralButtons.Text" Text="@CancelText" />
                               </Children>
                             </ButtonWidget>
                           </Children>
@@ -336,7 +336,7 @@
                                 UpdateChildrenStates="true" Command.Click="ExecuteRefuse">
                               <Children>
                                 <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
-                                    Brush="Kingdom.GeneralButtons.Text" Text="Refuse" />
+                                    Brush="Kingdom.GeneralButtons.Text" Text="@RefuseText" />
                               </Children>
                             </ButtonWidget>
                           </Children>

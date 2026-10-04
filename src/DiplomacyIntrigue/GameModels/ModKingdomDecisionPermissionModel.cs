@@ -51,7 +51,8 @@ namespace DiplomacyIntrigue.GameModels
             {
                 if (Intrigue.InternalWars.IsFaction(kingdom1) || Intrigue.InternalWars.IsFaction(kingdom2))
                 {
-                    reason = new TextObject("A rising is settled by its own war, not by a decision of state.");
+                    reason = new TextObject(DiText.T("DI_DECISIONS_RISING_IS_SETTLED_BY_ITS_OWN_2",
+                        "A rising is settled by its own war, not by a decision of state."));
                     return false;
                 }
 
@@ -81,15 +82,16 @@ namespace DiplomacyIntrigue.GameModels
             {
                 if (Intrigue.InternalWars.IsFaction(kingdom1) || Intrigue.InternalWars.IsFaction(kingdom2))
                 {
-                    reason = new TextObject("A rising is settled by its own war, not by a decision of state.");
+                    reason = new TextObject(DiText.T("DI_DECISIONS_RISING_IS_SETTLED_BY_ITS_OWN",
+                        "A rising is settled by its own war, not by a decision of state."));
                     return false;
                 }
 
                 if (VanillaDiplomacy.Active && VanillaDiplomacy.BothKingdoms(kingdom1, kingdom2))
                 {
                     VanillaDiplomacy.NotePeaceRefused();
-                    reason = new TextObject("Peace is negotiated at the diplomacy table (Ctrl+D), "
-                                            + "where terms can be demanded or offered.");
+                    reason = new TextObject(DiText.T("DI_DECISIONS_PEACE_IS_NEGOTIATED_AT_THE_DIPLOMACY_3",
+                        "Peace is negotiated at the diplomacy table (Ctrl+D), where terms can be demanded or offered."));
                     return false;
                 }
             }
@@ -108,14 +110,16 @@ namespace DiplomacyIntrigue.GameModels
             {
                 if (Intrigue.InternalWars.IsFaction(kingdom1) || Intrigue.InternalWars.IsFaction(kingdom2))
                 {
-                    reason = new TextObject("A rising is settled by its own war, not by a decision of state.");
+                    reason = new TextObject(DiText.T("DI_DECISIONS_RISING_IS_SETTLED_BY_ITS_OWN",
+                        "A rising is settled by its own war, not by a decision of state."));
                     return false;
                 }
 
                 if (VanillaDiplomacy.Active && VanillaDiplomacy.BothKingdoms(kingdom1, kingdom2))
                 {
                     VanillaDiplomacy.NoteAllianceRefused();
-                    reason = new TextObject("Alliances are signed at the diplomacy table (Ctrl+D).");
+                    reason = new TextObject(DiText.T("DI_DECISIONS_ALLIANCES_ARE_SIGNED_AT_THE_DIPLOMACY",
+                        "Alliances are signed at the diplomacy table (Ctrl+D)."));
                     return false;
                 }
             }

@@ -17,7 +17,7 @@
             <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
                 HeightSizePolicy="CoverChildren"
                 Brush="ArmyManagement.Army.Tuple.Name" Brush.FontSize="20"
-                IsEnabled="false" Text="What their court would sign" />
+                IsEnabled="false" Text="@PactChooserTitleText" />
             <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
                 HeightSizePolicy="CoverChildren" MarginLeft="16"
                 Brush="ArmyManagement.Army.Tuple.Name" Brush.FontSize="16"
@@ -93,7 +93,7 @@
                         IsEnabled="@CanPropose">
                       <Children>
                         <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
-                            Brush="Kingdom.GeneralButtons.Text" Text="Propose" />
+                            Brush="Kingdom.GeneralButtons.Text" Text="@ProposeText" />
                       </Children>
                     </ButtonWidget>
                   </Children>
@@ -121,7 +121,7 @@
         <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="840"
             HeightSizePolicy="CoverChildren" MarginTop="8"
             Brush="Kingdom.ParagraphSmall.Text" IsEnabled="false"
-            Text="One valuation, three bars: the gold mark is the bar each treaty has to clear. This is the number their court uses - there is no separate figure for the player." />
+            Text="@ValuationExplainsText" />
 
       </Children>
     </ListPanel>

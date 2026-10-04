@@ -95,7 +95,7 @@
                               <Children>
                                 <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
                                     HeightSizePolicy="CoverChildren" Brush="DiRealm.Title" IsEnabled="false"
-                                    Text="Our wars" />
+                                    Text="@WarsTitleText" />
                                 <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
                                     HeightSizePolicy="CoverChildren" MarginLeft="8" Brush="DiRealm.Value"
                                     IsEnabled="false" Text="@WarsCountText" />
@@ -181,7 +181,7 @@
                                   <Children>
                                     <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
                                         HeightSizePolicy="CoverChildren" MarginBottom="4" IsVisible="@HasVassals"
-                                        Brush="DiRealm.Title" IsEnabled="false" Text="Our sphere" />
+                                        Brush="DiRealm.Title" IsEnabled="false" Text="@SphereTitleText" />
                                     <ListPanel DataSource="{Vassals}" WidthSizePolicy="StretchToParent"
                                         HeightSizePolicy="CoverChildren" StackLayout.LayoutMethod="VerticalTopToBottom">
                                       <ItemTemplate>
@@ -322,7 +322,7 @@
                                                             Brush="DiRealm.Small" IntText="@SummonGold" IsEnabled="@SummonEnabled" />
                                                         <TextWidget WidthSizePolicy="Fixed" SuggestedWidth="60"
                                                             HeightSizePolicy="StretchToParent" VerticalAlignment="Center"
-                                                            Brush="DiRealm.Small" IsEnabled="@SummonEnabled" Text="denars" />
+                                                            Brush="DiRealm.Small" IsEnabled="@SummonEnabled" Text="@DenarsUnitText" />
                                                       </Children>
                                                     </ListPanel>
 
@@ -371,7 +371,7 @@
                                     <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
                                         HeightSizePolicy="CoverChildren" MarginTop="10" MarginBottom="4"
                                         IsVisible="@HasSpheres" Brush="DiRealm.Title" IsEnabled="false"
-                                        Text="Spheres on the map" />
+                                        Text="@SpheresTitleText" />
                                     <ListPanel DataSource="{Spheres}" WidthSizePolicy="StretchToParent"
                                         HeightSizePolicy="CoverChildren" StackLayout.LayoutMethod="VerticalTopToBottom">
                                       <ItemTemplate>
@@ -426,7 +426,7 @@
                                       <Children>
                                         <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
                                             HeightSizePolicy="CoverChildren" Brush="DiRealm.Title" IsEnabled="false"
-                                            Text="Our claims" />
+                                            Text="@ClaimsTitleText" />
                                         <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
                                             HeightSizePolicy="CoverChildren" MarginLeft="8" Brush="DiRealm.Small"
                                             IsEnabled="false" Text="@ClaimsCountText" />
@@ -474,7 +474,7 @@
                                                                     Sprite="BlankWhiteSquare_9" Color="#9AC26AFF" />
                                                                 <TextWidget WidthSizePolicy="StretchToParent"
                                                                     HeightSizePolicy="StretchToParent" Brush="DiRealm.Badge"
-                                                                    Text="LAND" />
+                                                                    Text="@LandColumnText" />
                                                               </Children>
                                                             </Widget>
                                                           </Children>
@@ -546,7 +546,7 @@
                                     <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
                                         HeightSizePolicy="CoverChildren" MarginTop="8" Brush="DiRealm.Small"
                                         IsEnabled="false"
-                                        Text="A claim is what the peace table will let you ask for. Land needs one; nothing else does." />
+                                        Text="@ClaimExplainsText" />
                                   </Children>
                                 </ListPanel>
 
@@ -562,7 +562,7 @@
                                   <Children>
                                     <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
                                         HeightSizePolicy="CoverChildren" MarginBottom="4" IsVisible="@HasAgreements"
-                                        Brush="DiRealm.Title" IsEnabled="false" Text="Our agreements" />
+                                        Brush="DiRealm.Title" IsEnabled="false" Text="@AgreementsTitleText" />
                                     <ListPanel DataSource="{Agreements}" WidthSizePolicy="StretchToParent"
                                         HeightSizePolicy="CoverChildren" StackLayout.LayoutMethod="VerticalTopToBottom">
                                       <ItemTemplate>
@@ -610,7 +610,7 @@
                                           <Children>
                                             <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
                                                 HeightSizePolicy="CoverChildren" Brush="DiRealm.Title" IsEnabled="false"
-                                                Text="Tribute, per period" />
+                                                Text="@TributeCaptionText" />
                                             <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
                                                 HeightSizePolicy="CoverChildren" MarginTop="4" Brush="DiRealm.Value"
                                                 IsEnabled="false" Text="@TributeText" />
@@ -631,7 +631,7 @@
                                                 UpdateChildrenStates="true" Command.Click="ExecuteWriteReport">
                                               <Children>
                                                 <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="StretchToParent"
-                                                    Brush="Kingdom.GeneralButtons.Text" Text="Write a report to file" />
+                                                    Brush="Kingdom.GeneralButtons.Text" Text="@ReportButtonText" />
                                               </Children>
                                             </ButtonWidget>
                                           </Children>
@@ -639,7 +639,7 @@
                                         <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
                                             HeightSizePolicy="CoverChildren" MarginTop="4" Brush="DiRealm.Small"
                                             IsEnabled="false"
-                                            Text="Everything on this tab, plus every kingdom's numbers, to Documents - DiplomacyIntrigue - Reports." />
+                                            Text="@ReportNoteText" />
                                       </Children>
                                     </ListPanel>
                                   </Children>
@@ -659,10 +659,10 @@
                                 <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginTop="10">
                                   <Children>
                                     <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
-                                        VerticalAlignment="Bottom" Brush="DiRealm.Title" Text="Statecraft" />
+                                        VerticalAlignment="Bottom" Brush="DiRealm.Title" Text="@StatecraftTitleText" />
                                     <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
                                         VerticalAlignment="Bottom" MarginLeft="12" Brush="DiRealm.Label"
-                                        Text="Who speaks for the realm, and what their skill moves." />
+                                        Text="@StatecraftNoteText" />
                                   </Children>
                                 </ListPanel>
                                 <ListPanel DataSource="{Rows}" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
@@ -715,10 +715,10 @@
                                 <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginTop="10">
                                   <Children>
                                     <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
-                                        VerticalAlignment="Bottom" Brush="DiRealm.Title" Text="Counter-intelligence" />
+                                        VerticalAlignment="Bottom" Brush="DiRealm.Title" Text="@CounterIntelTitleText" />
                                     <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
                                         VerticalAlignment="Bottom" MarginLeft="12" Brush="DiRealm.Label"
-                                        Text="Hunting foreign agents in our realm, paid from your own purse each week." />
+                                        Text="@CounterIntelNoteText" />
                                   </Children>
                                 </ListPanel>
 
@@ -734,13 +734,13 @@
                                             <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
                                                 VerticalAlignment="Bottom" Brush="DiRealm.Header" Text="@ValueText" />
                                             <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
-                                                VerticalAlignment="Bottom" MarginLeft="8" MarginBottom="3" Brush="DiRealm.Label" Text="of 100, this week" />
+                                                VerticalAlignment="Bottom" MarginLeft="8" MarginBottom="3" Brush="DiRealm.Label" Text="@Of100ThisWeekText" />
                                           </Children>
                                         </ListPanel>
                                         <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="24" MarginTop="6">
                                           <Children>
                                             <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="StretchToParent"
-                                                HorizontalAlignment="Left" Brush="DiRealm.Body" Text="Every realm starts at" />
+                                                HorizontalAlignment="Left" Brush="DiRealm.Body" Text="@EveryRealmStartsAtText" />
                                             <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="StretchToParent"
                                                 HorizontalAlignment="Right" Brush="DiIntel.Right" Text="@BaseText" />
                                           </Children>
@@ -765,7 +765,7 @@
                                         <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="Fixed" SuggestedHeight="40" MarginTop="10">
                                           <Children>
                                             <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="StretchToParent"
-                                                HorizontalAlignment="Left" Brush="DiRealm.Body" Text="Weekly order" />
+                                                HorizontalAlignment="Left" Brush="DiRealm.Body" Text="@WeeklyOrderLabelText" />
                                             <ListPanel WidthSizePolicy="CoverChildren" HeightSizePolicy="StretchToParent" HorizontalAlignment="Right">
                                               <Children>
                                                 <ButtonWidget DoNotPassEventsToChildren="true" WidthSizePolicy="Fixed" SuggestedWidth="44"
@@ -802,7 +802,7 @@
                                         StackLayout.LayoutMethod="VerticalTopToBottom">
                                       <Children>
                                         <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
-                                            Brush="DiRealm.Label" Text="WHAT IT DOES" />
+                                            Brush="DiRealm.Label" Text="@WhatItDoesText" />
                                         <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginTop="6"
                                             Brush="DiRealm.Body" Text="@EffectText" />
                                       </Children>
@@ -813,7 +813,7 @@
                                         StackLayout.LayoutMethod="VerticalTopToBottom">
                                       <Children>
                                         <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="CoverChildren"
-                                            Brush="DiRealm.Label" Text="AGENTS CAUGHT IN OUR REALM" />
+                                            Brush="DiRealm.Label" Text="@CaughtInRealmText" />
                                         <ListPanel DataSource="{Caught}" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
                                             MarginTop="6" StackLayout.LayoutMethod="VerticalTopToBottom">
                                           <ItemTemplate>
@@ -838,7 +838,7 @@
                                         </ListPanel>
                                         <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginTop="4"
                                             Brush="DiRealm.Body"
-                                            Text="Networks nobody has caught are not listed. You cannot see them, and neither can any AI court: an AI ruler raises its order for the wars it fights and the agents it has caught." />
+                                            Text="@UnlistedNetworksNoteText" />
                                       </Children>
                                     </ListPanel>
 

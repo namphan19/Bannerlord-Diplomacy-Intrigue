@@ -180,7 +180,11 @@ namespace DiplomacyIntrigue.Intrigue
         private static string NameOf(Hero hero) => Statecraft.StatecraftModel.NameOf(hero);
 
         public static string SideName(InternalWar war, bool rising)
-            => rising ? (war.Faction == null ? "the rising" : war.Faction.Name.ToString()) : "the crown";
+            => rising
+                ? (war.Faction == null
+                    ? DiText.T("DI_SIDE_THE_RISING", "the rising")
+                    : war.Faction.Name.ToString())
+                : DiText.T("DI_SIDE_THE_CROWN", "the crown");
 
         private static void AddLine(Quote q, string label, float gold)
             => q.Lines.Add(new KeyValuePair<string, int>(label, (int)Math.Round(gold)));
@@ -445,10 +449,14 @@ namespace DiplomacyIntrigue.Intrigue
             try
             {
                 InformationManager.ShowInquiry(new InquiryData(
-                    "An offer from " + buyer.Name,
+                    DiText.T("DI_INTRIGUE_AN_OFFER_FROM_NAME_2",
+                        "An offer from {NAME}",
+                        ("NAME", buyer.Name)),
                     body,
                     true, true,
-                    "Go over - receive " + q.Price.ToString("N0"), "Stay where you are",
+                    DiText.T("DI_INTRIGUE_GO_OVER_RECEIVE_PRICE_2",
+                        "Go over - receive {PRICE}",
+                        ("PRICE", q.Price.ToString("N0"))), DiText.T("DI_INTRIGUE_STAY_WHERE_YOU_ARE_2", "Stay where you are"),
                     () =>
                     {
                         // Runs from the UI, outside any campaign handler's try.

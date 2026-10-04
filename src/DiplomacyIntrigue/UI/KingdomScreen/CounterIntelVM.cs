@@ -43,6 +43,17 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         private bool _hasCaught;
         private MBBindingList<DiCaughtVM> _caught = new MBBindingList<DiCaughtVM>();
 
+        // ----- static labels, moved out of the prefab (story 4.1 §9) ---------------------
+
+        [DataSourceProperty] public string CounterIntelTitleText => DiText.T("DI_COUNTERINTEL_COUNTER_INTELLIGENCE", "Counter-intelligence");
+        [DataSourceProperty] public string CounterIntelNoteText => DiText.T("DI_COUNTERINTEL_HUNTING_FOREIGN_AGENTS_IN", "Hunting foreign agents in our realm, paid from your own purse each week.");
+        [DataSourceProperty] public string Of100ThisWeekText => DiText.T("DI_COUNTERINTEL_OF_100_THIS_WEEK", "of 100, this week");
+        [DataSourceProperty] public string EveryRealmStartsAtText => DiText.T("DI_COUNTERINTEL_EVERY_REALM_STARTS_AT", "Every realm starts at");
+        [DataSourceProperty] public string WeeklyOrderLabelText => DiText.T("DI_COUNTERINTEL_WEEKLY_ORDER", "Weekly order");
+        [DataSourceProperty] public string WhatItDoesText => DiText.T("DI_COUNTERINTEL_WHAT_IT_DOES", "WHAT IT DOES");
+        [DataSourceProperty] public string CaughtInRealmText => DiText.T("DI_COUNTERINTEL_AGENTS_CAUGHT_IN_OUR_REALM", "AGENTS CAUGHT IN OUR REALM");
+        [DataSourceProperty] public string UnlistedNetworksNoteText => DiText.T("DI_COUNTERINTEL_NETWORKS_NOBODY_HAS_CAUGHT", "Networks nobody has caught are not listed. You cannot see them, and neither can any AI court: an AI ruler raises its order for the wars it fights and the agents it has caught.");
+
         [DataSourceProperty] public bool Show { get => _show; set { if (value == _show) return; _show = value; OnPropertyChangedWithValue(value, nameof(Show)); } }
         [DataSourceProperty] public string ValueText { get => _valueText; set => SetText(ref _valueText, value, nameof(ValueText)); }
         [DataSourceProperty] public string BaseText => EspionageConstants.CounterIntelligenceBase.ToString("0.0");
@@ -105,9 +116,13 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
             var t = CounterIntelligence.Explain(state, realm);
             ValueText = t.Total.ToString("0.0");
-            SecurityLabel = "Security of our towns and castles, average " + t.AverageSecurity.ToString("0");
+            SecurityLabel = DiText.T("DI_COUNTERINTEL_SECURITY_OF_OUR_TOWNS_AND_CASTLES_AVERAGESECURITY_2",
+                "Security of our towns and castles, average {AVERAGESECURITY}",
+                ("AVERAGESECURITY", t.AverageSecurity.ToString("0")));
             SecurityText = Signed(t.FromSecurity);
-            BudgetLabel = "Paid last week, " + t.WeeklySpent.ToString("N0");
+            BudgetLabel = DiText.T("DI_COUNTERINTEL_PAID_LAST_WEEK_WEEKLYSPENT_2",
+                "Paid last week, {WEEKLYSPENT}",
+                ("WEEKLYSPENT", t.WeeklySpent.ToString("N0")));
             BudgetText = Signed(t.FromBudget);
 
             // From next week: the same explanation, with the order paid in full in place of last
@@ -120,22 +135,29 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
             OrderText = order.ToString("N0");
             CanLower = order > 0;
-            NextText = "From next week, if paid in full: " + withOrder.Total.ToString("0.0") + ". Every "
-                       + Step.ToString("N0") + " paid is one point.";
+            NextText = DiText.T("DI_COUNTERINTEL_FROM_NEXT_WEEK_IF_PAID_IN_TOTAL_STEP_2",
+                "From next week, if paid in full: {TOTAL}. Every {STEP} paid is one point.",
+                ("TOTAL", withOrder.Total.ToString("0.0")),
+                ("STEP", Step.ToString("N0")));
 
             var purse = ruler.Gold;
             PurseLine = order > purse
-                ? "More than your purse holds (" + purse.ToString("N0") + "): only that much would be paid, and you would be told."
-                : (purse > 0 ? (100f * order / purse).ToString("0") : "0") + "% of your purse of " + purse.ToString("N0")
-                  + " a week - the purse that also pays your troops.";
+                ? DiText.T("DI_COUNTERINTEL_MORE_THAN_YOUR_PURSE_HOLDS",
+                    "More than your purse holds ({PURSE}): only that much would be paid, and you would be told.",
+                    ("PURSE", purse.ToString("N0")))
+                : DiText.T("DI_COUNTERINTEL_SHARE_OF_YOUR_PURSE",
+                    "{PCT}% of your purse of {PURSE} a week - the purse that also pays your troops.",
+                    ("PCT", purse > 0 ? (100f * order / purse).ToString("0") : "0"),
+                    ("PURSE", purse.ToString("N0")));
             PurseColor = order > purse || (purse > 0 && order > purse / 10) ? DiRealmVM.NegativeColor : DiRealmVM.MutedColor;
 
             var points = withOrder.Total - withNothing.Total;
-            EffectText = "Against every foreign network in " + realm.Name + ", this order means "
-                         + Pct(points * EspionageConstants.MissionChancePerCounterIntelligence) + " less chance for each of their operations to succeed, "
-                         + Pct(points * EspionageConstants.ExposurePerCounterIntelligence) + " more to be caught when one fails, and "
-                         + (points * EspionageConstants.NetworkCounterIntelligenceDrag).ToString("0.00") + " a week off each network's growth. "
-                         + "Foreign courts read the same formula against our networks; none of them sees this order.";
+            EffectText = DiText.T("DI_COUNTERINTEL_AGAINST_EVERY_FOREIGN_NETWORK_IN_THIS_NAME_PCT_PCT_2_2",
+                "Against every foreign network in {NAME}, this order means {PCT} less chance for each of their operations to succeed, {PCT_2} more to be caught when one fails, and {NETWORKCOUNTERINTELLIGENCEDRAG} a week off each network's growth. Foreign courts read the same formula against our networks; none of them sees this order.",
+                ("NAME", realm.Name),
+                ("PCT", Pct(points * EspionageConstants.MissionChancePerCounterIntelligence)),
+                ("PCT_2", Pct(points * EspionageConstants.ExposurePerCounterIntelligence)),
+                ("NETWORKCOUNTERINTELLIGENCEDRAG", (points * EspionageConstants.NetworkCounterIntelligenceDrag).ToString("0.00")));
 
             var caught = new MBBindingList<DiCaughtVM>();
             foreach (var other in Kingdom.All)

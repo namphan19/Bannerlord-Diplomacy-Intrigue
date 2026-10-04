@@ -50,7 +50,8 @@ namespace DiplomacyIntrigue.GameModels
                 {
                     VanillaDiplomacy.NoteAllianceRefused();
                     reason = includeReason
-                        ? new TextObject("Alliances are signed at the diplomacy table (Ctrl+D).")
+                        ? new TextObject(DiText.T("DI_DECISIONS_ALLIANCES_ARE_SIGNED_AT_THE_DIPLOMACY_2",
+                            "Alliances are signed at the diplomacy table (Ctrl+D)."))
                         : null;
                     return false;
                 }
@@ -72,7 +73,8 @@ namespace DiplomacyIntrigue.GameModels
                     && VanillaDiplomacy.BothKingdoms(kingdomDeclaresAlliance, kingdomDeclaredAlliance))
                 {
                     explanation = includeDescription
-                        ? new TextObject("Alliances are signed at the diplomacy table (Ctrl+D).")
+                        ? new TextObject(DiText.T("DI_DECISIONS_ALLIANCES_ARE_SIGNED_AT_THE_DIPLOMACY",
+                            "Alliances are signed at the diplomacy table (Ctrl+D)."))
                         : null;
                     return new ExplainedNumber(Forbidden, includeDescription, null);
                 }
@@ -94,7 +96,8 @@ namespace DiplomacyIntrigue.GameModels
                 if (VanillaDiplomacy.Active && VanillaDiplomacy.BothKingdoms(callingKingdom, calledKingdom))
                 {
                     VanillaDiplomacy.NoteCallToWarRefused();
-                    reason = new TextObject("Obligations to join a war come from treaties, not agreements.");
+                    reason = new TextObject(DiText.T("DI_DECISIONS_OBLIGATIONS_TO_JOIN_WAR_COME_FROM_2",
+                        "Obligations to join a war come from treaties, not agreements."));
                     return Forbidden;
                 }
             }
@@ -116,7 +119,8 @@ namespace DiplomacyIntrigue.GameModels
                     && VanillaDiplomacy.BothKingdoms(offeringKingdom, kingdomToOfferToJoinWarWith))
                 {
                     VanillaDiplomacy.NoteCallToWarRefused();
-                    reason = new TextObject("Obligations to join a war come from treaties, not agreements.");
+                    reason = new TextObject(DiText.T("DI_DECISIONS_OBLIGATIONS_TO_JOIN_WAR_COME_FROM",
+                        "Obligations to join a war come from treaties, not agreements."));
                     return Forbidden;
                 }
             }

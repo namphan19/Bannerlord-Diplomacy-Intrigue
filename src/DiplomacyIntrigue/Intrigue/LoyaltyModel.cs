@@ -75,10 +75,13 @@ namespace DiplomacyIntrigue.Intrigue
         {
             switch (band)
             {
-                case LoyaltyBand.Reliable: return "Reliable - votes with the ruler, answers the call.";
-                case LoyaltyBand.Transactional: return "Transactional - votes its own interest.";
-                case LoyaltyBand.Disaffected: return "Disaffected - votes against the ruler, volunteers nothing.";
-                default: return "A defection risk.";
+                case LoyaltyBand.Reliable: return DiText.T("DI_INTRIGUE_RELIABLE_VOTES_WITH_THE_RULER_ANSWERS_2",
+                    "Reliable - votes with the ruler, answers the call.");
+                case LoyaltyBand.Transactional: return DiText.T("DI_INTRIGUE_TRANSACTIONAL_VOTES_ITS_OWN_INTEREST_2",
+                    "Transactional - votes its own interest.");
+                case LoyaltyBand.Disaffected: return DiText.T("DI_INTRIGUE_DISAFFECTED_VOTES_AGAINST_THE_RULER_VOLUNTEERS_2",
+                    "Disaffected - votes against the ruler, volunteers nothing.");
+                default: return DiText.T("DI_INTRIGUE_DEFECTION_RISK_2", "A defection risk.");
             }
         }
 

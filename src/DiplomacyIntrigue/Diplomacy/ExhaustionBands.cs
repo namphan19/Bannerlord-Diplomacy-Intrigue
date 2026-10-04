@@ -45,11 +45,16 @@ namespace DiplomacyIntrigue.Diplomacy
         {
             switch (band)
             {
-                case ExhaustionBand.Breaking: return "Breaking";
-                case ExhaustionBand.Exhausted: return "Exhausted";
-                case ExhaustionBand.Weary: return "Weary";
-                case ExhaustionBand.Strained: return "Strained";
-                default: return "Fresh";
+                case ExhaustionBand.Breaking:
+                    return Core.DiText.T("DI_EXHAUSTION_BREAKING", "Breaking");
+                case ExhaustionBand.Exhausted:
+                    return Core.DiText.T("DI_EXHAUSTION_EXHAUSTED", "Exhausted");
+                case ExhaustionBand.Weary:
+                    return Core.DiText.T("DI_EXHAUSTION_WEARY", "Weary");
+                case ExhaustionBand.Strained:
+                    return Core.DiText.T("DI_EXHAUSTION_STRAINED", "Strained");
+                default:
+                    return Core.DiText.T("DI_EXHAUSTION_FRESH", "Fresh");
             }
         }
 
@@ -76,15 +81,16 @@ namespace DiplomacyIntrigue.Diplomacy
             switch (band)
             {
                 case ExhaustionBand.Breaking:
-                    return "will accept unfavourable terms; their fiefs are losing loyalty";
+                    return Core.DiText.T("DI_EXHAUSTION_MEANING_BREAKING",
+                        "will accept unfavourable terms; their fiefs are losing loyalty");
                 case ExhaustionBand.Exhausted:
-                    return "will accept a white peace";
+                    return Core.DiText.T("DI_EXHAUSTION_MEANING_EXHAUSTED", "will accept a white peace");
                 case ExhaustionBand.Weary:
-                    return "their court is starting to press for peace";
+                    return Core.DiText.T("DI_EXHAUSTION_MEANING_WEARY", "their court is starting to press for peace");
                 case ExhaustionBand.Strained:
-                    return "feeling the cost, but not yet politically";
+                    return Core.DiText.T("DI_EXHAUSTION_MEANING_STRAINED", "feeling the cost, but not yet politically");
                 default:
-                    return "nothing is pressing them";
+                    return Core.DiText.T("DI_EXHAUSTION_MEANING_FRESH", "nothing is pressing them");
             }
         }
 
@@ -113,7 +119,13 @@ namespace DiplomacyIntrigue.Diplomacy
         public static string Condition(float exhaustion)
         {
             var band = Of(exhaustion);
-            return Name(band) + " - " + Meaning(band);
+            // The line is a key of its own, not the band's name glued to its meaning with " - " in
+            // code: a language puts the two halves in whatever order it likes, and some does not
+            // want a dash at all. Both halves are keyed words in their own right, so a translator
+            // gets three things to place rather than one sentence with a hole in it.
+            return Core.DiText.T("DI_EXHAUSTION_CONDITION", "{BAND} - {MEANING}",
+                ("BAND", Name(band)),
+                ("MEANING", Meaning(band)));
         }
     }
 }

@@ -65,6 +65,17 @@ namespace DiplomacyIntrigue.UI.EncyclopediaPages
         // ----- bound surface ---------------------------------------------------
 
         /// <summary>False hides the whole section, divider included.</summary>
+        // ----- static labels, moved out of the prefab (story 4.1 §9) ---------------------
+
+        [DataSourceProperty] public string StandingTitleText => DiText.T("DI_ENCYCLOPEDIA_THE_CROWNS_STANDING", "THE CROWN'S STANDING");
+        [DataSourceProperty] public string MoodTitleText => DiText.T("DI_ENCYCLOPEDIA_THE_MOOD_OF_THE_COURT", "THE MOOD OF THE COURT");
+        [DataSourceProperty] public string EnvoysTitleText => DiText.T("DI_ENCYCLOPEDIA_WHAT_YOUR_ENVOYS_REPORT", "WHAT YOUR ENVOYS REPORT");
+        [DataSourceProperty] public string HousesTitleText => DiText.T("DI_ENCYCLOPEDIA_THEIR_HOUSES", "THEIR HOUSES");
+        [DataSourceProperty] public string HouseColumnText => DiText.T("DI_ENCYCLOPEDIA_HOUSE_COLUMN", "HOUSE");
+        [DataSourceProperty] public string SpokenOfColumnText => DiText.T("DI_ENCYCLOPEDIA_HOW_THEY_ARE_SPOKEN_OF", "HOW THEY ARE SPOKEN OF");
+        [DataSourceProperty] public string StandingAtCourtColumnText => DiText.T("DI_ENCYCLOPEDIA_STANDING_AT_COURT", "STANDING AT COURT");
+        [DataSourceProperty] public string LedgerTitleText => DiText.T("DI_ENCYCLOPEDIA_THEIR_LEDGER", "THEIR LEDGER");
+
         [DataSourceProperty]
         public bool Visible
         {
@@ -87,12 +98,12 @@ namespace DiplomacyIntrigue.UI.EncyclopediaPages
 
         [DataSourceProperty] public bool IsRivalCourt => !_isOwnCourt;
 
-        [DataSourceProperty] public string SectionTitle => "Court";
+        [DataSourceProperty] public string SectionTitle => DiText.T("DI_COURT_COURT_2", "Court");
 
         [DataSourceProperty]
         public string OwnCourtText =>
-            "This is your own court. Every figure behind it - each house's loyalty, what it holds "
-            + "against the crown, the crown's standing - is on the Court tab of the Kingdom screen.";
+            DiText.T("DI_COURT_THIS_IS_YOUR_OWN_COURT_EVERY_2",
+                "This is your own court. Every figure behind it - each house's loyalty, what it holds against the crown, the crown's standing - is on the Court tab of the Kingdom screen.");
 
         [DataSourceProperty]
         public string HeaderLine
@@ -159,8 +170,8 @@ namespace DiplomacyIntrigue.UI.EncyclopediaPages
 
         [DataSourceProperty]
         public string ThresholdNote =>
-            "Every edge above is a real threshold in their court: you are told which side of it "
-            + "a house sits on, never how far.";
+            DiText.T("DI_COURT_EVERY_EDGE_ABOVE_IS_REAL_THRESHOLD_2",
+                "Every edge above is a real threshold in their court: you are told which side of it a house sits on, never how far.");
 
         private const string UnreadLedger =
             "What each house holds against its ruler, and by how much, is not something an envoy "
@@ -232,14 +243,16 @@ namespace DiplomacyIntrigue.UI.EncyclopediaPages
             var ruling = kingdom.RulingClan;
             var ruler = kingdom.Leader;
             var female = ruler != null && ruler.IsFemale;
-            var him = female ? "her" : "him";
-            var his = female ? "her" : "his";
+            var him = female ? DiText.T("DI_COURT_HER_2", "her") : DiText.T("DI_COURT_HIM_2", "him");
+            var his = female ? DiText.T("DI_COURT_HER", "her") : DiText.T("DI_COURT_HIS_2", "his");
 
             // A reveal is the player's own house's: a vassal's agents report to their own lord.
             var readDaysLeft = Missions.RevealDaysLeft(state, Clan.PlayerClan, kingdom, SpyMissionType.ReadCourt);
-            HeaderLine = readDaysLeft > 0f
-                ? "The court of Clan " + ruling.Name + " - what your envoys can tell you, and what your agents read inside it."
-                : "The court of Clan " + ruling.Name + " - what your envoys can tell you.";
+            HeaderLine = readDaysLeft > 0f ? DiText.T("DI_COURT_THE_COURT_OF_CLAN_WHAT_YOUR_NAME_2",
+                "The court of Clan {NAME} - what your envoys can tell you, and what your agents read inside it.",
+                ("NAME", ruling.Name)) : DiText.T("DI_COURT_THE_COURT_OF_CLAN_WHAT_YOUR_NAME_3",
+                "The court of Clan {NAME} - what your envoys can tell you.",
+                ("NAME", ruling.Name));
 
             // The crown, as a band.
             var standing = CourtBands.CrownOf(LegitimacyRegistry.Of(state, kingdom));
@@ -417,18 +430,23 @@ namespace DiplomacyIntrigue.UI.EncyclopediaPages
 
         private static string MoodSummary(int[] counts, int total, bool female)
         {
-            var him = female ? "her" : "him";
-            if (total == 0) return "There is no court beyond " + (female ? "her" : "his") + " own house.";
+            var him = female ? DiText.T("DI_COURT_HER", "her") : DiText.T("DI_COURT_HIM", "him");
+            if (total == 0) return female ? DiText.T("DI_COURT_THERE_IS_NO_COURT_BEYOND_HER_2",
+                "There is no court beyond her own house.") : DiText.T("DI_COURT_THERE_IS_NO_COURT_BEYOND_HIS_2",
+                "There is no court beyond his own house.");
 
             var reliable = counts[(int)LoyaltyBand.Reliable];
             var bought = counts[(int)LoyaltyBand.Transactional];
             var restless = counts[(int)LoyaltyBand.Disaffected] + counts[(int)LoyaltyBand.DefectionRisk];
 
             string lead;
-            if (reliable * 2 > total) lead = "Most of the court is " + (female ? "hers" : "his") + " in earnest.";
-            else if (restless * 2 > total) lead = "The court is turning against " + him + ".";
-            else if (bought >= reliable && bought >= restless) lead = "Mostly bought rather than won.";
-            else lead = "A court of divided loyalties.";
+            if (reliable * 2 > total) lead = female ? DiText.T("DI_COURT_MOST_OF_THE_COURT_IS_HERS_2",
+                "Most of the court is hers in earnest.") : DiText.T("DI_COURT_MOST_OF_THE_COURT_IS_HIS_2", "Most of the court is his in earnest.");
+            else if (restless * 2 > total) lead = DiText.T("DI_COURT_THE_COURT_IS_TURNING_AGAINST_HIM_2",
+                "The court is turning against {HIM}.",
+                ("HIM", him));
+            else if (bought >= reliable && bought >= restless) lead = DiText.T("DI_COURT_MOSTLY_BOUGHT_RATHER_THAN_WON_2", "Mostly bought rather than won.");
+            else lead = DiText.T("DI_COURT_COURT_OF_DIVIDED_LOYALTIES_2", "A court of divided loyalties.");
 
             var tail = restless == 0
                 ? " None of the houses is restless."
@@ -467,12 +485,17 @@ namespace DiplomacyIntrigue.UI.EncyclopediaPages
         private static string Defections(int readyToBreak, string him)
         {
             if (readyToBreak == 0)
-                return "No house is spoken of as ready to break with " + him + ".";
+                return DiText.T("DI_COURT_NO_HOUSE_IS_SPOKEN_OF_AS_HIM_2",
+                    "No house is spoken of as ready to break with {HIM}.",
+                    ("HIM", him));
             if (readyToBreak == 1)
-                return "One house is spoken of as ready to break with " + him
-                       + ". Whether it would act on it, your men could not say.";
-            return Capital(Words(readyToBreak)) + " houses are spoken of as ready to break with " + him
-                   + ". Whether they would act on it, your men could not say.";
+                return DiText.T("DI_COURT_ONE_HOUSE_IS_SPOKEN_OF_AS_HIM_2",
+                    "One house is spoken of as ready to break with {HIM}. Whether it would act on it, your men could not say.",
+                    ("HIM", him));
+            return DiText.T("DI_COURT_HOUSES_ARE_SPOKEN_OF_AS_READY_CAPITAL_HIM_2",
+                "{CAPITAL} houses are spoken of as ready to break with {HIM}. Whether they would act on it, your men could not say.",
+                ("CAPITAL", Capital(Words(readyToBreak))),
+                ("HIM", him));
         }
 
         /// <summary>
@@ -498,8 +521,8 @@ namespace DiplomacyIntrigue.UI.EncyclopediaPages
 
         private static readonly string[] SmallNumbers =
         {
-            "none", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
-            "eleven", "twelve",
+            DiText.T("DI_COURT_NONE_2", "none"), DiText.T("DI_COURT_ONE_2", "one"), DiText.T("DI_COURT_TWO_2", "two"), DiText.T("DI_COURT_THREE_2", "three"), DiText.T("DI_COURT_FOUR_2", "four"), DiText.T("DI_COURT_FIVE_2", "five"), DiText.T("DI_COURT_SIX_2", "six"), DiText.T("DI_COURT_SEVEN_2", "seven"), DiText.T("DI_COURT_EIGHT_2", "eight"), DiText.T("DI_COURT_NINE_2", "nine"), DiText.T("DI_COURT_TEN_2", "ten"),
+            DiText.T("DI_COURT_ELEVEN_2", "eleven"), DiText.T("DI_COURT_TWELVE_2", "twelve"),
         };
 
         /// <summary>An envoy counts houses in words. Past twelve, digits read better than prose.</summary>
