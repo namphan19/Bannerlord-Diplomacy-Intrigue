@@ -30,7 +30,7 @@
             HeightSizePolicy="CoverChildren" HorizontalAlignment="Center" MarginTop="2"
             Brush="Kingdom.ParagraphSmall.Text" Brush.TextHorizontalAlignment="Center"
             IsEnabled="false" IsVisible="@DiHasNote"
-            Text="· · ·  the game's own rows (strength, fiefs, clans) continue below  · · ·" />
+            Text="@VanillaRowsNoteText" />
       </Children>
     </ListPanel>
   </Window>

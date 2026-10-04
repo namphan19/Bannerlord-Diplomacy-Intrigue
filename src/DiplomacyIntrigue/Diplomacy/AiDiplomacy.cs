@@ -401,10 +401,12 @@ namespace DiplomacyIntrigue.Diplomacy
             try
             {
                 InformationManager.ShowInquiry(new InquiryData(
-                    weAreLoser ? "Their terms for peace" : "Peace offer from " + offerer.Name,
+                    weAreLoser ? DiText.T("DI_DIPLOMACY_THEIR_TERMS_FOR_PEACE_2", "Their terms for peace") : DiText.T("DI_DIPLOMACY_PEACE_OFFER_FROM_NAME_2",
+                        "Peace offer from {NAME}",
+                        ("NAME", offerer.Name)),
                     body,
                     true, true,
-                    terms.IsWhitePeace ? "Make peace" : "Accept these terms", "Refuse",
+                    terms.IsWhitePeace ? DiText.T("DI_DIPLOMACY_MAKE_PEACE_2", "Make peace") : DiText.T("DI_DIPLOMACY_ACCEPT_THESE_TERMS_2", "Accept these terms"), DiText.T("DI_DIPLOMACY_REFUSE_2", "Refuse"),
                     () =>
                     {
                         // Runs from the UI, outside the try below - a throw here would take the
@@ -748,9 +750,9 @@ namespace DiplomacyIntrigue.Diplomacy
             try
             {
                 InformationManager.ShowInquiry(new InquiryData(
-                    "Offer of submission",
+                    DiText.T("DI_DIPLOMACY_OFFER_OF_SUBMISSION_2", "Offer of submission"),
                     body,
-                    true, true, "Accept", "Refuse",
+                    true, true, DiText.T("DI_DIPLOMACY_ACCEPT_2", "Accept"), DiText.T("DI_DIPLOMACY_REFUSE", "Refuse"),
                     () =>
                     {
                         // Runs from the UI, outside the try below - a throw here would take the
@@ -1070,9 +1072,9 @@ namespace DiplomacyIntrigue.Diplomacy
             try
             {
                 InformationManager.ShowInquiry(new InquiryData(
-                    "Offer of submission",
+                    DiText.T("DI_DIPLOMACY_OFFER_OF_SUBMISSION", "Offer of submission"),
                     body,
-                    true, true, "Accept", "Refuse",
+                    true, true, DiText.T("DI_DIPLOMACY_ACCEPT", "Accept"), DiText.T("DI_DIPLOMACY_REFUSE", "Refuse"),
                     () =>
                     {
                         // Runs from the UI, outside the try below - a throw here would take the
@@ -1742,7 +1744,7 @@ namespace DiplomacyIntrigue.Diplomacy
                     demander.Name + " demands tribute",
                     body,
                     true, true,
-                    "Pay the tribute", "Refuse",
+                    DiText.T("DI_DIPLOMACY_PAY_THE_TRIBUTE_2", "Pay the tribute"), DiText.T("DI_DIPLOMACY_REFUSE", "Refuse"),
                     () =>
                     {
                         // Runs from the UI, outside any campaign handler's try.

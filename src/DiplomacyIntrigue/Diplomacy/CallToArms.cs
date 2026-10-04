@@ -820,10 +820,10 @@ namespace DiplomacyIntrigue.Diplomacy
             try
             {
                 InformationManager.ShowInquiry(new InquiryData(
-                    "Call to Arms",
+                    DiText.T("DI_DIPLOMACY_CALL_TO_ARMS_2", "Call to Arms"),
                     body,
                     true, true,
-                    "Honour it", "Refuse",
+                    DiText.T("DI_DIPLOMACY_HONOUR_IT_2", "Honour it"), DiText.T("DI_DIPLOMACY_REFUSE", "Refuse"),
                     () => Answer(state, treaty, caller, ally, enemy),
                     () => Refuse(state, treaty, caller, ally, "declined by the ruler"),
                     "", DiplomacyConstants.CallToArmsPlayerResponseSeconds,

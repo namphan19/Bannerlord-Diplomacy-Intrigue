@@ -83,11 +83,24 @@ re-rolled after a reload (now saved, `SpyMission` 12); stale figures in six desi
       Show those as bands, or accept. Found by package A; left as it was.
 - [ ] **The Kingdom-UI loose ends** - the Realm tab widening the tab strip, `ConcessionLadder`'s
       `townsFirst` flag. Out of this pass by the lead's call.
-- [ ] **Localization (Phase 4)** - about 1,300 player-facing literals, none behind a `TextObject` key.
-      **Decided 2026-10-03:** its own story, [4.1](docs/stories/4.1-localization.md), 10 sub-tasks,
-      starting with the ST-1 spike. Vietnamese is separate, [story 4.2](docs/stories/4.2-vietnamese.md),
-      blocked on 4.1. Until it ships the pages say "English only" (the Nexus page's
-      "ready for translation" was untrue and is gone).
+- [x] **Localization (Phase 4)** - built 2026-10-03, [story 4.1](docs/stories/4.1-localization.md):
+      641 keys behind `DiText.T` (including all 92 prefab labels, moved into view models), English generated into `Languages/EN/di_strings.xml`, 13 language
+      folders ready to drop a translation into, `scripts/check-localization.ps1` in
+      `build.ps1`/`deploy.ps1`, guide in [docs/localization.md](docs/localization.md).
+      **Compiled and checked; never run in game** - so AC1-AC6 are unverified, and no screen has
+      been seen in any language.
+- [ ] **Localization, what is left** (story 4.1, in order of risk):
+      (1) **One session with `DE` selected**, to see the keyed screens switch and to catch any prefab
+      binding that silently failed. `check-localization.ps1` proves every `@Property` a prefab binds
+      is declared on *some* view model; it cannot prove it is the *right* one, and a property on
+      the wrong model binds to nothing and draws an empty label - which no English session would
+      catch.
+      (2) Then, with the screens known good: **550 strings the rewriter left to a human** (story
+      ST-5) - 365 fragments of a longer sentence (`" are "`, `" answered"`), 135 sentences spread
+      over several `sb.Append` statements, 25 built in pieces elsewhere, 25 with a conditional
+      inside a clause. Listed as `manual` with a reason in `artifacts/localization/inventory.csv`;
+      until they are done those particular sentences stay English in every language.
+- [ ] **Vietnamese** - separate, [story 4.2](docs/stories/4.2-vietnamese.md), after 4.1 ships.
 
 ## Pending work
 

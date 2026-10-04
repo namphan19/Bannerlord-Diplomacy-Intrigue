@@ -27,6 +27,11 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         private string _note = string.Empty;
         private MBBindingList<DiStatecraftRowVM> _rows = new MBBindingList<DiStatecraftRowVM>();
 
+        // ----- static labels, moved out of the prefab (story 4.1 §9) ---------------------
+
+        [DataSourceProperty] public string StatecraftTitleText => DiText.T("DI_STATECRAFT_STATECRAFT_TITLE", "Statecraft");
+        [DataSourceProperty] public string StatecraftNoteText => DiText.T("DI_STATECRAFT_WHO_SPEAKS_FOR_THE_REALM", "Who speaks for the realm, and what their skill moves.");
+
         [DataSourceProperty] public bool Show { get => _show; set { if (value == _show) return; _show = value; OnPropertyChangedWithValue(value, nameof(Show)); } }
         [DataSourceProperty] public string Note { get => _note; set { value = value ?? string.Empty; if (value == _note) return; _note = value; OnPropertyChangedWithValue(value, nameof(Note)); } }
         [DataSourceProperty] public MBBindingList<DiStatecraftRowVM> Rows { get => _rows; set { if (value == _rows) return; _rows = value; OnPropertyChangedWithValue(value, nameof(Rows)); } }
@@ -65,35 +70,35 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 + " on any court we ask for a pact"));
 
             rows.Add(Row(realm, Portfolio.Steward,
-                "Grievances against the crown fade " + GrievanceRegistry.FadePerDay(realm.RulingClan).ToString("0.000")
-                + " a day · a year of peace restores " + LegitimacyRegistry.PeaceDividendOf(realm).ToString("0.0")
-                + " legitimacy"));
+                DiText.T("DI_STATECRAFT_GRIEVANCES_AGAINST_THE_CROWN_FADE_DAY_FADEPERDAY_2",
+                    "Grievances against the crown fade {FADEPERDAY} a day · a year of peace restores {PEACEDIVIDENDOF} legitimacy",
+                    ("FADEPERDAY", GrievanceRegistry.FadePerDay(realm.RulingClan).ToString("0.000")),
+                    ("PEACEDIVIDENDOF", LegitimacyRegistry.PeaceDividendOf(realm).ToString("0.0")))));
 
             var treasurerLevel = StatecraftModel.Level(realm, Portfolio.Treasurer);
             rows.Add(Row(realm, Portfolio.Treasurer,
-                "A house we buy in a civil war costs "
-                + StatecraftModel.Factor(1f - StatecraftConstants.HagglingWeight * treasurerLevel)
-                + " against a median house"));
+                DiText.T("DI_STATECRAFT_HOUSE_WE_BUY_IN_CIVIL_WAR_FACTOR_2",
+                    "A house we buy in a civil war costs {FACTOR} against a median house",
+                    ("FACTOR", StatecraftModel.Factor(1f - StatecraftConstants.HagglingWeight * treasurerLevel)))));
 
             var spyLevel = StatecraftModel.Level(realm, Portfolio.Spymaster);
             rows.Add(Row(realm, Portfolio.Spymaster,
-                "A claim we fabricate is caught "
-                + Pct(DiplomacyConstants.FabricateClaimExposureChance
-                      * (1f - StatecraftConstants.SubterfugeWeight * StatecraftModel.Contest(spyLevel, 0f)))
-                + " of the time against a median watch"));
+                DiText.T("DI_STATECRAFT_CLAIM_WE_FABRICATE_IS_CAUGHT_OF_PCT_2",
+                    "A claim we fabricate is caught {PCT} of the time against a median watch",
+                    ("PCT", Pct(DiplomacyConstants.FabricateClaimExposureChance
+                      * (1f - StatecraftConstants.SubterfugeWeight * StatecraftModel.Contest(spyLevel, 0f)))))));
 
             var watchLevel = StatecraftModel.Level(realm, Portfolio.Watch);
             rows.Add(Row(realm, Portfolio.Watch,
-                "A median spymaster fabricating on us is caught "
-                + Pct(DiplomacyConstants.FabricateClaimExposureChance
-                      * (1f - StatecraftConstants.SubterfugeWeight * StatecraftModel.Contest(0f, watchLevel)))
-                + " of the time"));
+                DiText.T("DI_STATECRAFT_MEDIAN_SPYMASTER_FABRICATING_ON_US_IS_PCT_2",
+                    "A median spymaster fabricating on us is caught {PCT} of the time",
+                    ("PCT", Pct(DiplomacyConstants.FabricateClaimExposureChance
+                      * (1f - StatecraftConstants.SubterfugeWeight * StatecraftModel.Contest(0f, watchLevel)))))));
 
             Rows = rows;
-            Note = "Each skill is measured against the median of the same office across every realm, so a ruler "
-                   + "as good as their peers moves nothing. " + (ruler == Hero.MainHero ? "You hold" : "The ruler holds")
-                   + " Leadership in person; the other five go to the best hero of the ruling house, family or "
-                   + "companion. A captured hero hands the office to the next best. Doing the work trains the skill.";
+            Note = ruler == Hero.MainHero ? DiText.T("DI_STATECRAFT_EACH_SKILL_IS_MEASURED_AGAINST_THE_2",
+                "Each skill is measured against the median of the same office across every realm, so a ruler as good as their peers moves nothing. You hold Leadership in person; the other five go to the best hero of the ruling house, family or companion. A captured hero hands the office to the next best. Doing the work trains the skill.") : DiText.T("DI_STATECRAFT_EACH_SKILL_IS_MEASURED_AGAINST_THE_3",
+                "Each skill is measured against the median of the same office across every realm, so a ruler as good as their peers moves nothing. The ruler holds Leadership in person; the other five go to the best hero of the ruling house, family or companion. A captured hero hands the office to the next best. Doing the work trains the skill.");
         }
 
         private static DiStatecraftRowVM Row(Kingdom realm, Portfolio portfolio, string moves)
@@ -108,11 +113,17 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             {
                 var absent = BestAbsent(realm.RulingClan, skill);
                 if (absent != null && actor != null && absent.GetSkillValue(skill) > actor.GetSkillValue(skill))
-                    stand = "Standing in for " + absent.Name + (absent.IsPrisoner ? ", a prisoner" : ", who cannot act");
+                    stand = absent.IsPrisoner ? DiText.T("DI_STATECRAFT_STANDING_IN_FOR_PRISONER_NAME_2",
+                        "Standing in for {NAME}, a prisoner",
+                        ("NAME", absent.Name)) : DiText.T("DI_STATECRAFT_STANDING_IN_FOR_WHO_CANNOT_ACT_NAME_2",
+                        "Standing in for {NAME}, who cannot act",
+                        ("NAME", absent.Name));
             }
 
-            var who = actor == null ? "nobody" : StatecraftModel.NameOf(actor);
-            if (who == "you") who = "You";
+            var who = DiText.T("DI_STATECRAFT_ACTOR_2",
+                "{ACTOR}",
+                ("ACTOR", actor == null ? "nobody" : StatecraftModel.NameOf(actor)));
+            if (who == "you") who = DiText.T("DI_STATECRAFT_YOU_2", "You");
             return new DiStatecraftRowVM(
                 StatecraftModel.TitleOf(portfolio),
                 who,

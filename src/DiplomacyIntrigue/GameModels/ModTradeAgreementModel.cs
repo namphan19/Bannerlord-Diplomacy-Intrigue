@@ -44,7 +44,8 @@ namespace DiplomacyIntrigue.GameModels
                 {
                     VanillaDiplomacy.NoteTradeAgreementRefused();
                     reason = includeReason
-                        ? new TextObject("Trade agreements are not part of this mod's diplomacy.")
+                        ? new TextObject(DiText.T("DI_DECISIONS_TRADE_AGREEMENTS_ARE_NOT_PART_OF_2",
+                            "Trade agreements are not part of this mod's diplomacy."))
                         : null;
                     return false;
                 }
@@ -66,7 +67,8 @@ namespace DiplomacyIntrigue.GameModels
                 if (VanillaDiplomacy.Active && VanillaDiplomacy.BothKingdoms(kingdom, targetKingdom))
                 {
                     explanation = includeExplanation
-                        ? new TextObject("Trade agreements are not part of this mod's diplomacy.")
+                        ? new TextObject(DiText.T("DI_DECISIONS_TRADE_AGREEMENTS_ARE_NOT_PART_OF",
+                            "Trade agreements are not part of this mod's diplomacy."))
                         : null;
                     return Forbidden;
                 }

@@ -44,7 +44,7 @@
                           <Children>
                             <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
                                 HeightSizePolicy="CoverChildren" VerticalAlignment="Center" Brush="DiRealm.Small"
-                                IsEnabled="false" Text="THE REALM'S WORST WAR" />
+                                IsEnabled="false" Text="@WorstWarTitleText" />
                             <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
                                 HeightSizePolicy="CoverChildren" MarginLeft="10" VerticalAlignment="Center"
                                 Brush="DiRealm.Label" IsEnabled="false" Text="@WorstWarText" />
@@ -64,7 +64,7 @@
                           <Children>
                             <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
                                 HeightSizePolicy="CoverChildren" VerticalAlignment="Center"
-                                Brush="DiRealm.Label" IsEnabled="false" Text="CROWN LEGITIMACY" />
+                                Brush="DiRealm.Label" IsEnabled="false" Text="@LegitimacyTitleText" />
                             <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
                                 HeightSizePolicy="CoverChildren" MarginLeft="12" VerticalAlignment="Center"
                                 Brush="DiRealm.Score" IsEnabled="false" Text="@LegitimacyText" />
@@ -117,7 +117,7 @@
                   <Children>
                     <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
                         HeightSizePolicy="CoverChildren" MarginBottom="6" Brush="DiRealm.Title"
-                        IsEnabled="false" Text="Court blocs" />
+                        IsEnabled="false" Text="@BlocsTitleText" />
 
                     <ListPanel DataSource="{Blocs}" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
                         StackLayout.LayoutMethod="VerticalTopToBottom">
@@ -181,11 +181,11 @@
                     <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
                         HeightSizePolicy="CoverChildren" MarginBottom="8" IsVisible="@NoBlocs"
                         Brush="DiRealm.Body" IsEnabled="false"
-                        Text="No faction has formed. No cause is pulling hard enough on any clan to organise it." />
+                        Text="@NoBlocsText" />
 
                     <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
                         HeightSizePolicy="CoverChildren" MarginTop="2" Brush="DiRealm.Small" IsEnabled="false"
-                        Text="A bloc votes as one: its members back whatever its leader wants. A clan at loyalty 70 or above ignores its bloc and votes with the crown." />
+                        Text="@BlocExplainsText" />
 
 
                     <!-- The offices (design 09 C2, the court canvas's "The offices" board). A seat row is
@@ -193,7 +193,7 @@
                          to the selected house. Rows are one line: the column is 280 wide. -->
                     <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
                         HeightSizePolicy="CoverChildren" MarginTop="10" MarginBottom="3" Brush="DiRealm.Label"
-                        IsEnabled="false" Text="OFFICES - CHOOSE A SEAT, THEN A HOUSE" />
+                        IsEnabled="false" Text="@OfficesTitleText" />
                     <ListPanel DataSource="{Seats}" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
                         StackLayout.LayoutMethod="VerticalTopToBottom">
                       <ItemTemplate>
@@ -227,7 +227,7 @@
                       <Children>
                         <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
                             HeightSizePolicy="CoverChildren" Brush="DiRealm.Title" IsEnabled="false"
-                            Text="The court" />
+                            Text="@CourtTitleText" />
                         <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
                             HeightSizePolicy="CoverChildren" MarginLeft="12" VerticalAlignment="Bottom"
                             Brush="DiRealm.Small" IsEnabled="false" Text="@ClanCountText" />
@@ -243,19 +243,19 @@
                       <Children>
                         <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="125"
                             HeightSizePolicy="StretchToParent" MarginLeft="10" Brush="DiRealm.Small"
-                            IsEnabled="false" Text="CLAN" />
+                            IsEnabled="false" Text="@ClanColumnText" />
                         <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="110"
                             HeightSizePolicy="StretchToParent" Brush="DiRealm.Small" IsEnabled="false"
-                            Text="BLOC" />
+                            Text="@BlocColumnText" />
                         <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="60"
                             HeightSizePolicy="StretchToParent" Brush="DiRealm.Small" IsEnabled="false"
-                            Text="INFL." />
+                            Text="@InfluenceColumnText" />
                         <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="116"
                             HeightSizePolicy="StretchToParent" MarginLeft="10" Brush="DiRealm.Small"
-                            IsEnabled="false" Text="LOYALTY" />
+                            IsEnabled="false" Text="@LoyaltyColumnText" />
                         <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
                             HeightSizePolicy="StretchToParent" Brush="DiRealm.Small" IsEnabled="false"
-                            Text="STANDING" />
+                            Text="@StandingColumnText" />
                       </Children>
                     </ListPanel>
 
@@ -299,7 +299,7 @@
                                 </Widget>
                                 <TextWidget WidthSizePolicy="CoverChildren" HeightSizePolicy="StretchToParent"
                                     MarginLeft="8" IsVisible="@IsPressing" Brush="DiRealm.Small"
-                                    Brush.FontColor="#D9695AFF" Text="claimant" />
+                                    Brush.FontColor="#D9695AFF" Text="@ClaimantLabelText" />
                               </Children>
                             </ListPanel>
                           </Children>
@@ -365,7 +365,7 @@
                         <!-- WHY: the loyalty sum, term by term. LoyaltyModel.Explain - the number the AI uses. -->
                         <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
                             HeightSizePolicy="CoverChildren" MarginTop="12" MarginBottom="4" Brush="DiRealm.Label"
-                            IsEnabled="false" Text="WHY" />
+                            IsEnabled="false" Text="@WhyColumnText" />
                         <ListPanel DataSource="{Terms}" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
                             StackLayout.LayoutMethod="VerticalTopToBottom">
                           <ItemTemplate>
@@ -391,7 +391,7 @@
                         <!-- What they have not forgotten -->
                         <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
                             HeightSizePolicy="CoverChildren" MarginTop="14" MarginBottom="4" Brush="DiRealm.Label"
-                            IsEnabled="false" Text="WHAT THEY HAVE NOT FORGOTTEN" />
+                            IsEnabled="false" Text="@NotForgottenTitleText" />
                         <!-- Each grievance, and for the ruler what answering it costs (design 09 C1, the
                              court canvas's "Making amends" board). The price lines are Amends.PriceTerms,
                              the button Amends.Execute - the numbers the AI weighs. The item grows with its
@@ -472,7 +472,7 @@
                         </ListPanel>
                         <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
                             HeightSizePolicy="CoverChildren" IsVisible="@NoGrievances" Brush="DiRealm.Small"
-                            IsEnabled="false" Text="Nothing is held against the crown by this clan." />
+                            IsEnabled="false" Text="@NoGrievanceText" />
                       </Children>
                     </ListPanel>
 
@@ -570,7 +570,7 @@
                                   <Children>
                                     <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
                                         HeightSizePolicy="CoverChildren" Brush="DiRealm.Title" IsEnabled="false"
-                                        Text="THE CROWN" />
+                                        Text="@CrownTitleText" />
                                     <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
                                         HeightSizePolicy="CoverChildren" MarginLeft="10" VerticalAlignment="Bottom"
                                         Brush="DiRealm.Small" Brush.FontColor="#8FB35EFF" IsEnabled="false"
@@ -587,7 +587,7 @@
                                   <Children>
                                     <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
                                         HeightSizePolicy="CoverChildren" HorizontalAlignment="Left" VerticalAlignment="Bottom"
-                                        Brush="DiRealm.Label" IsEnabled="false" Text="EXHAUSTION" />
+                                        Brush="DiRealm.Label" IsEnabled="false" Text="@ExhaustionColumnText" />
                                     <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
                                         HeightSizePolicy="CoverChildren" HorizontalAlignment="Right" VerticalAlignment="Bottom"
                                         Brush="DiRealm.Value" Brush.FontColor="@CrownExhaustionColor" IsEnabled="false"
@@ -663,7 +663,7 @@
                                 <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="170"
                                     HeightSizePolicy="StretchToParent" MarginRight="10" HorizontalAlignment="Right"
                                     Brush="DiRealm.Body" Brush.FontColor="#D9B54AFF" Brush.TextHorizontalAlignment="Right"
-                                    IsEnabled="false" Text="Stalemate" />
+                                    IsEnabled="false" Text="@StalemateText" />
                               </Children>
                             </Widget>
                           </Children>
@@ -700,7 +700,7 @@
                                   <Children>
                                     <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
                                         HeightSizePolicy="CoverChildren" HorizontalAlignment="Left" VerticalAlignment="Bottom"
-                                        Brush="DiRealm.Label" IsEnabled="false" Text="EXHAUSTION" />
+                                        Brush="DiRealm.Label" IsEnabled="false" Text="@ExhaustionColumnText" />
                                     <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
                                         HeightSizePolicy="CoverChildren" HorizontalAlignment="Right" VerticalAlignment="Bottom"
                                         Brush="DiRealm.Value" Brush.FontColor="@RisingExhaustionColor" IsEnabled="false"
@@ -747,16 +747,16 @@
                               <Children>
                                 <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="190"
                                     HeightSizePolicy="StretchToParent" MarginLeft="10" Brush="DiRealm.Small"
-                                    IsEnabled="false" Text="HOUSE" />
+                                    IsEnabled="false" Text="@HouseColumnText" />
                                 <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="50"
                                     HeightSizePolicy="StretchToParent" Brush="DiRealm.Small" IsEnabled="false"
-                                    Text="FIEFS" />
+                                    Text="@FiefsColumnText" />
                                 <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="70"
                                     HeightSizePolicy="StretchToParent" Brush="DiRealm.Small" IsEnabled="false"
-                                    Text="LOYALTY" />
+                                    Text="@LoyaltyColumnText" />
                                 <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="Fixed" SuggestedWidth="90"
                                     HeightSizePolicy="StretchToParent" Brush="DiRealm.Small" IsEnabled="false"
-                                    Text="PRICE" />
+                                    Text="@PriceColumnText" />
                                 <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
                                     HeightSizePolicy="StretchToParent" Brush="DiRealm.Small" IsEnabled="false"
                                     Text="" />
@@ -841,7 +841,7 @@
                                             <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
                                                 HeightSizePolicy="CoverChildren" MarginTop="8" MarginLeft="10" Brush="DiRealm.Small"
                                                 IsEnabled="false"
-                                                Text="A house changes sides once in a war, and takes its fiefs with it. The price is paid from the leader's own purse to the house's head." />
+                                                Text="@SideChangeExplainsText" />
                                           </Children>
                                         </ListPanel>
                                       </Children>
@@ -881,7 +881,7 @@
                                                 Brush.TextHorizontalAlignment="Left" IsEnabled="false" Text="@PriceText" />
                                             <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
                                                 HeightSizePolicy="CoverChildren" MarginLeft="6" VerticalAlignment="Bottom"
-                                                Brush="DiRealm.Label" IsEnabled="false" Text="denars" />
+                                                Brush="DiRealm.Label" IsEnabled="false" Text="@DenarsUnitText" />
                                           </Children>
                                         </ListPanel>
                                         <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
@@ -891,7 +891,7 @@
                                     </Widget>
                                     <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
                                         HeightSizePolicy="CoverChildren" MarginTop="8" MarginBottom="4" Brush="DiRealm.Label"
-                                        IsEnabled="false" Text="WHY THAT MUCH" />
+                                        IsEnabled="false" Text="@WhyThatMuchText" />
                                     <ListPanel DataSource="{PriceLines}" WidthSizePolicy="StretchToParent"
                                         HeightSizePolicy="CoverChildren" StackLayout.LayoutMethod="VerticalTopToBottom">
                                       <ItemTemplate>
@@ -941,7 +941,7 @@
                                   <Children>
                                     <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="CoverChildren"
                                         HeightSizePolicy="CoverChildren" Brush="DiRealm.Label" IsEnabled="false"
-                                        Text="CONCEDE THE WAR" />
+                                        Text="@ConcedeText" />
                                     <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
                                         HeightSizePolicy="CoverChildren" MarginTop="4" Brush="DiRealm.Small"
                                         IsEnabled="false" Text="@ConcedeBody" />

@@ -262,7 +262,7 @@ namespace DiplomacyIntrigue.Intrigue
                 throw new InvalidOperationException(
                     "this game's Kingdom.InitializeKingdom matches no signature this mod knows");
 
-            var name = new TextObject(claimant.Name + "'s Rising");
+            var name = new TextObject(DiText.T("DI_INTRIGUE_RISING_NAME_2", "{NAME}'s Rising", ("NAME", claimant.Name)));
             var faction = Kingdom.CreateKingdom("di_rising");
 
             var parameters = initialize.GetParameters();
@@ -274,10 +274,12 @@ namespace DiplomacyIntrigue.Intrigue
             args[4] = banner.Color;
             args[5] = banner.Color2;
             args[6] = home;
-            args[7] = new TextObject("The houses of " + kingdom.Name + " who took up arms to put "
-                                     + claimant.Name + " on its throne.");
-            args[8] = new TextObject("Rising");
-            args[9] = new TextObject("Claimant");
+            args[7] = new TextObject(DiText.T("DI_INTRIGUE_THE_HOUSES_OF_WHO_TOOK_UP_NAME_NAME_2_2",
+                "The houses of {NAME} who took up arms to put {NAME_2} on its throne.",
+                ("NAME", kingdom.Name),
+                ("NAME_2", claimant.Name)));
+            args[8] = new TextObject(DiText.T("DI_INTRIGUE_RISING_2", "Rising"));
+            args[9] = new TextObject(DiText.T("DI_INTRIGUE_CLAIMANT_2", "Claimant"));
             for (var i = InitializeKingdomKnownParameters; i < parameters.Length; i++)
                 args[i] = DefaultFor(parameters[i]);
 
@@ -691,14 +693,15 @@ namespace DiplomacyIntrigue.Intrigue
 
             _askingPlayer = true;
             InformationManager.ShowInquiry(new InquiryData(
-                "Raise your banner?",
-                "The crown of " + a.Kingdom.Name + " stands at legitimacy " + a.Legitimacy.ToString("0")
-                + ", and the clans who back your claim hold " + (a.BlocShare * 100f).ToString("0")
-                + "% of the court's influence. " + a.Rebels.Count + " house(s) would take the field"
-                + " with you against " + a.Kingdom.Leader?.Name + ".\n\n"
-                + "If you rise, your party and theirs become enemies of the crown until the war is"
-                + " decided. You stay a member of the realm throughout.",
-                true, true, "Raise the banner", "Not yet",
+                DiText.T("DI_INTRIGUE_RAISE_YOUR_BANNER_2", "Raise your banner?"),
+                DiText.T("DI_INTRIGUE_THE_CROWN_OF_STANDS_AT_LEGITIMACY_NAME_LEGITIMACY_BLOCSHARE_2",
+                    "The crown of {NAME} stands at legitimacy {LEGITIMACY}, and the clans who back your claim hold {BLOCSHARE}% of the court's influence. {COUNT} house(s) would take the field with you against {NAME_2}.\n\nIf you rise, your party and theirs become enemies of the crown until the war is decided. You stay a member of the realm throughout.",
+                    ("NAME", a.Kingdom.Name),
+                    ("LEGITIMACY", a.Legitimacy.ToString("0")),
+                    ("BLOCSHARE", (a.BlocShare * 100f).ToString("0")),
+                    ("COUNT", a.Rebels.Count),
+                    ("NAME_2", a.Kingdom.Leader?.Name)),
+                true, true, DiText.T("DI_INTRIGUE_RAISE_THE_BANNER_2", "Raise the banner"), DiText.T("DI_INTRIGUE_NOT_YET_2", "Not yet"),
                 () =>
                 {
                     // Runs from the UI, outside any campaign handler's try.
@@ -827,12 +830,14 @@ namespace DiplomacyIntrigue.Intrigue
             _askingPlayer = true;
 
             InformationManager.ShowInquiry(new InquiryData(
-                "Civil war in " + war.Kingdom.Name,
-                war.Claimant.Name + " has taken up arms against " + war.Kingdom.Leader?.Name
-                + ". You have little love for the crown, and the rebels would welcome you.\n\n"
-                + "Join them, and your clan fights the crown until the war is decided. Stay, and"
-                + " you fight for it.",
-                true, true, "Join the rebellion", "Stay loyal",
+                DiText.T("DI_INTRIGUE_CIVIL_WAR_IN_NAME_2",
+                    "Civil war in {NAME}",
+                    ("NAME", war.Kingdom.Name)),
+                DiText.T("DI_INTRIGUE_HAS_TAKEN_UP_ARMS_AGAINST_YOU_NAME_NAME_2_2",
+                    "{NAME} has taken up arms against {NAME_2}. You have little love for the crown, and the rebels would welcome you.\n\nJoin them, and your clan fights the crown until the war is decided. Stay, and you fight for it.",
+                    ("NAME", war.Claimant.Name),
+                    ("NAME_2", war.Kingdom.Leader?.Name)),
+                true, true, DiText.T("DI_INTRIGUE_JOIN_THE_REBELLION_2", "Join the rebellion"), DiText.T("DI_INTRIGUE_STAY_LOYAL_2", "Stay loyal"),
                 () =>
                 {
                     try

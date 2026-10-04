@@ -69,7 +69,8 @@ namespace DiplomacyIntrigue.GameModels
                 if (InternalWars.Any && party != null && MobileParty.MainParty != null
                     && SideOf(party) != SideOf(MobileParty.MainParty))
                 {
-                    explanation = new TextObject("On the other side of the civil war.");
+                    explanation = new TextObject(DiText.T("DI_DECISIONS_ON_THE_OTHER_SIDE_OF_THE_2",
+                        "On the other side of the civil war."));
                     return false;
                 }
             }

@@ -73,9 +73,40 @@ namespace DiplomacyIntrigue.UI.ClanScreen
         private bool _show;
         private bool _tabVisible;
 
+        // ----- static labels, moved out of the prefab ---------------------------------
+        //
+        // A Gauntlet widget's Text is a plain string the widget never resolves a key in, so
+        // every label the panel used to carry in XML lives here instead (story 4.1 §9). They are
+        // properties rather than constants because a constant cannot hold a DiText call.
+
+        [DataSourceProperty] public string OddsNoteText => DiText.T("DI_INTEL_ODDS_ARE_THE_ONES_THE_ROLL", "Every chance on this tab is the one the roll uses. AI houses read the same numbers.");
+        [DataSourceProperty] public string NetworksTitleText => DiText.T("DI_INTEL_NETWORKS_TITLE", "Our networks");
+        [DataSourceProperty] public string FoundNetworkText => DiText.T("DI_INTEL_FOUND_A_NETWORK_ABROAD", "Found a network abroad");
+        [DataSourceProperty] public string ReportsTitleText => DiText.T("DI_INTEL_REPORTS_IN_HAND", "Reports in hand");
+        [DataSourceProperty] public string StrengthColumnText => DiText.T("DI_INTEL_STRENGTH_COLUMN", "STRENGTH");
+        [DataSourceProperty] public string NextWeekColumnText => DiText.T("DI_INTEL_NEXT_WEEK_COLUMN", "NEXT WEEK");
+        [DataSourceProperty] public string WeekCaptionText => DiText.T("DI_INTEL_A_WEEK", "A week");
+        [DataSourceProperty] public string WeeklyBudgetLabelText => DiText.T("DI_INTEL_WEEKLY_BUDGET", "Weekly budget");
+        [DataSourceProperty] public string RecallText => DiText.T("DI_INTEL_RECALL", "Recall");
+        [DataSourceProperty] public string PostHandlerText => DiText.T("DI_INTEL_POST_A_HANDLER", "Post a handler");
+        [DataSourceProperty] public string OddsLegendText => DiText.T("DI_INTEL_SUCCESS_CAUGHT_OVERALL", "success  §  caught, overall");
+        [DataSourceProperty] public string PlanOperationText => DiText.T("DI_INTEL_PLAN_THIS_OPERATION", "Plan this operation");
+        [DataSourceProperty] public string OperationsTitleText => DiText.T("DI_INTEL_UNDER_WAY", "Under way");
+        [DataSourceProperty] public string NoMarksWarningText => DiText.T("DI_INTEL_NOBODY_OR_NOWHERE_TO_AIM_AT", "Nobody or nowhere the operation could be aimed at.");
+        [DataSourceProperty] public string OutcomesTitleText => DiText.T("DI_INTEL_WHAT_CAN_HAPPEN", "What can happen");
+        [DataSourceProperty] public string SuccessLabelText => DiText.T("DI_INTEL_SUCCESS", "Success");
+        [DataSourceProperty] public string FailureUnseenText => DiText.T("DI_INTEL_FAILURE_UNSEEN", "Failure, unseen");
+        [DataSourceProperty] public string CaughtLabelText => DiText.T("DI_INTEL_CAUGHT", "Caught");
+        [DataSourceProperty] public string BackText => DiText.T("DI_INTEL_BACK", "Back");
+        [DataSourceProperty] public string WhereLabelText => DiText.T("DI_INTEL_WHERE", "Where");
+        [DataSourceProperty] public string WhoLabelText => DiText.T("DI_INTEL_WHO", "Who");
+        [DataSourceProperty] public string SkillsCanBuildToText => DiText.T("DI_INTEL_ROGUERY_CHARM_CAN_BUILD_TO", "roguery  §  charm  §  can build to");
+        [DataSourceProperty] public string HandlerRecallNoteText => DiText.T("DI_INTEL_A_HANDLER_GIVEN_A_PARTY_MADE_A", "A handler who is given a party, made a governor or taken prisoner is recalled, and the network sits idle until another goes.");
+        [DataSourceProperty] public string CancelText => DiText.T("DI_INTEL_CANCEL", "Cancel");
+
         [DataSourceProperty] public bool Show { get => _show; set => SetBool(ref _show, value, nameof(Show)); }
         [DataSourceProperty] public bool TabVisible { get => _tabVisible; set => SetBool(ref _tabVisible, value, nameof(TabVisible)); }
-        [DataSourceProperty] public string TabText => "Intelligence";
+        [DataSourceProperty] public string TabText => DiText.T("DI_INTEL_INTELLIGENCE_2", "Intelligence");
 
         // ================= bound surface: summary and lists =================
 
@@ -434,7 +465,8 @@ namespace DiplomacyIntrigue.UI.ClanScreen
             {
                 Networks = nets; Reports = reports; Operations = ops;
                 HasNetworks = false; HasReports = false; HasOperations = false; HasSelection = false;
-                NoNetworksText = "Espionage is only available in a campaign.";
+                NoNetworksText = DiText.T("DI_INTEL_ESPIONAGE_IS_ONLY_AVAILABLE_IN_CAMPAIGN_2",
+                    "Espionage is only available in a campaign.");
                 SummaryText = string.Empty;
                 return;
             }
@@ -457,7 +489,9 @@ namespace DiplomacyIntrigue.UI.ClanScreen
                     n.Strength.ToString("0.0") + (n.Handler != null ? " of " + t.Ceiling.ToString("0") : ""),
                     Signed(t.NetOverAWeek) + " / week",
                     t.NetOverAWeek >= 0f ? PositiveColor : NegativeColor,
-                    n.Handler?.Name?.ToString() ?? "no handler",
+                    DiText.T("DI_INTEL_TOSTRING_2",
+                        "{TOSTRING}",
+                        ("TOSTRING", n.Handler?.Name?.ToString() ?? "no handler")),
                     (int)Math.Round(n.Strength),
                     n.Handler != null ? (int)Math.Round(t.Ceiling) : 0,
                     n.Handler != null && t.Ceiling < EspionageConstants.NetworkMaxStrength,
@@ -466,8 +500,8 @@ namespace DiplomacyIntrigue.UI.ClanScreen
             }
             Networks = nets;
             HasNetworks = nets.Count > 0;
-            NoNetworksText = nets.Count > 0 ? string.Empty
-                : "Our house runs no network abroad. Found one: a member or companion goes to a foreign realm and builds it week by week.";
+            NoNetworksText = nets.Count > 0 ? "" : DiText.T("DI_INTEL_OUR_HOUSE_RUNS_NO_NETWORK_ABROAD_2",
+                "Our house runs no network abroad. Found one: a member or companion goes to a foreign realm and builds it week by week.");
 
             // Operations under way, house-wide, and the reports in hand.
             var pending = 0;
@@ -485,7 +519,9 @@ namespace DiplomacyIntrigue.UI.ClanScreen
                     // "now": the figure is today's, and the roll uses the day it resolves (story 3.11 R3).
                     m.Handler?.Name + " · " + Days(daysLeft) + " left · " + Espionage.Missions.Pct(odds.Success)
                     + " to succeed now · " + Denars(m.GoldPaid) + " paid",
-                    "Call off (" + Denars(m.GoldPaid) + " lost)",
+                    DiText.T("DI_INTEL_CALL_OFF_LOST_DENARS_2",
+                        "Call off ({DENARS} lost)",
+                        ("DENARS", Denars(m.GoldPaid))),
                     () => Guard("Calling off an operation", () =>
                     {
                         if (Espionage.Missions.Cancel(CoreBehavior.State, mission))
@@ -502,12 +538,14 @@ namespace DiplomacyIntrigue.UI.ClanScreen
                 var target = n.Target;
                 var armies = Espionage.Missions.RevealDaysLeft(state, us, target, SpyMissionType.ScoutArmies);
                 if (armies > 0f)
-                    reports.Add(new DiReportVM(target.Name + "'s armies", "good for " + More((int)Math.Ceiling(armies)),
+                    reports.Add(new DiReportVM(DiText.T("DI_INTEL_ARMIES_NAME_2", "{NAME}'s armies", ("NAME", target.Name)), "good for " + More((int)Math.Ceiling(armies)),
                         Capitalise(Espionage.Missions.ArmiesReport(target)) + "."));
                 var court = Espionage.Missions.RevealDaysLeft(state, us, target, SpyMissionType.ReadCourt);
                 if (court > 0f)
-                    reports.Add(new DiReportVM(target.Name + "'s court", "good for " + More((int)Math.Ceiling(court)),
-                        "Its figures are on " + target.Name + "'s Encyclopedia page, under \"Their ledger\"."));
+                    reports.Add(new DiReportVM(DiText.T("DI_INTEL_COURT_NAME_2", "{NAME}'s court", ("NAME", target.Name)), "good for " + More((int)Math.Ceiling(court)),
+                        DiText.T("DI_INTEL_ITS_FIGURES_ARE_ON_ENCYCLOPEDIA_PAGE_NAME_2",
+                            "Its figures are on {NAME}'s Encyclopedia page, under \"Their ledger\".",
+                            ("NAME", target.Name))));
             }
             Reports = reports;
             HasReports = reports.Count > 0;
@@ -539,7 +577,8 @@ namespace DiplomacyIntrigue.UI.ClanScreen
             var hasHandler = network.Handler != null;
 
             SelName = target.Name.ToString();
-            SelRelation = t.AtWar ? "at war with us - borders are watched, the network grows at half pace" : "at peace with us";
+            SelRelation = t.AtWar ? DiText.T("DI_INTEL_AT_WAR_WITH_US_BORDERS_ARE_2",
+                "at war with us - borders are watched, the network grows at half pace") : DiText.T("DI_INTEL_AT_PEACE_WITH_US_2", "at peace with us");
             SelStrengthText = network.Strength.ToString("0.0");
             SelCeilingText = hasHandler
                 ? "of " + t.Ceiling.ToString("0") + (t.Ceiling >= EspionageConstants.NetworkMaxStrength ? ", the most any network holds" : ", the most this handler can build")
@@ -555,11 +594,13 @@ namespace DiplomacyIntrigue.UI.ClanScreen
             {
                 var goldLabel = "Gold, " + Denars(t.Spend) + " a week";
                 if (t.Spend < network.WeeklyBudget) goldLabel += " of " + Denars(network.WeeklyBudget) + " ordered";
-                if (t.AtWar) goldLabel += ", halved at war";
+                if (t.AtWar) goldLabel += DiText.T("DI_INTEL_HALVED_AT_WAR_2", ", halved at war");
                 terms.Add(new DiTermVM(goldLabel, Signed(t.Investment), t.Investment > 0f ? PositiveColor : MutedColor));
             }
-            terms.Add(new DiTermVM("Their counter-intelligence, " + t.CounterIntelligence.ToString("0.0"), Signed(-t.FromCounterIntelligence), NegativeColor));
-            terms.Add(new DiTermVM("Attrition", Signed(-t.Attrition), NegativeColor));
+            terms.Add(new DiTermVM(DiText.T("DI_INTEL_THEIR_COUNTER_INTELLIGENCE_COUNTERINTELLIGENCE_2",
+                "Their counter-intelligence, {COUNTERINTELLIGENCE}",
+                ("COUNTERINTELLIGENCE", t.CounterIntelligence.ToString("0.0"))), Signed(-t.FromCounterIntelligence), NegativeColor));
+            terms.Add(new DiTermVM(DiText.T("DI_INTEL_ATTRITION_2", "Attrition"), Signed(-t.Attrition), NegativeColor));
             terms.Add(new DiTermVM("Decay, " + EspionageConstants.NetworkDailyDecay.ToString("0.0") + " a day", Signed(-t.WeekOfDecay), NegativeColor));
             SelTerms = terms;
 
@@ -567,7 +608,9 @@ namespace DiplomacyIntrigue.UI.ClanScreen
             SelNetColor = t.NetOverAWeek >= 0f ? PositiveColor : NegativeColor;
             if (t.Idle != null)
             {
-                SelHint = "Idle (" + t.Idle + "): it only shrinks, and no operation can be launched.";
+                SelHint = DiText.T("DI_INTEL_IDLE_IT_ONLY_SHRINKS_AND_NO_IDLE_2",
+                    "Idle ({IDLE}): it only shrinks, and no operation can be launched.",
+                    ("IDLE", t.Idle));
                 SelHintColor = WarningColor;
             }
             else if (t.NetOverAWeek < 0f && network.Strength <= 0f)
@@ -577,7 +620,9 @@ namespace DiplomacyIntrigue.UI.ClanScreen
                                 * (t.AtWar ? EspionageConstants.NetworkWartimeGrowth : 1f);
                 var start = perDenar0 > 0f
                     ? (int)Math.Ceiling((t.FromCounterIntelligence + t.Attrition + t.WeekOfDecay) / perDenar0 / 100f) * 100 : 0;
-                SelHint = start > 0 ? "Not yet built. It starts to grow above about " + Denars(start) + " a week." : "Not yet built.";
+                SelHint = start > 0 ? DiText.T("DI_INTEL_NOT_YET_BUILT_IT_STARTS_TO_DENARS_2",
+                    "Not yet built. It starts to grow above about {DENARS} a week.",
+                    ("DENARS", Denars(start))) : DiText.T("DI_INTEL_NOT_YET_BUILT_2", "Not yet built.");
                 SelHintColor = WarningColor;
             }
             else if (t.NetOverAWeek < 0f)
@@ -595,7 +640,8 @@ namespace DiplomacyIntrigue.UI.ClanScreen
             }
             else if (network.Strength >= t.Ceiling - 0.05f)
             {
-                SelHint = "At the most this handler can build.";
+                SelHint = DiText.T("DI_INTEL_AT_THE_MOST_THIS_HANDLER_CAN_2",
+                    "At the most this handler can build.");
                 SelHintColor = MutedColor;
             }
             else
@@ -617,8 +663,10 @@ namespace DiplomacyIntrigue.UI.ClanScreen
             }
             else
             {
-                SelHandlerName = "No handler";
-                SelHandlerLine = "A member of the house or a companion must go to " + target.Name + ".";
+                SelHandlerName = DiText.T("DI_INTEL_NO_HANDLER_2", "No handler");
+                SelHandlerLine = DiText.T("DI_INTEL_MEMBER_OF_THE_HOUSE_OR_COMPANION_NAME_2",
+                    "A member of the house or a companion must go to {NAME}.",
+                    ("NAME", target.Name));
             }
 
             // The board: every operation, read through the launch's own gates.
@@ -663,11 +711,15 @@ namespace DiplomacyIntrigue.UI.ClanScreen
             MLabel = TitleOf(selectedSpec.Type);
             MTarget = "target: " + MarkNeed(selectedSpec);
             MEffect = EffectOf(selectedSpec.Type);
-            MRisk = "If caught, t" + CaughtText(selectedSpec.Type, target).Substring(1);
-            MWhy = selectedOpen
+            MRisk = DiText.T("DI_INTEL_IF_CAUGHT_SUBSTRING_2",
+                "If caught, t{SUBSTRING}",
+                ("SUBSTRING", CaughtText(selectedSpec.Type, target).Substring(1)));
+            MWhy = DiText.T("DI_INTEL_EMPTY_2",
+                "{EMPTY}",
+                ("EMPTY", selectedOpen
                 ? Espionage.Missions.Pct(selectedOdds.Success) + " to succeed. If it fails, " + Espionage.Missions.Pct(selectedOdds.ExposureOnFailure)
                   + " that we are caught: " + Espionage.Missions.Pct(selectedOdds.Exposure) + " overall."
-                : selectedWhy ?? string.Empty;
+                : selectedWhy ?? string.Empty));
             CanPlan = selectedOpen;
         }
 
@@ -707,13 +759,19 @@ namespace DiplomacyIntrigue.UI.ClanScreen
                 : _planMark is Settlement settlement ? settlement.Name.ToString() : target.Name.ToString();
             var caught = odds.Exposure;
             var failUnseen = (1f - odds.Success) - caught;
-            PlanSuccessText = SuccessText(spec.Type, target, markName) + " The network spends "
-                              + EspionageConstants.MissionSuccessNetworkCost.ToString("0") + ".";
+            PlanSuccessText = DiText.T("DI_INTEL_THE_NETWORK_SPENDS_SUCCESSTEXT_MISSIONSUCCESSNETWORKCOST_2",
+                "{SUCCESSTEXT} The network spends {MISSIONSUCCESSNETWORKCOST}.",
+                ("SUCCESSTEXT", SuccessText(spec.Type, target, markName)),
+                ("MISSIONSUCCESSNETWORKCOST", EspionageConstants.MissionSuccessNetworkCost.ToString("0")));
             PlanSuccessPct = Espionage.Missions.Pct(odds.Success);
-            PlanFailText = "Nothing happens. The " + Denars(spec.Gold) + " is gone and the network loses "
-                           + EspionageConstants.MissionFailureNetworkCost.ToString("0") + ".";
+            PlanFailText = DiText.T("DI_INTEL_NOTHING_HAPPENS_THE_IS_GONE_AND_DENARS_2",
+                "Nothing happens. The {DENARS} is gone and the network loses {MISSIONFAILURENETWORKCOST}.",
+                ("DENARS", Denars(spec.Gold)),
+                ("MISSIONFAILURENETWORKCOST", EspionageConstants.MissionFailureNetworkCost.ToString("0")));
             PlanFailPct = Espionage.Missions.Pct(failUnseen);
-            PlanCaughtText = CaughtText(spec.Type, target) + " Their ruler learns whose agents they were.";
+            PlanCaughtText = DiText.T("DI_INTEL_THEIR_RULER_LEARNS_WHOSE_AGENTS_THEY_CAUGHTTEXT_2",
+                "{CAUGHTTEXT} Their ruler learns whose agents they were.",
+                ("CAUGHTTEXT", CaughtText(spec.Type, target)));
             PlanCaughtPct = Espionage.Missions.Pct(caught);
             PlanOddsNote = "Success " + Espionage.Missions.Pct(odds.Success) + ". If it fails, "
                            + Espionage.Missions.Pct(odds.ExposureOnFailure) + " that we are caught (their counter-intelligence "
@@ -724,9 +782,13 @@ namespace DiplomacyIntrigue.UI.ClanScreen
                            // at 68%, resolved at 71%).
                            + "\nThe roll is made on the day it resolves, at that day's odds: their counter-intelligence "
                            + "and our network's strength can change them before then.";
-            PlanCostText = Denars(spec.Gold) + " denars, paid now";
+            PlanCostText = DiText.T("DI_INTEL_DENARS_PAID_NOW_DENARS_2",
+                "{DENARS} denars, paid now",
+                ("DENARS", Denars(spec.Gold)));
             PlanWhenText = "Resolves in " + Days(spec.Days) + ". Calling it off before then does not refund the gold.";
-            PlanSendText = "Send the order - " + Denars(spec.Gold);
+            PlanSendText = DiText.T("DI_INTEL_SEND_THE_ORDER_DENARS_2",
+                "Send the order - {DENARS}",
+                ("DENARS", Denars(spec.Gold)));
 
             var ready = Espionage.Missions.CanLaunch(state, Clan.PlayerClan, target, spec.Type,
                 _planMark as Hero, _planMark as Settlement, out var block);
@@ -819,7 +881,9 @@ namespace DiplomacyIntrigue.UI.ClanScreen
                     () => { _pickRealm = realm; _pickHero = null; ComposePicker(); }));
             }
             PickRealms = realms;
-            PickerTitle = _pickRealm == null ? "Post a handler" : "Post a handler to " + _pickRealm.Name;
+            PickerTitle = _pickRealm == null ? DiText.T("DI_INTEL_POST_HANDLER_2", "Post a handler") : DiText.T("DI_INTEL_POST_HANDLER_TO_NAME_2",
+                "Post a handler to {NAME}",
+                ("NAME", _pickRealm.Name));
 
             var members = new MBBindingList<DiPickMemberVM>();
             if (_pickRealm != null)
@@ -840,16 +904,18 @@ namespace DiplomacyIntrigue.UI.ClanScreen
             }
             PickMembers = members;
 
-            PickName = _pickHero?.Name?.ToString() ?? "Nobody chosen";
+            PickName = DiText.T("DI_INTEL_TOSTRING",
+                "{TOSTRING}",
+                ("TOSTRING", _pickHero?.Name?.ToString() ?? "Nobody chosen"));
             if (_pickRealm == null || _pickHero == null)
             {
                 CanPostHandler = false;
                 PickDetail = string.Empty;
                 PickGrowth = string.Empty;
-                PickBlock = _pickRealm == null ? "There is no foreign realm with a town to send anyone to."
-                    : "Nobody in the house is free to go. The clan leader, anyone leading a party or governing a fief, "
-                      + "and anyone already running a network elsewhere cannot.";
-                PickSendText = "Send";
+                PickBlock = _pickRealm == null ? DiText.T("DI_INTEL_THERE_IS_NO_FOREIGN_REALM_WITH_2",
+                    "There is no foreign realm with a town to send anyone to.") : DiText.T("DI_INTEL_NOBODY_IN_THE_HOUSE_IS_FREE_2",
+                    "Nobody in the house is free to go. The clan leader, anyone leading a party or governing a fief, and anyone already running a network elsewhere cannot.");
+                PickSendText = DiText.T("DI_INTEL_SEND_2", "Send");
                 return;
             }
 
@@ -878,13 +944,13 @@ namespace DiplomacyIntrigue.UI.ClanScreen
         /// <summary>The picker's short column: why this member cannot go.</summary>
         private static string ShortReason(ModState state, Hero hero, Clan us)
         {
-            if (hero == us.Leader) return "leads the clan";
-            if (hero.IsPrisoner) return "a prisoner";
-            if (hero.IsPartyLeader) return "leads a party";
-            if (hero.GovernorOf != null) return "governs";
+            if (hero == us.Leader) return DiText.T("DI_INTEL_LEADS_THE_CLAN_2", "leads the clan");
+            if (hero.IsPrisoner) return DiText.T("DI_INTEL_PRISONER_2", "a prisoner");
+            if (hero.IsPartyLeader) return DiText.T("DI_INTEL_LEADS_PARTY_2", "leads a party");
+            if (hero.GovernorOf != null) return DiText.T("DI_INTEL_GOVERNS_2", "governs");
             var current = SpyNetworks.HandledBy(state, hero);
             if (current != null) return "in " + current.Target?.Name;
-            return "cannot go";
+            return DiText.T("DI_INTEL_CANNOT_GO_2", "cannot go");
         }
 
         // ================= helpers =================
@@ -915,14 +981,14 @@ namespace DiplomacyIntrigue.UI.ClanScreen
         {
             switch (type)
             {
-                case SpyMissionType.ScoutArmies: return "Scout their armies";
-                case SpyMissionType.ReadCourt: return "Read their court";
-                case SpyMissionType.SabotageGarrison: return "Sabotage a garrison";
-                case SpyMissionType.SpreadDissent: return "Spread dissent";
-                case SpyMissionType.StealTreasury: return "Rob the treasury";
-                case SpyMissionType.BribeLord: return "Bribe a lord";
-                case SpyMissionType.ForgeLetters: return "Forge letters";
-                case SpyMissionType.Assassinate: return "Assassinate";
+                case SpyMissionType.ScoutArmies: return DiText.T("DI_INTEL_SCOUT_THEIR_ARMIES_2", "Scout their armies");
+                case SpyMissionType.ReadCourt: return DiText.T("DI_INTEL_READ_THEIR_COURT_2", "Read their court");
+                case SpyMissionType.SabotageGarrison: return DiText.T("DI_INTEL_SABOTAGE_GARRISON_2", "Sabotage a garrison");
+                case SpyMissionType.SpreadDissent: return DiText.T("DI_INTEL_SPREAD_DISSENT_2", "Spread dissent");
+                case SpyMissionType.StealTreasury: return DiText.T("DI_INTEL_ROB_THE_TREASURY_2", "Rob the treasury");
+                case SpyMissionType.BribeLord: return DiText.T("DI_INTEL_BRIBE_LORD_2", "Bribe a lord");
+                case SpyMissionType.ForgeLetters: return DiText.T("DI_INTEL_FORGE_LETTERS_2", "Forge letters");
+                case SpyMissionType.Assassinate: return DiText.T("DI_INTEL_ASSASSINATE_2", "Assassinate");
                 default: return type.ToString();
             }
         }
@@ -932,25 +998,36 @@ namespace DiplomacyIntrigue.UI.ClanScreen
             switch (type)
             {
                 case SpyMissionType.ScoutArmies:
-                    return "Where their armies are and how strong, reported to us for " + EspionageConstants.ScoutArmiesRevealDays + " days.";
+                    return DiText.T("DI_INTEL_WHERE_THEIR_ARMIES_ARE_AND_HOW_SCOUTARMIESREVEALDAYS_2",
+                        "Where their armies are and how strong, reported to us for {SCOUTARMIESREVEALDAYS} days.",
+                        ("SCOUTARMIESREVEALDAYS", EspionageConstants.ScoutArmiesRevealDays));
                 case SpyMissionType.ReadCourt:
-                    return "Exact legitimacy, loyalty, grievances and council business on their Encyclopedia page for "
-                           + EspionageConstants.ReadCourtRevealDays + " days.";
+                    return DiText.T("DI_INTEL_EXACT_LEGITIMACY_LOYALTY_GRIEVANCES_AND_COUNCIL_2",
+                        "Exact legitimacy, loyalty, grievances and council business on their Encyclopedia page for {READCOURTREVEALDAYS} days.",
+                        ("READCOURTREVEALDAYS", EspionageConstants.ReadCourtRevealDays));
                 case SpyMissionType.SabotageGarrison:
-                    return "The garrison loses " + Percent(EspionageConstants.SabotageGarrisonShare) + " of its men; siege engines being built there are burned.";
+                    return DiText.T("DI_INTEL_THE_GARRISON_LOSES_OF_ITS_MEN_PERCENT_2",
+                        "The garrison loses {PERCENT} of its men; siege engines being built there are burned.",
+                        ("PERCENT", Percent(EspionageConstants.SabotageGarrisonShare)));
                 case SpyMissionType.SpreadDissent:
-                    return "The fief loses " + EspionageConstants.DissentLoyaltyLoss.ToString("0") + " loyalty.";
+                    return DiText.T("DI_INTEL_THE_FIEF_LOSES_LOYALTY_DISSENTLOYALTYLOSS_2",
+                        "The fief loses {DISSENTLOYALTYLOSS} loyalty.",
+                        ("DISSENTLOYALTYLOSS", EspionageConstants.DissentLoyaltyLoss.ToString("0")));
                 case SpyMissionType.StealTreasury:
-                    return Capitalise(Percent(EspionageConstants.StealTreasuryShare)) + " of their ruler's purse, at most "
-                           + Denars(EspionageConstants.StealTreasuryCap) + ", comes to us.";
+                    return DiText.T("DI_INTEL_OF_THEIR_RULER_PURSE_AT_MOST_CAPITALISE_DENARS_2",
+                        "{CAPITALISE} of their ruler's purse, at most {DENARS}, comes to us.",
+                        ("CAPITALISE", Capitalise(Percent(EspionageConstants.StealTreasuryShare))),
+                        ("DENARS", Denars(EspionageConstants.StealTreasuryCap)));
                 case SpyMissionType.BribeLord:
-                    return "The lord keeps the gold; the house loses " + EspionageConstants.BribeLoyaltyLoss.ToString("0")
-                           + " loyalty and joins any rising in the next two years.";
+                    return DiText.T("DI_INTEL_THE_LORD_KEEPS_THE_GOLD_THE_BRIBELOYALTYLOSS_2",
+                        "The lord keeps the gold; the house loses {BRIBELOYALTYLOSS} loyalty and joins any rising in the next two years.",
+                        ("BRIBELOYALTYLOSS", EspionageConstants.BribeLoyaltyLoss.ToString("0")));
                 case SpyMissionType.ForgeLetters:
-                    return "The house holds letters in the ruler's hand against the crown: a grievance of "
-                           + IntrigueConstants.GrievanceForgedLetters.ToString("0") + ".";
+                    return DiText.T("DI_INTEL_THE_HOUSE_HOLDS_LETTERS_IN_THE_GRIEVANCEFORGEDLETTERS_2",
+                        "The house holds letters in the ruler's hand against the crown: a grievance of {GRIEVANCEFORGEDLETTERS}.",
+                        ("GRIEVANCEFORGEDLETTERS", IntrigueConstants.GrievanceForgedLetters.ToString("0")));
                 case SpyMissionType.Assassinate:
-                    return "The lord dies.";
+                    return DiText.T("DI_INTEL_THE_LORD_DIES_2", "The lord dies.");
                 default: return string.Empty;
             }
         }
@@ -964,11 +1041,16 @@ namespace DiplomacyIntrigue.UI.ClanScreen
                 case SpyMissionType.SpreadDissent:
                     return mark + " loses " + EspionageConstants.DissentLoyaltyLoss.ToString("0") + " loyalty.";
                 case SpyMissionType.BribeLord:
-                    return mark + " keeps the gold; the house loses " + EspionageConstants.BribeLoyaltyLoss.ToString("0")
-                           + " loyalty and joins any rising in " + target.Name + " in the next two years.";
+                    return DiText.T("DI_INTEL_KEEPS_THE_GOLD_THE_HOUSE_LOSES_MARK_BRIBELOYALTYLOSS_NAME_2",
+                        "{MARK} keeps the gold; the house loses {BRIBELOYALTYLOSS} loyalty and joins any rising in {NAME} in the next two years.",
+                        ("MARK", mark),
+                        ("BRIBELOYALTYLOSS", EspionageConstants.BribeLoyaltyLoss.ToString("0")),
+                        ("NAME", target.Name));
                 case SpyMissionType.ForgeLetters:
-                    return mark + "'s house holds forged letters against the crown: a grievance of "
-                           + IntrigueConstants.GrievanceForgedLetters.ToString("0") + ".";
+                    return DiText.T("DI_INTEL_HOUSE_HOLDS_FORGED_LETTERS_AGAINST_THE_MARK_2",
+                        "{MARK}'s house holds forged letters against the crown: a grievance of {GRIEVANCEFORGEDLETTERS}.",
+                        ("MARK", mark),
+                        ("GRIEVANCEFORGEDLETTERS", IntrigueConstants.GrievanceForgedLetters.ToString("0")));
                 case SpyMissionType.Assassinate:
                     return mark + " dies.";
                 default:
@@ -979,12 +1061,16 @@ namespace DiplomacyIntrigue.UI.ClanScreen
         /// <summary>What being caught costs (design 03 §5), from the constants exposure applies.</summary>
         private static string CaughtText(SpyMissionType type, Kingdom target)
         {
-            var text = "The network in " + target.Name + " is lost, " + target.Name
-                       + " gains a casus belli against us (Espionage exposed, "
-                       + DiplomacyIntrigue.Diplomacy.CasusBelli.Legitimacy(CasusBelliType.EspionageExposed).ToString("0.00")
-                       + ") and trusts us " + (-EspionageConstants.ExposureVictimTrust).ToString("0") + " less.";
+            var text = DiText.T("DI_INTEL_THE_NETWORK_IN_IS_LOST_GAINS_NAME_NAME_2_LEGITIMACY_2",
+                "The network in {NAME} is lost, {NAME_2} gains a casus belli against us (Espionage exposed, {LEGITIMACY}) and trusts us {EXPOSUREVICTIMTRUST} less.",
+                ("NAME", target.Name),
+                ("NAME_2", target.Name),
+                ("LEGITIMACY", DiplomacyIntrigue.Diplomacy.CasusBelli.Legitimacy(CasusBelliType.EspionageExposed).ToString("0.00")),
+                ("EXPOSUREVICTIMTRUST", (-EspionageConstants.ExposureVictimTrust).ToString("0")));
             if (type == SpyMissionType.Assassinate)
-                text += " Every other realm trusts us " + (-EspionageConstants.ExposureAssassinationObserverTrust).ToString("0") + " less as well.";
+                text += DiText.T("DI_INTEL_EVERY_OTHER_REALM_TRUSTS_US_LESS_2",
+                    " Every other realm trusts us {EXPOSUREASSASSINATIONOBSERVERTRUST} less as well.",
+                    ("EXPOSUREASSASSINATIONOBSERVERTRUST", (-EspionageConstants.ExposureAssassinationObserverTrust).ToString("0")));
             return text;
         }
 

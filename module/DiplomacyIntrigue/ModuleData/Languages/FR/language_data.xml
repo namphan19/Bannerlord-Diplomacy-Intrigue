@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- Untranslated: the game shows the English that each DiText call carries in the code, so this
+     folder changes nothing until someone fills it in. See docs/localization.md for how. -->
+<LanguageData id="Français" name="Français" subtitle_extension="fr"
+              supported_iso="fr,fra,fr-fr,fr-be,fr-ca,fr-ch"
+              text_processor="TaleWorlds.Localization.TextProcessor.LanguageProcessors.FrenchTextProcessor"
+              under_development="true">
+  <LanguageFile xml_path="FR/di_strings.xml" />
+</LanguageData>

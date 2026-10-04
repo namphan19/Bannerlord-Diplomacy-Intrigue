@@ -1,0 +1,26 @@
+# tools/Localize exceptions - the judgements a shape cannot make.
+#
+# One rule per line:  <file> | <method or *> | <reason>
+#
+# The file is matched on the tail of its path, so src/DiplomacyIntrigue/UI/... matches
+# "UI/ClanScreen/IntelligenceVM.cs". The method is the enclosing method's name; "*" is every
+# method in the file. The reason is copied into artifacts/localization/inventory.csv, so the
+# report says why a string was left English rather than leaving it to be guessed at later.
+#
+# Both directions live here: a diagnostic that lives in a view model (left English) and a
+# text-producing method outside UI/ with an ordinary name (keyed).
+
+# The Intelligence tab's own Describe(): a dump the lead reads from the console, binding by
+# binding. Its *values* come from properties that are keyed; its labels are for a tool.
+UI/ClanScreen/IntelligenceVM.cs | Describe | diagnostic dump read from the console, not from a screen
+
+# Mod Configuration Menu's setting names and hints are attribute arguments:
+# [SettingPropertyBool("Diplomacy", HintText = "...")]. An attribute argument has to be a
+# compile-time constant, so a DiText call cannot go there and these stay English in every
+# language. Translating them means adding entries to *MCM's* own
+# ModuleData/Languages/<code>/sta_strings.xml, which is another module's folder - whether MCM
+# looks a mod's setting up by its display text is unverified. 18 strings.
+Core/ModSettings.cs | * | MCM setting text: an attribute argument, so it cannot hold a key
+
+# DiplomacyMenu.DescribeOurStanding is a menu row a player clicks, so it is keyed - it is
+# listed here only to say the file's other Describe* helpers are not.

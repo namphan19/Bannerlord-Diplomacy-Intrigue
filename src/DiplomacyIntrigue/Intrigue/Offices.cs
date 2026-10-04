@@ -493,8 +493,10 @@ namespace DiplomacyIntrigue.Intrigue
             try
             {
                 InformationManager.ShowInquiry(new InquiryData(
-                    "A seat at " + q.Ruler.Name + "'s table", body, true, true,
-                    "Accept the seat", "Decline",
+                    DiText.T("DI_INTRIGUE_SEAT_AT_TABLE_NAME_2",
+                        "A seat at {NAME}'s table",
+                        ("NAME", q.Ruler.Name)), body, true, true,
+                    DiText.T("DI_INTRIGUE_ACCEPT_THE_SEAT_2", "Accept the seat"), DiText.T("DI_INTRIGUE_DECLINE_2", "Decline"),
                     () =>
                     {
                         // Runs from the UI, outside any campaign handler's try.

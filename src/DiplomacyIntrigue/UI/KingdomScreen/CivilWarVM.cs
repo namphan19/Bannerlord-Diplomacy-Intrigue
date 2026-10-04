@@ -63,6 +63,20 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
         // ----- the war band ------------------------------------------------------
 
+        // ----- static labels, moved out of the prefab (story 4.1 §9) ---------------------
+
+        [DataSourceProperty] public string CrownTitleText => DiText.T("DI_CIVILWAR_THE_CROWN_COLUMN", "THE CROWN");
+        [DataSourceProperty] public string ExhaustionColumnText => DiText.T("DI_CIVILWAR_EXHAUSTION_COLUMN", "EXHAUSTION");
+        [DataSourceProperty] public string StalemateText => DiText.T("DI_CIVILWAR_STALEMATE", "Stalemate");
+        [DataSourceProperty] public string HouseColumnText => DiText.T("DI_CIVILWAR_HOUSE_COLUMN", "HOUSE");
+        [DataSourceProperty] public string FiefsColumnText => DiText.T("DI_CIVILWAR_FIEFS_COLUMN", "FIEFS");
+        [DataSourceProperty] public string LoyaltyColumnText => DiText.T("DI_CIVILWAR_LOYALTY_COLUMN", "LOYALTY");
+        [DataSourceProperty] public string PriceColumnText => DiText.T("DI_CIVILWAR_PRICE_COLUMN", "PRICE");
+        [DataSourceProperty] public string SideChangeExplainsText => DiText.T("DI_CIVILWAR_A_HOUSE_CHANGES_SIDES_ONCE_IN", "A house changes sides once in a war, and takes its fiefs with it. The price is paid from the leader's own purse to the house's head.");
+        [DataSourceProperty] public string DenarsUnitText => DiText.T("DI_CIVILWAR_DENARS", "denars");
+        [DataSourceProperty] public string WhyThatMuchText => DiText.T("DI_CIVILWAR_WHY_THAT_MUCH", "WHY THAT MUCH");
+        [DataSourceProperty] public string ConcedeText => DiText.T("DI_CIVILWAR_CONCEDE_THE_WAR", "CONCEDE THE WAR");
+
         [DataSourceProperty] public string DayText { get; private set; } = string.Empty;
 
         [DataSourceProperty] public string CrownSideNote { get; private set; } = string.Empty;
@@ -198,7 +212,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 if (!_concedeArmed)
                 {
                     _concedeArmed = true;
-                    ConcedeButtonText = "Click again to concede";
+                    ConcedeButtonText = DiText.T("DI_CIVILWAR_CLICK_AGAIN_TO_CONCEDE_2", "Click again to concede");
                     return;
                 }
 
@@ -253,7 +267,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                     return "Selected " + name + ": " + PriceText + (ActionVisible ? " [" + ActionText + (ActionEnabled ? "" : ", disabled") + "]" : "")
                            + (string.IsNullOrEmpty(ActionNote) ? "" : " - " + ActionNote);
                 }
-            return "No house named \"" + name + "\" in the civil war.";
+            return DiText.T("DI_CIVILWAR_NO_HOUSE_NAMED_IN_THE_CIVIL_NAME_2",
+                "No house named \"{NAME}\" in the civil war.",
+                ("NAME", name));
         }
 
         // ----- composing --------------------------------------------------------------
@@ -266,9 +282,13 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             var playerRebel = _war.IsRebel(Clan.PlayerClan);
             var playerLeadsCrown = ruler != null && ruler == Hero.MainHero;
             var playerLeadsRising = claimant != null && claimant == Hero.MainHero;
-            var claimantName = claimant == null ? "The claimant" : claimant.Name.ToString();
+            var claimantName = DiText.T("DI_CIVILWAR_TOSTRING_2",
+                "{TOSTRING}",
+                ("TOSTRING", claimant == null ? "The claimant" : claimant.Name.ToString()));
 
-            DayText = "CIVIL WAR, DAY " + ((int)_war.StartedOn.ElapsedDaysUntilNow).ToString();
+            DayText = DiText.T("DI_CIVILWAR_CIVIL_WAR_DAY_ELAPSEDDAYSUNTILNOW_2",
+                "CIVIL WAR, DAY {ELAPSEDDAYSUNTILNOW}",
+                ("ELAPSEDDAYSUNTILNOW", ((int)_war.StartedOn.ElapsedDaysUntilNow).ToString()));
 
             // The two sides, from the same membership the war itself reads.
             var crown = new List<Clan>();
@@ -279,8 +299,10 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             rising.Sort((a, b) => b.Influence.CompareTo(a.Influence));
 
             var crownShare = (int)Math.Round(_war.CrownShareAtStart * 100f);
-            CrownSideNote = playerRebel ? string.Empty : "your side";
-            CrownLedBy = playerLeadsCrown ? "led by you" : "led by " + (ruler == null ? "nobody" : ruler.Name.ToString());
+            CrownSideNote = playerRebel ? "" : DiText.T("DI_CIVILWAR_YOUR_SIDE_2", "your side");
+            CrownLedBy = DiText.T("DI_CIVILWAR_TOSTRING_2",
+                "{TOSTRING}",
+                ("TOSTRING", playerLeadsCrown ? "led by you" : "led by " + (ruler == null ? "nobody" : ruler.Name.ToString())));
             CrownCounts = Counts(crown, crownShare);
             CrownExhaustionText = _war.CrownExhaustion.ToString("0.0");
             CrownExhaustionAmount = (int)Math.Round(_war.CrownExhaustion);
@@ -288,8 +310,11 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             CrownHeldText = HeldText(ruler, _war.RulerCaptiveDays);
 
             RisingTitle = SideChange.SideName(_war, true).ToUpperInvariant();
-            RisingSideNote = playerRebel ? "your side" : string.Empty;
-            RisingLedBy = playerLeadsRising ? "led by you" : "Clan " + _war.Banner?.Name + ", for " + claimantName;
+            RisingSideNote = playerRebel ? DiText.T("DI_CIVILWAR_YOUR_SIDE", "your side") : "";
+            RisingLedBy = playerLeadsRising ? DiText.T("DI_CIVILWAR_LED_BY_YOU_2", "led by you") : DiText.T("DI_CIVILWAR_CLAN_FOR_NAME_CLAIMANTNAME_2",
+                "Clan {NAME}, for {CLAIMANTNAME}",
+                ("NAME", _war.Banner?.Name),
+                ("CLAIMANTNAME", claimantName));
             RisingCounts = Counts(rising, 100 - crownShare);
             RisingExhaustionText = _war.RebelExhaustion.ToString("0.0");
             RisingExhaustionAmount = (int)Math.Round(_war.RebelExhaustion);
@@ -298,21 +323,34 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
             var collapse = IntrigueConstants.InternalWarCollapseExhaustion.ToString("0");
             var days = IntrigueConstants.InternalWarCaptiveDays;
-            CrownLosesWhen = "The crown's side reaches " + collapse + ", "
-                             + (playerLeadsCrown ? "you are" : (ruler == null ? "the ruler" : ruler.Name.ToString()) + " is")
-                             + " held " + days + " days, or " + (playerLeadsCrown ? "you concede" : "concedes");
-            CrownLosesResult = (playerLeadsRising ? "You take" : claimantName + " takes") + " the throne";
+            CrownLosesWhen = playerLeadsCrown ? DiText.T("DI_CIVILWAR_THE_CROWN_SIDE_REACHES_HELD_DAYS_COLLAPSE_TOSTRING_DAYS_2",
+                "The crown's side reaches {COLLAPSE}, {TOSTRING} held {DAYS} days, or you concede",
+                ("COLLAPSE", collapse),
+                ("TOSTRING", playerLeadsCrown ? "you are" : (ruler == null ? "the ruler" : ruler.Name.ToString()) + " is"),
+                ("DAYS", days)) : DiText.T("DI_CIVILWAR_THE_CROWN_SIDE_REACHES_HELD_DAYS_COLLAPSE_TOSTRING_DAYS_3",
+                "The crown's side reaches {COLLAPSE}, {TOSTRING} held {DAYS} days, or concedes",
+                ("COLLAPSE", collapse),
+                ("TOSTRING", playerLeadsCrown ? "you are" : (ruler == null ? "the ruler" : ruler.Name.ToString()) + " is"),
+                ("DAYS", days));
+            CrownLosesResult = playerLeadsRising ? DiText.T("DI_CIVILWAR_YOU_TAKE_THE_THRONE_2", "You take the throne") : DiText.T("DI_CIVILWAR_TAKES_THE_THRONE_CLAIMANTNAME_2",
+                "{CLAIMANTNAME} takes the throne",
+                ("CLAIMANTNAME", claimantName));
             RisingLosesWhen = "The rising reaches " + collapse + ", "
                               + (playerLeadsRising ? "you are" : claimantName + " is") + " held " + days
                               + " days or dies, or " + (playerLeadsRising ? "you concede" : "concedes");
-            RisingLosesResult = playerLeadsRising ? "Your claim is retired" : claimantName + "'s claim is retired";
-            StalemateWhen = "Both sides past " + IntrigueConstants.InternalWarStalemateExhaustion.ToString("0")
-                            + " - the mark on each bar - and nothing moves";
+            RisingLosesResult = playerLeadsRising ? DiText.T("DI_CIVILWAR_YOUR_CLAIM_IS_RETIRED_2", "Your claim is retired") : DiText.T("DI_CIVILWAR_CLAIM_IS_RETIRED_CLAIMANTNAME_2",
+                "{CLAIMANTNAME}'s claim is retired",
+                ("CLAIMANTNAME", claimantName));
+            StalemateWhen = DiText.T("DI_CIVILWAR_BOTH_SIDES_PAST_THE_MARK_ON_INTERNALWARSTALEMATEEXHAUSTION_2",
+                "Both sides past {INTERNALWARSTALEMATEEXHAUSTION} - the mark on each bar - and nothing moves",
+                ("INTERNALWARSTALEMATEEXHAUSTION", IntrigueConstants.InternalWarStalemateExhaustion.ToString("0")));
 
-            CrownHeading = "WITH THE CROWN - what " + (playerLeadsRising ? "you" : claimantName) + " would pay to take them";
-            RisingHeading = "WITH THE RISING - what "
-                            + (playerLeadsCrown ? "you" : ruler == null ? "the crown" : ruler.Name.ToString())
-                            + " would pay to win them back";
+            CrownHeading = DiText.T("DI_CIVILWAR_WITH_THE_CROWN_WHAT_WOULD_PAY_CLAIMANTNAME_2",
+                "WITH THE CROWN - what {CLAIMANTNAME} would pay to take them",
+                ("CLAIMANTNAME", playerLeadsRising ? "you" : claimantName));
+            RisingHeading = DiText.T("DI_CIVILWAR_WITH_THE_RISING_WHAT_WOULD_PAY_TOSTRING_2",
+                "WITH THE RISING - what {TOSTRING} would pay to win them back",
+                ("TOSTRING", playerLeadsCrown ? "you" : ruler == null ? "the crown" : ruler.Name.ToString()));
 
             for (var i = 0; i < crown.Count; i++) CrownHouses.Add(Row(crown[i]));
             for (var i = 0; i < rising.Count; i++) RisingHouses.Add(Row(rising[i]));
@@ -322,22 +360,31 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             if (playerLeadsCrown)
             {
                 var keeps = _war.CrownShareAtStart >= IntrigueConstants.SuccessionPretenderShare;
-                ConcedeBody = "Ends it now, exactly as if your side had reached " + collapse + ": " + claimantName
-                              + "'s house takes the throne. Your house stays at court, and your side held "
-                              + crownShare + "% of it at the start - "
-                              + (keeps ? "enough to keep a claim of your own alive." : "too little to keep a claim of your own.");
-                ConcedeButtonText = "Concede the throne to " + claimantName;
+                ConcedeBody = keeps ? DiText.T("DI_CIVILWAR_ENDS_IT_NOW_EXACTLY_AS_IF_COLLAPSE_CLAIMANTNAME_CROWNSHARE_2",
+                    "Ends it now, exactly as if your side had reached {COLLAPSE}: {CLAIMANTNAME}'s house takes the throne. Your house stays at court, and your side held {CROWNSHARE}% of it at the start - enough to keep a claim of your own alive.",
+                    ("COLLAPSE", collapse),
+                    ("CLAIMANTNAME", claimantName),
+                    ("CROWNSHARE", crownShare)) : DiText.T("DI_CIVILWAR_ENDS_IT_NOW_EXACTLY_AS_IF_COLLAPSE_CLAIMANTNAME_CROWNSHARE_3",
+                    "Ends it now, exactly as if your side had reached {COLLAPSE}: {CLAIMANTNAME}'s house takes the throne. Your house stays at court, and your side held {CROWNSHARE}% of it at the start - too little to keep a claim of your own.",
+                    ("COLLAPSE", collapse),
+                    ("CLAIMANTNAME", claimantName),
+                    ("CROWNSHARE", crownShare));
+                ConcedeButtonText = DiText.T("DI_CIVILWAR_CONCEDE_THE_THRONE_TO_CLAIMANTNAME_2",
+                    "Concede the throne to {CLAIMANTNAME}",
+                    ("CLAIMANTNAME", claimantName));
             }
             else if (playerLeadsRising)
             {
-                ConcedeBody = "Ends it now, exactly as if your side had reached " + collapse + ": your claim is retired and the crown's"
-                              + " standing rises by " + IntrigueConstants.LegitimacyWonJustWar.ToString("0")
-                              + ". Your house keeps its seat and what the war has left it.";
-                ConcedeButtonText = "Give up your claim";
+                ConcedeBody = DiText.T("DI_CIVILWAR_ENDS_IT_NOW_EXACTLY_AS_IF_COLLAPSE_LEGITIMACYWONJUSTWAR_2",
+                    "Ends it now, exactly as if your side had reached {COLLAPSE}: your claim is retired and the crown's standing rises by {LEGITIMACYWONJUSTWAR}. Your house keeps its seat and what the war has left it.",
+                    ("COLLAPSE", collapse),
+                    ("LEGITIMACYWONJUSTWAR", IntrigueConstants.LegitimacyWonJustWar.ToString("0")));
+                ConcedeButtonText = DiText.T("DI_CIVILWAR_GIVE_UP_YOUR_CLAIM_2", "Give up your claim");
             }
-            ConcedeRuleNote = "The other side concedes on its own once it passes "
-                              + IntrigueConstants.InternalWarConcedeExhaustion.ToString("0") + " while yours is under "
-                              + IntrigueConstants.InternalWarConcedeOtherBelow.ToString("0") + ".";
+            ConcedeRuleNote = DiText.T("DI_CIVILWAR_THE_OTHER_SIDE_CONCEDES_ON_ITS_INTERNALWARCONCEDEEXHAUSTION_2",
+                "The other side concedes on its own once it passes {INTERNALWARCONCEDEEXHAUSTION} while yours is under {INTERNALWARCONCEDEOTHERBELOW}.",
+                ("INTERNALWARCONCEDEEXHAUSTION", IntrigueConstants.InternalWarConcedeExhaustion.ToString("0")),
+                ("INTERNALWARCONCEDEOTHERBELOW", IntrigueConstants.InternalWarConcedeOtherBelow.ToString("0")));
 
             // A house that is not a leader starts on itself: its own choice is the one it has.
             // A leader starts on the first house it could buy.
@@ -366,10 +413,10 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
             string note;
             var noteColor = DiCourtVM.MutedColor;
-            if (clan == _war.Kingdom.RulingClan) note = "the crown's own house";
-            else if (clan == _war.Banner) note = "the claimant's house";
+            if (clan == _war.Kingdom.RulingClan) note = DiText.T("DI_CIVILWAR_THE_CROWN_OWN_HOUSE_2", "the crown's own house");
+            else if (clan == _war.Banner) note = DiText.T("DI_CIVILWAR_THE_CLAIMANT_HOUSE_2", "the claimant's house");
             else if (q == null || !q.Eligible)
-                note = q != null && _war.HasChangedSides(clan) ? "changed sides" : "cannot change now";
+                note = q != null && _war.HasChangedSides(clan) ? DiText.T("DI_CIVILWAR_CHANGED_SIDES_2", "changed sides") : DiText.T("DI_CIVILWAR_CANNOT_CHANGE_NOW_2", "cannot change now");
             else if (q.Buyer != Hero.MainHero && SideChange.AiWouldPay(q, out _))
             {
                 note = q.Buyer.Name + " would pay";
@@ -382,7 +429,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             return new DiCivilHouseVM(this, clan, clan == Clan.PlayerClan,
                 clan.Fiefs.Count.ToString(),
                 loyalty.ToString("0.0"), DiCourtVM.BandColor(LoyaltyModel.Band(loyalty)),
-                q != null && q.Eligible ? q.Price.ToString("N0") : "-",
+                DiText.T("DI_CIVILWAR_TOSTRING_2",
+                    "{TOSTRING}",
+                    ("TOSTRING", q != null && q.Eligible ? q.Price.ToString("N0") : "-")),
                 note, noteColor);
         }
 
@@ -390,9 +439,11 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         {
             _concedeArmed = false;
             if (CanConcede)
-                ConcedeButtonText = InternalWars.LeaderOf(_war, false) == Hero.MainHero
+                ConcedeButtonText = DiText.T("DI_CIVILWAR_TOSTRING_2",
+                    "{TOSTRING}",
+                    ("TOSTRING", InternalWars.LeaderOf(_war, false) == Hero.MainHero
                     ? "Concede the throne to " + (_war.Claimant == null ? "the claimant" : _war.Claimant.Name.ToString())
-                    : "Give up your claim";
+                    : "Give up your claim"));
 
             var lines = new MBBindingList<DiCivilPriceLineVM>();
             var clan = _selected?.Clan;
@@ -444,7 +495,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 ActionVisible = true;
                 ActionText = "Pay " + q.Price.ToString("N0") + " - they come over to " + side;
                 if (!q.Eligible) ActionNote = q.Reason;
-                else if (buyer.Gold < q.Price) ActionNote = "You hold only " + buyer.Gold.ToString("N0") + ".";
+                else if (buyer.Gold < q.Price) ActionNote = DiText.T("DI_CIVILWAR_YOU_HOLD_ONLY_GOLD_2",
+                    "You hold only {GOLD}.",
+                    ("GOLD", buyer.Gold.ToString("N0")));
                 else
                 {
                     ActionEnabled = true;
@@ -453,9 +506,12 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             }
             else if (clan == Clan.PlayerClan)
             {
-                SelectedTitle = "YOUR HOUSE";
+                SelectedTitle = DiText.T("DI_CIVILWAR_YOUR_HOUSE_2", "YOUR HOUSE");
                 ActionVisible = true;
-                ActionText = "Go over to " + side + " - receive " + q.Price.ToString("N0");
+                ActionText = DiText.T("DI_CIVILWAR_GO_OVER_TO_RECEIVE_SIDE_PRICE_2",
+                    "Go over to {SIDE} - receive {PRICE}",
+                    ("SIDE", side),
+                    ("PRICE", q.Price.ToString("N0")));
                 if (!q.Eligible) ActionNote = q.Reason;
                 else if (!SideChange.AiWouldPay(q, out var why)) ActionNote = why;
                 else
@@ -479,15 +535,17 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         private string WalkedOutOnNote(SideChange.Quote q)
         {
             var left = InternalWars.LeaderOf(_war, !q.ToRising);
-            return (left == null ? "The leader they leave" : left.Name.ToString()) + "'s opinion of their head falls by "
-                   + (-IntrigueConstants.SideChangeRelationPenalty) + ". They cannot change sides again in this war.";
+            return DiText.T("DI_CIVILWAR_OPINION_OF_THEIR_HEAD_FALLS_BY_TOSTRING_2",
+                "{TOSTRING}'s opinion of their head falls by {SIDECHANGERELATIONPENALTY}. They cannot change sides again in this war.",
+                ("TOSTRING", left == null ? "The leader they leave" : left.Name.ToString()),
+                ("SIDECHANGERELATIONPENALTY", -IntrigueConstants.SideChangeRelationPenalty));
         }
 
         private static string WhyNot(SideChange.Quote q)
         {
-            if (q == null) return "no house to price.";
+            if (q == null) return DiText.T("DI_CIVILWAR_NO_HOUSE_TO_PRICE_2", "no house to price.");
             SideChange.AiWouldPay(q, out var why);
-            return why ?? "no reason given.";
+            return DiText.T("DI_CIVILWAR_WHY_2", "{WHY}", ("WHY", why ?? "no reason given."));
         }
 
         private static string Counts(List<Clan> clans, int sharePercent)
@@ -500,14 +558,19 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
         private static string HeldText(Hero leader, int daysHeld)
         {
-            var who = leader == null ? "Nobody" : leader == Hero.MainHero ? "You" : leader.Name.ToString();
+            var who = DiText.T("DI_CIVILWAR_TOSTRING_2",
+                "{TOSTRING}",
+                ("TOSTRING", leader == null ? "Nobody" : leader == Hero.MainHero ? "You" : leader.Name.ToString()));
             var verb = leader == Hero.MainHero ? " are " : " is ";
             var limit = IntrigueConstants.InternalWarCaptiveDays;
             if (daysHeld > 0) return who + verb + "held - " + daysHeld + " of " + limit + " days";
             // Only captivity at the other side's hands counts toward the 30 days
             // (InternalWars.HeldBy); a leader taken by a foreign enemy is not free either.
             if (leader != null && leader.IsPrisoner)
-                return who + verb + "a prisoner, but not of the other side - it does not count";
+                return DiText.T("DI_CIVILWAR_PRISONER_BUT_NOT_OF_THE_OTHER_WHO_VERB_2",
+                    "{WHO}{VERB}a prisoner, but not of the other side - it does not count",
+                    ("WHO", who),
+                    ("VERB", verb));
             return who + verb + "free - 0 of " + limit + " days held";
         }
 
@@ -577,7 +640,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         public DiCivilPriceLineVM(string label, int gold, bool isBase)
         {
             Label = label;
-            ValueText = isBase ? gold.ToString("N0") : gold.ToString("+#,0;-#,0;0");
+            ValueText = DiText.T("DI_CIVILWAR_TOSTRING_2",
+                "{TOSTRING}",
+                ("TOSTRING", isBase ? gold.ToString("N0") : gold.ToString("+#,0;-#,0;0")));
             // A base part is just what the house is. A factor that raises the price is against
             // whoever pays, one that lowers it is for them.
             ValueColor = isBase || gold == 0 ? DiCourtVM.TextColor

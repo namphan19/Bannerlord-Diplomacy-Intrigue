@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- Untranslated: the game shows the English that each DiText call carries in the code, so this
+     folder changes nothing until someone fills it in. See docs/localization.md for how. -->
+<LanguageData id="한국어" name="한국어" subtitle_extension="ko"
+              supported_iso="ko-kr,ko,kor,kr-kr"
+              text_processor=""
+              under_development="true">
+  <LanguageFile xml_path="KO/di_strings.xml" />
+</LanguageData>

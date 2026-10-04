@@ -229,6 +229,11 @@ pwsh ./scripts/play.ps1 -Without DiplomacyIntrigue   # same, minus a mod: bisect
 dotnet run --project tools/LoadProbe   # would the game load this assembly?
 dotnet run --project tools/ApiDump -- "TypeNameOrFilter"   # real v1.4.8 API surface
 pwsh ./scripts/check-save-ids.ps1   # the save-data rules of §3, read from source; build and deploy run it first
+pwsh ./scripts/check-localization.ps1   # the key rules of §4, read from source; build and deploy run it too
+dotnet run --project tools/Localize -- report    # every string literal, and whether a player reads it
+dotnet run --project tools/Localize -- rewrite --apply   # key the approved ones; dry run without --apply
+dotnet run --project tools/Localize -- emit --apply      # write Languages/EN from the DiText calls
+dotnet run --project tools/Localize -- prefabs          # the prefab labels that cannot be keyed in place
 scripts/compile-check.sh     # no game on this box (Linux, cloud): compile against NuGet reference assemblies
 pwsh ./scripts/release.ps1   # Nexus zip from the committed tree, DLL built against v1.4.8 refs
 pwsh ./scripts/workshop.ps1 -ChangeNotes <file>   # Steam Workshop update from release.ps1's folder; -Upload publishes
@@ -477,11 +482,18 @@ it meets the statecraft terms. Acts built before it are not retrofitted without 
   alternative, the comment says which alternative and why it lost.
 - Constants live in one file per pillar (`Diplomacy/DiplomacyConstants.cs`) so a balance pass
   edits one file. An un-tuned constant says so in its own doc comment.
-- Player-facing text is written in English as the source. Story 4.1 puts it behind
-  `{=DI_<area>_<slug>}English` keys so the mod follows the game's language setting; **until its
-  ST-6 check exists, new text is still a plain literal, and from the day it exists a new
-  player-facing string without a key fails the build.** Logs, telemetry and `diplomacy.*` output stay
-  English and are never keyed. The design docs are English.
+- Player-facing text is written **through `DiText.T`**, never as a bare literal:
+  `DiText.T("DI_REALM_VASSAL_OF_NAME", "Vassal of {NAME}", ("NAME", patron.Name))`. The English
+  stays in the source as the fallback; `ModuleData/Languages/EN/di_strings.xml` is generated from
+  those calls by `tools/Localize emit`, and **`scripts/check-localization.ps1` fails the build on a
+  key with no entry, an entry nobody uses, a key used for two English texts, and a variable passed
+  and unused or used and unpassed.** Two rules the call sites must keep: a sentence with a number
+  or a name in it is **one call with named variables**, never a concatenation, so word order can
+  change per language; and a value travels as a variable, never typed into the English, because a
+  number on screen is the number the AI used (§3). **A widget's `Text` cannot be keyed**: a
+  prefab's literal must move into a view-model property (`Text="@Property"`), which
+  `tools/Localize prefabs` lists. Logs, telemetry and `diplomacy.*` output stay English and are
+  never keyed. The design docs are English. `docs/localization.md` is the guide for a translator.
 - **Reply to the user in Vietnamese.** The lead writes in Vietnamese; the codebase is not.
 - Any Vietnamese meant to be read (the Vietnamese handbook, player text, write-ups for the lead)
   goes through the `vietnamese-writing` skill (`.claude/skills/vietnamese-writing/`), with its

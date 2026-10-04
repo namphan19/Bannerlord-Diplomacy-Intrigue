@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- Untranslated: the game shows the English that each DiText call carries in the code, so this
+     folder changes nothing until someone fills it in. See docs/localization.md for how. -->
+<LanguageData id="繁體中文" name="繁體中文" subtitle_extension="zh-HANT"
+              supported_iso="zh-HANT,zh-tw,zh-hk"
+              text_processor=""
+              under_development="true">
+  <LanguageFile xml_path="CNt/di_strings.xml" />
+</LanguageData>

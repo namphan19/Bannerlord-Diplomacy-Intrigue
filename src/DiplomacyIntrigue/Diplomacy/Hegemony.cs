@@ -471,7 +471,7 @@ namespace DiplomacyIntrigue.Diplomacy
                 InformationManager.ShowInquiry(new InquiryData(
                     "Secede from " + patron.Name + "?",
                     body,
-                    true, true, "Secede", "Stay",
+                    true, true, DiText.T("DI_DIPLOMACY_SECEDE_2", "Secede"), DiText.T("DI_DIPLOMACY_STAY_2", "Stay"),
                     () =>
                     {
                         // Runs from the UI, outside the try below - a throw here would take

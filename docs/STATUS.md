@@ -32,9 +32,17 @@ for any length of time**:
 **Next:** one more long run (12 years) to see the civil-war count fall from 14 to a few, with the analyser and the log counts of `claimant_arose` and "takes up arms".
 **Phase 4 (2026-10-03):** the incompatibility warning, release defaults (telemetry off), the tick-budget
 instrumentation and the Workshop update are built and shipped in 0.3.0, **not run in game** (TODO).
-**Localization is planned and ready for a dev:** [story 4.1](stories/4.1-localization.md), ten
-sub-tasks, decisions made. Start with ST-1, the spike on whether prefab text can take keys; the answer
-sizes the rest. Nothing of it is built. Until it ships the mod is English only.
+**Localization is built, and not yet run in game:** [story 4.1](stories/4.1-localization.md). Every
+string the mod draws from code is behind a key - **641 keys**, in `Core/DiText.cs` and 24 files plus nine view models for the prefab labels -
+with the English kept in the source as the fallback, `ModuleData/Languages/EN/di_strings.xml`
+generated from those calls, and 13 language folders ready to drop a translation into
+(`docs/localization.md` is the guide). `scripts/check-localization.ps1` reads all of it and runs in
+`build.ps1` and `deploy.ps1`. **Verified by compile and by the checks only; the game has not been
+started**, so no screen has been seen in any language. ST-1's answer, read from the game's IL
+rather than from a session: a widget's `Text` is a plain string and **cannot** be keyed in the
+prefab, which left 92 prefab labels to move into view-model properties by hand - the one part of
+the conversion left, listed in `artifacts/localization/prefabs.csv`. The 12 non-English folders
+ship empty and untranslated on purpose (lead's call, 2026-10-03).
 
 Also owed: a report of what looks wrong on the Members and Parties tabs (the lead raised it on
 2026-10-02; the Clan screen's code and a live look found nothing, and nothing in Phase 3 touches them).
@@ -449,7 +457,7 @@ saved over it (CLAUDE.md §2).
 |---|---|
 | Three pillars | Diplomacy, court intrigue, espionage. **Not** economy/trade |
 | Standalone | No dependency on the BUTR Diplomacy mod. Mutually incompatible with it by design |
-| English UI only, for now | Story 4.1 (2026-10-03): the mod follows the game's language setting; the game's own 13 languages, Vietnamese not among them (2026-10-03). Until it lands, English only |
+| Localization: the game decides, 13 languages, Vietnamese out | Story 4.1 (2026-10-03): the mod follows the game's language setting; the game's own 13 languages, Vietnamese not among them (2026-10-03). The 12 non-English folders ship empty and are filled by the community (lead's call, 2026-10-03) |
 | Minor factions out of scope | Treaties, claims and exhaustion are kingdom-only |
 | AI plays by the same rules | Enforced in code — no "is this the player" argument anywhere |
 | Enemy exhaustion shown as a band | Five bands whose edges are the behavioural thresholds. Phase 3 `ReadCourt` buys the exact figure |

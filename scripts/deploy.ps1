@@ -39,6 +39,9 @@ if ($running) {
 & (Join-Path $PSScriptRoot "check-save-ids.ps1")
 if ($LASTEXITCODE -ne 0) { throw "Save-data check failed - nothing was copied to the game folder." }
 
+& (Join-Path $PSScriptRoot "check-localization.ps1")
+if ($LASTEXITCODE -ne 0) { throw "Localization check failed - nothing was copied to the game folder." }
+
 $buildArgs = @("build", (Join-Path $repo "DiplomacyIntrigue.sln"), "-c", $Configuration, "--nologo")
 if ($GameFolder) { $buildArgs += "-p:GameFolder=$GameFolder" }
 

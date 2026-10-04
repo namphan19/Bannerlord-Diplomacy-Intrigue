@@ -55,7 +55,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
         private bool _show;
         private bool _tabVisible;
-        private string _tabText = "Realm";
+        private string _tabText = DiText.T("DI_REALM_REALM_2", "Realm");
         private string _standingTitle = string.Empty;
         private string _standingDetail = string.Empty;
         private string _standingNote = string.Empty;
@@ -79,6 +79,18 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         private MBBindingList<DiRealmAgreementVM> _agreements = new MBBindingList<DiRealmAgreementVM>();
 
         /// <summary>The ruler-only counter-intelligence section at the foot of the tab (Phase 3.7).</summary>
+        // ----- static labels, moved out of the prefab (story 4.1 §9) ---------------------
+
+        [DataSourceProperty] public string WarsTitleText => DiText.T("DI_REALM_OUR_WARS_TITLE", "Our wars");
+        [DataSourceProperty] public string SphereTitleText => DiText.T("DI_REALM_OUR_SPHERE_TITLE", "Our sphere");
+        [DataSourceProperty] public string SpheresTitleText => DiText.T("DI_REALM_SPHERES_ON_THE_MAP", "Spheres on the map");
+        [DataSourceProperty] public string ClaimsTitleText => DiText.T("DI_REALM_OUR_CLAIMS_TITLE", "Our claims");
+        [DataSourceProperty] public string ClaimExplainsText => DiText.T("DI_REALM_A_CLAIM_IS_WHAT_THE_PEACE", "A claim is what the peace table will let you ask for. Land needs one; nothing else does.");
+        [DataSourceProperty] public string AgreementsTitleText => DiText.T("DI_REALM_OUR_AGREEMENTS_TITLE", "Our agreements");
+        [DataSourceProperty] public string TributeCaptionText => DiText.T("DI_REALM_TRIBUTE_PER_PERIOD", "Tribute, per period");
+        [DataSourceProperty] public string ReportButtonText => DiText.T("DI_REALM_WRITE_A_REPORT_TO_FILE", "Write a report to file");
+        [DataSourceProperty] public string ReportNoteText => DiText.T("DI_REALM_EVERYTHING_ON_THIS_TAB_PLUS", "Everything on this tab, plus every kingdom's numbers, to Documents - DiplomacyIntrigue - Reports.");
+
         [DataSourceProperty] public DiCounterIntelVM CounterIntel { get; } = new DiCounterIntelVM();
 
         /// <summary>Who holds each political office of the realm and what their skill moves (design 08 §10).</summary>
@@ -460,7 +472,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             CounterIntel.Rebuild();
             Statecraft.Rebuild();
 
-            StandingTitle = "No realm";
+            StandingTitle = DiText.T("DI_REALM_NO_REALM_2", "No realm");
             StandingColor = MutedColor;
             StandingDetail = string.Empty;
             StandingNote = string.Empty;
@@ -513,24 +525,28 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             {
                 StandingTitle = "Vassal of " + patron.Name;
                 StandingColor = NegativeColor;
-                StandingDetail = "one kingdom answers to " + patron.Name;
+                StandingDetail = DiText.T("DI_REALM_ONE_KINGDOM_ANSWERS_TO_NAME_2",
+                    "one kingdom answers to {NAME}",
+                    ("NAME", patron.Name));
             }
             else if (vassalCount > 0)
             {
-                StandingTitle = "Hegemon";
+                StandingTitle = DiText.T("DI_REALM_HEGEMON_2", "Hegemon");
                 StandingColor = GoldColor;
-                StandingDetail = vassalCount == 1
-                    ? "one kingdom answers to you"
-                    : vassalCount + " kingdoms answer to you";
+                StandingDetail = vassalCount == 1 ? DiText.T("DI_REALM_ONE_KINGDOM_ANSWERS_TO_YOU_2", "one kingdom answers to you") : DiText.T("DI_REALM_KINGDOMS_ANSWER_TO_YOU_VASSALCOUNT_2",
+                    "{VASSALCOUNT} kingdoms answer to you",
+                    ("VASSALCOUNT", vassalCount));
                 // The mockup's right-hand note. A hegemon is derived from its vassalage
                 // links, so the note is the truth about the title rather than flavour.
-                StandingNote = "A hegemon is derived, never stored.";
+                StandingNote = DiText.T("DI_REALM_HEGEMON_IS_DERIVED_NEVER_STORED_2",
+                    "A hegemon is derived, never stored.");
             }
             else
             {
-                StandingTitle = "Independent";
+                StandingTitle = DiText.T("DI_REALM_INDEPENDENT_2", "Independent");
                 StandingColor = MutedColor;
-                StandingDetail = "no kingdom answers to you, and you answer to none";
+                StandingDetail = DiText.T("DI_REALM_NO_KINGDOM_ANSWERS_TO_YOU_AND_2",
+                    "no kingdom answers to you, and you answer to none");
             }
 
             // A realm at war with itself says so first (design 07 §6). What it is abroad is kept
@@ -539,16 +555,17 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             if (civil != null)
             {
                 var held = civil.Faction?.Fiefs.Count ?? 0;
-                StandingTitle = "Divided";
+                StandingTitle = DiText.T("DI_REALM_DIVIDED_2", "Divided");
                 StandingColor = NegativeColor;
                 StandingDetail = SideChange.SideName(civil, true) + " holds " + held + " of the realm's "
                                  + us.Fiefs.Count + " fiefs"
                                  + (patron != null ? ", and the realm still answers to " + patron.Name
                                     : vassalCount > 0 ? ", and " + vassalCount + (vassalCount == 1 ? " kingdom still answers" : " kingdoms still answer") + " to you"
                                     : string.Empty);
-                StandingNote = civil.IsRebel(Clan.PlayerClan)
-                    ? "You fight under " + SideChange.SideName(civil, true) + ": the realm's foreign wars are the crown's, not yours."
-                    : "The houses of the rising keep their seats and votes while they fight.";
+                StandingNote = civil.IsRebel(Clan.PlayerClan) ? DiText.T("DI_REALM_YOU_FIGHT_UNDER_THE_REALM_FOREIGN_SIDENAME_2",
+                    "You fight under {SIDENAME}: the realm's foreign wars are the crown's, not yours.",
+                    ("SIDENAME", SideChange.SideName(civil, true))) : DiText.T("DI_REALM_THE_HOUSES_OF_THE_RISING_KEEP_2",
+                    "The houses of the rising keep their seats and votes while they fight.");
             }
 
             var sphereHead = Hegemony.SphereHead(state, us);
@@ -565,13 +582,17 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             var ourLink = Hegemony.VassalageOf(state, us);
             if (ourLink != null)
             {
-                PatronLine = "We answer to " + ourLink.DominantParty.Name
-                             + "   -   hold " + Hegemony.HoldOf(ourLink).ToString("0")
-                             + " (" + DiplomacyMenu.HoldMeaning(state, ourLink) + ")"
-                             + "   -   tribute " + ourLink.TributeAmount + " per period"
-                             + "   -   " + TermLeft(ourLink);
+                PatronLine = DiText.T("DI_REALM_WE_ANSWER_TO_HOLD_TRIBUTE_PER_NAME_HOLDOF_HOLDMEANING_2",
+                    "We answer to {NAME}   -   hold {HOLDOF} ({HOLDMEANING})   -   tribute {TRIBUTEAMOUNT} per period   -   {TERMLEFT}",
+                    ("NAME", ourLink.DominantParty.Name),
+                    ("HOLDOF", Hegemony.HoldOf(ourLink).ToString("0")),
+                    ("HOLDMEANING", DiplomacyMenu.HoldMeaning(state, ourLink)),
+                    ("TRIBUTEAMOUNT", ourLink.TributeAmount),
+                    ("TERMLEFT", TermLeft(ourLink)));
                 if (ourLink.DefianceMarks > 0)
-                    PatronLine += "   -   we have defied them " + ourLink.DefianceMarks + " time(s)";
+                    PatronLine += DiText.T("DI_REALM_WE_HAVE_DEFIED_THEM_TIME_DEFIANCEMARKS_2",
+                        "   -   we have defied them {DEFIANCEMARKS} time(s)",
+                        ("DEFIANCEMARKS", ourLink.DefianceMarks));
             }
         }
 
@@ -592,16 +613,23 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                     if (civil.IsRebel(clan) != playerRebel) against++;
 
                 wars.Add(new DiRealmWarVM(
-                    playerRebel ? "Civil war: against the crown" : "Civil war: " + SideChange.SideName(civil, true),
-                    ((int)civil.StartedOn.ElapsedDaysUntilNow) + " days, for the throne",
+                    playerRebel ? DiText.T("DI_REALM_CIVIL_WAR_AGAINST_THE_CROWN_2",
+                        "Civil war: against the crown") : DiText.T("DI_REALM_CIVIL_WAR_SIDENAME_2",
+                        "Civil war: {SIDENAME}",
+                        ("SIDENAME", SideChange.SideName(civil, true))),
+                    DiText.T("DI_REALM_DAYS_FOR_THE_THRONE_ELAPSEDDAYSUNTILNOW_2",
+                        "{ELAPSEDDAYSUNTILNOW} days, for the throne",
+                        ("ELAPSEDDAYSUNTILNOW", (int)civil.StartedOn.ElapsedDaysUntilNow)),
                     "our exhaustion " + ours.ToString("0.0") + "   -   theirs " + theirs.ToString("0.0")
                         + "   -   " + against + (against == 1 ? " house" : " houses") + " against us",
                     string.Empty,
                     MutedColor,
                     civil.Faction == null ? NegativeColor : Color.FromUint(civil.Faction.Color),
-                    "Open the court",
-                    "Sides, prices and conceding are on the Court tab.",
-                    "The civil war is shown on the Court tab: both sides, what each house would cost to change sides, and how it ends.",
+                    DiText.T("DI_REALM_OPEN_THE_COURT_2", "Open the court"),
+                    DiText.T("DI_REALM_SIDES_PRICES_AND_CONCEDING_ARE_ON_2",
+                        "Sides, prices and conceding are on the Court tab."),
+                    DiText.T("DI_REALM_THE_CIVIL_WAR_IS_SHOWN_ON_2",
+                        "The civil war is shown on the Court tab: both sides, what each house would cost to change sides, and how it ends."),
                     () => _openCourt?.Invoke(),
                     string.Empty));
             }
@@ -643,7 +671,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                     Color.FromUint(enemy.Color),
                     label,
                     sub,
-                    "Opens the peace table: what this war has earned, and what they will sign. " + allowance,
+                    DiText.T("DI_REALM_OPENS_THE_PEACE_TABLE_WHAT_THIS_ALLOWANCE_2",
+                        "Opens the peace table: what this war has earned, and what they will sign. {ALLOWANCE}",
+                        ("ALLOWANCE", allowance)),
                     () => DiplomacyMenu.ShowPeace(state, us, target)));
             }
             WarsCountText = wars.Count.ToString("0");
@@ -699,8 +729,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             if (vassals.Count > 0)
             {
                 var first = links[0].SubordinateParty;
-                VassalNote = "Protection is the half of the bargain you owe: answer "
-                             + first.Name + " when it is attacked, or watch this bar fall.";
+                VassalNote = DiText.T("DI_REALM_PROTECTION_IS_THE_HALF_OF_THE_NAME_2",
+                    "Protection is the half of the bargain you owe: answer {NAME} when it is attacked, or watch this bar fall.",
+                    ("NAME", first.Name));
             }
         }
 
@@ -734,19 +765,19 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         {
             var chips = new MBBindingList<DiRealmTermVM>();
             var t = Hegemony.HoldTermsOf(state, link);
-            AddChip(chips, "protection", t.Protection);
+            AddChip(chips, DiText.T("DI_REALM_PROTECTION_2", "protection"), t.Protection);
             // Only when it pulls: the row already holds nine chips, and a tenth that reads 0.0
             // on nearly every link would crowd the others for nothing. Zero adds nothing to the
             // sum the chips spell out, so leaving it out keeps them matching the target.
-            if (t.LegalNeglect > 0f) AddChip(chips, "legal neglect", -t.LegalNeglect);
-            AddChip(chips, "fear", t.Fear);
-            AddChip(chips, "trust", t.Trust);
-            AddChip(chips, "tribute", -t.Tribute);
-            AddChip(chips, "wars", -t.Wars);
-            AddChip(chips, "rival", -t.Rival);
-            AddChip(chips, "culture", -t.Culture);
-            AddChip(chips, "dread", -t.Dread);
-            AddChip(chips, "authority", t.Authority);
+            if (t.LegalNeglect > 0f) AddChip(chips, DiText.T("DI_REALM_LEGAL_NEGLECT_2", "legal neglect"), -t.LegalNeglect);
+            AddChip(chips, DiText.T("DI_REALM_FEAR_2", "fear"), t.Fear);
+            AddChip(chips, DiText.T("DI_REALM_TRUST_2", "trust"), t.Trust);
+            AddChip(chips, DiText.T("DI_REALM_TRIBUTE_2", "tribute"), -t.Tribute);
+            AddChip(chips, DiText.T("DI_REALM_WARS_2", "wars"), -t.Wars);
+            AddChip(chips, DiText.T("DI_REALM_RIVAL_2", "rival"), -t.Rival);
+            AddChip(chips, DiText.T("DI_REALM_CULTURE_2", "culture"), -t.Culture);
+            AddChip(chips, DiText.T("DI_REALM_DREAD_2", "dread"), -t.Dread);
+            AddChip(chips, DiText.T("DI_REALM_AUTHORITY_2", "authority"), t.Authority);
             return chips;
         }
 
@@ -760,9 +791,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
         private static string DriftWord(float hold, float target)
         {
-            if (target > hold + 1f) return "drifting up to";
-            if (target < hold - 1f) return "drifting down to";
-            return "steady at";
+            if (target > hold + 1f) return DiText.T("DI_REALM_DRIFTING_UP_TO_2", "drifting up to");
+            if (target < hold - 1f) return DiText.T("DI_REALM_DRIFTING_DOWN_TO_2", "drifting down to");
+            return DiText.T("DI_REALM_STEADY_AT_2", "steady at");
         }
 
         private void ComposeSpheres(ModState state, Kingdom us, MBBindingList<DiRealmSphereVM> spheres)
@@ -806,11 +837,13 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             if (biggestRival != null)
             {
                 var gap = Math.Abs(biggestRivalStrength - ourStrength);
-                SphereGapNote = biggestRivalStrength >= ourStrength
-                    ? biggestRival.HeadText + "'s sphere outweighs yours by " + gap.ToString("0")
-                      + ". Every court that belongs to neither reads that gap when it decides whom to pact with."
-                    : "Your sphere outweighs " + biggestRival.HeadText + " by " + gap.ToString("0")
-                      + ". Every court that belongs to neither reads that gap when it decides whom to pact with.";
+                SphereGapNote = biggestRivalStrength >= ourStrength ? DiText.T("DI_REALM_SPHERE_OUTWEIGHS_YOURS_BY_EVERY_COURT_HEADTEXT_GAP_2",
+                    "{HEADTEXT}'s sphere outweighs yours by {GAP}. Every court that belongs to neither reads that gap when it decides whom to pact with.",
+                    ("HEADTEXT", biggestRival.HeadText),
+                    ("GAP", gap.ToString("0"))) : DiText.T("DI_REALM_YOUR_SPHERE_OUTWEIGHS_BY_EVERY_COURT_HEADTEXT_GAP_2",
+                    "Your sphere outweighs {HEADTEXT} by {GAP}. Every court that belongs to neither reads that gap when it decides whom to pact with.",
+                    ("HEADTEXT", biggestRival.HeadText),
+                    ("GAP", gap.ToString("0")));
             }
         }
 
@@ -827,19 +860,20 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 foreach (var claim in ClaimRegistry.LiveClaims(state, us, other))
                 {
                     live++;
-                    var footer = claim.AllowsFiefDemands ? "entitles land" : string.Empty;
+                    var footer = claim.AllowsFiefDemands ? DiText.T("DI_REALM_ENTITLES_LAND_2", "entitles land") : "";
                     if (claim.ExpiresOn != CampaignTime.Never)
                     {
                         var daysLeft = (claim.ExpiresOn - CampaignTime.Now).ToDays;
-                        var expiry = "ages out in " + Math.Max(0, (int)daysLeft) + " days";
+                        var expiry = DiText.T("DI_REALM_AGES_OUT_IN_DAYS_MAX_2",
+                            "ages out in {MAX} days",
+                            ("MAX", Math.Max(0, (int)daysLeft)));
                         footer = footer.Length > 0 ? footer + "   -   " + expiry : expiry;
                     }
                     // A broken-treaty claim carries its own story: the mockup's line under
                     // the claim name, with the year the pact died from the claim's record.
-                    var note = claim.Type == CasusBelliType.BrokenTreaty
-                        ? "They tore up a pact in " + claim.AcquiredOn.GetYear
-                          + ". A war on this needs no excuse."
-                        : string.Empty;
+                    var note = claim.Type == CasusBelliType.BrokenTreaty ? DiText.T("DI_REALM_THEY_TORE_UP_PACT_IN_WAR_GETYEAR_2",
+                        "They tore up a pact in {GETYEAR}. A war on this needs no excuse.",
+                        ("GETYEAR", claim.AcquiredOn.GetYear)) : "";
                     rows.Add(new DiRealmClaimVM(
                         claim.Type.ToString(),
                         claim.Legitimacy.ToString("0.00"),
@@ -911,18 +945,20 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
 
         private static string TermLeft(Treaty treaty)
         {
-            return treaty.ExpiresOn == CampaignTime.Never ? "open-ended" : Duration(treaty);
+            return DiText.T("DI_REALM_TREATY_2",
+                "{TREATY}",
+                ("TREATY", treaty.ExpiresOn == CampaignTime.Never ? "open-ended" : Duration(treaty)));
         }
 
         /// <summary>Compact duration the mockup uses: "1y 40d", "6y", "45d".</summary>
         private static string Duration(Treaty treaty)
         {
             var days = (float)(treaty.ExpiresOn - CampaignTime.Now).ToDays;
-            if (days <= 0f) return "expired";
+            if (days <= 0f) return DiText.T("DI_REALM_EXPIRED_2", "expired");
             // The campaign year is 84 days (four seasons of 21).
             var years = (int)(days / 84f);
             var rem = (int)(days - years * 84f);
-            if (years <= 0f) return rem + "d";
+            if (years <= 0f) return DiText.T("DI_REALM_REM_2", "{REM}d", ("REM", rem));
             return rem > 0 ? years + "y " + rem + "d" : years + "y";
         }
 
@@ -930,12 +966,12 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         {
             switch (type)
             {
-                case TreatyType.NonAggressionPact: return "Non-aggression pact";
-                case TreatyType.DefensivePact: return "Defensive pact";
-                case TreatyType.Alliance: return "Alliance";
-                case TreatyType.TributaryPact: return "Tributary pact";
-                case TreatyType.Vassalage: return "Vassalage";
-                default: return "Truce";
+                case TreatyType.NonAggressionPact: return DiText.T("DI_REALM_NON_AGGRESSION_PACT_2", "Non-aggression pact");
+                case TreatyType.DefensivePact: return DiText.T("DI_REALM_DEFENSIVE_PACT_2", "Defensive pact");
+                case TreatyType.Alliance: return DiText.T("DI_REALM_ALLIANCE_2", "Alliance");
+                case TreatyType.TributaryPact: return DiText.T("DI_REALM_TRIBUTARY_PACT_2", "Tributary pact");
+                case TreatyType.Vassalage: return DiText.T("DI_REALM_VASSALAGE_2", "Vassalage");
+                default: return DiText.T("DI_REALM_TRUCE_2", "Truce");
             }
         }
 
@@ -945,19 +981,27 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             switch (treaty.Type)
             {
                 case TreatyType.Vassalage:
-                    return treaty.DominantParty == us
-                        ? other.Name + " - pays you, and fights for you"
-                        : other.Name + " - you pay them, and answer their call";
+                    return treaty.DominantParty == us ? DiText.T("DI_REALM_PAYS_YOU_AND_FIGHTS_FOR_YOU_NAME_2",
+                        "{NAME} - pays you, and fights for you",
+                        ("NAME", other.Name)) : DiText.T("DI_REALM_YOU_PAY_THEM_AND_ANSWER_THEIR_NAME_2",
+                        "{NAME} - you pay them, and answer their call",
+                        ("NAME", other.Name));
                 case TreatyType.Alliance:
-                    return other.Name + " - answers any call, and you answer theirs";
+                    return DiText.T("DI_REALM_ANSWERS_ANY_CALL_AND_YOU_ANSWER_NAME_2",
+                        "{NAME} - answers any call, and you answer theirs",
+                        ("NAME", other.Name));
                 case TreatyType.DefensivePact:
-                    return other.Name + " - joins if you are attacked, and you if they are";
+                    return DiText.T("DI_REALM_JOINS_IF_YOU_ARE_ATTACKED_AND_NAME_2",
+                        "{NAME} - joins if you are attacked, and you if they are",
+                        ("NAME", other.Name));
                 case TreatyType.TributaryPact:
                     return treaty.TributePayer == other
                         ? other.Name + " - " + treaty.TributeAmount + " to you, no army owed"
                         : other.Name + " - you pay " + treaty.TributeAmount + ", no army owed";
                 case TreatyType.NonAggressionPact:
-                    return other.Name + " - neither may declare war";
+                    return DiText.T("DI_REALM_NEITHER_MAY_DECLARE_WAR_NAME_2",
+                        "{NAME} - neither may declare war",
+                        ("NAME", other.Name));
                 default:
                     return other.Name + " - active truce";
             }
@@ -1170,7 +1214,10 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         {
             if (_summon == null) return;
             var q = _summon;
-            var price = q.Influence.ToString("N0") + " influence, " + q.Gold.ToString("N0") + " denars";
+            var price = DiText.T("DI_REALM_INFLUENCE_DENARS_INFLUENCE_GOLD_2",
+                "{INFLUENCE} influence, {GOLD} denars",
+                ("INFLUENCE", q.Influence.ToString("N0")),
+                ("GOLD", q.Gold.ToString("N0")));
             // A quote refused before it was priced has no price and no party count to name: the
             // first build printed "Summon 0 parties - 0 influence, 0 denars" on a button that
             // was disabled for want of a war (seen live 2026-10-01).
@@ -1185,12 +1232,12 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             else if (!q.Affordable)
                 SummonNote = "Cannot pay: " + Plain(q.Short) + ".";
             else if (_armed)
-                SummonNote = "Click again to pay. The price is charged now and nothing is refunded, "
-                           + "whether they serve or refuse.";
+                SummonNote = DiText.T("DI_REALM_CLICK_AGAIN_TO_PAY_THE_PRICE_2",
+                    "Click again to pay. The price is charged now and nothing is refunded, whether they serve or refuse.");
             else
-                SummonNote = "Its ruler's own party is never taken, and they are sent home before "
-                           + "your army takes anything they are at peace with. "
-                           + (q.WillServe ? "They would serve." : "They may refuse - and a refusal is a mark of defiance.");
+                SummonNote = q.WillServe ? DiText.T("DI_REALM_ITS_RULER_OWN_PARTY_IS_NEVER_2",
+                    "Its ruler's own party is never taken, and they are sent home before your army takes anything they are at peace with. They would serve.") : DiText.T("DI_REALM_ITS_RULER_OWN_PARTY_IS_NEVER_3",
+                    "Its ruler's own party is never taken, and they are sent home before your army takes anything they are at peace with. They may refuse - and a refusal is a mark of defiance.");
         }
 
         /// <summary>
@@ -1296,6 +1343,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
     /// <summary>One row inside a claim card: the claim type, its legitimacy, its footer.</summary>
     internal sealed class DiRealmClaimVM : ViewModel
     {
+        /// <summary>The column heading the claim row's figures sit under (story 4.1 §9).</summary>
+        [DataSourceProperty] public string LandColumnText => DiText.T("DI_REALM_LAND_COLUMN", "LAND");
+
         public DiRealmClaimVM(string typeText, string legitimacyText, Color legitimacyColor,
             bool isLand, string footerText, string noteText)
         {

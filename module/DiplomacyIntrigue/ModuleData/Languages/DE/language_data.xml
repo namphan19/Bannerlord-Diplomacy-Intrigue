@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<!-- Untranslated: the game shows the English that each DiText call carries in the code, so this
+     folder changes nothing until someone fills it in. See docs/localization.md for how. -->
+<LanguageData id="Deutsch" name="Deutsch" subtitle_extension="de"
+              supported_iso="de,deu,ger,de-de,de-at,de-li,de-lu,de-ch"
+              text_processor="TaleWorlds.Localization.TextProcessor.LanguageProcessors.GermanTextProcessor"
+              under_development="true">
+  <LanguageFile xml_path="DE/di_strings.xml" />
+</LanguageData>

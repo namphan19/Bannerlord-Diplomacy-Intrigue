@@ -445,10 +445,14 @@ namespace DiplomacyIntrigue.Intrigue
             try
             {
                 InformationManager.ShowInquiry(new InquiryData(
-                    "An offer from " + buyer.Name,
+                    DiText.T("DI_INTRIGUE_AN_OFFER_FROM_NAME_2",
+                        "An offer from {NAME}",
+                        ("NAME", buyer.Name)),
                     body,
                     true, true,
-                    "Go over - receive " + q.Price.ToString("N0"), "Stay where you are",
+                    DiText.T("DI_INTRIGUE_GO_OVER_RECEIVE_PRICE_2",
+                        "Go over - receive {PRICE}",
+                        ("PRICE", q.Price.ToString("N0"))), DiText.T("DI_INTRIGUE_STAY_WHERE_YOU_ARE_2", "Stay where you are"),
                     () =>
                     {
                         // Runs from the UI, outside any campaign handler's try.

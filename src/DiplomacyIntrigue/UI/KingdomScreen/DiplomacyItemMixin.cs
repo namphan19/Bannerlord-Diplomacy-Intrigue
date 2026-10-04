@@ -80,6 +80,13 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         /// The word between the banners: "AT WAR", "ANSWERS TO US", "ALLIED", "PAYS US",
         /// "AT PEACE" - what this kingdom is to us, before any detail.
         /// </summary>
+        // ----- static labels, moved out of the prefab (story 4.1 §9) ---------------------
+
+        [DataSourceProperty] public string PactChooserTitleText => DiText.T("DI_DIPLOMACY_WHAT_THEIR_COURT_WOULD_SIGN", "What their court would sign");
+        [DataSourceProperty] public string ProposeText => DiText.T("DI_DIPLOMACY_PROPOSE", "Propose");
+        [DataSourceProperty] public string ValuationExplainsText => DiText.T("DI_DIPLOMACY_ONE_VALUATION_THREE_BARS_THE", "One valuation, three bars: the gold mark is the bar each treaty has to clear. This is the number their court uses - there is no separate figure for the player.");
+        [DataSourceProperty] public string VanillaRowsNoteText => DiText.T("DI_DIPLOMACY_THE_GAMES_OWN_ROWS_STRENGTH", "§ § §  the game's own rows (strength, fiefs, clans) continue below  § § §");
+
         [DataSourceProperty]
         public string DiHeaderWord
         {
@@ -334,7 +341,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         {
             if (war != null)
             {
-                DiHeaderWord = "AT WAR";
+                DiHeaderWord = DiText.T("DI_DIPLOMACY_AT_WAR_2", "AT WAR");
                 DiHeaderWordColor = NegativeColor;
                 return;
             }
@@ -342,7 +349,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             var theirLink = Hegemony.VassalageOf(state, them);
             if (theirLink != null && theirLink.DominantParty == us)
             {
-                DiHeaderWord = "ANSWERS TO US";
+                DiHeaderWord = DiText.T("DI_DIPLOMACY_ANSWERS_TO_US_2", "ANSWERS TO US");
                 DiHeaderWordColor = GoldColor;
                 return;
             }
@@ -350,14 +357,14 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             var ourLink = Hegemony.VassalageOf(state, us);
             if (ourLink != null && ourLink.DominantParty == them)
             {
-                DiHeaderWord = "ANSWERS TO THEM";
+                DiHeaderWord = DiText.T("DI_DIPLOMACY_ANSWERS_TO_THEM_2", "ANSWERS TO THEM");
                 DiHeaderWordColor = GoldColor;
                 return;
             }
 
             if (state.ActiveTreatyBetween(us, them, TreatyType.Alliance) != null)
             {
-                DiHeaderWord = "ALLIED";
+                DiHeaderWord = DiText.T("DI_DIPLOMACY_ALLIED_2", "ALLIED");
                 DiHeaderWordColor = PositiveColor;
                 return;
             }
@@ -365,12 +372,12 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             var tribute = state.ActiveTreatyBetween(us, them, TreatyType.TributaryPact);
             if (tribute != null && tribute.TributeAmount > 0)
             {
-                DiHeaderWord = tribute.TributePayer == them ? "PAYS US" : "WE PAY THEM";
+                DiHeaderWord = tribute.TributePayer == them ? DiText.T("DI_DIPLOMACY_PAYS_US_2", "PAYS US") : DiText.T("DI_DIPLOMACY_WE_PAY_THEM_2", "WE PAY THEM");
                 DiHeaderWordColor = tribute.TributePayer == them ? GoldColor : MutedColor;
                 return;
             }
 
-            DiHeaderWord = "AT PEACE";
+            DiHeaderWord = DiText.T("DI_DIPLOMACY_AT_PEACE_2", "AT PEACE");
             DiHeaderWordColor = PositiveColor;
         }
 
@@ -381,13 +388,15 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             var band = ExhaustionBands.Of(war.ExhaustionOf(them));
             // Wars the mod did not start have no claim on record - "over None" reads as
             // a bug, so the honest phrasing is that no claim was ever pressed.
-            var text = war.Justification == CasusBelliType.None
-                ? "War with no claim on record"
-                : "War over " + war.Justification
-                  + "   legitimacy " + CasusBelli.Legitimacy(war.Justification).ToString("0.00");
+            var text = war.Justification == CasusBelliType.None ? DiText.T("DI_DIPLOMACY_WAR_WITH_NO_CLAIM_ON_RECORD_2", "War with no claim on record") : DiText.T("DI_DIPLOMACY_WAR_OVER_LEGITIMACY_JUSTIFICATION_LEGITIMACY_2",
+                "War over {JUSTIFICATION}   legitimacy {LEGITIMACY}",
+                ("JUSTIFICATION", war.Justification),
+                ("LEGITIMACY", CasusBelli.Legitimacy(war.Justification).ToString("0.00")));
 
             if (war.IsObligationWar && war.CalledBy != null)
-                text += "   called in by " + war.CalledBy.Name;
+                text += DiText.T("DI_DIPLOMACY_CALLED_IN_BY_NAME_2",
+                    "   called in by {NAME}",
+                    ("NAME", war.CalledBy.Name));
 
             return text + "   -   " + ExhaustionBands.Meaning(band);
         }
@@ -403,29 +412,39 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 switch (treaty.Type)
                 {
                     case TreatyType.Alliance:
-                        parts.Add("Alliance - they answer your call in any war, and you answer theirs");
+                        parts.Add(DiText.T("DI_DIPLOMACY_ALLIANCE_THEY_ANSWER_YOUR_CALL_IN_2",
+                            "Alliance - they answer your call in any war, and you answer theirs"));
                         break;
                     case TreatyType.DefensivePact:
-                        parts.Add("DefensivePact - each of you joins when the other is attacked");
+                        parts.Add(DiText.T("DI_DIPLOMACY_DEFENSIVEPACT_EACH_OF_YOU_JOINS_WHEN_2",
+                            "DefensivePact - each of you joins when the other is attacked"));
                         break;
                     case TreatyType.NonAggressionPact:
-                        parts.Add("NonAggressionPact - neither of you may declare war while it stands");
+                        parts.Add(DiText.T("DI_DIPLOMACY_NONAGGRESSIONPACT_NEITHER_OF_YOU_MAY_DECLARE_2",
+                            "NonAggressionPact - neither of you may declare war while it stands"));
                         break;
                     case TreatyType.TributaryPact:
-                        parts.Add(treaty.TributePayer == them
-                            ? "TributaryPact (" + treaty.TributeAmount + " from " + them.Name
-                              + ") - they buy the peace, they owe you no army"
-                            : "TributaryPact (" + treaty.TributeAmount + " to " + them.Name
-                              + ") - you buy the peace, they owe you no army");
+                        parts.Add(treaty.TributePayer == them ? DiText.T("DI_DIPLOMACY_TRIBUTARYPACT_FROM_THEY_BUY_THE_PEACE_TRIBUTEAMOUNT_NAME_2",
+                            "TributaryPact ({TRIBUTEAMOUNT} from {NAME}) - they buy the peace, they owe you no army",
+                            ("TRIBUTEAMOUNT", treaty.TributeAmount),
+                            ("NAME", them.Name)) : DiText.T("DI_DIPLOMACY_TRIBUTARYPACT_TO_YOU_BUY_THE_PEACE_TRIBUTEAMOUNT_NAME_2",
+                            "TributaryPact ({TRIBUTEAMOUNT} to {NAME}) - you buy the peace, they owe you no army",
+                            ("TRIBUTEAMOUNT", treaty.TributeAmount),
+                            ("NAME", them.Name)));
                         break;
                     case TreatyType.Vassalage:
-                        parts.Add(treaty.DominantParty == us
-                            ? "Vassalage (" + treaty.TributeAmount + " from " + them.Name
-                              + ") - " + them.Name + " answers to " + us.Name
-                              + " at hold " + Hegemony.HoldOf(treaty).ToString("0")
-                            : "Vassalage (" + treaty.TributeAmount + " to " + them.Name
-                              + ") - we answer to " + them.Name
-                              + " at hold " + Hegemony.HoldOf(treaty).ToString("0"));
+                        parts.Add(treaty.DominantParty == us ? DiText.T("DI_DIPLOMACY_VASSALAGE_FROM_ANSWERS_TO_AT_HOLD_TRIBUTEAMOUNT_NAME_NAME_2_2",
+                            "Vassalage ({TRIBUTEAMOUNT} from {NAME}) - {NAME_2} answers to {NAME_3} at hold {HOLDOF}",
+                            ("TRIBUTEAMOUNT", treaty.TributeAmount),
+                            ("NAME", them.Name),
+                            ("NAME_2", them.Name),
+                            ("NAME_3", us.Name),
+                            ("HOLDOF", Hegemony.HoldOf(treaty).ToString("0"))) : DiText.T("DI_DIPLOMACY_VASSALAGE_TO_WE_ANSWER_TO_AT_TRIBUTEAMOUNT_NAME_NAME_2_2",
+                            "Vassalage ({TRIBUTEAMOUNT} to {NAME}) - we answer to {NAME_2} at hold {HOLDOF}",
+                            ("TRIBUTEAMOUNT", treaty.TributeAmount),
+                            ("NAME", them.Name),
+                            ("NAME_2", them.Name),
+                            ("HOLDOF", Hegemony.HoldOf(treaty).ToString("0"))));
                         break;
                 }
             }
@@ -434,12 +453,16 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             if (patron != null)
             {
                 var link = Hegemony.VassalageOf(state, them);
-                var relation = parts.Count == 0 ? "No agreements with you" : string.Join("   -   ", parts.ToArray());
+                var relation = DiText.T("DI_DIPLOMACY_TOARRAY_2",
+                    "{TOARRAY}",
+                    ("TOARRAY", parts.Count == 0 ? "No agreements with you" : string.Join("   -   ", parts.ToArray())));
                 return relation + "   -   " + them.Name + " answers to " + patron.Name
                           + " at hold " + Hegemony.HoldOf(link).ToString("0");
             }
 
-            return parts.Count == 0 ? "No agreements with you." : string.Join("   -   ", parts.ToArray());
+            return DiText.T("DI_DIPLOMACY_TOARRAY",
+                "{TOARRAY}",
+                ("TOARRAY", parts.Count == 0 ? "No agreements with you." : string.Join("   -   ", parts.ToArray())));
         }
 
         // ----- the note about the bars ----------------------------------------
@@ -448,23 +471,23 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         {
             if (war != null)
             {
-                return war.IsObligationWar
-                    ? "An obligation war: you were called in, so it carries no weariness of its own."
-                    : "Their exhaustion shows the floor of their band, never the figure. "
-                      + "The exact number is what an espionage report buys.";
+                return war.IsObligationWar ? DiText.T("DI_DIPLOMACY_AN_OBLIGATION_WAR_YOU_WERE_CALLED_2",
+                    "An obligation war: you were called in, so it carries no weariness of its own.") : DiText.T("DI_DIPLOMACY_THEIR_EXHAUSTION_SHOWS_THE_FLOOR_OF_2",
+                    "Their exhaustion shows the floor of their band, never the figure. The exact number is what an espionage report buys.");
             }
 
             var theirLink = Hegemony.VassalageOf(state, them);
             if (theirLink != null && theirLink.DominantParty == us)
-                return "Hold, its terms and the revolt line live one tab over, in Realm - "
-                       + "they are about your sphere, not about this pair.";
+                return DiText.T("DI_DIPLOMACY_HOLD_ITS_TERMS_AND_THE_REVOLT_2",
+                    "Hold, its terms and the revolt line live one tab over, in Realm - they are about your sphere, not about this pair.");
 
             if (state.ActiveTreatyBetween(us, them, TreatyType.Alliance) != null)
-                return "Nothing stands above an alliance, so there is nothing left to propose here.";
+                return DiText.T("DI_DIPLOMACY_NOTHING_STANDS_ABOVE_AN_ALLIANCE_SO_2",
+                    "Nothing stands above an alliance, so there is nothing left to propose here.");
 
             if (state.ActiveTreatyBetween(us, them, TreatyType.TributaryPact) != null)
-                return "A tributary pays and nothing more. A vassal pays and fights - "
-                       + "that is a peace-table demand, not a proposal.";
+                return DiText.T("DI_DIPLOMACY_TRIBUTARY_PAYS_AND_NOTHING_MORE_VASSAL_2",
+                    "A tributary pays and nothing more. A vassal pays and fights - that is a peace-table demand, not a proposal.");
 
             // The same gate CanSign applies (trust must be above the floor), read through its
             // resolver: since R-9 a common threat keeps the defensive pact open a little lower.
@@ -473,15 +496,18 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             {
                 var pactFloor = TrustRegistry.PactFloor(state, them, us, TreatyType.DefensivePact, out _, out var against);
                 if (against != null && theirTrust > pactFloor)
-                    return "Below a trust of " + DiplomacyConstants.TrustFloorForPacts.ToString("0")
-                           + " they sign no ordinary pact - but while " + against.Name
-                           + " outweighs you both, they would stand with you in a defensive pact down to "
-                           + pactFloor.ToString("0") + ".";
-                return "Below a trust of " + DiplomacyConstants.TrustFloorForPacts.ToString("0")
-                       + " they will sign nothing but a truce or the terms that end a war.";
+                    return DiText.T("DI_DIPLOMACY_BELOW_TRUST_OF_THEY_SIGN_NO_TRUSTFLOORFORPACTS_NAME_2",
+                        "Below a trust of {TRUSTFLOORFORPACTS} they sign no ordinary pact - but while {NAME} outweighs you both, they would stand with you in a defensive pact down to {PACTFLOOR}.",
+                        ("TRUSTFLOORFORPACTS", DiplomacyConstants.TrustFloorForPacts.ToString("0")),
+                        ("NAME", against.Name),
+                        ("PACTFLOOR", pactFloor.ToString("0")));
+                return DiText.T("DI_DIPLOMACY_BELOW_TRUST_OF_THEY_WILL_SIGN_TRUSTFLOORFORPACTS_2",
+                    "Below a trust of {TRUSTFLOORFORPACTS} they will sign nothing but a truce or the terms that end a war.",
+                    ("TRUSTFLOORFORPACTS", DiplomacyConstants.TrustFloorForPacts.ToString("0")));
             }
 
-            return "They trust you enough to talk. Whether they sign is their own valuation, shown below.";
+            return DiText.T("DI_DIPLOMACY_THEY_TRUST_YOU_ENOUGH_TO_TALK_2",
+                "They trust you enough to talk. Whether they sign is their own valuation, shown below.");
         }
 
         // ----- the list row ---------------------------------------------------
@@ -490,7 +516,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         {
             if (war != null)
             {
-                DiRowStatus = "At war for " + war.DaysElapsed.ToString("0") + " days";
+                DiRowStatus = DiText.T("DI_DIPLOMACY_AT_WAR_FOR_DAYS_DAYSELAPSED_2",
+                    "At war for {DAYSELAPSED} days",
+                    ("DAYSELAPSED", war.DaysElapsed.ToString("0")));
                 var band = ExhaustionBands.Of(war.ExhaustionOf(them));
                 var score = WarScore.For(war, us);
                 DiRowValue = ExhaustionBands.Name(band) + "  " + (score >= 0f ? "+" : "-")
@@ -504,7 +532,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             var theirLink = Hegemony.VassalageOf(state, them);
             if (theirLink != null && theirLink.DominantParty == us)
             {
-                DiRowStatus = "Our vassal";
+                DiRowStatus = DiText.T("DI_DIPLOMACY_OUR_VASSAL_2", "Our vassal");
                 SetHoldValue(Hegemony.HoldOf(theirLink));
                 return;
             }
@@ -512,7 +540,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             var ourLink = Hegemony.VassalageOf(state, us);
             if (ourLink != null && ourLink.DominantParty == them)
             {
-                DiRowStatus = "Our patron";
+                DiRowStatus = DiText.T("DI_DIPLOMACY_OUR_PATRON_2", "Our patron");
                 SetHoldValue(Hegemony.HoldOf(ourLink));
                 return;
             }
@@ -532,7 +560,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             var tribute = state.ActiveTreatyBetween(us, them, TreatyType.TributaryPact);
             if (tribute != null && tribute.TributeAmount > 0)
             {
-                DiRowStatus = "Tributary";
+                DiRowStatus = DiText.T("DI_DIPLOMACY_TRIBUTARY_2", "Tributary");
                 DiRowValue = tribute.TributePayer == them
                     ? tribute.TributeAmount + " to us"
                     : tribute.TributeAmount + " to them";
@@ -550,7 +578,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 return;
             }
 
-            DiRowStatus = "Independent";
+            DiRowStatus = DiText.T("DI_DIPLOMACY_INDEPENDENT_2", "Independent");
         }
 
         private void SetHoldValue(float hold)
@@ -578,12 +606,12 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         {
             switch (type)
             {
-                case TreatyType.NonAggressionPact: return "Non-aggression pact";
-                case TreatyType.DefensivePact: return "Defensive pact";
-                case TreatyType.Alliance: return "Alliance";
-                case TreatyType.TributaryPact: return "Tributary";
-                case TreatyType.Vassalage: return "Vassalage";
-                default: return "Truce";
+                case TreatyType.NonAggressionPact: return DiText.T("DI_DIPLOMACY_NON_AGGRESSION_PACT_2", "Non-aggression pact");
+                case TreatyType.DefensivePact: return DiText.T("DI_DIPLOMACY_DEFENSIVE_PACT_2", "Defensive pact");
+                case TreatyType.Alliance: return DiText.T("DI_DIPLOMACY_ALLIANCE_2", "Alliance");
+                case TreatyType.TributaryPact: return DiText.T("DI_DIPLOMACY_TRIBUTARY", "Tributary");
+                case TreatyType.Vassalage: return DiText.T("DI_DIPLOMACY_VASSALAGE_2", "Vassalage");
+                default: return DiText.T("DI_DIPLOMACY_TRUCE_2", "Truce");
             }
         }
 
@@ -615,19 +643,23 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         private void BuildPactRungs(ModState state, Kingdom us, Kingdom them)
         {
             var theirValue = (int)AiDiplomacy.PactValueWhenAsked(state, them, us);
-            DiPactValueText = them.Name + " values a pact with you at " + theirValue
-                              + (StatecraftModel.Enabled
-                                  ? ", our envoy's persuasion " + StatecraftModel.Signed(StatecraftTerms.Persuasion(us))
-                                    + " included: " + StatecraftModel.Who(StatecraftModel.Actor(us, Portfolio.Envoy), TaleWorlds.Core.DefaultSkills.Charm)
-                                  : "");
+            DiPactValueText = StatecraftModel.Enabled ? DiText.T("DI_DIPLOMACY_VALUES_PACT_WITH_YOU_AT_OUR_NAME_THEIRVALUE_SIGNED_WHO_2",
+                "{NAME} values a pact with you at {THEIRVALUE}, our envoy's persuasion {SIGNED} included: {WHO}",
+                ("NAME", them.Name),
+                ("THEIRVALUE", theirValue),
+                ("SIGNED", StatecraftModel.Signed(StatecraftTerms.Persuasion(us))),
+                ("WHO", StatecraftModel.Who(StatecraftModel.Actor(us, Portfolio.Envoy), TaleWorlds.Core.DefaultSkills.Charm))) : DiText.T("DI_DIPLOMACY_VALUES_PACT_WITH_YOU_AT_NAME_THEIRVALUE_2",
+                "{NAME} values a pact with you at {THEIRVALUE}",
+                ("NAME", them.Name),
+                ("THEIRVALUE", theirValue));
 
             var rungs = new MBBindingList<DiPactRungVM>();
             AddRung(rungs, state, us, them, TreatyType.NonAggressionPact,
-                "Non-aggression pact", theirValue);
+                DiText.T("DI_DIPLOMACY_NON_AGGRESSION_PACT", "Non-aggression pact"), theirValue);
             AddRung(rungs, state, us, them, TreatyType.DefensivePact,
-                "Defensive pact", theirValue);
+                DiText.T("DI_DIPLOMACY_DEFENSIVE_PACT", "Defensive pact"), theirValue);
             AddRung(rungs, state, us, them, TreatyType.Alliance,
-                "Alliance", theirValue);
+                DiText.T("DI_DIPLOMACY_ALLIANCE", "Alliance"), theirValue);
             DiPactRungs = rungs;
         }
 
@@ -681,7 +713,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 rows.Add(new KingdomWarComparableStatVM(
                     DisplayExhaustion(war, faction1, exact1),
                     DisplayExhaustion(war, faction2, exact2),
-                    new TextObject("War Exhaustion"),
+                    new TextObject(DiText.T("DI_DIPLOMACY_WAR_EXHAUSTION_2", "War Exhaustion")),
                     ColourOf(faction1), ColourOf(faction2), 100,
                     new BasicTooltipViewModel(() => exhaustHint1),
                     new BasicTooltipViewModel(() => exhaustHint2)));
@@ -693,7 +725,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             var trustHint2 = TrustHint(faction2, faction1, trust21);
             rows.Add(new KingdomWarComparableStatVM(
                 (int)trust12, (int)trust21,
-                new TextObject("Diplomatic Trust"),
+                new TextObject(DiText.T("DI_DIPLOMACY_DIPLOMATIC_TRUST_2", "Diplomatic Trust")),
                 ColourOf(faction1), ColourOf(faction2), 100,
                 new BasicTooltipViewModel(() => trustHint1),
                 new BasicTooltipViewModel(() => trustHint2)));
@@ -708,7 +740,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 var claimHint2 = ClaimHint(faction2, faction1, best21);
                 rows.Add(new KingdomWarComparableStatVM(
                     claims12, claims21,
-                    new TextObject("Standing Claims"),
+                    new TextObject(DiText.T("DI_DIPLOMACY_STANDING_CLAIMS_2", "Standing Claims")),
                     ColourOf(faction1), ColourOf(faction2),
                     Math.Max(5, Math.Max(claims12, claims21)),
                     new BasicTooltipViewModel(() => claimHint1),
@@ -750,9 +782,10 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                                  + " by the Hawks at court.");
             }
             var band = ExhaustionBands.Of(value);
-            return "Shown as a band, never a figure: " + ExhaustionBands.Name(band) + " - "
-                   + ExhaustionBands.Meaning(band)
-                   + " The exact number is what an espionage report buys.";
+            return DiText.T("DI_DIPLOMACY_SHOWN_AS_BAND_NEVER_FIGURE_THE_NAME_MEANING_2",
+                "Shown as a band, never a figure: {NAME} - {MEANING} The exact number is what an espionage report buys.",
+                ("NAME", ExhaustionBands.Name(band)),
+                ("MEANING", ExhaustionBands.Meaning(band)));
         }
 
         private static string TrustHint(Kingdom holder, Kingdom other, float value)
@@ -768,11 +801,15 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
         private static string ClaimHint(Kingdom holder, Kingdom other, Claim best)
         {
             if (best == null)
-                return holder.Name + " holds no claim on " + other.Name + ".";
+                return DiText.T("DI_DIPLOMACY_HOLDS_NO_CLAIM_ON_NAME_NAME_2_2",
+                    "{NAME} holds no claim on {NAME_2}.",
+                    ("NAME", holder.Name),
+                    ("NAME_2", other.Name));
             var text = holder.Name + "'s best: " + best.Type + " at legitimacy "
                        + CasusBelli.Legitimacy(best.Type).ToString("0.00");
             if (best.AllowsFiefDemands)
-                text += ". It entitles them to land at the peace table.";
+                text += DiText.T("DI_DIPLOMACY_IT_ENTITLES_THEM_TO_LAND_AT_2",
+                    ". It entitles them to land at the peace table.");
             return text + ".";
         }
 
@@ -797,7 +834,9 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                     DiplomacyMenu.PeaceButtonLabel(budget, theirBudget),
                     DiplomacyMenu.PeaceButtonSub(budget, theirBudget, them),
                     0, true,
-                    "Opens the peace table: what this war has earned, and what they will sign. " + allowance,
+                    DiText.T("DI_DIPLOMACY_OPENS_THE_PEACE_TABLE_WHAT_THIS_ALLOWANCE_2",
+                        "Opens the peace table: what this war has earned, and what they will sign. {ALLOWANCE}",
+                        ("ALLOWANCE", allowance)),
                     () => DiplomacyMenu.ShowPeace(state, us, them),
                     DiplomacyActionVM.PositiveText));
 
@@ -806,22 +845,28 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 if (ourLink == null)
                 {
                     var can = AiDiplomacy.CanSubmitTo(state, us, them, out var why, out _);
-                    into.Add(new DiplomacyActionVM("Kneel to them",
-                        can ? "Ends this war as our submission." : why ?? "Not possible now.",
+                    into.Add(new DiplomacyActionVM(DiText.T("DI_DIPLOMACY_KNEEL_TO_THEM_2", "Kneel to them"),
+                        can ? DiText.T("DI_DIPLOMACY_ENDS_THIS_WAR_AS_OUR_SUBMISSION_2",
+                            "Ends this war as our submission.") : DiText.T("DI_DIPLOMACY_WHY_2",
+                            "{WHY}",
+                            ("WHY", why ?? "Not possible now.")),
                         0, can,
-                        can
-                            ? "The oath is the peace: the war ends, we keep our ruler and lands,"
-                              + " and they owe us protection. Tribute "
-                              + DiplomacyConstants.AiDefaultTributePerPeriod + " per period."
-                            : why ?? "Not possible now.",
+                        can ? DiText.T("DI_DIPLOMACY_THE_OATH_IS_THE_PEACE_THE_AIDEFAULTTRIBUTEPERPERIOD_2",
+                            "The oath is the peace: the war ends, we keep our ruler and lands, and they owe us protection. Tribute {AIDEFAULTTRIBUTEPERPERIOD} per period.",
+                            ("AIDEFAULTTRIBUTEPERPERIOD", DiplomacyConstants.AiDefaultTributePerPeriod)) : DiText.T("DI_DIPLOMACY_WHY_2",
+                            "{WHY}",
+                            ("WHY", why ?? "Not possible now.")),
                         () => DiplomacyMenu.OfferSubmission(state, us, them),
                         DiplomacyActionVM.DangerText));
                 }
                 else
                 {
                     var can = AiDiplomacy.CanDefectToAttacker(state, us, them, out var why, out _);
-                    into.Add(new DiplomacyActionVM("Beg their mercy",
-                        can ? "Ends this war as our defection." : why ?? "Not possible now.",
+                    into.Add(new DiplomacyActionVM(DiText.T("DI_DIPLOMACY_BEG_THEIR_MERCY_2", "Beg their mercy"),
+                        can ? DiText.T("DI_DIPLOMACY_ENDS_THIS_WAR_AS_OUR_DEFECTION_2",
+                            "Ends this war as our defection.") : DiText.T("DI_DIPLOMACY_WHY_2",
+                            "{WHY}",
+                            ("WHY", why ?? "Not possible now.")),
                         0, can,
                         can
                             ? "We abandon " + ourLink.DominantParty.Name + ", which would not"
@@ -841,29 +886,34 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 var alliance = state.ActiveTreatyBetween(us, them, TreatyType.Alliance);
                 if (vassalage != null)
                 {
-                    into.Add(new DiplomacyActionVM("Propose a treaty",
-                        "A vassalage already binds the two of you.",
+                    into.Add(new DiplomacyActionVM(DiText.T("DI_DIPLOMACY_PROPOSE_TREATY_2", "Propose a treaty"),
+                        DiText.T("DI_DIPLOMACY_VASSALAGE_ALREADY_BINDS_THE_TWO_OF_2",
+                            "A vassalage already binds the two of you."),
                         0, string.Empty, false,
-                        "Nothing stands above a vassalage except its release. The chooser stays shut.",
+                        DiText.T("DI_DIPLOMACY_NOTHING_STANDS_ABOVE_VASSALAGE_EXCEPT_ITS_2",
+                            "Nothing stands above a vassalage except its release. The chooser stays shut."),
                         () => { }, DiplomacyActionVM.BlockedText));
                 }
                 else if (alliance != null)
                 {
-                    into.Add(new DiplomacyActionVM("Propose a treaty",
-                        "An alliance already stands - the top rung.",
+                    into.Add(new DiplomacyActionVM(DiText.T("DI_DIPLOMACY_PROPOSE_TREATY", "Propose a treaty"),
+                        DiText.T("DI_DIPLOMACY_AN_ALLIANCE_ALREADY_STANDS_THE_TOP_2",
+                            "An alliance already stands - the top rung."),
                         0, string.Empty, false,
-                        "Nothing stands above an alliance. The chooser stays shut.",
+                        DiText.T("DI_DIPLOMACY_NOTHING_STANDS_ABOVE_AN_ALLIANCE_THE_2",
+                            "Nothing stands above an alliance. The chooser stays shut."),
                         () => { }, DiplomacyActionVM.BlockedText));
                 }
                 else
                 {
                     var lo = StatecraftTerms.TreatyInfluenceCost(us, TreatyType.NonAggressionPact);
                     var hi = StatecraftTerms.TreatyInfluenceCost(us, TreatyType.Alliance);
-                    into.Add(new DiplomacyActionVM("Propose a treaty",
-                        "Three rungs, one valuation. See what clears their bar.",
+                    into.Add(new DiplomacyActionVM(DiText.T("DI_DIPLOMACY_PROPOSE_TREATY", "Propose a treaty"),
+                        DiText.T("DI_DIPLOMACY_THREE_RUNGS_ONE_VALUATION_SEE_WHAT_2",
+                            "Three rungs, one valuation. See what clears their bar."),
                         0, lo + " - " + hi, true,
-                        "Opens \"what their court would sign\": their own valuation against the"
-                        + " three rungs it could buy, each with its influence price.",
+                        DiText.T("DI_DIPLOMACY_OPENS_WHAT_THEIR_COURT_WOULD_SIGN_2",
+                            "Opens \"what their court would sign\": their own valuation against the three rungs it could buy, each with its influence price."),
                         () => DiShowPacts = !DiShowPacts, DiplomacyActionVM.GoldText));
                 }
 
@@ -873,44 +923,51 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                     : TreatyEnforcement.Explain(state, us, them, block) + ".";
                 // The figure the proposal is charged: the AI's own war price (design 08 A-1).
                 var warCost = AiDiplomacy.WarDeclarationCostAgainst(state, us, them, Clan.PlayerClan?.Leader);
-                into.Add(new DiplomacyActionVM("Declare war",
-                    block == TreatyEnforcement.Block.None
+                into.Add(new DiplomacyActionVM(DiText.T("DI_DIPLOMACY_DECLARE_WAR_2", "Declare war"),
+                    DiText.T("DI_DIPLOMACY_BLOCKEDBECAUSE_2",
+                        "{BLOCKEDBECAUSE}",
+                        ("BLOCKEDBECAUSE", block == TreatyEnforcement.Block.None
                         ? "Puts it to the court's vote."
-                        : blockedBecause,
+                        : blockedBecause)),
                     block == TreatyEnforcement.Block.None ? warCost : 0,
                     block == TreatyEnforcement.Block.None,
-                    block == TreatyEnforcement.Block.None
+                    DiText.T("DI_DIPLOMACY_BLOCKEDBECAUSE",
+                        "{BLOCKEDBECAUSE}",
+                        ("BLOCKEDBECAUSE", block == TreatyEnforcement.Block.None
                         ? "Proposes a war decision the realm votes on, for " + warCost + " influence:"
                           + " what an AI ruler pays for the same war - 40 x (2 - the casus belli's"
                           + " legitimacy) x (1 + weariness / 100), a quarter less with Firebrand."
                           + " Our treaties are why it may be blocked."
-                        : blockedBecause,
+                        : blockedBecause)),
                     Then(() => DiplomacyMenu.DeclareWar(state, us, them)),
                     DiplomacyActionVM.DangerText));
 
                 var canTribute = AiDiplomacy.CanDemandTribute(state, us, them, out var whyTribute);
-                into.Add(new DiplomacyActionVM("Demand tribute",
+                into.Add(new DiplomacyActionVM(DiText.T("DI_DIPLOMACY_DEMAND_TRIBUTE_2", "Demand tribute"),
                     canTribute
                         ? DiplomacyConstants.AiDefaultTributePerPeriod + " per period."
                         : whyTribute ?? "Not possible now.",
                     0, canTribute,
-                    canTribute
-                        ? "Coercion, not negotiation: our claim makes the pretext and our"
-                          + " strength makes the argument - the same demand the AI makes."
-                        : whyTribute ?? "Not possible now.",
+                    canTribute ? DiText.T("DI_DIPLOMACY_COERCION_NOT_NEGOTIATION_OUR_CLAIM_MAKES_2",
+                        "Coercion, not negotiation: our claim makes the pretext and our strength makes the argument - the same demand the AI makes.") : DiText.T("DI_DIPLOMACY_WHYTRIBUTE_2",
+                        "{WHYTRIBUTE}",
+                        ("WHYTRIBUTE", whyTribute ?? "Not possible now.")),
                     Then(() => DiplomacyMenu.DemandTribute(state, us, them))));
 
                 if (ourLink == null)
                 {
                     var can = AiDiplomacy.CanSubmitTo(state, us, them, out var why, out _);
-                    into.Add(new DiplomacyActionVM("Kneel to them",
-                        can ? "We become their vassal." : why ?? "Not possible now.",
+                    into.Add(new DiplomacyActionVM(DiText.T("DI_DIPLOMACY_KNEEL_TO_THEM", "Kneel to them"),
+                        can ? DiText.T("DI_DIPLOMACY_WE_BECOME_THEIR_VASSAL_2",
+                            "We become their vassal.") : DiText.T("DI_DIPLOMACY_WHY_2",
+                            "{WHY}",
+                            ("WHY", why ?? "Not possible now.")),
                         0, can,
-                        can
-                            ? "Their oath for our foreign policy: tribute "
-                              + DiplomacyConstants.AiDefaultTributePerPeriod
-                              + " per period, troops in their wars, protection owed to us."
-                            : why ?? "Not possible now.",
+                        can ? DiText.T("DI_DIPLOMACY_THEIR_OATH_FOR_OUR_FOREIGN_POLICY_AIDEFAULTTRIBUTEPERPERIOD_2",
+                            "Their oath for our foreign policy: tribute {AIDEFAULTTRIBUTEPERPERIOD} per period, troops in their wars, protection owed to us.",
+                            ("AIDEFAULTTRIBUTEPERPERIOD", DiplomacyConstants.AiDefaultTributePerPeriod)) : DiText.T("DI_DIPLOMACY_WHY_2",
+                            "{WHY}",
+                            ("WHY", why ?? "Not possible now.")),
                         () => DiplomacyMenu.OfferSubmission(state, us, them),
                         DiplomacyActionVM.DangerText));
                 }
@@ -920,7 +977,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 if (theirLink != null && theirLink.DominantParty != us)
                 {
                     var can = Hegemony.CanPoach(state, us, theirLink, out var value, out var why);
-                    into.Add(new DiplomacyActionVM("Court them",
+                    into.Add(new DiplomacyActionVM(DiText.T("DI_DIPLOMACY_COURT_THEM_2", "Court them"),
                         can ? "Valued at " + value.ToString("0") + "." : why ?? "Not possible now.",
                         0, can,
                         can
@@ -934,8 +991,8 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 // A greedy patron may tear up a vassal's oath and take its lands.
                 if (Hegemony.CouldAnnex(state, us, them))
                 {
-                    into.Add(new DiplomacyActionVM("Tear up their oath",
-                        "Breach, then conquest.", 0, true,
+                    into.Add(new DiplomacyActionVM(DiText.T("DI_DIPLOMACY_TEAR_UP_THEIR_OATH_2", "Tear up their oath"),
+                        DiText.T("DI_DIPLOMACY_BREACH_THEN_CONQUEST_2", "Breach, then conquest."), 0, true,
                         "We break " + them.Name + "'s oath at the full price and take their"
                         + " lands - the move a greedy patron makes. Every other vassal we"
                         + " hold takes the lesson in hold.",
@@ -949,11 +1006,11 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
             if (ourLink != null && ourLink.DominantParty == them)
             {
                 var breaking = Hegemony.IsAtBreakingPoint(state, ourLink);
-                into.Add(new DiplomacyActionVM("Declare independence",
-                    breaking
-                        ? "A war of independence."
-                        : "Hold " + Hegemony.HoldOf(ourLink).ToString("0") + " - it breaks below "
-                          + Hegemony.SecessionThreshold(state, ourLink).ToString("0") + ".",
+                into.Add(new DiplomacyActionVM(DiText.T("DI_DIPLOMACY_DECLARE_INDEPENDENCE_2", "Declare independence"),
+                    breaking ? DiText.T("DI_DIPLOMACY_WAR_OF_INDEPENDENCE_2", "A war of independence.") : DiText.T("DI_DIPLOMACY_HOLD_IT_BREAKS_BELOW_HOLDOF_SECESSIONTHRESHOLD_2",
+                        "Hold {HOLDOF} - it breaks below {SECESSIONTHRESHOLD}.",
+                        ("HOLDOF", Hegemony.HoldOf(ourLink).ToString("0")),
+                        ("SECESSIONTHRESHOLD", Hegemony.SecessionThreshold(state, ourLink).ToString("0"))),
                     0, breaking,
                     breaking
                         ? "Hold " + Hegemony.HoldOf(ourLink).ToString("0")
@@ -1012,12 +1069,11 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                 var ours = breakable.Type == TreatyType.Vassalage && breakable.DominantParty == us;
                 into.Add(new DiplomacyActionVM(
                     ours ? "Release " + them.Name : "Renounce " + breakable.Type,
-                    ours ? "Ends the vassalage. Costs trust with every court."
-                        : "Breaks the pact. "
-                          + DiplomacyConstants.TrustTreatyBrokenVictim.ToString("0")
-                          + " trust with them, "
-                          + DiplomacyConstants.TrustTreatyBrokenObserver.ToString("0")
-                          + " with every other court.",
+                    ours ? DiText.T("DI_DIPLOMACY_ENDS_THE_VASSALAGE_COSTS_TRUST_WITH_2",
+                        "Ends the vassalage. Costs trust with every court.") : DiText.T("DI_DIPLOMACY_BREAKS_THE_PACT_TRUST_WITH_THEM_TRUSTTREATYBROKENVICTIM_2",
+                        "Breaks the pact. {TRUSTTREATYBROKENVICTIM} trust with them, {TRUSTTREATYBROKENOBSERVER} with every other court.",
+                        ("TRUSTTREATYBROKENVICTIM", DiplomacyConstants.TrustTreatyBrokenVictim.ToString("0")),
+                        ("TRUSTTREATYBROKENOBSERVER", DiplomacyConstants.TrustTreatyBrokenObserver.ToString("0"))),
                     0, true,
                     "-" + (-DiplomacyConstants.TrustTreatyBrokenVictim).ToString("0")
                     + " trust with them, -"
@@ -1028,7 +1084,7 @@ namespace DiplomacyIntrigue.UI.KingdomScreen
                     DiplomacyActionVM.DangerText));
             }
 
-            into.Add(new DiplomacyActionVM("Fabricate a claim",
+            into.Add(new DiplomacyActionVM(DiText.T("DI_DIPLOMACY_FABRICATE_CLAIM_2", "Fabricate a claim"),
                 DiplomacyConstants.FabricateClaimDurationDays + " days and "
                 + DiplomacyConstants.FabricateClaimGoldCost + " denars, "
                 + (StatecraftTerms.ExposureChance(us, them) * 100f).ToString("0")

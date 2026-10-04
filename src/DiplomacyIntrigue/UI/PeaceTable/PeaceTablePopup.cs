@@ -99,7 +99,8 @@ namespace DiplomacyIntrigue.UI.Negotiation
         {
             var host = ScreenManager.TopScreen;
             if (host == null)
-                throw new InvalidOperationException("There is no screen to open the peace table over.");
+                throw new InvalidOperationException(DiText.T("DI_PEACE_THERE_IS_NO_SCREEN_TO_OPEN_2",
+                    "There is no screen to open the peace table over."));
 
             var popup = new PeaceTablePopup(host, vm);
             try

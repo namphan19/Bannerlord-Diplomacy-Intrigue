@@ -706,10 +706,12 @@ namespace DiplomacyIntrigue.Diplomacy
             try
             {
                 InformationManager.ShowInquiry(new InquiryData(
-                    "A summons from " + q.Patron.Name,
+                    DiText.T("DI_DIPLOMACY_SUMMONS_FROM_NAME_2",
+                        "A summons from {NAME}",
+                        ("NAME", q.Patron.Name)),
                     body,
                     true, true,
-                    "Send " + parties + " parties", "Refuse",
+                    "Send " + parties + " parties", DiText.T("DI_DIPLOMACY_REFUSE", "Refuse"),
                     () => { try { Serve(state, q); } catch (Exception ex) { Log.Error("Summons", "Answering a summons failed.", ex); } },
                     () => { try { Refuse(state, q, "declined by the ruler"); } catch (Exception ex) { Log.Error("Summons", "Refusing a summons failed.", ex); } },
                     ""), true);
