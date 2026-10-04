@@ -197,14 +197,14 @@
                                              backdrop under a taller body paints only the top
                                              of the card, and the backdrop is now the card's
                                              own Brush. -->
-                                        <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
-                                            MarginBottom="6" Brush="DiRealm.Card">
+                                        <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginBottom="6"
+                                            Sprite="BlankWhiteSquare_9" Color="@AccentColor">
                                           <Children>
-                                            <Widget WidthSizePolicy="Fixed" SuggestedWidth="4" HeightSizePolicy="StretchToParent"
-                                                Sprite="BlankWhiteSquare_9" Color="@AccentColor" />
-
+                                            <BrushListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                                MarginLeft="4" Brush="DiRealm.CardSolid">
+                                              <Children>
                                             <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
-                                                MarginLeft="14" MarginRight="12" MarginTop="8" MarginBottom="8"
+                                                MarginLeft="10" MarginRight="12" MarginTop="8" MarginBottom="8"
                                                 StackLayout.LayoutMethod="VerticalTopToBottom">
                                               <Children>
                                                 <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren">
@@ -360,8 +360,10 @@
                                                 </ListPanel>
                                               </Children>
                                             </ListPanel>
+                                              </Children>
+                                            </BrushListPanel>
                                           </Children>
-                                        </ListPanel>el>
+                                        </Widget>
                                       </ItemTemplate>
                                     </ListPanel>
 
@@ -386,13 +388,14 @@
                                              @SphereGapNote below. A paragraph cannot be given
                                              a Fixed height that holds in every language (R4),
                                              so the card takes its height from its content. -->
-                                        <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
-                                            MarginBottom="5" Brush="DiRealm.CardDark">
+                                        <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginBottom="5"
+                                            Sprite="BlankWhiteSquare_9" Color="@AccentColor">
                                           <Children>
-                                            <Widget WidthSizePolicy="Fixed" SuggestedWidth="3" HeightSizePolicy="StretchToParent"
-                                                Sprite="BlankWhiteSquare_9" Color="@AccentColor" />
+                                            <BrushListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                                MarginLeft="3" Brush="DiRealm.CardDarkSolid">
+                                              <Children>
                                             <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
-                                                MarginLeft="12" MarginRight="10" MarginTop="6" MarginBottom="6">
+                                                MarginLeft="9" MarginRight="10" MarginTop="6" MarginBottom="6">
                                               <Children>
                                                 <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
                                                     StackLayout.LayoutMethod="VerticalTopToBottom">
@@ -408,8 +411,10 @@
                                                     HorizontalAlignment="Right" Brush="DiRealm.Value" Text="@StrengthText" />
                                               </Children>
                                             </ListPanel>
+                                              </Children>
+                                            </BrushListPanel>
                                           </Children>
-                                        </ListPanel>
+                                        </Widget>
                                       </ItemTemplate>
                                     </ListPanel>
 
@@ -469,14 +474,14 @@
                                              plain Widget wrapper. A full-height stripe in a
                                              bound colour cannot be sized to its card in
                                              Gauntlet. Story 4.3 ST-3, and D4. -->
-                                        <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
-                                            MarginBottom="6" Brush="DiRealm.Card">
+                                        <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginBottom="6"
+                                            Sprite="BlankWhiteSquare_9" Color="@AccentColor">
                                           <Children>
-                                            <Widget WidthSizePolicy="Fixed" SuggestedWidth="4" HeightSizePolicy="StretchToParent"
-                                                Sprite="BlankWhiteSquare_9" Color="@AccentColor" />
-
+                                            <BrushListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                                MarginLeft="4" Brush="DiRealm.CardSolid">
+                                              <Children>
                                             <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
-                                                MarginLeft="14" MarginRight="12" MarginTop="8" MarginBottom="8"
+                                                MarginLeft="10" MarginRight="12" MarginTop="8" MarginBottom="8"
                                                 StackLayout.LayoutMethod="VerticalTopToBottom">
                                               <Children>
                                                 <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent"
@@ -522,8 +527,10 @@
                                                 </ListPanel>
                                               </Children>
                                             </ListPanel>
+                                              </Children>
+                                            </BrushListPanel>
                                           </Children>
-                                        </ListPanel>el>
+                                        </Widget>
                                       </ItemTemplate>
                                     </ListPanel>
 
@@ -535,13 +542,14 @@
                                              backdrop stretched. There are none of these on
                                              the test save, so this one is fixed from the
                                              prefab rather than from a screenshot. -->
-                                        <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
-                                            MarginBottom="6" Brush="DiRealm.CardFaint">
+                                        <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginBottom="6"
+                                            Sprite="BlankWhiteSquare_9" Color="@AccentColor">
                                           <Children>
-                                            <Widget WidthSizePolicy="Fixed" SuggestedWidth="4" HeightSizePolicy="StretchToParent"
-                                                Sprite="BlankWhiteSquare_9" Color="@AccentColor" />
+                                            <BrushListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                                MarginLeft="4" Brush="DiRealm.CardFaintSolid">
+                                              <Children>
                                             <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
-                                                MarginLeft="14" MarginRight="12" MarginTop="8" MarginBottom="8"
+                                                MarginLeft="10" MarginRight="12" MarginTop="8" MarginBottom="8"
                                                 StackLayout.LayoutMethod="VerticalTopToBottom">
                                               <Children>
                                                 <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren">
@@ -572,8 +580,10 @@
                                                 </Widget>
                                               </Children>
                                             </ListPanel>
+                                              </Children>
+                                            </BrushListPanel>
                                           </Children>
-                                        </ListPanel>el>
+                                        </Widget>
                                       </ItemTemplate>
                                     </ListPanel>
 
@@ -605,14 +615,14 @@
                                              lines in a 250px column ("Nordliches Imperium -
                                              you pay them, and answer their call" is 17px
                                              type). It now measures its content. -->
-                                        <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
-                                            MarginBottom="6" Brush="DiRealm.Card">
+                                        <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginBottom="6"
+                                            Sprite="BlankWhiteSquare_9" Color="@AccentColor">
                                           <Children>
-                                            <Widget WidthSizePolicy="Fixed" SuggestedWidth="4" HeightSizePolicy="StretchToParent"
-                                                Sprite="BlankWhiteSquare_9" Color="@AccentColor" />
-
+                                            <BrushListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                                MarginLeft="4" Brush="DiRealm.CardSolid">
+                                              <Children>
                                             <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
-                                                MarginLeft="14" MarginRight="12" MarginTop="7" MarginBottom="7"
+                                                MarginLeft="10" MarginRight="12" MarginTop="7" MarginBottom="7"
                                                 StackLayout.LayoutMethod="VerticalTopToBottom">
                                               <Children>
                                                 <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren">
@@ -630,15 +640,17 @@
                                                     Text="@DetailText" />
                                               </Children>
                                             </ListPanel>
+                                              </Children>
+                                            </BrushListPanel>
                                           </Children>
-                                        </ListPanel>el>
+                                        </Widget>
                                       </ItemTemplate>
                                     </ListPanel>
 
                                     <!-- Tribute, per period. Story 4.3: was a CoverChildren block with a
                                      StretchToParent backdrop (the 0b.1 shape); background
                                      is now the block's own Brush. -->
-                                    <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                    <BrushListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
                                         MarginTop="4" IsVisible="@HasTribute" Brush="DiRealm.CardStrip">
                                       <Children>
                                         <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
@@ -654,7 +666,7 @@
                                           </Children>
                                         </ListPanel>
                                       </Children>
-                                    </ListPanel>
+                                    </BrushListPanel>
 
                                     <!-- Report, at the foot of the last column -->
                                     <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
@@ -714,7 +726,7 @@
                                          so the row measures its content; @Stand is optional and
                                          @Moves wraps, so a Fixed height would not hold in a
                                          long language (R4). -->
-                                    <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                    <BrushListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
                                         MarginBottom="4" Brush="DiRealm.CardRow">
                                       <Children>
                                         <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
@@ -742,7 +754,7 @@
                                           </Children>
                                         </ListPanel>
                                       </Children>
-                                    </ListPanel>
+                                    </BrushListPanel>
                                   </ItemTemplate>
                                 </ListPanel>
                                 <TextWidget DoNotAcceptEvents="true" WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
@@ -870,12 +882,13 @@
                                                  DiRealm.Label and wraps for a handler with
                                                  a long crime, so the row measures its
                                                  content now (R4). -->
-                                            <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
-                                                MarginBottom="4" Brush="DiRealm.CardRow">
+                                            <Widget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginBottom="4"
+                                                Sprite="BlankWhiteSquare_9" Color="@AccentColor">
                                               <Children>
-                                                <Widget WidthSizePolicy="Fixed" SuggestedWidth="4" HeightSizePolicy="StretchToParent"
-                                                    Sprite="BlankWhiteSquare_9" Color="@AccentColor" />
-                                                <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginLeft="12"
+                                                <BrushListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
+                                                    MarginLeft="4" Brush="DiRealm.CardRowSolid">
+                                                  <Children>
+                                                <ListPanel WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginLeft="8"
                                                     MarginRight="8" VerticalAlignment="Center" StackLayout.LayoutMethod="VerticalTopToBottom">
                                                   <Children>
                                                     <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren"
@@ -884,8 +897,10 @@
                                                         Brush="DiRealm.Label" Text="@Line" />
                                                   </Children>
                                                 </ListPanel>
+                                                  </Children>
+                                                </BrushListPanel>
                                               </Children>
-                                            </ListPanel>
+                                            </Widget>
                                           </ItemTemplate>
                                         </ListPanel>
                                         <TextWidget WidthSizePolicy="StretchToParent" HeightSizePolicy="CoverChildren" MarginTop="4"
