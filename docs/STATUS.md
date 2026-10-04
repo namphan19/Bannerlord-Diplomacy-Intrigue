@@ -32,17 +32,20 @@ for any length of time**:
 **Next:** one more long run (12 years) to see the civil-war count fall from 14 to a few, with the analyser and the log counts of `claimant_arose` and "takes up arms".
 **Phase 4 (2026-10-03):** the incompatibility warning, release defaults (telemetry off), the tick-budget
 instrumentation and the Workshop update are built and shipped in 0.3.0, **not run in game** (TODO).
-**Localization is built, and not yet run in game:** [story 4.1](stories/4.1-localization.md). Every
-string the mod draws from code is behind a key - **641 keys**, in `Core/DiText.cs` and 24 files plus nine view models for the prefab labels -
-with the English kept in the source as the fallback, `ModuleData/Languages/EN/di_strings.xml`
-generated from those calls, and 13 language folders ready to drop a translation into
-(`docs/localization.md` is the guide). `scripts/check-localization.ps1` reads all of it and runs in
-`build.ps1` and `deploy.ps1`. **Verified by compile and by the checks only; the game has not been
-started**, so no screen has been seen in any language. ST-1's answer, read from the game's IL
-rather than from a session: a widget's `Text` is a plain string and **cannot** be keyed in the
-prefab, which left 92 prefab labels to move into view-model properties by hand - the one part of
-the conversion left, listed in `artifacts/localization/prefabs.csv`. The 12 non-English folders
-ship empty and untranslated on purpose (lead's call, 2026-10-03).
+**Localization has now been run in game, once** (story 4.1 ST-7, 2026-10-04; `di_phase1_full` and
+`di_hegemony_1166`, v1.5.3, local build, 1920x1080): **653 keys**, and the session found **four
+defects that no check in the repo could see**, all now fixed and each re-seen on screen -
+`DiText.O` built `{DI_}KEY` instead of `{=KEY}`, so every screen drew the raw token; three labels
+carried U+00A7 where the prefab had U+00B7; the Court panel's heading had lost "The"; and enum
+names (`ReclaimAncestralLand`, `DefensivePact`) were reaching the screen as text. Rule 8 of
+`scripts/check-localization.ps1` now blocks the first of them, and it was run against both the
+pre-fix and the fixed file. Six surfaces render with no raw key and no empty label. **AC2 is
+blocked on a person, not a build**: `BannerlordConfig.txt`'s `Language=` line is an output the game
+rewrites at every startup, the language lives in the official launcher's UI, and nothing else on
+this machine reaches it - story §6a has the table. The Encyclopedia court page is the one converted
+surface never seen: `test_open_encyclopedia` crashes v1.5.3 in vanilla's own
+`EncyclopediaData.OnTick`. The 12 non-English folders still ship empty and untranslated on purpose
+(lead's call, 2026-10-03), and 440 strings are still to key.
 
 Also owed: a report of what looks wrong on the Members and Parties tabs (the lead raised it on
 2026-10-02; the Clan screen's code and a live look found nothing, and nothing in Phase 3 touches them).

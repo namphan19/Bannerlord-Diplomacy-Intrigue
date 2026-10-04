@@ -87,19 +87,39 @@ re-rolled after a reload (now saved, `SpyMission` 12); stale figures in six desi
       641 keys behind `DiText.T` (including all 92 prefab labels, moved into view models), English generated into `Languages/EN/di_strings.xml`, 13 language
       folders ready to drop a translation into, `scripts/check-localization.ps1` in
       `build.ps1`/`deploy.ps1`, guide in [docs/localization.md](docs/localization.md).
-      **Compiled and checked; never run in game** - so AC1-AC6 are unverified, and no screen has
-      been seen in any language.
+      **First live pass 2026-10-04** (story ST-7, §9): six surfaces seen on two saves, and it
+      found **four defects no check could see** - all 653 keys were drawing `{DI_}KEY` because
+      `DiText.O` built the wrong id form; three labels had come out of the conversion with U+00A7
+      where the prefab had U+00B7; the Court panel's heading had lost "The"; and enum names
+      (`ReclaimAncestralLand`, `DefensivePact`) were reaching the screen as text. All four fixed,
+      each re-seen on screen, and rule 8 of the check now blocks the first of them.
+- [ ] **AC2: one session in German, from the official launcher.** This is now the **only** thing
+      between story 4.1 and a verified second language, and it is **a person, not a build**:
+      writing `Language=Deutsch` into `BannerlordConfig.txt` does nothing, because the game
+      rewrites that line at every startup. The language lives in the launcher's UI - no Language
+      entry in the in-game Options, no console command, no registry key, nothing in
+      `LauncherData.xml`. Story §6a has the table of what was checked. Put a handful of keys in
+      `Languages/DE/di_strings.xml` first (the folder ships empty on purpose, and an empty folder
+      makes the session look like a pass), then switch the language in the launcher and start the
+      game **from the launcher**.
+- [ ] **`diplomacy.test_open_encyclopedia` crashes the game on v1.5.3** - a vanilla
+      `NullReferenceException` in `GauntletLayer.IsFocusedOnInput` from
+      `SandBox.EncyclopediaData.OnTick`, mod log clean, no frames of ours (story §9). The
+      Encyclopedia court page is therefore the one converted surface never seen. Worth deciding
+      whether it is our push or vanilla's before anyone runs it again.
 - [ ] **Localization, what is left** (story 4.1, in order of risk):
-      (1) **One session with `DE` selected**, to see the keyed screens switch and to catch any prefab
-      binding that silently failed. `check-localization.ps1` proves every `@Property` a prefab binds
-      is declared on *some* view model; it cannot prove it is the *right* one, and a property on
-      the wrong model binds to nothing and draws an empty label - which no English session would
-      catch.
-      (2) Then, with the screens known good: **550 strings the rewriter left to a human** (story
-      ST-5) - 365 fragments of a longer sentence (`" are "`, `" answered"`), 135 sentences spread
-      over several `sb.Append` statements, 25 built in pieces elsewhere, 25 with a conditional
-      inside a clause. Listed as `manual` with a reason in `artifacts/localization/inventory.csv`;
-      until they are done those particular sentences stay English in every language.
+      (1) **440 strings.** 122 the tool can now key on approval - read the dry-run list first, it
+      has never been reviewed by eye and the earlier sample of it was wrong - and 318 a human has
+      to write: 200 sentences spread over several statements, 70 fragments of a longer sentence,
+      41 with a conditional inside a clause, 7 built in pieces elsewhere. Plus 18 that cannot be
+      keyed at all (MCM's setting names and hints). Listed as `manual` with a reason in
+      artifacts/localization/inventory.csv; until they are done those particular sentences stay
+      English in every language.
+      (2) Then AC6 - fit in the longest language and a CJK one - which needs the launcher session.
+      Two layout overlaps seen in English are pre-existing and not localization: the Realm tab's
+      left column (a long sphere explanation runs into the block below it) and the Court tab's
+      right column (the "Make amends" button over the loyalty line). They belong with the
+      Kingdom-UI loose ends above.
 - [ ] **Vietnamese** - separate, [story 4.2](docs/stories/4.2-vietnamese.md), after 4.1 ships.
 
 ## Pending work

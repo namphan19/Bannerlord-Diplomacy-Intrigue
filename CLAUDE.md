@@ -38,6 +38,41 @@ stalls with no error anywhere. It has to be dismissed by sending Enter to that w
 there is a ready watcher pattern in the session scratchpad, and the symptom to recognise is
 `games_connect` timing out while the process is alive with that window title.
 
+**The game's language belongs to the official launcher, and `BannerlordConfig.txt` does not set it.**
+`Documents\Mount and Blade II Bannerlord\Configs\BannerlordConfig.txt` line 1 reads `Language=<id>`,
+and it looks like the setting - it is an **output**. The game rewrites it to English at every
+startup (checked 2026-10-04: the file's timestamp is the launch second). There is no Language entry
+in the in-game Options screen, no console command that sets one (`list_commands` on `lang` and
+`locale`: none), no registry key under `HKCU\Software`, and no attribute containing "lang" in
+`LauncherData.xml`. Because the launcher hosts the game in its own process (§1), a
+`games_start` / BLSE Standalone launch bypasses the launcher's UI and therefore always comes up
+English. **To test another language, a person changes it in the official launcher and starts the
+game from the launcher.** Story 4.1 §6a has the full table, and a language folder that is empty
+proves nothing - the 12 non-English folders ship empty on purpose, so a language session needs a
+handful of translated keys written into the folder first or every screen reads English and the
+session looks like a pass.
+
+**`bannerlord.diplomacy.declare_war` reports success when the war was refused.** It answers
+`"Khuzait declared war on Battania"` and nothing happens - the mod refuses a vassal declaring a war
+on its own account, and the refusal is not surfaced. Check with `diplomacy.wars`, which reads our
+own state, not with `kingdom.list_wars`. `campaign.declare_war` behaves the same way, and it says
+`"Faction 2 is eliminated"` for a kingdom that is not in the save.
+
+**Vanilla's Encyclopedia layer crashes v1.5.3 when `diplomacy.test_open_encyclopedia` pushes it.**
+A `NullReferenceException` in `GauntletLayer.IsFocusedOnInput` from
+`SandBox.EncyclopediaData.OnTick`, with the mod log clean and no frames of ours - read live with
+`tools/DumpProbe -- --pid`. The Encyclopedia court page is the one converted screen never seen for
+that reason. Close the dialog with **No** (§1) and the process exits and writes its dump.
+
+**A golden file generated from the code cannot see what the conversion changed.** Story 4.1's
+`artifacts/localization/golden-EN.json` records the English *after* the conversion, so it agrees
+with whatever the conversion produced. What found three damaged strings was reading every literal
+that moved out of a prefab back out of the previous commit (`git show <base>:<prefab>`), matching it
+to the property that replaced it by line number, and comparing that property's English with it:
+88 moved, 4 left as punctuation on purpose, 3 different - a U+00A7 where a U+00B7 had been, and a
+heading that had lost its first word. **Compare against the base commit when a pass rewrites text
+in bulk, not against a file the same pass generated.**
+
 **Never force-kill Bannerlord.** `deploy.ps1` refuses to run while the game is open, and
 that guard is the point - the lead may be playing, and a balance run can be hours long. Use
 `mcp__gabs__games_stop`, and only for a session you started. If the game is running and you
