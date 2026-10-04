@@ -7,6 +7,60 @@ niệm.
 Thêm dòng mới khi gặp khái niệm chưa có. Đổi một dòng đã có thì phải sửa mọi văn bản đang dùng
 nó, nên chỉ đổi khi có lý do rõ ràng.
 
+**Hai loại văn bản, hai cách dùng bảng này.** *Văn xuôi* (sổ tay, trang phát hành, ghi chú) thì
+giữ nguyên nhãn tiếng Anh khi nhắc tới, vì người đọc đang nhìn nhãn đó trên màn hình. *File chữ của
+game* (`ModuleData/Languages/VI/di_strings.xml`) thì **dịch hết**, kể cả tên tab và tên mức: người
+chơi bản vá nhìn thấy tiếng Việt ở mọi nhãn vanilla, để tiếng Anh ở nhãn của ta thì đọc lệch.
+Bảng này dùng cho cả hai; chỗ nào ghi "giữ nguyên tiếng Anh" là cho văn xuôi.
+
+## Thuật ngữ bản vá cộng đồng đã xác nhận (story 4.2 ST-2, 2026-10-04)
+
+Đọc từ 23.808 chuỗi của bản vá, nối với tiếng Anh qua id băm. Những từ dưới đây bản vá dịch
+sẵn, nên ta theo bản vá (4.2 R3):
+
+| Tiếng Anh | Bản vá dùng | Ta dùng |
+|---|---|---|
+| kingdom | Vương quốc | vương quốc |
+| clan | Gia tộc | gia tộc |
+| influence | Ảnh hưởng | **ảnh hưởng** trong file chữ; văn xuôi giữ "influence" |
+| army | Quân đội | quân đội |
+| party (on the map) | Đội quân | đội quân |
+| siege | Vây hãm | vây hãm |
+| diplomacy | Ngoại giao | ngoại giao |
+| policies | Chính sách | chính sách |
+| clans (tab) | Gia tộc | Gia tộc |
+| armies (tab) | Quân đội | Quân đội |
+| denar | Denars | denar |
+| tribute | Cống nạp | cống nạp |
+| vassal | Chư hầu | chư hầu |
+| loyalty | Lòng trung thành | lòng trung thành |
+| renown | Danh tiếng | danh tiếng |
+| settlement | Khu định cư | khu định cư |
+| governor | Thống đốc | thống đốc |
+| warden | Hộ Vệ | hộ vệ |
+| court (in prose) | triều đình | triều đình |
+
+**`Hold` là bẫy.** Bản vá dịch `Hold` thành **"Giữ"**, vì trong game `hold` là động từ "giữ".
+`Hold` của ta là khái niệm riêng (độ ràng buộc giữa chư hầu và bá chủ), và **không được theo bản
+vá ở chỗ này**. Giữ "Hold" như bảng dưới.
+
+## Chỗ xung đột, chờ anh quyết (4.2 D3)
+
+Bản vá và bảng thuật ngữ cũ không khớp. Mặc định theo bản vá, nhưng năm chỗ này là khái niệm
+chính trị nên anh chọn:
+
+| Thuật ngữ | Bản vá | Bảng cũ của ta | Ghi chú |
+|---|---|---|---|
+| town | Thị trấn | thành phố | "thị trấn" đúng nghĩa game; "thành phố" rộng hơn |
+| fief | lãnh thổ / lãnh địa (tab) | thái ấp | ba cách, và bản vá tự dùng ba từ khác nhau |
+| ruler | Người cai trị | vua | "vua" là danh xưng, "người cai trị" là chức vụ |
+| realm (tab) | không có | — | của riêng ta |
+| court (tab) | không có | — | của riêng ta |
+
+Bản vá **không có** cho: hegemon, grievance, casus belli, handler, counter-intelligence,
+treasurer, manor, settler, hold (khái niệm của ta), realm, court (tab). Mười từ này hoàn toàn
+do ta chọn.
+
 ## Chiến tranh và hòa bình
 
 | Tiếng Anh | Tiếng Việt | Trên màn hình | Ghi chú |
@@ -23,9 +77,9 @@ nó, nên chỉ đổi khi có lý do rõ ràng.
 | weariness | độ mỏi mệt | | độ kiệt quệ còn lại sau chiến tranh |
 | claim | yêu sách | | "yêu sách lãnh thổ"; không để "claim" trần trong câu |
 | fabricate a claim | ngụy tạo yêu sách | | |
-| fief | thái ấp | | |
-| town / castle / village | thành phố / lâu đài / làng | | |
-| siege | cuộc vây thành | | |
+| fief | thái ấp | | **xung đột, chờ anh** |
+| town / castle / village | thành phố / lâu đài / làng | | **town xung đột, chờ anh**; castle và làng khớp bản vá |
+| siege | cuộc vây thành | | bản vá dùng "vây hãm" |
 | raid | cướp phá | | |
 | indemnity | tiền bồi thường | | |
 
@@ -49,11 +103,11 @@ nó, nên chỉ đổi khi có lý do rõ ràng.
 
 | Tiếng Anh | Tiếng Việt | Trên màn hình | Ghi chú |
 |---|---|---|---|
-| hegemon | bá chủ | | |
+| hegemon | bá chủ | | bản vá không có |
 | patron | bá chủ (của một chư hầu cụ thể) | | tránh "người bảo trợ" |
 | vassal | chư hầu | | |
 | sphere | vùng ảnh hưởng | | |
-| Hold | Hold | Hold | giữ nguyên; giải thích một lần là "độ ràng buộc giữa chư hầu và bá chủ" |
+| Hold | Hold | Hold | giữ nguyên; **không** theo bản vá ("Giữ" là động từ). Giải thích một lần là "độ ràng buộc giữa chư hầu và bá chủ" |
 | submit / kneel | quy phục | Kneel to them | |
 | revolt / secede | nổi dậy / ly khai | Declare independence | |
 | defiance mark | dấu bất tuân | | |
@@ -66,12 +120,12 @@ nó, nên chỉ đổi khi có lý do rõ ràng.
 
 | Tiếng Anh | Tiếng Việt | Trên màn hình | Ghi chú |
 |---|---|---|---|
-| court | triều đình | Court | |
+| court | triều đình | Court | khớp bản vá |
 | clan / house | gia tộc | | "nhà" được dùng khi câu cần ngắn |
-| ruler / crown | vua / ngai vàng | | "ngai vàng" khi nói về vương quyền như một thực thể |
+| ruler / crown | vua / ngai vàng | | **ruler xung đột, chờ anh**; bản vá dùng "Người cai trị" |
 | ruling clan | hoàng tộc | | |
 | crown legitimacy (0–100) | tính chính danh | | của ngai vàng; khác "tính chính đáng" |
-| grievance | mối oán | | "mối oán" ngắn và rõ hơn "sự oán hận" |
+| grievance | mối oán | | "mối oán" ngắn và rõ hơn "sự oán hận"; bản vá không có |
 | loyalty | lòng trung thành | | |
 | bloc / faction | phe | | |
 | agenda | chủ trương | | |
@@ -86,9 +140,13 @@ nó, nên chỉ đổi khi có lý do rõ ràng.
 | change sides | đổi phe | | |
 | cadet branch | chi thứ | | |
 
-## Giữ nguyên tiếng Anh
+## Giữ nguyên tiếng Anh — **chỉ trong văn xuôi**
 
-influence, renown, denar, tên các tab (Diplomacy, Realm, Court, Clans, Fiefs, Policies, Armies),
+influence, tên các tab (Diplomacy, Realm, Court, Clans, Fiefs, Policies, Armies),
 tên các mức (FRESH, STRAINED, WEARY, EXHAUSTED, BREAKING, LOYAL, SERVING, RESISTING, DEFIANT,
 RELIABLE, TRANSACTIONAL, DISAFFECTED, DEFECTION RISK, Failing, Questioned, Secure), tên nút,
 Kingdom screen, Encyclopedia, Mod Configuration Menu, tên vương quốc và nhân vật.
+
+**Không áp danh sách này cho `Languages/VI/di_strings.xml`.** Trong file chữ của game, tên tab và
+tên mức cũng dịch: người chơi bản vá thấy tiếng Việt ở nhãn vanilla, nhãn tiếng Anh của ta sẽ
+lạc trong đó. Danh sách trên là để **nhắc tới** nhãn tiếng Anh trong văn xuôi.
