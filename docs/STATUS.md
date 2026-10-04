@@ -14,6 +14,24 @@ Last completed measurement: **balance run 08** (statecraft on/off) — [balance/
 Branch `development`. `main` sits well behind on purpose: cutting a release is Phase 4's job.
 opencode was removed from the project on 2026-09-27 (CLAUDE.md §7).
 
+## Start here — 2026-10-04: story 4.3 (Realm and Court layout) — built, verified live, awaiting the lead's look
+
+Branch `feature/4.3-realm-tab-layout` (the dev's five commits plus the review's). **What the review
+changed, because it matters to anyone who read the dev's notes:** the dev's D4 premise was wrong -
+`ListPanel` has no `Brush` property, so the five card brushes painted nothing and the cards had lost
+their backgrounds (invisible at a glance: they are faint). They are `BrushListPanel` now. And D5, "a
+full-height accent stripe cannot exist on a content-sized card", was wrong too: the stripe is the card's
+**outer** widget and the card sits inside it (UI-INTEGRATION §0b.6), so it needs no decision from the
+lead and nothing about how a card looks changed.
+
+**Verified live** (v1.5.3, 2560x1440, German fixture, mod log clean each time): every card on the Realm
+tab is content-sized with its stripe exactly its height - wars, vassals (first time seen), spheres, claims,
+agreements, the tribute block, the standing strip, the Statecraft rows - and the Court tab's selected-house
+card, "Make amends" button and column 3 (now scrolls, was running over the bottom bar) are right.
+**Not verified:** Russian and Simplified Chinese (the fixture is German, 14 keys); a real 1920x1080
+session; scrolling (the bridge cannot scroll); the Fabrications and Caught cards (no data on the saves).
+Story §9i has the numbers and what was left.
+
 ## Start here — 2026-10-03: run 11 answered and built; a long run to check it
 
 The lead answered run 11 §8 on 2026-10-02 and accepted Phase 3 (the exposure-to-war chain seen between AI

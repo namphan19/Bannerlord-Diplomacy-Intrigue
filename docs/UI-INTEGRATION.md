@@ -142,6 +142,23 @@ without a single logged error.
    in a `CoverChildren` row) stretched the row to the whole viewport; nobody saw it while the row was
    the last thing in the scroll list. Adding a section after it put a screen of empty space in between.
    The rules became fixed-width spacers.
+5. **`ListPanel` has no `Brush`; `BrushListPanel` does.** `<ListPanel Brush="...">` loads without an
+   error and paints nothing (ApiDump on `BaseTypes.ListPanel`: no Brush member). Story 4.3's first pass
+   built its whole card convention on that, and the cards lost their backgrounds without a log line -
+   the backgrounds are faint enough that two screenshots did not show it.
+6. **A content-sized card with a full-height accent stripe: make the stripe the OUTER widget.** A
+   `StretchToParent` child of a `CoverChildren` parent is given the *available* height, so a stripe child
+   paints hundreds of pixels past its card (369px for a 57px card, measured). Invert it:
+   `<Widget CoverChildren Sprite="BlankWhiteSquare_9" Color="@AccentColor">` holding a `BrushListPanel
+   CoverChildren` with `MarginLeft` = the stripe's width. Nothing stretches; the stripe is the card's
+   height. The inner card needs an **opaque** brush (`DiRealm.CardSolid` and friends), or the accent
+   shows through it and tints the whole card. Tried and failed: `Widget.Color` does not tint a brush
+   layer (a `WidthPolicy="Overriden"` stripe layer drew nothing), and `ClipContents` clips only under
+   a `ScrollablePanel`.
+7. **A `ScrollablePanel`'s scrollbar track is drawn over the last ~20 units of the panel**, covering
+   right-aligned values. Give the scrolled list a `Fixed` width that leaves that room (Court column 3:
+   272 of 310). A `MarginRight` on the panel or the list did not move the clip, and a `Stretch` list
+   ran under the track.
 
 **Recipe, Clan screen, a new tab.** The strip is four plain `ButtonWidget`s with no `Id`, each calling
 `SetSelectedCategory(n)`; anchor on `descendant::ButtonWidget[@CommandParameter.Click='3']`, move its

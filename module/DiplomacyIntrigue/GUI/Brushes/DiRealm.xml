@@ -76,6 +76,62 @@
     </Styles>
   </Brush>
 
+  <!-- Card backgrounds (story 4.3). These are the five colours DiRealmPanel.xml already
+       carried as Color= on a plain backdrop Widget; nothing visual is new. They exist as
+       brushes because a card's background has to follow the height of its own text: a
+       StretchToParent backdrop child makes a CoverChildren card claim its parent's whole
+       height (UI-INTEGRATION 0b.1), so the card paints its own Brush instead. Only a
+       BrushListPanel does that - a plain ListPanel has no Brush property at all. -->
+  <Brush Name="DiRealm.Card">
+    <Layers>
+      <BrushLayer Name="Default" Sprite="BlankWhiteSquare_9" Color="#201A1388" />
+    </Layers>
+  </Brush>
+
+  <Brush Name="DiRealm.CardDark">
+    <Layers>
+      <BrushLayer Name="Default" Sprite="BlankWhiteSquare_9" Color="#1D171188" />
+    </Layers>
+  </Brush>
+
+  <Brush Name="DiRealm.CardFaint">
+    <Layers>
+      <BrushLayer Name="Default" Sprite="BlankWhiteSquare_9" Color="#1A161088" />
+    </Layers>
+  </Brush>
+
+  <Brush Name="DiRealm.CardStrip">
+    <Layers>
+      <BrushLayer Name="Default" Sprite="BlankWhiteSquare_9" Color="#24201888" />
+    </Layers>
+  </Brush>
+
+  <Brush Name="DiRealm.CardRow">
+    <Layers>
+      <BrushLayer Name="Default" Sprite="BlankWhiteSquare_9" Color="#201A13CC" />
+    </Layers>
+  </Brush>
+
+  <!-- Story 4.3: the solid twins of Card, CardDark, CardFaint and CardRow, for the cards that
+       carry an accent stripe. The stripe is drawn by the card's outer widget in the realm's
+       colour and the card sits 3-4px in from its left edge; the translucent brushes above would
+       let that colour show through and tint the whole card. Each colour below is the
+       translucent one composited over the panel behind it (#141210, the middle of the
+       #0F0E0A..#181411 range read off a screenshot), so the card looks the same to within a
+       few levels of RGB. -->
+  <Brush Name="DiRealm.CardSolid">
+    <Layers><BrushLayer Name="Default" Sprite="BlankWhiteSquare_9" Color="#1A1612FF" /></Layers>
+  </Brush>
+  <Brush Name="DiRealm.CardDarkSolid">
+    <Layers><BrushLayer Name="Default" Sprite="BlankWhiteSquare_9" Color="#191511FF" /></Layers>
+  </Brush>
+  <Brush Name="DiRealm.CardFaintSolid">
+    <Layers><BrushLayer Name="Default" Sprite="BlankWhiteSquare_9" Color="#171410FF" /></Layers>
+  </Brush>
+  <Brush Name="DiRealm.CardRowSolid">
+    <Layers><BrushLayer Name="Default" Sprite="BlankWhiteSquare_9" Color="#1E1812FF" /></Layers>
+  </Brush>
+
   <Brush Name="DiRealm.Score" Font="Galahad" TextHorizontalAlignment="Right">
     <Styles>
       <Style Name="Default" FontColor="#E0CFA8FF" TextOutlineAmount="0.1" TextGlowRadius="0" TextBlur="0.2" TextShadowOffset="0" FontSize="22" />
