@@ -14,6 +14,39 @@ Last completed measurement: **balance run 08** (statecraft on/off) — [balance/
 Branch `development`. `main` sits well behind on purpose: cutting a release is Phase 4's job.
 opencode was removed from the project on 2026-09-27 (CLAUDE.md §7).
 
+## Start here — 2026-10-04: story 4.3 (the Realm tab) diagnosed, one fault fixed, two questions for the lead
+
+**Two decisions are owed an answer before this merges** — story 4.3 §7:
+
+- **D4 — the five card brushes.** A card whose background follows wrapped, translated text
+  cannot keep its background as a `StretchToParent` child (§0b.1, the original fault) and a plain
+  `Widget` has no background of its own, so the card has to be a `ListPanel` and a `ListPanel`
+  paints a `Brush`. Five brushes were added, in colours byte-identical to the ones already in
+  `DiRealmPanel.xml`; nothing visual changes. D1 says no new brushes without asking.
+- **D5 — the accent stripe.** It cannot be sized to a content-sized card in Gauntlet. Four
+  approaches were measured and all four fail (§9c). Left as it was rather than guessed at.
+
+**What is fixed and verified live** on `di_phase1_full`, 1280x720, v1.5.3, mod log clean:
+
+- **F1** — the `{Spheres}` card was `Fixed` at 40px and held **120px** of text; 79px of it
+  printed over the "Spheres on the map" heading and over the gap note. The card now takes its
+  height from its content and the column reads cleanly.
+- **F2** — the `{ClaimGroups}` card was a `CoverChildren` card with a stretching backdrop:
+  **538px of card for 79px of text**. Its background now ends with its content.
+- **F3 was F2.** Not the three-column arrangement: the row's columns each size themselves, and
+  the 459px of blank was the claims card setting the row's height and the scroll length.
+
+**What is not done.** Seven cards are still `Fixed` and still at risk in a long language —
+including `{Agreements}` at 64px, whose `@DetailText` **already** wraps to two lines in English
+and therefore already overruns. ST-4, ST-5 (DE/RU/CNs) and ST-6 (the Court tab) are untouched.
+F3's scroll length was not re-measured end to end. Full detail and the measured numbers:
+[stories/4.3-realm-tab-layout.md](stories/4.3-realm-tab-layout.md) §9.
+
+**A Gauntlet fact worth keeping** (not in CLAUDE.md §1 yet): a `StretchToParent` child of a
+`CoverChildren` parent is given the **available** height, not the measured one, and
+`VerticalAlignment` has no `Stretch`. That is why a card can only be content-sized if its
+background is its own `Brush`.
+
 ## Start here — 2026-10-03: run 11 answered and built; a long run to check it
 
 The lead answered run 11 §8 on 2026-10-02 and accepted Phase 3 (the exposure-to-war chain seen between AI
